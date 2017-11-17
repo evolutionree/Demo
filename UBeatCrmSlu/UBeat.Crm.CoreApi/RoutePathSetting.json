@@ -1,0 +1,33 @@
+﻿{
+
+  "NotNeedVersionDataPath": [
+    "/api/account/loginout",
+    "/api/basicdata/syncview",
+    "/api/basicdata/syncbasic",
+    "/api/basicdata/syncentity",
+    "/api/basicdata/synctemplate",
+    "/api/fileservice",
+    "/api/excel/tasklist",
+    "/api/vocation/getuserfunction",
+    "/api/account/authcompany",
+    "/api/notify/writemessageasyn"
+  ],
+
+
+  "UnCheckAuthorization": [
+    "/api/account/login",
+    "/api/account/loginout",
+    "/api/basicdata/syncview",
+    "/api/basicdata/syncbasic",
+    "/api/basicdata/syncentity",
+    "/api/basicdata/synctemplate",
+    "/api/account/userinfo",
+    "/api/basicdata/usercontact",
+    "/api/chat/grouplist",
+    "/api/vocation/getuserfunction",
+    "/api/account/authcompany",
+    "/api/fileservice",
+    "/api/notify/msglist",
+    "/api/excel/tasklist"
+  ]
+}

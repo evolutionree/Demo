@@ -1,0 +1,10 @@
+//{
+//  "urls": "http://172.16.31.217:8880",
+//  "environment": "Production"
+//}
+
+
+{
+  "urls": "http://127.0.0.1:8880",
+  "environment": "Production"
+}

@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Repository\Cache\MemoryCacheRepository.cs" />
+    <Compile Remove="Utility\Cache\MemoryCacheHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Repository\DynamicEntity\DynamicEntityRepository.cs.mine" />
+    <None Remove="Repository\DynamicEntity\DynamicEntityRepository.cs.r15230" />
+    <None Remove="Repository\DynamicEntity\DynamicEntityRepository.cs.r15250" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Repository\SalesLead\SalesLeadRepository.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Core\UBeat.Crm.CoreApi.Core.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.DomainModel\UBeat.Crm.CoreApi.DomainModel.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.IRepository\UBeat.Crm.CoreApi.IRepository.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="1.50.2" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="1.1.1" />
+    <PackageReference Include="MongoDB.Driver" Version="2.4.3" />
+    <PackageReference Include="MongoDB.Driver.GridFS" Version="2.4.3" />
+    <PackageReference Include="NLog" Version="5.0.0-beta06" />
+    <PackageReference Include="Npgsql" Version="3.2.4.1" />
+  </ItemGroup>
+
+</Project>

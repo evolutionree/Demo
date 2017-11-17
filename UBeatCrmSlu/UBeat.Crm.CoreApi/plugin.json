@@ -1,0 +1,9 @@
+﻿{
+  "PluginProjectList": [
+    "CustProjectDemo"
+  ],
+  "DebugRelatePath": "bin/Debug/netcoreapp1.1/",
+  "ProductRelatePath": "plugins/",
+  "Environment": "Debug"
+
+}

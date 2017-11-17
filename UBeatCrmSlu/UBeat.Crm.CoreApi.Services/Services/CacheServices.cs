@@ -1,0 +1,38 @@
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Redis;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using UBeat.Crm.CoreApi.Core.Utility;
+using UBeat.Crm.CoreApi.IRepository;
+using UBeat.Crm.CoreApi.Repository.Repository.Cache;
+
+namespace UBeat.Crm.CoreApi.Services.Services
+{
+    public class CacheServices
+    {
+        //private readonly ICacheRepository _cacheRepository;
+        RedisCacheOptions _option;
+
+        public CacheServices()
+        {
+            IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+            var redis = config.GetSection("Redis");
+            _option = new RedisCacheOptions();
+            _option.Configuration = redis.GetValue<string>("configuration");
+            _option.InstanceName = redis.GetValue<string>("instance");
+
+        }
+
+        public ICacheRepository Repository
+        {
+            get {
+                return CacheRepository.GetInstance(_option);
+            }
+            
+        }
+        
+        public IMemoryCache MemoryCache { get; } = new MemoryCache(new MemoryCacheOptions());
+    }
+}

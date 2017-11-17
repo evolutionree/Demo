@@ -1,0 +1,68 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using FluentValidation;
+
+namespace UBeat.Crm.CoreApi.DomainModel.menus
+{
+    public class WebMenuItem
+    {
+        public Guid Id { get; set; }
+        public int Index { get; set; }
+        public string Name { get; set; }
+        public string Icon { get; set; }
+        public string path { get; set; }
+        public string FuncID { get; set; }
+        public Guid ParentId { get; set; }
+        public int IsDynamic { get; set; }
+        public int IsLogicMenu { get; set; }
+        public List<WebMenuItem> ChildRen { get; set; }
+        public WebMenuItem()
+        {
+            this.ChildRen = new List<WebMenuItem>();
+        }
+        public static WebMenuItem parseFromDict(IDictionary<string, object> dict)
+        {
+            WebMenuItem retItem = new WebMenuItem();
+            if (dict.ContainsKey("id") && dict["id"] != null)
+            {
+                retItem.Id = Guid.Parse(dict["id"].ToString());
+            }
+            if (dict.ContainsKey("name") && dict["name"] != null)
+            {
+                retItem.Name = (string)dict["name"];
+            }
+            if (dict.ContainsKey("index") && dict["index"] != null)
+            {
+                retItem.Index = Int32.Parse(dict["index"].ToString());
+            }
+            if (dict.ContainsKey("icon") && dict["icon"] != null)
+            {
+                retItem.Icon = (string)dict["icon"];
+            }
+            if (dict.ContainsKey("path") && dict["path"] != null)
+            {
+                retItem.path = (string)dict["path"];
+            }
+            if (dict.ContainsKey("funcid") && dict["funcid"] != null)
+            {
+                retItem.FuncID = (string)dict["funcid"];
+            }
+            if (dict.ContainsKey("parentid") && dict["parentid"] != null)
+            {
+                retItem.ParentId = Guid.Parse(dict["parentid"].ToString());
+            }
+            if (dict.ContainsKey("isdynamic") && dict["isdynamic"] != null)
+            {
+                retItem.IsDynamic = Int32.Parse(dict["isdynamic"].ToString());
+            }
+            return retItem;
+        }
+
+    }
+
+    public class WebMenuModel
+    {
+        public int Type { get; set; }
+    }
+}
