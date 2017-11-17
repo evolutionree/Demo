@@ -1004,7 +1004,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="caseId"></param>
         /// <param name="nodeNum"></param>
         /// <param name="userNumber"></param>
-        public void WriteCaseAuditMessage(Guid caseId, int nodeNum,int stepNum, int userNumber)
+        public void WriteCaseAuditMessage(Guid caseId, int nodeNum, int stepNum, int userNumber)
         {
             Task.Run(() =>
             {
@@ -1014,9 +1014,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var tran = conn.BeginTransaction();
                     try
                     {
-                        
+
                         List<int> completedApprovers = new List<int>(); //暂时为空，预留字段
                         string allApprovalSuggest = null;
+                        bool isAddNextStep = false;//审批是否通过，并进入下一步审批人
 
                         //获取casedetail
                         var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseId);
@@ -1036,24 +1037,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (myAuditCaseItem == null)
                             return;
 
-                        #region --获取审批人和抄送人--
-                        List<int> approvers = new List<int>();//审批人
-                        List<int> copyusers = new List<int>();//抄送人
-                        approvers = caseitems.Select(m => m.HandleUser).Distinct().ToList();
-                        foreach (var item in caseitems)
-                        {
-                            if (!string.IsNullOrEmpty(item.CopyUser))
-                            {
-                                var copyUserArray = item.CopyUser.Split(',');
-                                foreach (var u in copyUserArray)
-                                {
-                                    copyusers.Add(int.Parse(u));
-                                }
 
-                            }
-                        }
-                        copyusers = copyusers.Distinct().ToList(); 
-                        #endregion
 
                         var entityInfotemp = _entityProRepository.GetEntityInfo(caseInfo.EntityId);
                         if (entityInfotemp == null)
@@ -1061,7 +1045,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var msg = new MessageParameter();
                         allApprovalSuggest = myAuditCaseItem.Suggest;
 
-                        if (workflowInfo.FlowType== WorkFlowType.FreeFlow)//自由流程
+                        if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
                         {
 
                         }
@@ -1077,12 +1061,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             WorkFlowNodeInfo previousFlowNodeInfo = null;//上一审批节点
                             if (nodeNum > 1 && flowNodeInfo != null)
                                 previousFlowNodeInfo = _workFlowRepository.GetPreviousWorkFlowNodeInfo(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-                            if(flowNodeInfo.NodeType != NodeType.Joint)//普通审批
+                            if (flowNodeInfo.NodeType != NodeType.Joint)//普通审批
                             {
-                                var funcode=GetNormalFlowMessageFuncode(myAuditCaseItem, caseInfo, previousFlowNodeInfo);
-                                if(string.IsNullOrEmpty(funcode))
+                                var funcode = GetNormalFlowMessageFuncode(myAuditCaseItem, caseInfo, previousFlowNodeInfo, tran,out isAddNextStep);
+                                if (string.IsNullOrEmpty(funcode))
                                 {
-                                    Logger.Error("没有有效的消息模板funcode");
+                                    // Logger.Error("没有有效的消息模板funcode");
                                     return;
                                 }
                                 msg.FuncCode = funcode;
@@ -1151,8 +1135,37 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         break;
                                 }
                             }
-                           
+
                         }
+
+
+                        #region --获取审批人和抄送人--
+                        List<int> approvers = new List<int>();//审批人
+                        List<int> copyusers = new List<int>();//抄送人
+                        List<WorkFlowCaseItemInfo> tempcaseitems = caseitems;
+                        if (isAddNextStep)//如果审批通过，进入下一步审批，则获取下一步的审批人和抄送人
+                        {
+                            tempcaseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, nodeNum, stepNum);
+
+                            if (tempcaseitems == null || tempcaseitems.Count == 0)
+                                tempcaseitems = caseitems;
+                        }
+                        approvers = tempcaseitems.Select(m => m.HandleUser).Distinct().ToList();
+                        foreach (var item in tempcaseitems)
+                        {
+                            if (!string.IsNullOrEmpty(item.CopyUser))
+                            {
+                                var copyUserArray = item.CopyUser.Split(',');
+                                foreach (var u in copyUserArray)
+                                {
+                                    copyusers.Add(int.Parse(u));
+                                }
+
+                            }
+                        }
+                        copyusers = copyusers.Distinct().ToList();
+                        #endregion
+
 
                         #region --封装MessageParameter--
                         msg.EntityId = entityInfotemp.EntityId;
@@ -1186,7 +1199,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         msg.TemplateKeyValue = paramData;
                         msg.CopyUsers = copyusers;
                         msg.ApprovalUsers = approvers;
-                        msg.FlowId = caseInfo.FlowId; 
+                        msg.FlowId = caseInfo.FlowId;
                         #endregion
                         //如果是动态实体，则需要发动态，
                         //流程新增和结束时候需要发送动态
@@ -1252,8 +1265,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         #region --获取普通流程审批消息的funcode--
-        private string GetNormalFlowMessageFuncode(WorkFlowCaseItemInfo auditCaseItem, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo previousFlowNodeInfo)
+        private string GetNormalFlowMessageFuncode(WorkFlowCaseItemInfo auditCaseItem, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo previousFlowNodeInfo, DbTransaction trans,out bool isAddNextStep)
         {
+            isAddNextStep = false;
             string funcCode = string.Empty;
             switch (auditCaseItem.ChoiceStatus)
             {
@@ -1270,8 +1284,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     else
                     {
-                        //由于先阶段，审批和选人是分开步骤，因此该情况不处理消息
-                        return null;
+                        //获取下一步caseitem
+                        var nextCaseItems = _workFlowRepository.GetWorkFlowCaseItemInfo(trans, caseInfo.CaseId, caseInfo.NodeNum + 1);
+
+                        if (nextCaseItems == null || nextCaseItems.Count == 0)
+                            return null;
+                        if (previousFlowNodeInfo.NodeType == NodeType.Joint)
+                            funcCode = "NextWorkFlowNodeJointApproval";
+                        else funcCode = "WorkFlowNodeApproval";
+
                     }
                     break;
                 case ChoiceStatusType.Reback: //普通审批退回
