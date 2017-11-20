@@ -37,6 +37,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly DynamicEntityServices _dynamicEntityServices;
         private readonly IMailCatalogRepository _mailCatalogRepository;
         private readonly IMailRepository _mailRepository;
+        private readonly IDocumentsRepository _docmentsRepository;
         public EMailServices(IMapper mapper, FileServices fileServices, DynamicEntityServices dynamicEntityServices,
             IMailCatalogRepository mailCatalogRepository,
             IMailRepository mailRepository)
@@ -955,7 +956,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 relatedMySelf = (int)model.RelatedMySelf,
                 relatedSendOrReceive = (int)model.RelatedSendOrReceive,
-                MailId=model.MailId,
+                MailId = model.MailId,
                 PageIndex = model.PageIndex,
                 PageSize = model.PageSize
             };
@@ -967,7 +968,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> GetLocalFileFromCrm(int userId)
         {
-            return new OutputResult<object>(_mailRepository.GetLocalFileFromCrm(userId));
+            return ExcuteSelectAction((transaction, arg, userData) =>
+            {
+                var ruleSql = userData.RuleSqlFormat(RoutePath, entityId, DeviceClassic);
+
+             return new OutputResult<object>(_docmentsRepository.DocumentList(transaction, ruleSql, pageParam, crmData, userNumber));
+
+            },, "a3500e78-fe1c-11e6-aee4-005056ae7f49", userId);
         }
         public OutputResult<object> SaveMailOwner(List<Guid> Mails, int newUserId)
         {

@@ -54,7 +54,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId);
 
-        List<dynamic> GetLocalFileFromCrm(int userId);
+        List<dynamic> GetLocalFileFromCrm(AttachmentListMapper entity, int userId);
 
         PageDataInfo<MailBox> GetMailBoxList(int pageIndex, int pageSize, int userId);
     }

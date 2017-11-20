@@ -405,6 +405,22 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid MailId { get; set; }
     }
 
+    public class AttachmentListMapper
+    {
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+
+        public string KeyWord { get; set; }
+    }
+
+    public class AttachmentChooseListMapper
+    {
+        public Guid FileId { get; set; }
+
+        public string FileName { get; set; }
+        public string FileSize { get; set; }
+    }
+
 
     public class MailBoxMapper
     {

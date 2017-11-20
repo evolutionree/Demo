@@ -43,7 +43,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
             {
-                sqlCondition = " AND ((body.sender ILIKE '%' || @{0} || '%' ESCAPE '`') OR (body.title ILIKE '%' || @{0} || '%' ESCAPE '`') OR (body.receivers ILIKE @{0} || '%' ESCAPE '`'))";
+                sqlCondition = string.Format(" AND ((body.sender ILIKE '%' || @{0} || '%' ESCAPE '`') OR (body.title ILIKE '%' || @{0} || '%' ESCAPE '`') OR (body.receivers ILIKE @{0} || '%' ESCAPE '`'))", keyWord);
                 sqlWhere.Concat(new object[] { sqlCondition });
             }
 
@@ -629,11 +629,15 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
         }
 
-        public List<dynamic> GetLocalFileFromCrm(int userId)
+        public List<dynamic> GetLocalFileFromCrm(AttachmentListMapper entity, int userId)
         {
             var sql = @"SELECT fileid,filename
-				            FROM public.crm_sys_documents AS d   WHERE recstatus=1";
-            return DataBaseHelper.Query<dynamic>(sql, null, CommandType.Text);
+				            FROM public.crm_sys_documents AS d  Where filename  ILIKE '%' || @filename || '%' ESCAPE '`'  WHERE recstatus=1";
+            var param = new
+            {
+                FileName = entity.KeyWord
+            };
+            return null;
         }
 
         /// <summary>
