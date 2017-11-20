@@ -368,6 +368,43 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         }
     }
 
+    public class ToAndFroMapper : BaseEntity
+    {
+        public Guid MailId { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+        public int relatedMySelf { get; set; }
+        public int relatedSendOrReceive { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new ToAndFroMapperValidator();
+        }
+        class ToAndFroMapperValidator : AbstractValidator<ToAndFroMapper>
+        {
+            public ToAndFroMapperValidator()
+            {
+                RuleFor(d => d.PageIndex).Must(d => d > 0).WithMessage("页索引不能小于等于0");
+                RuleFor(d => d.PageSize).Must(d => d > 0).WithMessage("页大小不能小于等于0");
+                RuleFor(d => d.MailId).NotNull().WithMessage("邮件Id不能为空");
+            }
+        }
+    }
+
+    public class ToAndFroFileMapper
+    {
+
+        public string FileName { get; set; }
+
+        public string FileType { get; set; }
+
+        public Int64 FileSize { get; set; }
+
+        public Guid MongoId { get; set; }
+
+        public Guid MailId { get; set; }
+    }
+
 
     public class MailBoxMapper
     {

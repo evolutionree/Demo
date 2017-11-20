@@ -238,6 +238,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
     }
     public class ToAndFroModel
     {
+        public Guid MailId { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
         public RelatedMySelf RelatedMySelf { get; set; }
         public RelatedSendOrReceive RelatedSendOrReceive { get; set; }
     }

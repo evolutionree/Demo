@@ -457,7 +457,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
                 };
             }
         }
-        public List<dynamic> GetInnerToAndFroMail(int relatedMySelf, int relatedSendOrReceive, int userId)
+        public PageDataInfo<MailBodyMapper> GetInnerToAndFroMail(ToAndFroMapper entity, int userId)
         {
 
             string sql = @" Select                               
@@ -470,129 +470,163 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
                                         body.mailbody as summary, 
                                         body.senttime, 
                                         body.receivedtime  FROM crm_sys_mail_mailbody body {0}";
+            var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
-            if (relatedMySelf == 0 && relatedSendOrReceive == 0)
+            if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 0)
             {
-                whereSql = @" Where recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
-                            SELECT email FROM crm_sys_contact WHERE (belcust->>'id') IN (
-                            SELECT (belcust->>'id') custid FROM crm_sys_contact WHERE email IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)))
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid))";
+                whereSql = @"Where recstatus=1 and recid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
+            {
+                whereSql = @" Where recstatus=1 and  recid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype!=1)";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
+            {
+                whereSql = @" Where recstatus=1 and  recid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        ))  AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype=1)";
+            }
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
+            {
+                whereSql = @"  Where recstatus=1 and  recid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox Where recstatus=1))";
 
             }
-            else if (relatedSendOrReceive == 0 && relatedSendOrReceive == 1)            //与自己往来+收到的邮件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
             {
-                whereSql = @" Where recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
-                            SELECT email FROM crm_sys_contact WHERE (belcust->>'id') IN (
-                            SELECT (belcust->>'id') custid FROM crm_sys_contact WHERE email IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)))
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype!=1)";
-
-            }
-            else if (relatedSendOrReceive == 0 && relatedSendOrReceive == 2)         //与自己往来+发出的邮件
-            {
-                whereSql = @" Where recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
-                            SELECT email FROM crm_sys_contact WHERE (belcust->>'id') IN (
-                            SELECT (belcust->>'id') custid FROM crm_sys_contact WHERE email IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)))
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype=1)";
-
-            }
-            else if (relatedSendOrReceive == 1 && relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
-            {
-                whereSql = @"  WHERE recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress  IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid))";
-
-            }
-            else if (relatedSendOrReceive == 1 && relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
-            {
-                whereSql = @" WHERE recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress  IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype!=1)";
+                whereSql = @"  Where recstatus=1 and  recid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE  recstatus=1) AND ctype!=1)";
 
             }
 
-            else if (relatedSendOrReceive == 1 && relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
             {
-                whereSql = @" WHERE recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress  IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype=1)";
+                whereSql = @"  Where recstatus=1 and  recid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
 
             }
-            sql = string.Format(sql, whereSql);
 
-            var param = new
-            {
-                UserId = userId.ToString()
-            };
-            return DataBaseHelper.Query<dynamic>(sql, param, CommandType.Text);
+            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
         }
 
 
-        public List<dynamic> GetInnerToAndFroAttachment(int relatedMySelf, int relatedSendOrReceive, int userId)
+        public PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId)
         {
 
-            string sql = @" SELECT filename,filetype,filesize,mongoid,recstatus,mailid FROM crm_sys_mail_attach  {0}";
+            string sql = @" SELECT filename,filetype,filesize,mongoid,mailid FROM crm_sys_mail_attach  {0}";
+            var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
-            //与自己往来+收到和发出的邮件附件
-            if (relatedMySelf == 0 && relatedSendOrReceive == 0)
+            //与自己往来+收到和发出的邮件
+            if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 0)
             {
-                whereSql = @" Where recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
-                            SELECT email FROM crm_sys_contact WHERE (belcust->>'id') IN (
-                            SELECT (belcust->>'id') custid FROM crm_sys_contact WHERE email IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)))
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid))";
+                whereSql = @"Where recstatus=1 and mailid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
+            {
+                whereSql = @" Where recstatus=1 and  mailid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype!=1)";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
+            {
+                whereSql = @" Where recstatus=1 and  mailid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        ))  AND mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype=1)";
+            }
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
+            {
+                whereSql = @"  Where recstatus=1 and  mailid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox Where recstatus=1))";
 
             }
-            else if (relatedSendOrReceive == 0 && relatedSendOrReceive == 1)            //与自己往来+收到的邮件附件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
             {
-                whereSql = @" Where recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
-                            SELECT email FROM crm_sys_contact WHERE (belcust->>'id') IN (
-                            SELECT (belcust->>'id') custid FROM crm_sys_contact WHERE email IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)))
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype!=1)";
-
-            }
-            else if (relatedSendOrReceive == 0 && relatedSendOrReceive == 2)         //与自己往来+发出的邮件附件
-            {
-                whereSql = @" Where recid IN (
-                            SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
-                            SELECT email FROM crm_sys_contact WHERE (belcust->>'id') IN (
-                            SELECT (belcust->>'id') custid FROM crm_sys_contact WHERE email IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid)))
-                            ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype=1)";
-
-            }
-            else if (relatedSendOrReceive == 1 && relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件附件
-            {
-                whereSql = @"  WHERE mailid IN (
-                                SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) 
-                              ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid))";
-
-            }
-            else if (relatedSendOrReceive == 1 && relatedSendOrReceive == 1)//与所有用户往来+收出的邮件附件
-            {
-                whereSql = @" WHERE mailid IN (
-                                SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) 
-                              ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype!=1)";
+                whereSql = @"  Where recstatus=1 and  mailid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE  recstatus=1) AND ctype!=1)";
 
             }
 
-            else if (relatedSendOrReceive == 1 && relatedSendOrReceive == 2)//与所有用户往来+发出的邮件附件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
             {
-                whereSql = @" WHERE mailid IN (
-                                SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) 
-                              ) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner=@userid) AND ctype=1)";
+                whereSql = @"  Where recstatus=1 and  mailid IN (
+                                        SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
+                                        SELECT tmp.email FROM (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
+                                        WHERE tmp.custid IN (
+                                        SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
+                                        SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
+                                        )) AND mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
 
             }
-            sql = string.Format(sql, whereSql);
 
-            var param = new
-            {
-                UserId = userId.ToString()
-            };
-            return DataBaseHelper.Query<dynamic>(sql, param, CommandType.Text);
+            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
         }
 
         public List<dynamic> GetLocalFileFromCrm(int userId)
@@ -607,7 +641,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public PageDataInfo<MailBox> GetMailBoxList(int pageIndex,int pageSize, int userId)
+        public PageDataInfo<MailBox> GetMailBoxList(int pageIndex, int pageSize, int userId)
         {
             var sql = "select a.recid,a.accountid,a.recname,a.inwhitelist,b.recname mailserver,b.mailprovider,b.imapaddress," +
                 "b.refreshinterval,b.servertype,b.smtpaddress	" +

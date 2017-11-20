@@ -31,6 +31,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 
             CreateMap<MoveMailModel, MoveMailMapper>();
             CreateMap<ReConverMailModel, ReConverMailMapper>();
+
+            CreateMap<ToAndFroModel, ToAndFroMapper>();
         }
     }
 }

@@ -48,11 +48,11 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<MailUserMapper> GetCustomerContact(int pageIndex, int pageSize, int userId);
 
-        List<dynamic> GetInnerToAndFroMail(int relatedMySelf, int relatedSendOrReceive, int userId);
+        PageDataInfo<MailBodyMapper> GetInnerToAndFroMail(ToAndFroMapper entity, int userId);
 
         PageDataInfo<MailUserMapper> GetRecentContact(int pageIndex, int pageSize, int userId);
 
-        List<dynamic> GetInnerToAndFroAttachment(int relatedMySelf, int relatedSendOrReceive, int userId);
+        PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId);
 
         List<dynamic> GetLocalFileFromCrm(int userId);
 

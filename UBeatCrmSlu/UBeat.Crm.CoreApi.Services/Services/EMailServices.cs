@@ -935,12 +935,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> GetInnerToAndFroMail(ToAndFroModel model, int userId)
         {
-
-            return new OutputResult<object>(_mailRepository.GetInnerToAndFroMail((int)model.RelatedMySelf, (int)model.RelatedSendOrReceive, userId));
+            var entity = new ToAndFroMapper
+            {
+                relatedMySelf = (int)model.RelatedMySelf,
+                relatedSendOrReceive = (int)model.RelatedSendOrReceive,
+                MailId = model.MailId,
+                PageIndex = model.PageIndex,
+                PageSize = model.PageSize
+            };
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return new OutputResult<object>(_mailRepository.GetInnerToAndFroMail(entity, userId));
         }
         public OutputResult<object> GetInnerToAndFroAttachment(ToAndFroModel model, int userId)
         {
-            return new OutputResult<object>(_mailRepository.GetInnerToAndFroAttachment((int)model.RelatedMySelf, (int)model.RelatedSendOrReceive, userId));
+            var entity = new ToAndFroMapper
+            {
+                relatedMySelf = (int)model.RelatedMySelf,
+                relatedSendOrReceive = (int)model.RelatedSendOrReceive,
+                MailId=model.MailId,
+                PageIndex = model.PageIndex,
+                PageSize = model.PageSize
+            };
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return new OutputResult<object>(_mailRepository.GetInnerToAndFroAttachment(entity, userId));
         }
         public OutputResult<object> GetLocalFileFromCrm(int userId)
         {
