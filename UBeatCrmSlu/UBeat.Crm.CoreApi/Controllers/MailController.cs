@@ -162,9 +162,11 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         [HttpPost]
         [Route("getfiles")]
-        public OutputResult<object> GetLocalFileFromCrm()
+        public OutputResult<object> GetLocalFileFromCrm([FromBody] AttachmentListModel model)
         {
-            return _emailServices.GetLocalFileFromCrm(UserId);
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.GetLocalFileFromCrm(model, UserId);
+
         }
 
         /// <summary>

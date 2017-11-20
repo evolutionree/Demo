@@ -966,15 +966,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return new OutputResult<object>(_mailRepository.GetInnerToAndFroAttachment(entity, userId));
         }
-        public OutputResult<object> GetLocalFileFromCrm(int userId)
+        public OutputResult<object> GetLocalFileFromCrm(AttachmentListModel model, int userId)
         {
+            var entity = _mapper.Map<AttachmentListModel, AttachmentListMapper>(model);
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
             return ExcuteSelectAction((transaction, arg, userData) =>
             {
-                var ruleSql = userData.RuleSqlFormat(RoutePath, entityId, DeviceClassic);
-
-             return new OutputResult<object>(_docmentsRepository.DocumentList(transaction, ruleSql, pageParam, crmData, userNumber));
-
-            },, "a3500e78-fe1c-11e6-aee4-005056ae7f49", userId);
+                var ruleSql = userData.RuleSqlFormat("api/documents/documentlist", Guid.Parse("a3500e78-fe1c-11e6-aee4-005056ae7f49"), DeviceClassic);//获取权限
+                return new OutputResult<object>(_mailRepository.GetLocalFileFromCrm(entity, ruleSql, userId));
+            }, entity, Guid.Parse("a3500e78-fe1c-11e6-aee4-005056ae7f49"), userId);
         }
         public OutputResult<object> SaveMailOwner(List<Guid> Mails, int newUserId)
         {

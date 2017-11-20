@@ -245,4 +245,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
         public RelatedSendOrReceive RelatedSendOrReceive { get; set; }
     }
 
+    public class AttachmentListModel
+    {
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+
+        public string KeyWord { get; set; }
+    }
+
 }

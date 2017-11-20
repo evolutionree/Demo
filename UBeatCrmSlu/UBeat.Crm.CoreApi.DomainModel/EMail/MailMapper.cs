@@ -405,12 +405,26 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid MailId { get; set; }
     }
 
-    public class AttachmentListMapper
+    public class AttachmentListMapper:BaseEntity
     {
         public int PageIndex { get; set; }
         public int PageSize { get; set; }
 
         public string KeyWord { get; set; }
+
+
+        protected override IValidator GetValidator()
+        {
+            return new AttachmentListMapperValidator();
+        }
+        class AttachmentListMapperValidator : AbstractValidator<AttachmentListMapper>
+        {
+            public AttachmentListMapperValidator()
+            {
+                RuleFor(d => d.PageIndex).Must(d => d > 0).WithMessage("页索引不能小于等于0");
+                RuleFor(d => d.PageSize).Must(d => d > 0).WithMessage("页大小不能小于等于0");
+            }
+        }
     }
 
     public class AttachmentChooseListMapper
@@ -418,7 +432,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid FileId { get; set; }
 
         public string FileName { get; set; }
-        public string FileSize { get; set; }
     }
 
 

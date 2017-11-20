@@ -629,15 +629,28 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
         }
 
-        public List<dynamic> GetLocalFileFromCrm(AttachmentListMapper entity, int userId)
+        public PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId)
         {
-            var sql = @"SELECT fileid,filename
-				            FROM public.crm_sys_documents AS d  Where filename  ILIKE '%' || @filename || '%' ESCAPE '`'  WHERE recstatus=1";
-            var param = new
+            var sql = @"
+                 Select * From (
+                            SELECT fileid,filename
+				            FROM public.crm_sys_documents AS d Where entityid='a3500e78-fe1c-11e6-aee4-005056ae7f49'  AND recstatus=1  {0}   UNION ALL 
+                             SELECT  fileid,filename 
+                             FROM crm_sys_documents  AS d   WHERE entityid IN (
+                            SELECT entityid FROM crm_sys_entity WHERE modeltype=0 AND recstatus=1 )  AND recstatus=1 AND reccreator=@userid) as t Where 1=1 {1}";
+            string whereSql = string.Empty;
+            var param = new List<DbParameter>();
+            if (!string.IsNullOrEmpty(entity.KeyWord))
             {
-                FileName = entity.KeyWord
-            };
-            return null;
+                param.Add(new NpgsqlParameter("filename", entity.KeyWord));
+                whereSql = " AND t.filename  ILIKE '%' || @filename || '%' ESCAPE '`'";
+            }
+            if (!string.IsNullOrEmpty(ruleSql))
+            {
+                ruleSql = " AND " + ruleSql;
+            }
+            param.Add(new NpgsqlParameter("userid", userId));
+            return ExecuteQueryByPaging<AttachmentChooseListMapper>(string.Format(sql, ruleSql, whereSql), param.ToArray(), entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex); ;
         }
 
         /// <summary>
