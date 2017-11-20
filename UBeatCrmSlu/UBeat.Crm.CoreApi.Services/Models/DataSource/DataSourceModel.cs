@@ -25,6 +25,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string Srcmark { get; set; }
         public string Rulesql { get; set; }
         public int RecStatus { get; set; }
+
+        public int IsPro { get; set; }
     }
     public class DataSourceDetailModel
     {

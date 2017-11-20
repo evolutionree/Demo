@@ -35,7 +35,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertSaveDataSource(DataSourceMapper dataSource, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_datasource_add(@datasourcename,@srctype,@entityid, @srcmark,@isrelatepower, @status, @userno)
+                SELECT * FROM crm_func_datasource_add(@datasourcename,@srctype,@entityid, @srcmark,@isrelatepower, @status,@ispro, @userno)
             ";
             var param = new DynamicParameters();
             param.Add("datasourcename", dataSource.DatasourceName);
@@ -44,6 +44,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("srcmark", dataSource.Srcmark);
             param.Add("isrelatepower", dataSource.IsRelatePower);
             param.Add("status", dataSource.RecStatus);
+            param.Add("ispro", dataSource.IsPro);
             param.Add("userno", userNumber);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -52,7 +53,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateSaveDataSource(DataSourceMapper dataSource, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_datasource_edit(@datasourceid,@datasourcename,@srctype,@entityid, @srcmark, @status, @isrelatepower,@userno)
+                SELECT * FROM crm_func_datasource_edit(@datasourceid,@datasourcename,@srctype,@entityid, @srcmark, @status, @isrelatepower,@ispro,@userno)
             ";
             var param = new DynamicParameters();
             param.Add("datasourceid", dataSource.DatasourceId);
@@ -62,6 +63,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("srcmark", dataSource.Srcmark);
             param.Add("status", dataSource.RecStatus);
             param.Add("isrelatepower", dataSource.IsRelatePower);
+            param.Add("ispro", dataSource.IsPro);
             param.Add("userno", userNumber);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
