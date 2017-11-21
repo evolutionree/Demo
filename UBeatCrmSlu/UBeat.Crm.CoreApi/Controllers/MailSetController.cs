@@ -49,7 +49,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             string deptId = "";
             if (dynamicModel != null)
                 deptId = dynamicModel.treeId;
-            List<OrgAndStaffTree> retList = _eMailServices.GetOrgAndStaffTreeByLevel(userid, deptId, dynamicModel.keyword);
+            List<OrgAndStaffTree> retList = _eMailServices.GetOrgAndStaffTreeByLevel(userid, deptId);
             return new OutputResult<object>(retList);
         }
 

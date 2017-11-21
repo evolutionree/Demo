@@ -337,7 +337,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             return catalogResult;
         }
-        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId,string keyword)
+        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId)
         {
             List<OrgAndStaffTree> resultList = new List<OrgAndStaffTree>();
             //判断是否领导用户
@@ -352,12 +352,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //该用户是领导岗，获取下属邮件逻辑
             if (result.Count > 0)
             {
-                string getOrgTreeSql = "select * from (select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a " +
+                string getOrgTreeSql = "select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a " +
                     "where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t " +
                     "UNION ALL" +
                     " select * from(select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,0 unreadcount from crm_sys_account_userinfo_relate a " +
                     "inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid  where(b.isleader is null or b.isleader <> 1) and a.recstatus = 1 " +
-                    "and a.deptid::text = @deptId order by b.username) t1 ) x where 1=1 ";
+                    "and a.deptid::text = @deptId order by b.username) t1";
                 string searchDept = result[0]["deptid"].ToString();
                 if (!string.IsNullOrEmpty(deptId))
                 {
@@ -367,12 +367,6 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 {
                     new NpgsqlParameter("deptId", searchDept),
                 };
-                //只返回人员
-                if (!string.IsNullOrEmpty(keyword))
-                {
-                    getOrgTreeSql = string.Format(getOrgTreeSql+ " and x.nodetype=1 and x.treename like '%{0}%' ", keyword);
-
-                }
                 resultList = ExecuteQuery<OrgAndStaffTree>(getOrgTreeSql, paramTree);
             }
             return resultList;

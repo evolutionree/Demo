@@ -763,9 +763,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId, string keyword)
+        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId)
         {
-            List<OrgAndStaffTree> list = _mailCatalogRepository.GetOrgAndStaffTreeByLevel(userId, deptId, keyword);
+            List<OrgAndStaffTree> list = _mailCatalogRepository.GetOrgAndStaffTreeByLevel(userId, deptId);
             return list;
         }
 
