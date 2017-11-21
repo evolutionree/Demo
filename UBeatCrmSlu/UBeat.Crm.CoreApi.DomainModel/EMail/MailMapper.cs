@@ -452,6 +452,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string Name { get; set; }
 
         public string customer { get; set; }
+
+        public Guid icon { get; set; }
     }
     public class OrgAndStaffMapper
     {
@@ -467,6 +469,13 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// </summary>
         public int nodeType { get; set; }
 
+    }
+
+    public class InnerToAndFroUser
+    {
+        public int userId { get; set; }
+        public string userName { get; set; }
+        public decimal unRead { get; set; }
     }
 
     public class TransferRecordMapper

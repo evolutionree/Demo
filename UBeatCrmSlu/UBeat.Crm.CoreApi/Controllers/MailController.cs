@@ -233,6 +233,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             return _emailServices.GetRecentContact(dynamicModel, UserId);
         }
+        /// <summary>
+        /// 获取内部往来人员列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("getinnertoandfrouser")]
+        public OutputResult<object> GetInnerToAndFroUser([FromBody] ContactSearchInfo dynamicModel, int userId)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.GetInnerToAndFroUser(dynamicModel, UserId);
+        }
         #endregion
     }
 }
