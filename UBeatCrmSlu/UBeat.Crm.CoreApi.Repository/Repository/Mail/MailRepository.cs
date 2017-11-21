@@ -812,7 +812,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// <returns></returns>       
         public PageDataInfo<MailUserMapper> GetCustomerContact(int pageIndex, int pageSize, int userId)
         {
-            var executeSql = "SELECT a.email EmailAddress,a.recname as name,b.recname customer " +
+            var executeSql = "SELECT a.email EmailAddress,a.recname as name,b.recname customer,COALESCE(a.headicon,'00000000-0000-0000-0000-000000000000')::uuid icon" +
                 " FROM crm_sys_contact a inner join crm_sys_customer b on(a.belcust ->> 'id') ::uuid = b.recid " +
                 " where a.email is not null and a.email != ''  and a.recstatus = 1 and b.recstatus = 1 and b.recmanager = @userid";
             var param = new DbParameter[]
@@ -821,6 +821,37 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             };
             return ExecuteQueryByPaging<MailUserMapper>(executeSql, param, pageSize, pageIndex);
         }
+
+        /// <summary>
+        /// 获取内部往来人员列表
+        /// </summary>
+        /// <param name="keyword"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>       
+        public List<InnerToAndFroUser> GetInnerToAndFroUser(string keyword, int userId)
+        {
+            var executeSql = "select t.userid,t.username,count(1)-sum(t.isread) unread  " +
+                " from (select d.userid,d.username,COALESCE(c.isread, 0) isread " +
+                " from(select b.recid from crm_sys_mail_senderreceivers a " +
+                " inner join crm_sys_mail_mailbody b on a.mailid= b.recid " +
+                " where 1 = 1 and (ctype = 2 or  ctype = 3 or ctype = 4) and relativetouser = @userid) x " +
+                " inner join crm_sys_mail_mailbody c on c.recid = x.recid " +
+                " inner join crm_sys_userinfo d on d.userid = c.recmanager ) t " +
+                "  {0} group by t.userid,t.username";
+            string condition = string.Empty;
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                condition = string.Format(" where t.username like '%{0}%'", keyword);
+
+            }
+            string newSql = string.Format(executeSql, condition);
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("userId", userId)
+            };
+            return ExecuteQuery<InnerToAndFroUser>(newSql, param);
+        }
+
         #endregion
         #region  我负责的客户的联系人和内部人员
         public List<MailUserMapper> GetManagerContactAndInnerUser(int userId)

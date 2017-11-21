@@ -1044,6 +1044,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 pageSize = dynamicModel.pageSize;
             return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.PageIndex, pageSize, userId));
         }
+        /// <summary>
+        /// 获取内部往来人员列表
+        /// </summary>
+        /// <param name="keyword"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>      
+        public OutputResult<object> GetInnerToAndFroUser(ContactSearchInfo dynamicModel, int userId)
+        {
+            return new OutputResult<object>(_mailRepository.GetInnerToAndFroUser(dynamicModel.keyword,userId));
+        }
 
         /// <summary>
         /// 最近联系人
