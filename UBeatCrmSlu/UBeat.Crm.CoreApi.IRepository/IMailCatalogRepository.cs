@@ -12,7 +12,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<MailCatalogInfo> GetMailCataLog(string catalogType, int userId);
 
-        List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId);
+        List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId, string keyword);
 
         MailCatalogInfo GetMailCatalogByCode(int userId, string catalogType);
 
