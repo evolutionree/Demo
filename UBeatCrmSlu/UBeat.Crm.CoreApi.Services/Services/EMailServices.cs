@@ -884,16 +884,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(_mailRepository.MailDetail(entity, userNum));
         }
 
-        public OutputResult<object> InnerTransferMail(TransferMailDataListModel model, int userId)
+        public OutputResult<object> InnerTransferMail(TransferMailDataMapper model, int userId)
         {
-            var entity = _mapper.Map<TransferMailDataListModel, TransferMailDataListMapper>(model);
+            var entity = _mapper.Map<TransferMailDataMapper, TransferMailDataMapper>(model);
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
 
             #region 先把附件下载 然后再上传一份
-            var attachments = _mailRepository.MailAttachment(entity.TransferMailDataList.Select(t => t.MailId).ToList());
+            var attachments = _mailRepository.MailAttachment(new List<Guid>() { entity.MailId });
             var fileListData = _fileServices.GetFileListData(string.Empty, attachments.Select(t => t.MongoId.ToString()));
             foreach (var tmp in fileListData)
             {
@@ -909,10 +909,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             #endregion
 
-            foreach (var tmp in entity.TransferMailDataList)
-            {
-                tmp.Attachment = attachments.Where(t => t.MailId == tmp.MailId).ToList();
-            }
+
+            entity.Attachment = attachments.ToList();
+
             var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
                 return HandleResult(_mailRepository.InnerTransferMail(entity, userId, transaction));
@@ -979,6 +978,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(_mailRepository.GetLocalFileFromCrm(entity, ruleSql, userId));
             }, entity, Guid.Parse("a3500e78-fe1c-11e6-aee4-005056ae7f49"), userId);
         }
+
+        public OutputResult<object> GetInnerTransferRecord(TransferRecordParamModel model, int userId)
+        {
+            var entity = _mapper.Map<TransferRecordParamModel, TransferRecordParamMapper>(model);
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return new OutputResult<object>(_mailRepository.GetInnerTransferRecord(entity, userId));
+        }
         public OutputResult<object> SaveMailOwner(List<Guid> Mails, int newUserId)
         {
             _mailCatalogRepository.SaveMailOwner(Mails, newUserId);
@@ -1003,6 +1012,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return HandleResult(_mailCatalogRepository.ToOrderCatalog(dynamicModel.recId, dynamicModel.doType));
         }
+
+
 
         #region  模糊查询我的通讯人员限制10个
         public OutputResult<object> GetContactByKeyword(ContactSearchInfo paramInfo, int userId)

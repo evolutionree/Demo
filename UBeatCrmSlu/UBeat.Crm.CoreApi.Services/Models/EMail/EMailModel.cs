@@ -211,13 +211,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
     public class TransferMailDataModel
     {
         public Guid MailId { get; set; }
-        public int TransferUserId { get; set; }
+
+        public IList<int> TransferUserIds { get; set; }
+
+        public Guid DeptId { get; set; }
         public List<MailAttachmentModel> Attachment { get; set; }
     }
-    public class TransferMailDataListModel
-    {
-        public List<TransferMailDataModel> TransferMailDataList { get; set; }
-    }
+ 
 
     public class MoveMailModel
     {
@@ -251,6 +251,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
         public int PageSize { get; set; }
 
         public string KeyWord { get; set; }
+    }
+
+    public class TransferRecordParamModel
+    {
+        public Guid MailId { get; set; }
+
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
     }
 
 }

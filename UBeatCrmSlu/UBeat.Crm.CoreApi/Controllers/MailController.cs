@@ -60,10 +60,6 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _emailServices.MailDetail(model, UserId);
 
         }
-        /// <summary>
-        /// 根据条件查询邮件
-        /// </summary>
-        /// <returns></returns>
 
         /// <summary>
         /// 标记或者取消标记邮件
@@ -140,7 +136,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [HttpPost]
         [Route("innertransfermail")]
-        public OutputResult<object> InnerTransferMail([FromBody] TransferMailDataListModel model)
+        public OutputResult<object> InnerTransferMail([FromBody] TransferMailDataModel model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
 
@@ -170,37 +166,18 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         /// <summary>
-        /// 分发邮件，只支持单个邮件分发
+        /// 分发邮件记录
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        [Route("distribmail")]
-        public OutputResult<object> distribMail([FromBody] MailDistribParamInfo paramInfo)
+        [Route("transferrecrod")]
+        public OutputResult<object> distribMail([FromBody] TransferRecordParamModel model)
         {
-            return unimplementMethod();
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.GetInnerTransferRecord(model, UserId);
         }
 
-        /// <summary>
-        /// 获取相关邮件
-        /// </summary>
-        /// <returns></returns>
-        [HttpPost]
-        [Route("listrelativemail")]
-        public OutputResult<object> listRelativeMail([FromBody]MailListRelateMailParamInfo paramInfo)
-        {
-            return unimplementMethod();
-        }
 
-        /// <summary>
-        /// 获取分发记录
-        /// </summary>
-        /// <returns></returns>
-        [HttpPost]
-        [Route("listdistribrecord")]
-        public OutputResult<object> listDistribRecord([FromBody] MailListDistribRecordParamInfo paramInfo)
-        {
-            return unimplementMethod();
-        }
         #endregion
 
         #region 通讯录

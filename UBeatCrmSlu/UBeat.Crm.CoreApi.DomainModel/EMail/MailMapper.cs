@@ -313,40 +313,36 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid MailId { get; set; }
     }
 
-    public class TransferMailDataMapper
+    public class TransferMailDataMapper : BaseEntity
     {
         public Guid MailId { get; set; }
-        public int TransferUserId { get; set; }
-        public List<MailAttachmentMapper> Attachment { get; set; }
-    }
-    public class TransferMailDataListMapper : BaseEntity
-    {
-        public List<TransferMailDataMapper> TransferMailDataList { get; set; }
+        public IList<int> TransferUserIds { get; set; }
 
+        public Guid DeptId { get; set; }
+        public List<MailAttachmentMapper> Attachment { get; set; }
         protected override IValidator GetValidator()
         {
-            return new TransferMailDataListMapperValidator();
+            return new TransferMailDataMapperValidator();
         }
-        class TransferMailDataListMapperValidator : AbstractValidator<TransferMailDataListMapper>
+        class TransferMailDataMapperValidator : AbstractValidator<TransferMailDataMapper>
         {
-            public TransferMailDataListMapperValidator()
+            public TransferMailDataMapperValidator()
             {
-                RuleFor(d => d.TransferMailDataList).Must(d => d.Count > 0).WithMessage("没有需要内部转发邮件信息");
-                RuleFor(d => d.TransferMailDataList).Must(ValidMail).WithMessage("内部转发邮件信息异常");
+                RuleFor(d => d.MailId).NotNull().WithMessage("邮件Id不能为空");
+                RuleFor(d => d).Must(ValidUser).WithMessage("没有需要转移邮件的人员");
             }
-            bool ValidMail(List<TransferMailDataMapper> transferMailDataList)
+            bool ValidUser(TransferMailDataMapper entity)
             {
-                foreach (var tmp in transferMailDataList)
+                if (entity.TransferUserIds.Count == 0 && entity.DeptId == Guid.Empty)
                 {
-                    if (tmp.MailId == Guid.Empty || tmp.MailId == null)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
                 return true;
             }
         }
     }
+
+
 
     public class MoveMailMapper : BaseEntity
     {
@@ -405,7 +401,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid MailId { get; set; }
     }
 
-    public class AttachmentListMapper:BaseEntity
+    public class AttachmentListMapper : BaseEntity
     {
         public int PageIndex { get; set; }
         public int PageSize { get; set; }
@@ -466,4 +462,31 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
     }
 
+    public class TransferRecordMapper
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string FromUser { get; set; }
+        public DateTime TransferTime { get; set; }
+    }
+
+
+    public class TransferRecordParamMapper : BaseEntity
+    {
+        public Guid MailId { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new TransferRecordParamMapperValidator();
+        }
+        class TransferRecordParamMapperValidator : AbstractValidator<TransferRecordParamMapper>
+        {
+            public TransferRecordParamMapperValidator()
+            {
+                RuleFor(d => d.MailId).NotNull().WithMessage("邮件Id不能为空");
+            }
+        }
+    }
 }
