@@ -56,10 +56,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             switch (query)
             {
                 case SearchQueryEnum.None:
-                    dynamic receiveConfig = _mailRepository.GetUserReceiveMailTime(userId);
+                    ReceiveMailRelatedMapper receiveConfig = _mailRepository.GetUserReceiveMailTime(userId);
                     if (receiveConfig != null)
                     {
-                        dataQuery = SearchQuery.DeliveredAfter(receiveConfig.receivetime);
+                        dataQuery = SearchQuery.DeliveredAfter(receiveConfig.ReceiveTime);
                     }
                     else
                     {
@@ -290,12 +290,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, false);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
+
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
                         {
                             EntityFields = new List<DynamicEntityFieldDataModel>()
                         };
+                        var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
                         foreach (var msg in taskResult.Result)
                         {
+                            var obj = mailRelatedLst.SingleOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                            if (obj != null)
+                                continue;
                             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
                             string key = String.Empty;
                             foreach (var header in msg.Headers)
@@ -797,7 +802,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
         {
             InitMailCatalog(userId);
-            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword,userId);
+            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword, userId);
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             //查找文件夹，返回列表，不生成树型
             if (!string.IsNullOrEmpty(keyword))

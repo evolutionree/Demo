@@ -65,6 +65,7 @@ namespace UBeat.Crm.MailService.Mail.Helper
         private void InitImapEmailConfig(string host, int port, bool enableSsl)
         {
             ImapClient = new ImapClient();
+            ImapClient.Disconnect(true);
             ImapClient.Connect(host, port, true);
             ImapClient.Timeout = 10000;
             ImapClient.ServerCertificateValidationCallback = (s, c, h, e) => true;

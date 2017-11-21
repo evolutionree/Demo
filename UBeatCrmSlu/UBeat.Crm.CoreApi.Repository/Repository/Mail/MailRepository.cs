@@ -684,6 +684,18 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             return ExecuteQueryByPaging<AttachmentChooseListMapper>(string.Format(sql, ruleSql, whereSql), param.ToArray(), entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex); ;
         }
 
+        public ReceiveMailRelatedMapper GetUserReceiveMailTime(int userId)
+        {
+            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid ORDER BY  receivetime desc LIMIT 1";
+            return DataBaseHelper.QuerySingle<ReceiveMailRelatedMapper>(sql, new { UserId = userId });
+        }
+
+        public List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId)
+        {
+            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid";
+            return DataBaseHelper.Query<ReceiveMailRelatedMapper>(sql, new { UserId = userId });
+        }
+
         /// <summary>
         /// 获取我的邮箱列表
         /// </summary>
@@ -704,11 +716,6 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             return result;
         }
 
-        public dynamic GetUserReceiveMailTime(int userId)
-        {
-            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid ORDER BY  receivetime desc LIMIT 1";
-            return DataBaseHelper.QuerySingle<dynamic>(sql, new { UserId = userId });
-        }
 
         #region
         /// <summary>

@@ -496,4 +496,13 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
             }
         }
     }
+
+    public class ReceiveMailRelatedMapper
+    {
+        public int UserId { get; set; }
+        public DateTime ReceiveTime { get; set; }
+        public string MailServerId { get; set; }
+
+        public Guid MailId { get; set; }
+    }
 }

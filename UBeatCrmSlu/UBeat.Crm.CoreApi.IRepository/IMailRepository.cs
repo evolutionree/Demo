@@ -60,6 +60,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<MailBox> GetMailBoxList(int pageIndex, int pageSize, int userId);
 
-        dynamic GetUserReceiveMailTime(int userId);
+        ReceiveMailRelatedMapper GetUserReceiveMailTime(int userId);
+
+        List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId);
     }
 }
