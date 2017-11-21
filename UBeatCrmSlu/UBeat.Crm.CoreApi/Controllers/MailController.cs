@@ -4,6 +4,7 @@ using UBeat.Crm.CoreApi.DomainModel.EMail;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.EMail;
 using UBeat.Crm.CoreApi.Services.Services;
+using UBeat.Crm.MailService.Mail.Enum;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -40,7 +41,13 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("receiveemail")]
         public OutputResult<object> ReceiveEMailAsync([FromBody] ReceiveEMailModel model = null)
         {
-            if (model == null) return ResponseError<object>("参数格式错误");
+            if (model == null)
+            {
+                model = new ReceiveEMailModel();
+                model.Conditon = SearchQueryEnum.None;
+                model.ConditionVal = string.Empty;
+                model.IsFirstInit = false;
+            }
             return _emailServices.ReceiveEMailAsync(model, UserId);
         }
 

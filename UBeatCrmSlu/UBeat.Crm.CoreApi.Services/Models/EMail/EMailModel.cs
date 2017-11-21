@@ -73,7 +73,6 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 
         public string ConditionVal { get; set; }
 
-        public bool IsDevice { get; set; }
 
         public bool IsFirstInit { get; set; }
 

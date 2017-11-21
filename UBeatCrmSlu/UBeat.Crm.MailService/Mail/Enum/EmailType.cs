@@ -66,10 +66,11 @@ namespace UBeat.Crm.MailService.Mail.Enum
     //     The search term as used by MailKit.Search.SearchQuery.
     public enum SearchQueryEnum
     {
-        DeliveredBetweenDate=0,
+        None = -1,
+        DeliveredBetweenDate = 0,
         DeliveredAfterDate = 1,
         DeliveredBetweenDateTime = 2,
-        FirstInit=3,
-        DeliveredAfterDateAndNotSeen=4
+        FirstInit = 3,
+        DeliveredAfterDateAndNotSeen = 4
     }
 }

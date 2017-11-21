@@ -704,6 +704,12 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             return result;
         }
 
+        public dynamic GetUserReceiveMailTime(int userId)
+        {
+            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid ORDER BY  receivetime desc LIMIT 1";
+            return DataBaseHelper.QuerySingle<dynamic>(sql, new { UserId = userId });
+        }
+
         #region
         /// <summary>
         /// 获取白名单或者黑名单
