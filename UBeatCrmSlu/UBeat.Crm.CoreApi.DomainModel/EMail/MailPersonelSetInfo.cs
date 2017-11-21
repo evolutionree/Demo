@@ -32,8 +32,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
     public class OrgAndStaffTreeModel
     {
         public string treeId { get; set; }
-
-        public string keyword { get; set; }
     }
 
     public class AddCatalogModel
