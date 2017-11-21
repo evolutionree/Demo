@@ -315,10 +315,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
     public class TransferMailDataMapper : BaseEntity
     {
-        public Guid MailId { get; set; }
-        public IList<int> TransferUserIds { get; set; }
-
-        public Guid DeptId { get; set; }
+        public List<Guid> MailIds { get; set; }
+        public List<int> TransferUserIds { get; set; }
+        public List<Guid> DeptIds { get; set; }
         public List<MailAttachmentMapper> Attachment { get; set; }
         protected override IValidator GetValidator()
         {
@@ -328,12 +327,20 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         {
             public TransferMailDataMapperValidator()
             {
-                RuleFor(d => d.MailId).NotNull().WithMessage("邮件Id不能为空");
+                RuleFor(d => d).Must(ValidMail).WithMessage("没有需要转移的邮件");
                 RuleFor(d => d).Must(ValidUser).WithMessage("没有需要转移邮件的人员");
             }
             bool ValidUser(TransferMailDataMapper entity)
             {
-                if (entity.TransferUserIds.Count == 0 && entity.DeptId == Guid.Empty)
+                if (entity.TransferUserIds.Count == 0 && entity.DeptIds.Count == 0)
+                {
+                    return false;
+                }
+                return true;
+            }
+            bool ValidMail(TransferMailDataMapper entity)
+            {
+                if (entity.MailIds.Count == 0)
                 {
                     return false;
                 }

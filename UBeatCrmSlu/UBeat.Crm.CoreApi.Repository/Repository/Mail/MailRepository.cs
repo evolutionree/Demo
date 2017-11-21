@@ -318,8 +318,8 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
 	                                        , mailbody, sender, receivers, ccers, bccers
 	                                        , attachcount, urgency, mongoid, isread, istag
 	                                        , senttime, receivedtime)
-                                        SELECT recname, reccode, recaudits, recstatus, reccreator
-	                                        , recupdator, recmanager, relativemailbox, headerinfo, title
+                                        SELECT recname, reccode, recaudits, recstatus, @userid
+	                                        , @userid, recmanager, relativemailbox, headerinfo, title
 	                                        , mailbody, sender, receivers, ccers, bccers
 	                                        , attachcount, urgency, mongoid, isread, istag
 	                                        , senttime, receivedtime FROM crm_sys_mail_mailbody
@@ -335,47 +335,74 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             var subDeptUserSql = @"SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN 
                                            (SELECT deptid FROM crm_func_department_tree(@deptid,1)) AND userid!=@userid";
 
+            var emailUserSql = @" SELECT Distinct owner::int4 FROM crm_sys_mail_mailbox WHERE owner::int4 IN (@userids)  ";
+
+            var cataHandleSql = "Select * From  crm_func_mail_cata_related_handle(@mailid,null,'{\"issendoreceive\":\"1\"}',null,@userid);";
+
             try
             {
-                var subDeptUser = DataBaseHelper.Query<int>(subDeptUserSql, new { UserId = userId, DeptId = entity.DeptId });
-                entity.TransferUserIds = entity.TransferUserIds.Concat(subDeptUser).Distinct().Where(t => t != userId).ToList();
-                var param = new DbParameter[]
+                List<int> userCollection = new List<int>();
+                foreach (var deptId in entity.DeptIds)
                 {
-                    new NpgsqlParameter("mailid",entity.MailId)
-                };
-                var result = DBHelper.ExecuteScalar(tran, mailBodySql, param, CommandType.Text);
-                param = new DbParameter[]
-                {
-                    new NpgsqlParameter("mailid",entity.MailId),
-                    new NpgsqlParameter("newmailid",result)
-                };
-                DBHelper.ExecuteNonQuery(tran, mailSenderreceiversSql, param, CommandType.Text);
-                foreach (var att in entity.Attachment)
-                {
-                    param = new DbParameter[]
-                   {
-                        new NpgsqlParameter("filename",att.FileName),
-                         new NpgsqlParameter("filetype",att.FileType),
-                        new NpgsqlParameter("filesize",att.FileSize),
-                        new NpgsqlParameter("mongoid",att.MongoId),
-                        new NpgsqlParameter("newmailid",result)
-                   };
-                    DBHelper.ExecuteNonQuery(tran, mailAttachSql, param, CommandType.Text);
+                    var subDeptUser = DataBaseHelper.Query<int>(subDeptUserSql, new { UserId = userId, DeptId = deptId });
+                    userCollection = userCollection.Concat(subDeptUser).ToList();
                 }
-                param = new DbParameter[]
+                entity.TransferUserIds = entity.TransferUserIds.Concat(userCollection).Distinct().Where(t => t != userId).ToList();
+                entity.TransferUserIds = DataBaseHelper.Query<int>(emailUserSql, new { UserIds = string.Join(",", entity.TransferUserIds) });
+                foreach (var mailId in entity.MailIds)
                 {
+                    foreach (var user in entity.TransferUserIds)
+                    {
+                        var param = new DbParameter[]
+                        {
+                            new NpgsqlParameter("mailid",mailId),
+                            new NpgsqlParameter("userid",userId)
+                        };
+                        var result = DBHelper.ExecuteScalar(tran, mailBodySql, param, CommandType.Text);
+                        param = new DbParameter[]
+                        {
+                            new NpgsqlParameter("mailid",mailId),
+                           new NpgsqlParameter("newmailid",result)
+                        };
+                        DBHelper.ExecuteNonQuery(tran, mailSenderreceiversSql, param, CommandType.Text);
+                        foreach (var att in entity.Attachment)
+                        {
+                            param = new DbParameter[]
+                           {
+                                new NpgsqlParameter("filename",att.FileName),
+                                 new NpgsqlParameter("filetype",att.FileType),
+                                new NpgsqlParameter("filesize",att.FileSize),
+                                new NpgsqlParameter("mongoid",att.MongoId),
+                                new NpgsqlParameter("newmailid",result)
+                           };
+                            DBHelper.ExecuteNonQuery(tran, mailAttachSql, param, CommandType.Text);
+                        }
+                        param = new DbParameter[]
+                        {
                             new NpgsqlParameter("userid",userId),
-                            new NpgsqlParameter("transferuserid",entity.TransferUserId),
-                            new NpgsqlParameter("mailid",entity.MailId),
+                            new NpgsqlParameter("transferuserid", user),
+                            new NpgsqlParameter("mailid",mailId),
                            new NpgsqlParameter("newmailid",Guid.Parse(result.ToString()))
-                };
-                DBHelper.ExecuteNonQuery(tran, mailInnerTransferRecord, param, CommandType.Text);
-            }
+                        };
+                        DBHelper.ExecuteNonQuery(tran, mailInnerTransferRecord, param, CommandType.Text);
+                        param = new DbParameter[]
+                        {
+                            new NpgsqlParameter("mailid",mailId),
+                            new NpgsqlParameter("userid", userId),
+                        };
+                        var operateResult = DBHelper.ExecuteQuery<OperateResult>(tran, cataHandleSql, param).FirstOrDefault();
+                        if (operateResult.Flag == 0)
+                        {
+                            continue;
+                        }
+                    }
+                }
                 return new OperateResult
                 {
                     Flag = 1,
                     Msg = "内部转发成功"
                 };
+            }
             catch (Exception ex)
             {
                 return new OperateResult

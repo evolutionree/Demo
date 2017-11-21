@@ -884,16 +884,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(_mailRepository.MailDetail(entity, userNum));
         }
 
-        public OutputResult<object> InnerTransferMail(TransferMailDataMapper model, int userId)
+        public OutputResult<object> InnerTransferMail(TransferMailDataModel model, int userId)
         {
-            var entity = _mapper.Map<TransferMailDataMapper, TransferMailDataMapper>(model);
+            var entity = _mapper.Map<TransferMailDataModel, TransferMailDataMapper>(model);
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
 
             #region 先把附件下载 然后再上传一份
-            var attachments = _mailRepository.MailAttachment(new List<Guid>() { entity.MailId });
+            var attachments = _mailRepository.MailAttachment(entity.MailIds);
             var fileListData = _fileServices.GetFileListData(string.Empty, attachments.Select(t => t.MongoId.ToString()));
             foreach (var tmp in fileListData)
             {

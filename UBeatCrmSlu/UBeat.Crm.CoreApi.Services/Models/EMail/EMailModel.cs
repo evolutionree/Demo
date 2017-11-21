@@ -210,12 +210,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
     }
     public class TransferMailDataModel
     {
-        public Guid MailId { get; set; }
-
-        public IList<int> TransferUserIds { get; set; }
-
-        public Guid DeptId { get; set; }
-        public List<MailAttachmentModel> Attachment { get; set; }
+        public List<Guid> MailIds { get; set; }
+        public List<int> TransferUserIds { get; set; }
+        public List<Guid> DeptIds { get; set; }
+        public List<MailAttachmentMapper> Attachment { get; set; }
     }
  
 
