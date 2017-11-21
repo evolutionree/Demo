@@ -29,6 +29,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<MailBoxMapper> GetIsWhiteList(int isWhiteLst, int userId);
         bool IsHasSubUserAuth(int leaderUserId, int userId);
 
+        PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId);
+
         OperateResult DeleteMails(DeleteMailMapper entity, int userId);
 
         OperateResult ReConverMails(ReConverMailMapper entity, int userId);
@@ -38,7 +40,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, object> MailDetail(MailDetailMapper entity, int userId);
 
         IList<MailAttachmentMapper> MailAttachment(List<Guid> mailIds);
-        OperateResult InnerTransferMail(TransferMailDataListMapper entity, int userId, DbTransaction tran = null);
+        OperateResult InnerTransferMail(TransferMailDataMapper entity, int userId, DbTransaction tran = null);
 
         OperateResult MoveMail(MoveMailMapper entity, int userId, DbTransaction tran = null);
 
