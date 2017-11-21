@@ -103,7 +103,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// <summary>
         /// 预留给定时器
         /// </summary>
-        public bool IsDevice { get; set; }
+        public bool? IsDevice { get; set; }
     }
     public class MailSenderReceiversMapper
     {

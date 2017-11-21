@@ -50,11 +50,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _mailRepository = mailRepository;
         }
 
-        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal)
+        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, int userId)
         {
             SearchQuery dataQuery = null;
             switch (query)
             {
+                case SearchQueryEnum.None:
+                    dynamic receiveConfig = _mailRepository.GetUserReceiveMailTime(userId);
+                    if (receiveConfig != null)
+                    {
+                        dataQuery = SearchQuery.DeliveredAfter(receiveConfig.receivetime);
+                    }
+                    else
+                    {
+                        dataQuery = SearchQuery.All;
+                    }
+                    return dataQuery;
                 case SearchQueryEnum.DeliveredBetweenDate:
                     string[] split1 = conditionVal.Split(',');
                     if (split1.Length != 2)
@@ -69,7 +80,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case SearchQueryEnum.DeliveredAfterDate:
                     if (!CommonHelper.IsMatchDateTime(conditionVal))
                         throw new Exception("邮件搜索条件的时间格式不正确");
-                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal)), SearchQuery.New);
+                    dataQuery = SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal));
                     return dataQuery;
                 case SearchQueryEnum.FirstInit:
                     dataQuery = SearchQuery.All;
@@ -77,10 +88,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case SearchQueryEnum.DeliveredAfterDateAndNotSeen:
                     if (!CommonHelper.IsMatchDateTime(conditionVal))
                         throw new Exception("邮件搜索条件的时间格式不正确");
-                    dataQuery = SearchQuery.And(SearchQuery.New, SearchQuery.NotSeen);
+                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal)), SearchQuery.NotSeen);
                     return dataQuery;
                 default:
                     throw new Exception("不支持该邮件搜索条件");
+
             }
         }
 
@@ -267,14 +279,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
-            var userMailInfoLst = _mailCatalogRepository.GetAllUserMail(entity.IsDevice, userNumber);
+            var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
             AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
-                SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal);
                 OutputResult<object> repResult = new OutputResult<object>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
+                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, false);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
@@ -311,6 +323,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
                             extraData.Add("attachfile", fileTask.Result);
                             extraData.Add("issendoreceive", 1);
+                            extraData.Add("receivetimerecord", new
+                            {
+                                ReceiveTime = msg.Date,
+                                ServerId = msg.MessageId
+                            });
                             DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
                             {
                                 TypeId = Guid.Parse(_entityId),
@@ -321,6 +338,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
                         _dynamicEntityServices.AddList(addList, header, userNumber);
+
                         _workerEvent.Set();
                     });
                 }

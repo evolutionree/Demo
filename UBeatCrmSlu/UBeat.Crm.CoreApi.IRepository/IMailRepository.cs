@@ -59,5 +59,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId);
 
         PageDataInfo<MailBox> GetMailBoxList(int pageIndex, int pageSize, int userId);
+
+        dynamic GetUserReceiveMailTime(int userId);
     }
 }
