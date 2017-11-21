@@ -30,11 +30,13 @@ namespace UBeat.Crm.MailService
                      }
                      catch (Exception ex)
                      {
+                         client.Disconnect(true);
                          throw ex;
                      }
                      finally
                      {
-                         client.Disconnect(true);
+                         if (client.IsConnected)
+                             client.Disconnect(true);
                      }
                  }
              });
@@ -54,8 +56,10 @@ namespace UBeat.Crm.MailService
                         if (searchQuery != null)
                         {
                             var uids = inBox.Search(searchQuery);
+
                             foreach (var item in uids)
                             {
+                                client.NoOp();
                                 MimeMessage message = inBox.GetMessage(new UniqueId(item.Id));
                                 inBox.SetFlags(item, MessageFlags.Seen, true);
                                 lstMsg.Add(message);
@@ -70,7 +74,8 @@ namespace UBeat.Crm.MailService
                     finally
                     {
                         inBox.Close();
-                        client.Disconnect(true);
+                        if (client.IsConnected)
+                            client.Disconnect(true);
                     }
                 }
             });

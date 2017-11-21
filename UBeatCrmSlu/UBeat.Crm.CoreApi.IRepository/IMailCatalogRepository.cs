@@ -10,9 +10,9 @@ namespace UBeat.Crm.CoreApi.IRepository
     public interface IMailCatalogRepository : IBaseRepository
     {
 
-        List<MailCatalogInfo> GetMailCataLog(string catalogType, int userId);
+        List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword,int userId);
 
-        List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId);
+        List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId, string keyword);
 
         MailCatalogInfo GetMailCatalogByCode(int userId, string catalogType);
 
@@ -41,7 +41,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         UserMailInfo GetUserMailInfo(string fromAddress, int userId);
 
-        IList<UserMailInfo> GetAllUserMail(bool isDevice,int userId);
+        IList<UserMailInfo> GetAllUserMail(int deviceType,int userId);
         bool checkHasMails(string recid,DbTransaction tran);
         bool checkCycleCatalog(string parentid, string recid,DbTransaction tran);
         void MoveCatalog(string v1, string v2, DbTransaction tran);

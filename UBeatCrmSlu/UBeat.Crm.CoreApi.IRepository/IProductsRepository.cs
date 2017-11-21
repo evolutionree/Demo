@@ -60,8 +60,14 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         dynamic GetProducts(DbTransaction trans,string ruleSql, PageParam page, ProductList productData, string serachKey, int userNumber);
 
-
-        
+        /// <summary>
+        /// 根据产品系列id获取产品系列详情，不包含下级产品系列
+        /// </summary>
+        /// <param name="trans"></param>
+        /// <param name="productSetId"></param>
+        /// <param name="userNum"></param>
+        /// <returns></returns>
+        dynamic GetProductSeriesDetail(DbTransaction trans, Guid productSetId, int userNum);
 
 
 

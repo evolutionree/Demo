@@ -29,6 +29,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<MailBoxMapper> GetIsWhiteList(int isWhiteLst, int userId);
         bool IsHasSubUserAuth(int leaderUserId, int userId);
 
+        PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId);
+
         OperateResult DeleteMails(DeleteMailMapper entity, int userId);
 
         OperateResult ReConverMails(ReConverMailMapper entity, int userId);
@@ -38,7 +40,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, object> MailDetail(MailDetailMapper entity, int userId);
 
         IList<MailAttachmentMapper> MailAttachment(List<Guid> mailIds);
-        OperateResult InnerTransferMail(TransferMailDataListMapper entity, int userId, DbTransaction tran = null);
+        OperateResult InnerTransferMail(TransferMailDataMapper entity, int userId, DbTransaction tran = null);
 
         OperateResult MoveMail(MoveMailMapper entity, int userId, DbTransaction tran = null);
 
@@ -48,14 +50,20 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<MailUserMapper> GetCustomerContact(int pageIndex, int pageSize, int userId);
 
-        List<dynamic> GetInnerToAndFroMail(int relatedMySelf, int relatedSendOrReceive, int userId);
+        PageDataInfo<MailBodyMapper> GetInnerToAndFroMail(ToAndFroMapper entity, int userId);
 
         PageDataInfo<MailUserMapper> GetRecentContact(int pageIndex, int pageSize, int userId);
 
-        List<dynamic> GetInnerToAndFroAttachment(int relatedMySelf, int relatedSendOrReceive, int userId);
+        PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId);
 
-        List<dynamic> GetLocalFileFromCrm(int userId);
+        List<InnerToAndFroUser> GetInnerToAndFroUser(string keyword, int userId);
+
+        PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId);
 
         PageDataInfo<MailBox> GetMailBoxList(int pageIndex, int pageSize, int userId);
+
+        ReceiveMailRelatedMapper GetUserReceiveMailTime(int userId);
+
+        List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId);
     }
 }

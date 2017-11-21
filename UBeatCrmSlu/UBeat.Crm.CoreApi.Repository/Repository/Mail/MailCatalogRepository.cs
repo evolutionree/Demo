@@ -159,7 +159,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
         }
 
-        public OperateResult ToOrderCatalog(Guid recId,int doType) {
+        public OperateResult ToOrderCatalog(Guid recId, int doType)
+        {
             string catalogSql = "select * from crm_sys_mail_catalog a where a.recstatus=1 " +
                 "and a.vpid =(select vpid from crm_sys_mail_catalog where recid =@recId) order by a.recorder ";
             var param = new DbParameter[]
@@ -172,7 +173,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             MailCatalogInfo currCatalog = null;
             int index = 0;
             //doType 0 下移  doType  1 上移
-            for (int i=0;i< catalogResult.Count;i++) {
+            for (int i = 0; i < catalogResult.Count; i++)
+            {
                 if (catalogResult[i].RecId == recId)
                 {
                     //找到当前移动对象
@@ -180,14 +182,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     index = i;
                 }
             }
-            if (doType == 0) {
+            if (doType == 0)
+            {
                 //目标目录
                 int tarIndex = index + 1;
                 if (catalogResult.Count >= tarIndex)
                 {
                     tarCatalog = catalogResult[tarIndex];
                 }
-                else {
+                else
+                {
                     return new OperateResult()
                     {
                         Flag = 0,
@@ -195,13 +199,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     };
                 }
             }
-            else{
+            else
+            {
                 if (index > 0)
                 {
                     int tarIndex = index - 1;
                     tarCatalog = catalogResult[tarIndex];
                 }
-                else {
+                else
+                {
                     return new OperateResult()
                     {
                         Flag = 0,
@@ -337,7 +343,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             return catalogResult;
         }
-        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId)
+        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId, string keyword)
         {
             List<OrgAndStaffTree> resultList = new List<OrgAndStaffTree>();
             //判断是否领导用户
@@ -352,12 +358,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //该用户是领导岗，获取下属邮件逻辑
             if (result.Count > 0)
             {
-                string getOrgTreeSql = "select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a " +
+                string getOrgTreeSql = "select * from (select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a " +
                     "where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t " +
                     "UNION ALL" +
                     " select * from(select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,0 unreadcount from crm_sys_account_userinfo_relate a " +
                     "inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid  where(b.isleader is null or b.isleader <> 1) and a.recstatus = 1 " +
-                    "and a.deptid::text = @deptId order by b.username) t1";
+                    "and a.deptid::text = @deptId order by b.username) t1 ) x where 1=1 ";
                 string searchDept = result[0]["deptid"].ToString();
                 if (!string.IsNullOrEmpty(deptId))
                 {
@@ -367,12 +373,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 {
                     new NpgsqlParameter("deptId", searchDept),
                 };
+                //只返回人员
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    getOrgTreeSql = string.Format(getOrgTreeSql + " and x.nodetype=1 and x.treename like '%{0}%' ", keyword);
+
+                }
                 resultList = ExecuteQuery<OrgAndStaffTree>(getOrgTreeSql, paramTree);
             }
             return resultList;
         }
 
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType,string keyword, int userId)
         {
             var sql = "WITH RECURSIVE cata as" +
                     "(" +
@@ -394,14 +406,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     "ELSE catalogrelation.unreadmail END,0) unreadmail,cata.idpath " +
                     "FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid " +
                     "left join cata on cata.recid=usercatalog.recid where 1=1 {0} order by vpid,recorder";
-            string[] sqlWhere = new string[1];
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
             {
-                sqlWhere[0] = string.Format(" and POSITION ('{0}' IN cata.idpath) > 0 ", catalogType);
+                condition = string.Format(" and POSITION ('{0}' IN cata.idpath) > 0 ", catalogType);
 
             }
-            condition = string.Join(" and ", sqlWhere);
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                condition = string.Format(condition+" and usercatalog.recname like '%{0}%' ", keyword);
+
+            }
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("UserId", userId)
@@ -435,12 +450,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             };
             return DataBaseHelper.QuerySingle<UserMailInfo>(string.Format(sql, condition), param, CommandType.Text);
         }
-        public IList<UserMailInfo> GetAllUserMail(bool isDevice, int userId)
+        public IList<UserMailInfo> GetAllUserMail(int deviceType, int userId)
         {
             var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox  Where  recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid {0}";
             string condition = string.Empty;
             var param = new DynamicParameters();
-            if (!isDevice)
+            if (deviceType != 3)
             {
                 condition = " Where box.owner=@userid";
                 param.Add("userid", userId.ToString());
@@ -477,7 +492,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             if (parentid == recid) return true;
             string thisparentid = parentid;
             int totalCycle = 10;//最大不超过10及
-            for (int i = 0; i < totalCycle; i++) {
+            for (int i = 0; i < totalCycle; i++)
+            {
                 string strSQL = string.Format("Select pid from crm_sys_mail_catalog where recid = '{0}'", thisparentid);
                 object obj = ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault()["pid"];
                 if (obj == null) return false;
@@ -538,7 +554,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             string strSQL = "update crm_sys_mail_mailbox set owner=@userid where recid=@recid";
             List<DbParameter[]> paramList = new List<DbParameter[]>();
-            foreach (var recid in MailBoxs) {
+            foreach (var recid in MailBoxs)
+            {
                 var param = new DbParameter[]
                 {
                     new NpgsqlParameter("userid", newUserId),

@@ -103,7 +103,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// <summary>
         /// 预留给定时器
         /// </summary>
-        public bool IsDevice { get; set; }
+        public bool? IsDevice { get; set; }
     }
     public class MailSenderReceiversMapper
     {
@@ -313,40 +313,43 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid MailId { get; set; }
     }
 
-    public class TransferMailDataMapper
+    public class TransferMailDataMapper : BaseEntity
     {
-        public Guid MailId { get; set; }
-        public int TransferUserId { get; set; }
+        public List<Guid> MailIds { get; set; }
+        public List<int> TransferUserIds { get; set; }
+        public List<Guid> DeptIds { get; set; }
         public List<MailAttachmentMapper> Attachment { get; set; }
-    }
-    public class TransferMailDataListMapper : BaseEntity
-    {
-        public List<TransferMailDataMapper> TransferMailDataList { get; set; }
-
         protected override IValidator GetValidator()
         {
-            return new TransferMailDataListMapperValidator();
+            return new TransferMailDataMapperValidator();
         }
-        class TransferMailDataListMapperValidator : AbstractValidator<TransferMailDataListMapper>
+        class TransferMailDataMapperValidator : AbstractValidator<TransferMailDataMapper>
         {
-            public TransferMailDataListMapperValidator()
+            public TransferMailDataMapperValidator()
             {
-                RuleFor(d => d.TransferMailDataList).Must(d => d.Count > 0).WithMessage("没有需要内部转发邮件信息");
-                RuleFor(d => d.TransferMailDataList).Must(ValidMail).WithMessage("内部转发邮件信息异常");
+                RuleFor(d => d).Must(ValidMail).WithMessage("没有需要转移的邮件");
+                RuleFor(d => d).Must(ValidUser).WithMessage("没有需要转移邮件的人员");
             }
-            bool ValidMail(List<TransferMailDataMapper> transferMailDataList)
+            bool ValidUser(TransferMailDataMapper entity)
             {
-                foreach (var tmp in transferMailDataList)
+                if (entity.TransferUserIds.Count == 0 && entity.DeptIds.Count == 0)
                 {
-                    if (tmp.MailId == Guid.Empty || tmp.MailId == null)
-                    {
-                        return false;
-                    }
+                    return false;
+                }
+                return true;
+            }
+            bool ValidMail(TransferMailDataMapper entity)
+            {
+                if (entity.MailIds.Count == 0)
+                {
+                    return false;
                 }
                 return true;
             }
         }
     }
+
+
 
     public class MoveMailMapper : BaseEntity
     {
@@ -368,6 +371,72 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         }
     }
 
+    public class ToAndFroMapper : BaseEntity
+    {
+        public Guid MailId { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+        public int relatedMySelf { get; set; }
+        public int relatedSendOrReceive { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new ToAndFroMapperValidator();
+        }
+        class ToAndFroMapperValidator : AbstractValidator<ToAndFroMapper>
+        {
+            public ToAndFroMapperValidator()
+            {
+                RuleFor(d => d.PageIndex).Must(d => d > 0).WithMessage("页索引不能小于等于0");
+                RuleFor(d => d.PageSize).Must(d => d > 0).WithMessage("页大小不能小于等于0");
+                RuleFor(d => d.MailId).NotNull().WithMessage("邮件Id不能为空");
+            }
+        }
+    }
+
+    public class ToAndFroFileMapper
+    {
+
+        public string FileName { get; set; }
+
+        public string FileType { get; set; }
+
+        public Int64 FileSize { get; set; }
+
+        public Guid MongoId { get; set; }
+
+        public Guid MailId { get; set; }
+    }
+
+    public class AttachmentListMapper : BaseEntity
+    {
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+
+        public string KeyWord { get; set; }
+
+
+        protected override IValidator GetValidator()
+        {
+            return new AttachmentListMapperValidator();
+        }
+        class AttachmentListMapperValidator : AbstractValidator<AttachmentListMapper>
+        {
+            public AttachmentListMapperValidator()
+            {
+                RuleFor(d => d.PageIndex).Must(d => d > 0).WithMessage("页索引不能小于等于0");
+                RuleFor(d => d.PageSize).Must(d => d > 0).WithMessage("页大小不能小于等于0");
+            }
+        }
+    }
+
+    public class AttachmentChooseListMapper
+    {
+        public Guid FileId { get; set; }
+
+        public string FileName { get; set; }
+    }
+
 
     public class MailBoxMapper
     {
@@ -383,6 +452,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string Name { get; set; }
 
         public string customer { get; set; }
+
+        public Guid icon { get; set; }
     }
     public class OrgAndStaffMapper
     {
@@ -400,4 +471,47 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
     }
 
+    public class InnerToAndFroUser
+    {
+        public int userId { get; set; }
+        public string userName { get; set; }
+        public decimal unRead { get; set; }
+    }
+
+    public class TransferRecordMapper
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string FromUser { get; set; }
+        public DateTime TransferTime { get; set; }
+    }
+
+
+    public class TransferRecordParamMapper : BaseEntity
+    {
+        public Guid MailId { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new TransferRecordParamMapperValidator();
+        }
+        class TransferRecordParamMapperValidator : AbstractValidator<TransferRecordParamMapper>
+        {
+            public TransferRecordParamMapperValidator()
+            {
+                RuleFor(d => d.MailId).NotNull().WithMessage("邮件Id不能为空");
+            }
+        }
+    }
+
+    public class ReceiveMailRelatedMapper
+    {
+        public int UserId { get; set; }
+        public DateTime ReceiveTime { get; set; }
+        public string MailServerId { get; set; }
+
+        public Guid MailId { get; set; }
+    }
 }

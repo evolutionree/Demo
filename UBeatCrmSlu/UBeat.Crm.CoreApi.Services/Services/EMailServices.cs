@@ -37,6 +37,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly DynamicEntityServices _dynamicEntityServices;
         private readonly IMailCatalogRepository _mailCatalogRepository;
         private readonly IMailRepository _mailRepository;
+        private readonly IDocumentsRepository _docmentsRepository;
         public EMailServices(IMapper mapper, FileServices fileServices, DynamicEntityServices dynamicEntityServices,
             IMailCatalogRepository mailCatalogRepository,
             IMailRepository mailRepository)
@@ -49,11 +50,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _mailRepository = mailRepository;
         }
 
-        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal)
+        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, int userId)
         {
             SearchQuery dataQuery = null;
             switch (query)
             {
+                case SearchQueryEnum.None:
+                    ReceiveMailRelatedMapper receiveConfig = _mailRepository.GetUserReceiveMailTime(userId);
+                    if (receiveConfig != null)
+                    {
+                        dataQuery = SearchQuery.DeliveredAfter(receiveConfig.ReceiveTime);
+                    }
+                    else
+                    {
+                        dataQuery = SearchQuery.All;
+                    }
+                    return dataQuery;
                 case SearchQueryEnum.DeliveredBetweenDate:
                     string[] split1 = conditionVal.Split(',');
                     if (split1.Length != 2)
@@ -68,7 +80,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case SearchQueryEnum.DeliveredAfterDate:
                     if (!CommonHelper.IsMatchDateTime(conditionVal))
                         throw new Exception("邮件搜索条件的时间格式不正确");
-                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal)), SearchQuery.New);
+                    dataQuery = SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal));
                     return dataQuery;
                 case SearchQueryEnum.FirstInit:
                     dataQuery = SearchQuery.All;
@@ -76,10 +88,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case SearchQueryEnum.DeliveredAfterDateAndNotSeen:
                     if (!CommonHelper.IsMatchDateTime(conditionVal))
                         throw new Exception("邮件搜索条件的时间格式不正确");
-                    dataQuery = SearchQuery.And(SearchQuery.New, SearchQuery.NotSeen);
+                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal)), SearchQuery.NotSeen);
                     return dataQuery;
                 default:
                     throw new Exception("不支持该邮件搜索条件");
+
             }
         }
 
@@ -266,23 +279,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
-            var userMailInfoLst = _mailCatalogRepository.GetAllUserMail(entity.IsDevice, userNumber);
+            var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
             AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
-                SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal);
                 OutputResult<object> repResult = new OutputResult<object>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
+                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, false);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
+
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
                         {
                             EntityFields = new List<DynamicEntityFieldDataModel>()
                         };
+                        var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
                         foreach (var msg in taskResult.Result)
                         {
+                            var obj = mailRelatedLst.SingleOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                            if (obj != null)
+                                continue;
                             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
                             string key = String.Empty;
                             foreach (var header in msg.Headers)
@@ -310,6 +328,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
                             extraData.Add("attachfile", fileTask.Result);
                             extraData.Add("issendoreceive", 1);
+                            extraData.Add("receivetimerecord", new
+                            {
+                                ReceiveTime = msg.Date,
+                                ServerId = msg.MessageId
+                            });
                             DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
                             {
                                 TypeId = Guid.Parse(_entityId),
@@ -320,6 +343,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
                         _dynamicEntityServices.AddList(addList, header, userNumber);
+
                         _workerEvent.Set();
                     });
                 }
@@ -762,9 +786,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId)
+        public List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId, string keyword)
         {
-            List<OrgAndStaffTree> list = _mailCatalogRepository.GetOrgAndStaffTreeByLevel(userId, deptId);
+            List<OrgAndStaffTree> list = _mailCatalogRepository.GetOrgAndStaffTreeByLevel(userId, deptId, keyword);
             return list;
         }
 
@@ -775,11 +799,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="catalogName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
         {
             InitMailCatalog(userId);
-            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, userId);
+            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword, userId);
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
+            //查找文件夹，返回列表，不生成树型
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                return list;
+            }
             foreach (var catalog in list)
             {
                 if (new Guid("00000000-0000-0000-0000-000000000000") == catalog.VPId)
@@ -883,16 +912,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(_mailRepository.MailDetail(entity, userNum));
         }
 
-        public OutputResult<object> InnerTransferMail(TransferMailDataListModel model, int userId)
+        public OutputResult<object> InnerTransferMail(TransferMailDataModel model, int userId)
         {
-            var entity = _mapper.Map<TransferMailDataListModel, TransferMailDataListMapper>(model);
+            var entity = _mapper.Map<TransferMailDataModel, TransferMailDataMapper>(model);
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
 
             #region 先把附件下载 然后再上传一份
-            var attachments = _mailRepository.MailAttachment(entity.TransferMailDataList.Select(t => t.MailId).ToList());
+            var attachments = _mailRepository.MailAttachment(entity.MailIds);
             var fileListData = _fileServices.GetFileListData(string.Empty, attachments.Select(t => t.MongoId.ToString()));
             foreach (var tmp in fileListData)
             {
@@ -908,10 +937,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             #endregion
 
-            foreach (var tmp in entity.TransferMailDataList)
-            {
-                tmp.Attachment = attachments.Where(t => t.MailId == tmp.MailId).ToList();
-            }
+
+            entity.Attachment = attachments.ToList();
+
             var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
                 return HandleResult(_mailRepository.InnerTransferMail(entity, userId, transaction));
@@ -935,16 +963,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> GetInnerToAndFroMail(ToAndFroModel model, int userId)
         {
-
-            return new OutputResult<object>(_mailRepository.GetInnerToAndFroMail((int)model.RelatedMySelf, (int)model.RelatedSendOrReceive, userId));
+            var entity = new ToAndFroMapper
+            {
+                relatedMySelf = (int)model.RelatedMySelf,
+                relatedSendOrReceive = (int)model.RelatedSendOrReceive,
+                MailId = model.MailId,
+                PageIndex = model.PageIndex,
+                PageSize = model.PageSize
+            };
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return new OutputResult<object>(_mailRepository.GetInnerToAndFroMail(entity, userId));
         }
         public OutputResult<object> GetInnerToAndFroAttachment(ToAndFroModel model, int userId)
         {
-            return new OutputResult<object>(_mailRepository.GetInnerToAndFroAttachment((int)model.RelatedMySelf, (int)model.RelatedSendOrReceive, userId));
+            var entity = new ToAndFroMapper
+            {
+                relatedMySelf = (int)model.RelatedMySelf,
+                relatedSendOrReceive = (int)model.RelatedSendOrReceive,
+                MailId = model.MailId,
+                PageIndex = model.PageIndex,
+                PageSize = model.PageSize
+            };
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return new OutputResult<object>(_mailRepository.GetInnerToAndFroAttachment(entity, userId));
         }
-        public OutputResult<object> GetLocalFileFromCrm(int userId)
+        public OutputResult<object> GetLocalFileFromCrm(AttachmentListModel model, int userId)
         {
-            return new OutputResult<object>(_mailRepository.GetLocalFileFromCrm(userId));
+            var entity = _mapper.Map<AttachmentListModel, AttachmentListMapper>(model);
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return ExcuteSelectAction((transaction, arg, userData) =>
+            {
+                var ruleSql = userData.RuleSqlFormat("api/documents/documentlist", Guid.Parse("a3500e78-fe1c-11e6-aee4-005056ae7f49"), DeviceClassic);//获取权限
+                return new OutputResult<object>(_mailRepository.GetLocalFileFromCrm(entity, ruleSql, userId));
+            }, entity, Guid.Parse("a3500e78-fe1c-11e6-aee4-005056ae7f49"), userId);
+        }
+
+        public OutputResult<object> GetInnerTransferRecord(TransferRecordParamModel model, int userId)
+        {
+            var entity = _mapper.Map<TransferRecordParamModel, TransferRecordParamMapper>(model);
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return new OutputResult<object>(_mailRepository.GetInnerTransferRecord(entity, userId));
         }
         public OutputResult<object> SaveMailOwner(List<Guid> Mails, int newUserId)
         {
@@ -971,6 +1041,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(_mailCatalogRepository.ToOrderCatalog(dynamicModel.recId, dynamicModel.doType));
         }
 
+
+
         #region  模糊查询我的通讯人员限制10个
         public OutputResult<object> GetContactByKeyword(ContactSearchInfo paramInfo, int userId)
         {
@@ -994,6 +1066,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (dynamicModel != null && dynamicModel.pageSize > 0)
                 pageSize = dynamicModel.pageSize;
             return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.PageIndex, pageSize, userId));
+        }
+        /// <summary>
+        /// 获取内部往来人员列表
+        /// </summary>
+        /// <param name="keyword"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>      
+        public OutputResult<object> GetInnerToAndFroUser(ContactSearchInfo dynamicModel, int userId)
+        {
+            return new OutputResult<object>(_mailRepository.GetInnerToAndFroUser(dynamicModel.keyword,userId));
         }
 
         /// <summary>

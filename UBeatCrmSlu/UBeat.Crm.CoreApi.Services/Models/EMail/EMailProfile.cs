@@ -22,15 +22,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
             CreateMap<ReadOrUnReadMailModel, ReadOrUnReadMailMapper>();
 
             CreateMap<MailAttachmentModel, MailAttachmentMapper>();
-            CreateMap<TransferMailDataListModel, TransferMailDataListModel>();
-
-            CreateMap<TransferMailDataListModel, TransferMailDataListMapper>();
-
-            CreateMap<TransferMailDataListModel, TransferMailDataListMapper>();
             CreateMap<TransferMailDataModel, TransferMailDataMapper>();
 
             CreateMap<MoveMailModel, MoveMailMapper>();
             CreateMap<ReConverMailModel, ReConverMailMapper>();
+
+            CreateMap<ToAndFroModel, ToAndFroMapper>();
+
+            CreateMap<AttachmentListModel, AttachmentListMapper>();
+
+            CreateMap<TransferRecordParamModel, TransferRecordParamMapper>();
         }
     }
 }

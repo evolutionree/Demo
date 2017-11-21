@@ -73,7 +73,6 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 
         public string ConditionVal { get; set; }
 
-        public bool IsDevice { get; set; }
 
         public bool IsFirstInit { get; set; }
 
@@ -210,14 +209,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
     }
     public class TransferMailDataModel
     {
-        public Guid MailId { get; set; }
-        public int TransferUserId { get; set; }
-        public List<MailAttachmentModel> Attachment { get; set; }
+        public List<Guid> MailIds { get; set; }
+        public List<int> TransferUserIds { get; set; }
+        public List<Guid> DeptIds { get; set; }
+        public List<MailAttachmentMapper> Attachment { get; set; }
     }
-    public class TransferMailDataListModel
-    {
-        public List<TransferMailDataModel> TransferMailDataList { get; set; }
-    }
+ 
 
     public class MoveMailModel
     {
@@ -238,8 +235,27 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
     }
     public class ToAndFroModel
     {
+        public Guid MailId { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
         public RelatedMySelf RelatedMySelf { get; set; }
         public RelatedSendOrReceive RelatedSendOrReceive { get; set; }
+    }
+
+    public class AttachmentListModel
+    {
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+
+        public string KeyWord { get; set; }
+    }
+
+    public class TransferRecordParamModel
+    {
+        public Guid MailId { get; set; }
+
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
     }
 
 }
