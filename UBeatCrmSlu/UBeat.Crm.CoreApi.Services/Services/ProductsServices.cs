@@ -110,6 +110,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+        /// <summary>
+        /// 根据id获取产品系列详情，不包含子系列
+        /// </summary>
+        /// <param name="productsetId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OutputResult<object> GetProductSeriesDetail(Guid productsetId, int userId)
+        {
+            var res = ExcuteAction((transaction, arg, userData) =>
+            {
+                return new OutputResult<object>(_repository.GetProductSeriesDetail(transaction, productsetId, userId));
+            }, productsetId, userId);
+            return res;
+        }
+
 
 
         /// <summary>

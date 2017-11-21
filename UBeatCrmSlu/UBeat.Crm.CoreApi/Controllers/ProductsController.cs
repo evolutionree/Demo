@@ -87,6 +87,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _service.GetProductSeries(body, UserId);
 
         }
+        [HttpPost]
+        [Route("productseriesdetail")]
+        public OutputResult<object> GetProductSeriesDetail([FromBody] ProductSeriesListModel paramInfo) {
+            Guid setid = Guid.Empty;
+            if (paramInfo == null) return ResponseError<object>("参数格式异常");
+            if (paramInfo.ProductsetId == null || paramInfo.ProductsetId == Guid.Empty) {
+                return ResponseError<object>("参数格式异常");
+            }
+            setid = (System.Guid)paramInfo.ProductsetId;
+            return _service.GetProductSeriesDetail(setid, UserId);
+        }
 
         [HttpPost]
         [Route("addproduct")]

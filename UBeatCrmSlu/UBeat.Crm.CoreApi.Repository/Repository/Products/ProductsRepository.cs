@@ -83,6 +83,29 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
             return ExecuteQuery(executeSql, param, trans);
 
         }
+        /// <summary>
+        /// 根据产品系列id，或者产品系列详情，不包括子产品系列
+        /// </summary>
+        /// <param name="trans"></param>
+        /// <param name="productSetId"></param>
+        /// <param name="userNum"></param>
+        /// <returns></returns>
+        public dynamic GetProductSeriesDetail(DbTransaction trans, Guid productSetId, int userNum) {
+            var sql = string.Format(@"SELECT
+	                    C .productsetid,
+	                    C .pproductsetid,
+	                    C .productsetname,
+	                    C .productsetcode,
+	                    C .recorder,
+	                    C .reccreator,
+	                    C .reccreated
+                    FROM
+	                    crm_sys_products_series AS C
+                    WHERE
+	                    C .recstatus = 1
+	                    AND c.productsetid = '620a733c-14fe-4a62-8aa2-f22f8b2b9a83'", productSetId);
+            return ExecuteQuery(sql, new DbParameter[] { }, trans);
+        }
 
 
         public OperateResult DeleteProduct(DbTransaction trans, string productIds, int userNumber)
