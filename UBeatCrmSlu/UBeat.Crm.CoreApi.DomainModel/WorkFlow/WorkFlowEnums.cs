@@ -101,6 +101,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
     public enum NodeStepType
     {
         /// <summary>
+        /// -1:结束审批,
+        /// </summary>
+        End = -1,
+        /// <summary>
         /// 0:发起审批,
         /// </summary>
         Launch = 0,

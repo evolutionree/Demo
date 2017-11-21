@@ -120,6 +120,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 fields = _entityProRepository.FieldQuery(entityModel.RelEntityId, userId);
             }
+            else if (entityModel.TypeId == 3)
+            {
+                fields = null;
+            }
             else
             {
                 fields = _entityProRepository.FieldQuery(entityModel.EntityId, userId);
@@ -156,8 +160,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var entityField = entityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
                             if(entityField==null)
                                 entityField= relentityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
-                            if (entityField.ControlType != entity.ControlType) throw new Exception("配置字段类型不匹配");
-                            entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField);
+                            if (entityField.ControlType != entity.ControlType)
+                                throw new Exception("配置字段类型不匹配");
+                            entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField,"rel");
                             
                         }
                         break;
