@@ -33,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 userid = dynamicModel.SearchUserId;
             }
 
-            List<MailCatalogInfo> retList = _eMailServices.GetMailCataLog(dynamicModel.CatalogType, userid);
+            List<MailCatalogInfo> retList = _eMailServices.GetMailCataLog(dynamicModel.CatalogType, dynamicModel.CatalogName,userid);
             return new OutputResult<object>(retList);
         }
 

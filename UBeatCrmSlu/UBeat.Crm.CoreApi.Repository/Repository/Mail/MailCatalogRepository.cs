@@ -384,7 +384,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return resultList;
         }
 
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType,string keyword, int userId)
         {
             var sql = "WITH RECURSIVE cata as" +
                     "(" +
@@ -406,14 +406,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     "ELSE catalogrelation.unreadmail END,0) unreadmail,cata.idpath " +
                     "FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid " +
                     "left join cata on cata.recid=usercatalog.recid where 1=1 {0} order by vpid,recorder";
-            string[] sqlWhere = new string[1];
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
             {
-                sqlWhere[0] = string.Format(" and POSITION ('{0}' IN cata.idpath) > 0 ", catalogType);
+                condition = string.Format(" and POSITION ('{0}' IN cata.idpath) > 0 ", catalogType);
 
             }
-            condition = string.Join(" and ", sqlWhere);
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                condition = string.Format(condition+" and usercatalog.recname like '%{0}%' ", keyword);
+
+            }
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("UserId", userId)
