@@ -89,13 +89,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
                                         " FROM crm_sys_mail_mailbody body Where body.recstatus=1 AND body.recid IN (" +
-                                        "SELECT mailid FROM crm_sys_mail_senderreceivers WHERE" +
-                                        "(" +
-                                        "mailaddress IN(SELECT accountid FROM crm_sys_mail_mailbox WHERE owner::INT4 IN(@fromuserid))" +
-                                        " OR " +
-                                        "mailaddress IN(SELECT accountid FROM crm_sys_mail_mailbox WHERE owner::INT4 IN(@userid))" +
-                                        ")" +
-                                        ")  {0} ORDER BY body.receivedtime DESC; ";
+                                        "SELECT DISTINCT tmp.mailid FROM (SELECT * FROM crm_sys_mail_senderreceivers where mailid in(\n" +
+                                        "SELECT\n" +
+                                        " mailid FROM crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userid) AND ctype=1) ) AS tmp\n" +
+                                        "INNER JOIN\n" +
+                                        "(SELECT * FROM crm_sys_mail_senderreceivers where mailid in(\n" +
+                                        "select\n" +
+                                        " mailid from crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @fromuserid) AND (ctype=2 OR ctype=3 OR ctype=4)) ) AS tmp1\n" +
+                                        "ON tmp.mailid=tmp1.mailid\n" +
+                                        "UNION\n" +
+                                        "SELECT DISTINCT tmp.mailid FROM (SELECT * FROM crm_sys_mail_senderreceivers where mailid in(\n" +
+                                        "SELECT\n" +
+                                        " mailid FROM crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @fromuserid) AND ctype=1) ) AS tmp\n" +
+                                        "INNER JOIN\n" +
+                                        "(SELECT * FROM crm_sys_mail_senderreceivers where mailid in(\n" +
+                                        "select\n" +
+                                        " mailid from crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userid) AND (ctype=2 OR ctype=3 OR ctype=4)) ) AS tmp1\n" +
+                                        "ON tmp.mailid=tmp1.mailid" +
+                                        ") {0} ORDER BY body.receivedtime DESC; ";
             var sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
