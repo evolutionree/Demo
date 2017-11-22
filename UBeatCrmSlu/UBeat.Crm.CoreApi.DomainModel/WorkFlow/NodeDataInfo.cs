@@ -27,6 +27,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// </summary>
         public NodeStepType StepTypeId { set; get; }
 
+        /// <summary>
+        ///  节点审批通过还需多少人同意
+        /// </summary>
+        public int NeedSuccAuditCount { set; get; } = 1;
 
     }
 

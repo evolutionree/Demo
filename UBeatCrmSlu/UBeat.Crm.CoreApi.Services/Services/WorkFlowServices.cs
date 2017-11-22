@@ -48,7 +48,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, detailModel.CaseId);
 
 
-
             //获取caseoperate
             //获取entitydetail
             //获取relatedetail
@@ -238,16 +237,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             nodetemp.NodeState = -1;
                         }
-                        //else if (flowNodeInfo.NodeType == NodeType.Joint)//会审
-                        //{
-                        //    //会审审批通过的节点数
-                        //    var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
-                        //    if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
-                        //    {
-                        //        nodetemp.NodeState = 1;
-                        //    }
-                        //}
-                        
+                        else if (flowNodeInfo.NodeType == NodeType.Joint)//会审
+                        {
+                            //会审审批通过的节点数
+                            var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
+                            nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
+                            if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
+                            {
+                                nodetemp.NodeState = 1;
+                            }
+                        }
+
                         //检查下一点，获取下一节点信息
                         if (nodetemp.NodeState==0)
                         {
@@ -260,6 +260,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 m.NodeState = 0;
                                 m.NodeNum = caseInfo.NodeNum;
+                                nodetemp.NeedSuccAuditCount = 1;
                                 var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, m.NodeId.GetValueOrDefault(), userNumber, workflowInfo.FlowType, tran);
                                 result.Add(new NextNodeDataModel()
                                 {
@@ -979,6 +980,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
 
+        #region --写入添加流程的消息--
         /// <summary>
         /// 写入添加流程的消息
         /// </summary>
@@ -1180,7 +1182,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                 }
             });
-        }
+        } 
+        #endregion
+
         #region --获取自由流程审批消息的funcode--
         private string GetFreeFlowMessageFuncode(WorkFlowCaseItemInfo auditCaseItem, WorkFlowCaseInfo caseInfo, DbTransaction trans, out bool isAddNextStep)
         {
@@ -1326,6 +1330,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #endregion
 
+        #region --验证分支流程节点是否符合分支条件--
         private bool ValidateNextNodeRule(WorkFlowCaseInfo caseinfo, WorkFlowNodeInfo node, UserInfo userinfo, DbTransaction trans = null)
         {
             var ruleid = _workFlowRepository.GetNextNodeRuleId(node.FlowId, node.NodeId, node.VerNum, trans);
@@ -1342,7 +1347,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return true;
-        }
+        } 
+        #endregion
 
 
 
