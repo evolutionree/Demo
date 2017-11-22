@@ -56,6 +56,6 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<UserInfo> GetUserInfoList(List<int> userids);
 
         UserInfo GetUserInfoById(int userid);
-
+        void UpdateSoftwareVersion(DbTransaction tran, string apkName, int iMainVersion, int iSubVersion, int iBuildCode,string serverUrl, int userNum);
     }
 }

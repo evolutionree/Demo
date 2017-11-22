@@ -412,5 +412,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             return ExecuteQuery<UserInfo>(sql, param).FirstOrDefault();
 
         }
+        /// <summary>
+        /// 用于更新版本信息
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="apkName"></param>
+        /// <param name="iMainVersion"></param>
+        /// <param name="iSubVersion"></param>
+        /// <param name="iBuildCode"></param>
+        /// <param name="userNum"></param>
+        public void UpdateSoftwareVersion(DbTransaction tran, string apkName, int iMainVersion, int iSubVersion, int iBuildCode, string serverUrl ,int userNum)
+        {
+            var sql = string.Format(@"
+               insert into crm_sys_updatesoftware(
+                    clienttype,clienttypename,versionno,versionname,updateurl,
+                    enforceupdate,buildno,versionstatus,remark) 
+               values(2,'Android',{0},'V{0}.{1}.{2}','http://{4}/deploy/{3}','f',{2},1,'修复Bugs')", iMainVersion,iSubVersion,iBuildCode,apkName,serverUrl);
+
+            ExecuteNonQuery(sql, new DbParameter[] { }, tran);
+        }
     }
 }
