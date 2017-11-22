@@ -406,6 +406,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid MongoId { get; set; }
 
         public Guid MailId { get; set; }
+
+        public DateTime ReceivedTime { get; set; }
     }
 
     public class AttachmentListMapper : BaseEntity
