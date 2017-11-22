@@ -806,11 +806,12 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// <returns></returns>       
         public PageDataInfo<MailUserMapper> GetRecentContact(int pageIndex, int pageSize, int userId)
         {
-            var executeSql = "select x.mailAddress EmailAddress,displayname as name" +
-                " from (select a.reccreated,c.* from crm_sys_mail_mailbody a " +
+            var executeSql = "select x.mailAddress EmailAddress,COALESCE(x.usericon,'00000000-0000-0000-0000-000000000000')::uuid icon,displayname as name" +
+                " from (select a.reccreated,c.*,u.usericon from crm_sys_mail_mailbody a " +
                 " inner join crm_sys_mail_sendrecord b on a.recid=b.mailid " +
-                " inner join crm_sys_mail_senderreceivers c ON c.mailid = b.mailid where c.ctype = 2 and a.recmanager =@userId ) x " +
-                " group by x.mailaddress,displayname order by max(reccreated) DESC ";
+                " inner join crm_sys_mail_senderreceivers c ON c.mailid = b.mailid " +
+                " left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and a.recmanager =@userId ) x " +
+                " group by x.mailaddress,x.usericon,displayname order by max(reccreated) DESC ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userId", userId)
