@@ -806,7 +806,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //查找文件夹，返回列表
             if (!string.IsNullOrEmpty(keyword))
             {
-                return _mailCatalogRepository.GetMailCataLogTreeByKeyword(keyword, userId);
+                return _mailCatalogRepository.GetMailCataLogTreeByKeyword(keyword, catalogType, userId);
             }
             List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword, userId);
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();

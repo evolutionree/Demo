@@ -438,22 +438,51 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return result.FirstOrDefault();
         }
 
-        public List<MailCatalogInfo> GetMailCataLogTreeByUserId(int userid)
+        public List<MailCatalogInfo> GetMailCataLogTreeByUserId(int userid, string catalogType)
         {
-            var sql = "select * from crm_sys_mail_catalog where viewuserid =@userid AND recstatus = 1";
+            var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
+                " FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0} " +
+                " UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid " +
+                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid ) " +
+                " select * from cata where VIEWuserid = @userid";
+            string condition = string.Empty;
+            if (!string.IsNullOrEmpty(catalogType))
+            {
+                condition = string.Format(" and ctype={0} ", catalogType);
+
+            }
+            else {
+                condition = string.Format(" and vpid :: TEXT = '00000000-0000-0000-0000-000000000000' ");
+            }
+            string newSql = string.Format(sql, condition);
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid",  userid )
             };
-            return ExecuteQuery<MailCatalogInfo>(sql, param);
+            return ExecuteQuery<MailCatalogInfo>(newSql, param);
         }
 
-        public List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword,int userid)
+        public List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword,string catalogType,int userid)
         {
-            var sql = "select * from crm_sys_mail_catalog where viewuserid =@userid AND recstatus = 1 and recname LIKE '%{0}%' order by recorder";
+            var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
+                " FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0} " +
+                " UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid " +
+                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid ) " +
+                " select * from cata where VIEWuserid = @userid";
+            string condition = string.Empty;
+            if (!string.IsNullOrEmpty(catalogType))
+            {
+                condition = string.Format(" and ctype={0} ", catalogType);
+
+            }
+            else
+            {
+                condition = string.Format(" and vpid :: TEXT = '00000000-0000-0000-0000-000000000000' ");
+            }
+            sql = string.Format(sql, condition);
             if (!string.IsNullOrEmpty(keyword))
             {
-                sql = string.Format(sql, keyword);
+                sql = string.Format(sql + " and recname like '%{0}%' ", keyword);
 
             }
             var param = new DbParameter[]
@@ -461,7 +490,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 new NpgsqlParameter("userid",  userid )
             };
             var searchList=ExecuteQuery<MailCatalogInfo>(sql, param);
-            var wholeTree  =this.GetMailCataLogTreeByUserId(userid);
+            var wholeTree  =this.GetMailCataLogTreeByUserId(userid,catalogType);
             foreach (var catalog in searchList)
             {
                 foreach (var item in wholeTree)
