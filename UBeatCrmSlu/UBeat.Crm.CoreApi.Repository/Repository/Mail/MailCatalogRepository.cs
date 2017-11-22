@@ -438,6 +438,47 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return result.FirstOrDefault();
         }
 
+        public List<MailCatalogInfo> GetMailCataLogTreeByUserId(int userid)
+        {
+            var sql = "select * from crm_sys_mail_catalog where viewuserid =@userid AND recstatus = 1";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("userid",  userid )
+            };
+            return ExecuteQuery<MailCatalogInfo>(sql, param);
+        }
+
+        public List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword,int userid)
+        {
+            var sql = "select * from crm_sys_mail_catalog where viewuserid =@userid AND recstatus = 1 and recname LIKE '%{0}%' order by recorder";
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                sql = string.Format(sql, keyword);
+
+            }
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("userid",  userid )
+            };
+            var searchList=ExecuteQuery<MailCatalogInfo>(sql, param);
+            var wholeTree  =this.GetMailCataLogTreeByUserId(userid);
+            foreach (var catalog in searchList)
+            {
+                foreach (var item in wholeTree)
+                {
+                    if (item.VPId == catalog.RecId)
+                    {
+                        if (catalog.SubCatalogs == null)
+                        {
+                            catalog.SubCatalogs = new List<MailCatalogInfo>();
+                        }
+                        catalog.SubCatalogs.Add(item);
+                    }
+                }
+            }
+            return searchList;
+        }
+
 
         public UserMailInfo GetUserMailInfo(string fromAddress, int userId)
         {
