@@ -17,6 +17,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="tran"></param>
         /// <returns></returns>
         PageDataInfo<MailBodyMapper> ListMail(MailListActionParamInfo paramInfo, string orderbyfield, string keyWord, int userId, DbTransaction tran = null);
+
+        PageDataInfo<MailBodyMapper> InnerToAndFroListMail(InnerToAndFroMailMapper entity, int userId);
         /// <summary>
         /// 对邮件打标记或者取消标记
         /// </summary>
