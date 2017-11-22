@@ -575,14 +575,14 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
 
             }
 
-            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
+            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime  desc "), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
         }
 
 
         public PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId)
         {
 
-            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid,body.receivedtime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0}";
+            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid,body.receivedtime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0} {1}";
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
@@ -657,7 +657,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
 
             }
 
-            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
+            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime desc "), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
         }
 
         public PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId)
