@@ -841,9 +841,9 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// <param name="keyword"></param>
         /// <param name="userId"></param>
         /// <returns></returns>       
-        public List<InnerToAndFroUser> GetInnerToAndFroUser(string keyword, int userId)
+        public List<OrgAndStaffTree> GetInnerToAndFroUser(string keyword, int userId)
         {
-            var executeSql = "select t.userid,t.username,count(1)-sum(t.isread) unread  " +
+            var executeSql = "select 1 nodetype,t.userid::text treeid,t.username treename,(count(1)-sum(t.isread))::int unreadcount  " +
                 " from (select d.userid,d.username,COALESCE(c.isread, 0) isread " +
                 " from(select b.recid from crm_sys_mail_senderreceivers a " +
                 " inner join crm_sys_mail_mailbody b on a.mailid= b.recid " +
@@ -862,7 +862,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             {
                 new NpgsqlParameter("userId", userId)
             };
-            return ExecuteQuery<InnerToAndFroUser>(newSql, param);
+            return ExecuteQuery<OrgAndStaffTree>(newSql, param);
         }
 
         #endregion
