@@ -17,20 +17,18 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
 
         public int NodeNum { set; get; }
+        /// <summary>
+        /// 节点状态：-1=流程已结束，0=可进入下一步，1=等待其他人会审
+        /// </summary>
+        public int NodeState { set; get; }
 
         /// <summary>
         /// 当前节点审批人类型
         /// </summary>
         public NodeStepType StepTypeId { set; get; }
 
-        public object ColumnConfig { set; get; }
 
-        public int AllowMulti { set; get; }
-
-        public int Stoped { set; get; }
-
-        public int AllowNext { set; get; }
-
-        public WorkFlowType FlowType { set; get; }
     }
+
+
 }

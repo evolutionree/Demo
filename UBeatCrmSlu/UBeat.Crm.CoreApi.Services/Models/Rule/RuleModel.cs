@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
     /// </summary>
     public class RuleModel
     {
-        public int TypeId { get; set; }//0 代表菜单 1代表角色 2代表动态实体
+        public int TypeId { get; set; }//0 代表菜单 1代表角色 2代表动态实体 3代表分支流程规则
         public string Id { get; set; }// 代表规则关联的某实体唯一id
         public string RoleId { get; set; }
         public string MenuName { get; set; }

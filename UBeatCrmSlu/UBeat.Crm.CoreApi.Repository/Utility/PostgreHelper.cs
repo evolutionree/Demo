@@ -520,10 +520,16 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                 foreach (NpgsqlParameter parm in cmdParms)
                 {
                     parm.ParameterName = parm.ParameterName.Replace("@", ":").Replace("?", ":");
-                    if (parm.NpgsqlValue != null && (parm.NpgsqlDbType == NpgsqlTypes.NpgsqlDbType.Text || parm.NpgsqlDbType == NpgsqlTypes.NpgsqlDbType.Varchar))
+                    if (parm.NpgsqlValue == null)
                     {
+                        parm.NpgsqlValue = DBNull.Value;
+                    }
+                    if (parm.NpgsqlValue != DBNull.Value&&( parm.NpgsqlDbType == NpgsqlTypes.NpgsqlDbType.Text || parm.NpgsqlDbType == NpgsqlTypes.NpgsqlDbType.Varchar))
+                    {
+                        
                         if (CheckDbParameterInjection(parm.NpgsqlValue.ToString()))
                             throw new Exception("SQL参数不可包含系统关键字");
+                        
                     }
                     cmd.Parameters.Add(parm);
                 }

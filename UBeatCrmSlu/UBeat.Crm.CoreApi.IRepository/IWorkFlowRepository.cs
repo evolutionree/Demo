@@ -75,7 +75,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="endnode"></param>
         /// <param name="vernum"></param>
         /// <returns></returns>
-        Guid GetNextNodeRuleId(Guid flowid, int endnode, int vernum, DbTransaction trans = null);
+        Guid GetNextNodeRuleId(Guid flowid, Guid tonodeid, int vernum, DbTransaction trans = null);
         
         /// <summary>
         /// 获取流程当前节点id
@@ -98,7 +98,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <summary>
         /// 退回流程节点
         /// </summary>
-        bool RebackWorkFlowCaseItem(WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null);
+        bool RebackWorkFlowCaseItem(Guid flowId, int vernum, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null);
 
         /// <summary>
         /// 重新发起流程
@@ -129,7 +129,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// 添加审批节点
         /// </summary>
         /// <returns></returns>
-        bool AddCaseItem(List<WorkFlowCaseItemInfo> caseitems, int userno, DbTransaction trans = null); 
+        bool AddCaseItem(List<WorkFlowCaseItemInfo> caseitems, int userno, AuditStatusType auditstatus = AuditStatusType.Approving, DbTransaction trans = null); 
 
     }
 }

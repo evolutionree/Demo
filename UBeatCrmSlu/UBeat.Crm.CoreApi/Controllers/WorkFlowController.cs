@@ -76,16 +76,16 @@ namespace UBeat.Crm.CoreApi.Controllers
             WriteOperateLog("提交审核意见", caseItemModel);
             return _workFlowServices.AuditCaseItem(caseItemModel, UserId);
         }
-        //
+
         //审批流程(新审批接口)
-        //[HttpPost]
-        //[Route("auditworkflow")]
-        //public OutputResult<object> WorkFlowAudit([FromBody] WorkFlowAuditCaseItemModel caseItemModel = null)
-        //{
-        //    if (caseItemModel == null) return ResponseError<object>("参数格式错误");
-        //    WriteOperateLog("提交审核意见", caseItemModel);
-        //    return _workFlowServices.WorkFlowAudit(caseItemModel, us);
-        //}
+        [HttpPost]
+        [Route("submitaudit")]
+        public OutputResult<object> SubmitWorkFlowAudit([FromBody] WorkFlowAuditCaseItemModel caseItemModel = null)
+        {
+            if (caseItemModel == null) return ResponseError<object>("参数格式错误");
+            WriteOperateLog("提交流程审批", caseItemModel);
+            return _workFlowServices.SubmitWorkFlowAudit(caseItemModel, LoginUser);
+        }
 
 
         //选人之后，提交审批明细数据

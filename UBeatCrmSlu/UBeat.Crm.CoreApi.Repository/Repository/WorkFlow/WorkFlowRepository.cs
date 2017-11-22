@@ -444,12 +444,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         public List<WorkFlowCaseItemInfo> GetWorkFlowCaseItemInfo(DbTransaction trans, Guid caseid, int nodenum,int stepnum=-1)
         {
             string executeSql = string.Empty;
-            if (stepnum>0)
+            if (stepnum<=0)
             {
                 executeSql = @" SELECT  wci.* 
                                 FROM crm_sys_workflow_case_item AS wci
                                 WHERE wci.recstatus=1 AND wci.nodenum=@nodenum AND wci.caseid=@caseid 
-                                AND wci.stepnum=(SELECT MAX(stepnum) FROM crm_sys_workflow_case_item WHERE wci.recstatus=1 AND wci.nodenum=@nodenum AND wci.caseid=@caseid )";
+                                AND wci.stepnum=(SELECT MAX(stepnum) FROM crm_sys_workflow_case_item WHERE recstatus=1 AND nodenum=@nodenum AND caseid=@caseid )";
             }
             else
             {
@@ -567,7 +567,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         public List<NextNodeDataInfo> GetNextNodeDataInfoList(Guid flowid, Guid fromnodeid, int vernum, DbTransaction trans = null)
         {
-            var executeSql = @" SELECT n.nodeid,n.nodename,n.nodetype,n.nodenum,n.steptypeid,n.columnconfig,s.allowmulti,n.auditnum,0 AS stoped,1 AS allownext,0 AS flowtype 
+            var executeSql = @" SELECT n.nodeid,n.nodename,n.nodetype,n.nodenum,n.steptypeid
 								FROM crm_sys_workflow_node AS n
                                 INNER JOIN crm_sys_workflow_node_line AS nl ON nl.vernum=@vernum AND nl.fromnodeid=@fromnodeid AND nl.flowid = @flowid 
 								LEFT JOIN crm_sys_workflow_steptype AS s ON s.steptypeid = n.steptypeid
@@ -861,14 +861,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// <param name="endnode"></param>
         /// <param name="vernum"></param>
         /// <returns></returns>
-        public Guid GetNextNodeRuleId(Guid flowid, int endnode, int vernum, DbTransaction trans = null)
+        public Guid GetNextNodeRuleId(Guid flowid, Guid tonodeid, int vernum, DbTransaction trans = null)
         {
-            var executeSql = @" SELECT ruleid FROM crm_sys_workflow_node_line WHERE flowid=@flowid AND endnode=@endnode AND vernum=@vernum LIMIT 1;";
+            var executeSql = @" SELECT ruleid FROM crm_sys_workflow_node_line WHERE flowid=@flowid AND tonodeid=@tonodeid AND vernum=@vernum LIMIT 1;";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("flowid", flowid),
-                new NpgsqlParameter("endnode", endnode),
+                new NpgsqlParameter("tonodeid", tonodeid),
                 new NpgsqlParameter("vernum", vernum),
             };
             object obj = ExecuteScalar(executeSql, param, trans);
@@ -911,6 +911,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         public bool ValidateNextNodeRule(WorkFlowCaseInfo caseInfo, string ruleSql, int userNumber, DbTransaction trans = null)
         {
+            #region --获取实体表名--
             var entitySql = @"SELECT (SELECT entitytable FROM crm_sys_entity WHERE entityid=@entityid) AS entitytable,
                                      (SELECT entitytable FROM crm_sys_entity WHERE entityid=@relentityid) AS relentitytable";
             var entitySqlParameters = new List<DbParameter>();
@@ -923,30 +924,50 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 throw new Exception("该实体不存在有效的业务表");
             }
             string entityTableName = entitytableResult["entitytable"].ToString();
-            string relEntityTableName = entitytableResult["relentitytable"] == null ? null : entitytableResult["relentitytable"].ToString();
+            string relEntityTableName = entitytableResult["relentitytable"] == null ? null : entitytableResult["relentitytable"].ToString(); 
+            #endregion
+
+            #region --获取rel实体的查询字段和left join语句
+            string relentitySql = string.Empty;
+            string relFieldSql = string.Empty;
+            if (!string.IsNullOrEmpty(relEntityTableName))
+            {
+                var relentityFieldSql = @"SELECT array_to_string(
+                                      ARRAY(SELECT 'rel.'||fieldname ||' AS rel'||fieldname FROM crm_sys_entity_fields WHERE entityid =@entityid AND recstatus=1),
+                                      ',')";
+                var relfieldParameters = new List<DbParameter>();
+                relfieldParameters.Add(new NpgsqlParameter("entityid", caseInfo.RelEntityId));
+
+
+                var relfieldResult = ExecuteScalar(relentityFieldSql, relfieldParameters.ToArray(), trans);
+                if (relfieldResult != null)
+                    relFieldSql = relfieldResult.ToString()+",";
+                relentitySql = string.Format(@" LEFT JOIN {0} AS rel ON rel.recid=cer.relrecid", relEntityTableName);
+            }
+            #endregion
 
             string whereSql = string.IsNullOrEmpty(ruleSql) ? "1=1" : ruleSql;
 
-            string relentitySql = string.IsNullOrEmpty(relEntityTableName) ? "" : string.Format(@" LEFT JOIN {0} AS rel ON rel.recid=e.recid", relEntityTableName);
-            string detailSql = string.Format(@"SELECT wc.caseid,wc.flowid,wc.auditstatus,wc.vernum,wc.reccode AS flowreccode,wc.nodenum,wc.reccreated AS flowcasecreated,
-                                                      wc.recupdated AS flowupdated, wc.recupdator AS flowupdator, 
-                                                      cer.relrecid ,
+            
+            string detailSql = string.Format(@"SELECT c.caseid,c.flowid,c.auditstatus,c.vernum,c.reccode AS flowreccode,c.nodenum,c.reccreated AS flowcasecreated,
+                                                      c.recupdated AS flowupdated, c.recupdator AS flowupdator, 
                                                       e.*,
-                                                      wc.reccreator AS flowluancher,
+                                                      {0}
+                                                      c.reccreator AS flowluancher,
                                                       aur.deptid AS flowluancherdeptid,
                                                       d.pdeptid AS flowluancherpredeptid,
                                                       urr.roleid AS flowluancherroleid,
                                                       u.isleader AS flowluancherisleader
-                                               FROM crm_sys_workflow_case AS wc
-                                               LEFT JOIN crm_sys_account_userinfo_relate AS aur ON aur.userid=wc.reccreator
+                                               FROM crm_sys_workflow_case AS c
+                                               LEFT JOIN crm_sys_account_userinfo_relate AS aur ON aur.userid=c.reccreator
                                                LEFT JOIN crm_sys_department AS d ON d.deptid=aur.deptid
-                                               LEFT JOIN crm_sys_userinfo AS u ON u.userid=wc.reccreator
-                                               LEFT JOIN crm_sys_userinfo_role_relate AS urr ON urr.userid=wc.reccreator
-                                               LEFT JOIN {0} AS e ON e.recid=wc.recid
-                                               LEFT JOIN crm_sys_workflow_case_entity_relation AS cer ON cer.caseid=wc.caseid and cer.relentityid=@relentityid
-                                               {1}
-                                               WHERE wc.caseid=@caseid AND wc.recid = @recid AND wc.recstatus = 1
-                                               ", entityTableName, relentitySql);
+                                               LEFT JOIN crm_sys_userinfo AS u ON u.userid=c.reccreator
+                                               LEFT JOIN crm_sys_userinfo_role_relate AS urr ON urr.userid=c.reccreator
+                                               LEFT JOIN crm_sys_workflow_case_entity_relation AS cer ON cer.caseid=c.caseid and cer.relentityid=@relentityid
+                                               LEFT JOIN {1} AS e ON e.recid=c.recid                                               
+                                               {2}
+                                               WHERE c.caseid=@caseid AND c.recid = @recid AND c.recstatus = 1
+                                               ", relFieldSql,entityTableName, relentitySql);
 
             string sql = string.Format(@"SELECT COUNT(1) FROM ({0}) AS e  
                                          WHERE  {1}", detailSql, whereSql);
@@ -954,6 +975,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("recid", caseInfo.RecId));
             sqlParameters.Add(new NpgsqlParameter("caseid", caseInfo.CaseId));
+            sqlParameters.Add(new NpgsqlParameter("relentityid", caseInfo.RelEntityId));
 
             object result = null;
             result = ExecuteScalar(sql, sqlParameters.ToArray(), trans);
@@ -967,18 +989,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// <summary>
         /// 退回流程节点
         /// </summary>
-        public bool RebackWorkFlowCaseItem(WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
+        public bool RebackWorkFlowCaseItem(Guid flowId,int vernum, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
         {
+            var nodeidSql = @"SELECT nodeid FROM crm_sys_workflow_node WHERE flowid=@flowid AND vernum=@vernum AND steptypeid=0";
+            var entitySqlParameters = new List<DbParameter>();
+            entitySqlParameters.Add(new NpgsqlParameter("flowid", flowId));
+            entitySqlParameters.Add(new NpgsqlParameter("vernum", vernum));
+            var nodeidResult = ExecuteScalar(nodeidSql, entitySqlParameters.ToArray(), trans);
+            Guid nodeid = Guid.Empty;
+            if (nodeidResult != null)
+                Guid.TryParse(nodeidResult.ToString(), out nodeid);
             int handleuser = caseitem.RecCreator;
             int stepnum = caseitem.StepNum + 1;
-            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum) 
-                                         VALUES (@caseid, 0 , 4,@handleuser,  0, @userno,@userno,@stepnum);
+            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum,nodeid) 
+                                         VALUES (@caseid, 0 , 4,@handleuser,  0, @userno,@userno,@stepnum,@nodeid);
                                          UPDATE crm_sys_workflow_case SET nodenum = 0,recupdator = @userno WHERE caseid = @caseid;");
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("caseid", caseitem.CaseId));
             sqlParameters.Add(new NpgsqlParameter("handleuser", handleuser));
-
+            sqlParameters.Add(new NpgsqlParameter("nodeid", nodeid));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
             sqlParameters.Add(new NpgsqlParameter("stepnum", stepnum));
 
@@ -1105,7 +1135,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
 
             var result = ExecuteQuery<OperateResult>(sql, sqlParameters.ToArray(), trans).FirstOrDefault();
-            if (result.Flag != 0)
+            if (result.Flag != 1)
             {
                 throw new Exception(result.Msg);
             }
@@ -1113,7 +1143,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         public void ExecuteUpdateWorkFlowEntity(Guid caseid, int nodenum, int userno, DbTransaction trans = null)
         {
-            string sql = string.Format(@"SELECT  crm_func_workflow_case_updatefunc(@caseid,@nodenum,@userno)");
+            string sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM crm_func_workflow_case_updatefunc(@caseid,@nodenum,@userno)");
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("nodenum", nodenum));
@@ -1122,7 +1152,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
 
             var result = ExecuteQuery<OperateResult>(sql, sqlParameters.ToArray(), trans).FirstOrDefault();
-            if (result.Flag != 0)
+            if (result.Flag != 1)
             {
                 throw new Exception(result.Msg);
             }
@@ -1133,7 +1163,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// 添加审批节点
         /// </summary>
         /// <returns></returns>
-        public bool AddCaseItem(List<WorkFlowCaseItemInfo> caseitems, int userno, DbTransaction trans = null)
+        public bool AddCaseItem(List<WorkFlowCaseItemInfo> caseitems, int userno,AuditStatusType auditstatus= AuditStatusType.Approving, DbTransaction trans = null)
         {
             if (caseitems == null || caseitems.Count == 0)
                 throw new Exception("审批节点数据不可为空");
@@ -1162,23 +1192,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 temparm.Add(new NpgsqlParameter("nodenum", item.NodeNum));
                 temparm.Add(new NpgsqlParameter("stepnum", item.StepNum));
                 temparm.Add(new NpgsqlParameter("choicestatus", (int)item.ChoiceStatus));
-                temparm.Add(new NpgsqlParameter("suggest", item.Suggest));
+                temparm.Add(new NpgsqlParameter("suggest", item.Suggest??""));
                 temparm.Add(new NpgsqlParameter("casestatus", (int)item.CaseStatus));
                 temparm.Add(new NpgsqlParameter("casedata", JsonConvert.SerializeObject(item.Casedata)) { NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb});
-                temparm.Add(new NpgsqlParameter("remark", item.Remark));
+                temparm.Add(new NpgsqlParameter("remark", item.Remark??""));
                 temparm.Add(new NpgsqlParameter("handleuser", item.HandleUser));
-                temparm.Add(new NpgsqlParameter("copyuser", item.CopyUser));
+                temparm.Add(new NpgsqlParameter("copyuser", item.CopyUser??""));
                 temparm.Add(new NpgsqlParameter("userno", userno));
                 sqlParameters.Add(temparm.ToArray());
             }
             ExecuteNonQueryMultiple(sql, sqlParameters, trans);
 
-            var case_sql = @"UPDATE crm_sys_workflow_case SET nodenum = @nodenum,recupdator = @userno WHERE caseid = @caseid;";
+            var case_sql = @"UPDATE crm_sys_workflow_case SET auditstatus=@auditstatus, nodenum = @nodenum,recupdator = @userno WHERE caseid = @caseid;";
             var caseParameters = new List<DbParameter>();
             caseParameters.Add(new NpgsqlParameter("caseid", caseid));
             caseParameters.Add(new NpgsqlParameter("nodenum", nodenum));
             caseParameters.Add(new NpgsqlParameter("userno", userno));
-
+            caseParameters.Add(new NpgsqlParameter("auditstatus", (int)auditstatus));
             var result= ExecuteNonQuery(case_sql, caseParameters.ToArray(), trans);
 
             return result > 0;
