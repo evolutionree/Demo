@@ -31,11 +31,11 @@ namespace UBeat.Crm.MailService.Mail.Helper
             SetEmailAddress(EmailAddrType.CC, message, ccAddressList);
             SetEmailAddress(EmailAddrType.Bcc, message, bccAddressList);
 
-            message.Subject = subject;
+            message.Subject = string.IsNullOrEmpty(subject) ? string.Empty : subject;
 
             var html = new TextPart("html")
             {
-                Text = bodyContent,
+                Text = string.IsNullOrEmpty(bodyContent) ? string.Empty : bodyContent,
             };
             //multipart / mixed：附件。
             //multipart / related：内嵌资源。
