@@ -155,6 +155,8 @@ namespace UBeat.Crm.CoreApi.Core.Utility
         ///   <returns>已经去除后的文字</returns>
         public static string NoHTML(string Htmlstring)
         {
+            if (string.IsNullOrEmpty(Htmlstring))
+                Htmlstring = string.Empty;
             //删除脚本
             Htmlstring = Regex.Replace(Htmlstring, @"(\<script(.+?)\</script\>)|(\<style(.+?)\</style\>)", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             //删除HTML 
