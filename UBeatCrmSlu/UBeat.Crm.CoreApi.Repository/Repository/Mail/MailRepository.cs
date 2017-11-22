@@ -44,11 +44,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
             {
-                sqlCondition = " AND ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
-                sqlWhere.Concat(new object[] { sqlCondition });
+                sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
+                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
 
-            sqlCondition = " AND " + string.Join(" AND ", sqlWhere);
+            sqlCondition = sqlWhere.Count() == 0 ? string.Empty : " AND " + string.Join(" AND ", sqlWhere);
 
 
             if (paramInfo.PageSize <= 0)
