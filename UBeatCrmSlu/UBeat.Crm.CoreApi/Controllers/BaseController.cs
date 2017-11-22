@@ -329,7 +329,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 }
             }
             //打印响应数据
-            // WriteResponseLog(context);
+            //WriteResponseLog(context);
 
             base.OnActionExecuted(context);
         }

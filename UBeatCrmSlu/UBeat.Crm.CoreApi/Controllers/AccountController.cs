@@ -334,6 +334,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [Route("updatesoftware")]
         public OutputResult<object> UpdateSoftware([FromBody] UpdateSoftwareModel entityModel = null)
         {
