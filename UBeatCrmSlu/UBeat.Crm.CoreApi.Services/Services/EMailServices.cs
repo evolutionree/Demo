@@ -802,13 +802,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
         {
             InitMailCatalog(userId);
-            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword, userId);
-            List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
-            //查找文件夹，返回列表，不生成树型
+
+            //查找文件夹，返回列表
             if (!string.IsNullOrEmpty(keyword))
             {
-                return list;
+                return _mailCatalogRepository.GetMailCataLogTreeByKeyword(keyword, catalogType, userId);
             }
+            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword, userId);
+            List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in list)
             {
                 if (new Guid("00000000-0000-0000-0000-000000000000") == catalog.VPId)

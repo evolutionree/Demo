@@ -56,7 +56,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId);
 
-        List<InnerToAndFroUser> GetInnerToAndFroUser(string keyword, int userId);
+        List<OrgAndStaffTree> GetInnerToAndFroUser(string keyword, int userId);
 
         PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId);
 
