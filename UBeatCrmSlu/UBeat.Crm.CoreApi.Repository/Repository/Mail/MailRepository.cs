@@ -308,7 +308,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             var sql = @"SELECT " +
                                         "body.recid mailid," +
-                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
+                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receiversjson," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccersjson," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccersjson," +
