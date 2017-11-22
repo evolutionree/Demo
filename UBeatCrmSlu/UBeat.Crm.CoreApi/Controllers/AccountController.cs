@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Core.Utility;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -339,6 +340,20 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (entityModel == null) return ResponseError<object>("参数格式错误");
 
             return _accountServices.UpdateSoftware(entityModel, UserId);
+        }
+        /// <summary>
+        /// 用于自动构建程序更新版本信息（jenkins),仅限于Android
+        /// </summary>
+        /// <param name="apkname"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpGet]
+        [Route("updateversion/android")]
+        public OutputResult<object> UpdateSoftwareVersionForAndroid([FromQuery] string apkname) {
+            if (apkname == null || apkname.Length == 0) {
+                return ResponseError<object>("安卓包名异常");
+            }
+            return _accountServices.UpdateSoftwareVersionForAndorid(apkname, UserId);
         }
         [AllowAnonymous]
         [HttpPost]

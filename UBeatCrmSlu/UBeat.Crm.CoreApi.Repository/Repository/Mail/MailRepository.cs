@@ -37,7 +37,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.receivedtime," +
                                         "body.istag," +
                                         "body.isread," +
-                                        "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid) attachcount" +
+                                        "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
                                         " FROM crm_sys_mail_mailbody body Where body.recstatus=1 AND body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  {0} {1} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;

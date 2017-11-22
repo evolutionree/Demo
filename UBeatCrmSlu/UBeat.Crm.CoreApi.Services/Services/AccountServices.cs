@@ -4,6 +4,8 @@ using MessagePack.Resolvers;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
+using System.Text.RegularExpressions;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Account;
@@ -11,6 +13,7 @@ using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.Account;
+using UBeat.Crm.CoreApi.Services.Models.FileService;
 using UBeat.Crm.LicenseCore;
 using static MessagePack.MessagePackSerializer;
 
@@ -338,6 +341,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(result);
             }, entityModel, userNumber);
 
+        }
+        public OutputResult<object> UpdateSoftwareVersionForAndorid(string apkName,int userNum) {
+            string MainVersion = "";
+            string subVersion = "";
+            string buildCode = "";
+            string rexstr = @"[\w]+(\d+).(\d+).(\d+).apk";
+            int iMainVersion = 0;
+            int iSubVersion = 0;
+            int iBuildCode = 0;
+            Match m = Regex.Match(apkName, rexstr);
+            DbTransaction tran = null;
+            if (m != null && m.Groups.Count == 4)
+            {
+                MainVersion = m.Groups[1].Value;
+                subVersion = m.Groups[2].Value;
+                buildCode = m.Groups[3].Value;
+                int.TryParse(MainVersion, out iMainVersion);
+                int.TryParse(subVersion, out iSubVersion);
+                int.TryParse(buildCode, out iBuildCode);
+                IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+                FileServiceConfig UrlConfig = config.GetSection("FileServiceSetting").Get<FileServiceConfig>();
+                int index =  UrlConfig.ReadUrl.IndexOf("/");
+                string serverUrl = UrlConfig.ReadUrl.Substring(0, index);
+                _accountRepository.UpdateSoftwareVersion(tran, apkName, iMainVersion, iSubVersion, iBuildCode, serverUrl,userNum);
+                return new OutputResult<object>("ok");
+            }
+            else
+            {
+                return new OutputResult<object>("文件名异常");
+            }
         }
 
         public OutputResult<object> AuthCompany()
