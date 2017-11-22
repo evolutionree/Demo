@@ -142,6 +142,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Int64 IsRead { get; set; }
 
         public Int64 AttachCount { get; set; }
+        public JArray AttachInfo { get; set; }
     }
 
     public class MailBodyDetailMapper
