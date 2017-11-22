@@ -427,7 +427,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
                insert into crm_sys_updatesoftware(
                     clienttype,clienttypename,versionno,versionname,updateurl,
                     enforceupdate,buildno,versionstatus,remark) 
-               values(2,'Android',{0},'V{0}.{1}.{2}','http://{4}/deploy/{3}','f',{2},1,'修复Bugs')", iMainVersion,iSubVersion,iBuildCode,apkName,serverUrl);
+               values(2,'Android',{0},'V{0}.{1}.{2}','http://{4}/deploy/{3}','f',{2},1,'[""修复Bugs""]')", iMainVersion,iSubVersion,iBuildCode,apkName,serverUrl);
 
             ExecuteNonQuery(sql, new DbParameter[] { }, tran);
         }
