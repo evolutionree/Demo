@@ -21,6 +21,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         Dictionary<string, List<IDictionary<string, object>>> NodeLineInfo(Guid flowId, int userNumber);
 
+        Dictionary<string, List<Dictionary<string, object>>> GetNodeLinesInfo(Guid flowId, int userNumber, DbTransaction trans = null);
         OperateResult NodeLinesConfig(WorkFlowNodeLinesConfigMapper nodeLineConfig, int userNumber);
 
         void SaveNodeLinesConfig(WorkFlowNodeLinesConfigMapper nodeLineConfig, int userNumber);

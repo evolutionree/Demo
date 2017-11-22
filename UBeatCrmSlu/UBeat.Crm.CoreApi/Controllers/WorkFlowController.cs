@@ -105,6 +105,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _workFlowServices.NodeLineInfo(nodeLineModel, UserId);
         }
 
+        //
+        [HttpPost]
+        [Route("getnodelinesinfo")]
+        public OutputResult<object> GetNodeLinesInfo([FromBody] WorkFlowNodeLinesInfoModel nodeLineModel = null)
+        {
+            if (nodeLineModel == null) return ResponseError<object>("参数格式错误");
+            return _workFlowServices.GetNodeLinesInfo(nodeLineModel, UserId);
+        }
         [HttpPost]
         [Route("nodelinesconfig")]
         public OutputResult<object> NodeLinesConfig([FromBody] WorkFlowNodeLinesConfigModel configModel = null)

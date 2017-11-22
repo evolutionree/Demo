@@ -16,6 +16,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
     public class WorkFlowNextNodeModel
     {
+        /// <summary>
+        /// 流程实体，如果第一次提交流程，为空guid
+        /// </summary>
         public Guid CaseId { get; set; }
         
     }

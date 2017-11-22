@@ -223,8 +223,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         var nodeid = caseitems.FirstOrDefault().NodeId;
                         var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
-
-
+                        if(flowNodeInfo==null)
+                        {
+                            throw new Exception("不存在有效节点");
+                        }
                         
                         nodetemp.NodeId = flowNodeInfo.NodeId;
                         nodetemp.NodeName = flowNodeInfo.NodeName;
@@ -1363,6 +1365,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             var result = _workFlowRepository.NodeLineInfo(nodeLineModel.FlowId, userNumber);
+            return new OutputResult<object>(result);
+        }
+        public OutputResult<object> GetNodeLinesInfo(WorkFlowNodeLinesInfoModel nodeLineModel, int userNumber)
+        {
+            if (nodeLineModel?.FlowId == null)
+            {
+                return ShowError<object>("流程ID不能为空");
+            }
+
+            var result = _workFlowRepository.GetNodeLinesInfo(nodeLineModel.FlowId, userNumber);
             return new OutputResult<object>(result);
         }
 

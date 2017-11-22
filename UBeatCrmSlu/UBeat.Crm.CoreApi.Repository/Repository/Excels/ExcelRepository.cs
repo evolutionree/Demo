@@ -506,6 +506,38 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
         }
 
 
+        /// <summary>
+        /// 获取销售阶段id
+        /// </summary>
+        /// <param name="serialPath"></param>
+        /// <param name="errorMsg"></param>
+        /// <returns></returns>
+        public Guid GetSalesStageId(Guid salestagetypeid, string salestagename, out string errorMsg)
+        {
+            errorMsg = null;
+            if (string.IsNullOrEmpty(salestagename))
+            {
+                return Guid.Empty;
+            }
+            var executeSql = @"SELECT salesstageid  FROM crm_sys_salesstage_setting where stagename=@stagename and salesstagetypeid=@salestagetypeid";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("stagename",salestagename),
+                new NpgsqlParameter("salestagetypeid",salestagetypeid)
+            };
+
+            var dataResult = ExecuteQuery(executeSql, param);
+
+            if (dataResult.Count == 0)
+            {
+                errorMsg = "销售阶段不存在";
+                return Guid.Empty;
+            }
+            
+            return new Guid(dataResult.FirstOrDefault().FirstOrDefault().Value.ToString());
+        }
+
         #endregion
     }
 }
