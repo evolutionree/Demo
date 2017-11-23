@@ -101,5 +101,13 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         Guid GetDepartmentId(string serialPath, int userno, out string errorMsg);
 
+        
+        /// <summary>
+        /// 获取销售阶段id
+        /// </summary>
+        /// <param name="serialPath"></param>
+        /// <param name="errorMsg"></param>
+        /// <returns></returns>
+        Guid GetSalesStageId(Guid salestagetypeid, string salestatname,  out string errorMsg);
     }
 }

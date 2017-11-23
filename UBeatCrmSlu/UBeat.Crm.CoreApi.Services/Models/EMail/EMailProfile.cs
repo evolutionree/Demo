@@ -32,6 +32,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
             CreateMap<AttachmentListModel, AttachmentListMapper>();
 
             CreateMap<TransferRecordParamModel, TransferRecordParamMapper>();
+            CreateMap<InnerToAndFroMailModel, InnerToAndFroMailMapper>();
         }
     }
 }

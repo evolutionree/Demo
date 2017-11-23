@@ -44,16 +44,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
             {
-                sqlCondition = string.Format(" AND ((body.sender ILIKE '%' || @{0} || '%' ESCAPE '`') OR (body.title ILIKE '%' || @{0} || '%' ESCAPE '`') OR (body.receivers ILIKE @{0} || '%' ESCAPE '`'))", keyWord);
-                sqlWhere.Concat(new object[] { sqlCondition });
+                sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
+                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
 
-            sqlCondition = string.Join(" AND ", sqlWhere);
+            sqlCondition = sqlWhere.Count() == 0 ? string.Empty : " AND " + string.Join(" AND ", sqlWhere);
 
 
-            if (paramInfo.pageSize <= 0)
+            if (paramInfo.PageSize <= 0)
             {
-                paramInfo.pageSize = 1000000;
+                paramInfo.PageSize = 1000000;
             }
             if (paramInfo.PageIndex <= 0)
             {
@@ -61,11 +61,62 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
             orderbyfield = string.Format(@"order by {0} desc", orderbyfield);
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
-            var arg = new
+            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, (paramInfo.PageIndex - 1) * paramInfo.PageSize);
+        }
+
+        /// <summary>
+        /// 根据条件返回邮件列表
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <param name="orderbyfield"></param>
+        /// <param name="userId"></param>
+        /// <param name="tran"></param>
+        /// <returns></returns>
+        public PageDataInfo<MailBodyMapper> InnerToAndFroListMail(InnerToAndFroMailMapper entity, int userId)
+        {
+            string strSQL = @"SELECT " +
+                                        "body.recid mailid," +
+                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccers," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers," +
+                                        "body.title," +
+                                        "body.mailbody," +
+                                        "body.senttime," +
+                                        "body.receivedtime," +
+                                        "body.istag," +
+                                        "body.isread," +
+                                        "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
+                                        " FROM crm_sys_mail_mailbody body Where body.recstatus=1 AND body.recid IN (" +
+                                        "SELECT mailid FROM crm_sys_mail_senderreceivers WHERE" +
+                                        "(" +
+                                        "mailaddress IN(SELECT accountid FROM crm_sys_mail_mailbox WHERE owner::INT4 IN(@fromuserid))" +
+                                        " OR " +
+                                        "mailaddress IN(SELECT accountid FROM crm_sys_mail_mailbox WHERE owner::INT4 IN(@userid))" +
+                                        ")" +
+                                        ")  {0} ORDER BY body.receivedtime DESC; ";
+            var sqlWhere = new object[] { };
+            string sqlCondition = string.Empty;
+            if (!string.IsNullOrEmpty(entity.KeyWord))
             {
-                catalogid = paramInfo.Catalog
-            };
-            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.pageSize, (paramInfo.PageIndex - 1) * paramInfo.pageSize);
+                sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' ||  @keyword || '%' ESCAPE '`'))";
+                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+            }
+
+            sqlCondition = sqlWhere.Count() == 0 ? string.Empty : " AND " + string.Join(" AND ", sqlWhere);
+
+
+            if (entity.PageSize <= 0)
+            {
+                entity.PageSize = 1000000;
+            }
+            if (entity.PageIndex <= 0)
+            {
+                entity.PageIndex = 1;
+            }
+
+            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(strSQL, sqlCondition), new DbParameter[] { new NpgsqlParameter("fromuserid", entity.FromUserId), new NpgsqlParameter("userid", userId), new NpgsqlParameter("keyword", entity.KeyWord) }, entity.PageSize, (entity.PageIndex - 1) * entity.PageSize);
         }
 
         public OperateResult TagMails(string mailids, MailTagActionType actionType, int userId)
@@ -257,7 +308,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             var sql = @"SELECT " +
                                         "body.recid mailid," +
-                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
+                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receiversjson," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccersjson," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccersjson," +

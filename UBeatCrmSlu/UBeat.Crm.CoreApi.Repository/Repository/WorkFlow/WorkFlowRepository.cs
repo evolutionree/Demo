@@ -128,6 +128,39 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
             return result;
         }
+        public Dictionary<string, List<Dictionary<string, object>>> GetNodeLinesInfo(Guid flowId, int userNumber, DbTransaction trans = null)
+        {
+            var vernumSql = @"SELECT vernum FROM crm_sys_workflow WHERE flowid = @flowid LIMIT 1";
+            var vernumSqlParameters = new List<DbParameter>();
+            vernumSqlParameters.Add(new NpgsqlParameter("flowid", flowId));
+            var vernumResult = ExecuteScalar(vernumSql, vernumSqlParameters.ToArray(), trans);
+            int vernum = 0;
+            if (vernumResult != null)
+                int.TryParse(vernumResult.ToString(), out vernum);
+
+
+            var executeSql = @" SELECT nodeid,nodename,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,auditsucc FROM crm_sys_workflow_node WHERE flowid = @flowid AND vernum = @vernum ;
+                                SELECT lineid,fromnodeid,tonodeid,ruleid from crm_sys_workflow_node_line WHERE flowid = @flowid AND vernum = @vernum;
+                                SELECT w.entityid,
+                                    (select entityname from crm_sys_entity e where e.entityid = w.entityid limit 1) as entityname,
+                                    (select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) as relentityid, 
+                                    (select entityname from crm_sys_entity where entityid in(select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) limit 1) as relentityname,
+                                flowid,flowname,remark,vernum FROM crm_sys_workflow w WHERE flowid = @flowid LIMIT 1;";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("flowid", flowId),
+                new NpgsqlParameter("vernum", vernum),
+            };
+            var tabels = ExecuteQueryMultiple(executeSql, param, trans);
+            var result = new Dictionary<string, List<Dictionary<string, object>>>();
+            result.Add("nodes", tabels[0]);
+            result.Add("lines", tabels[1]);
+            result.Add("flow", tabels[2]);
+            return result;
+        }
+
+
         public void SaveNodeLinesConfig(WorkFlowNodeLinesConfigMapper nodeLineConfig, int userNumber)
         {
             if (nodeLineConfig == null)

@@ -258,4 +258,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
         public int PageSize { get; set; }
     }
 
+
+    public class InnerToAndFroMailModel
+    {
+        public string KeyWord { get; set; }
+
+        public int FromUserId { get; set; }
+
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+    }
+
 }

@@ -60,6 +60,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>(retList);
         }
         [HttpPost]
+        [Route("intoandfrolstmail")]
+        public OutputResult<object> InnerToAndFroListMail([FromBody] InnerToAndFroMailModel model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.InnerToAndFroListMail(model, UserId);
+        }
+        [HttpPost]
         [Route("maildetail")]
         public OutputResult<object> MailDetail([FromBody] MailDetailModel model)
         {

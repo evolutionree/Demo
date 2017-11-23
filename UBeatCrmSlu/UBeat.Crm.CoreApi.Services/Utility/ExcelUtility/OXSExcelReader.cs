@@ -525,14 +525,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                                     if (tmpValue > 59)
                                         tmpValue -= 1;
                                     var tmpDate = new DateTime(1899, 12, 31).AddDays(tmpValue);
-                                    text = tmpDate.ToString("yyyy-MM-dd HH:mm:SS");
+                                    text = tmpDate.ToString("yyyy-MM-dd HH:mm:ss");
                                 }
                                 else
                                 {
                                     DateTime dt;
                                     if (DateTime.TryParse(text, out dt))
                                     {
-                                        text = string.Format("{0:yyyy-MM-dd HH:mm:SS}", dt);
+                                        text = string.Format("{0:yyyy-MM-dd HH:mm:ss}", dt);
                                     }
                                 }
                             }
@@ -734,7 +734,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                                     if (tmpValue > 59)
                                         tmpValue -= 1;
                                     var tmpDate = new DateTime(1899, 12, 31).AddDays(tmpValue);
-                                    cellValue = tmpDate.ToString("yyyy-MM-dd");
+                                    cellValue = tmpDate.ToString("yyyy-MM-dd HH:mm:ss");
 
                                 }
 
@@ -762,7 +762,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                             if (tmpValue > 59)
                                 tmpValue -= 1;
                             var tmpDate = new DateTime(1899, 12, 31).AddDays(tmpValue);
-                            cellValue = tmpDate.ToString("yyyy-MM-dd");
+                            cellValue = tmpDate.ToString("yyyy-MM-dd HH:mm:ss");
                            
                         }
 

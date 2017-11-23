@@ -517,4 +517,27 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
         public Guid MailId { get; set; }
     }
+
+    public class InnerToAndFroMailMapper:BaseEntity
+    {
+        public string KeyWord { get; set; }
+
+        public int FromUserId { get; set; }
+
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new InnerToAndFroMailMapperValidator();
+        }
+        class InnerToAndFroMailMapperValidator : AbstractValidator<InnerToAndFroMailMapper>
+        {
+            public InnerToAndFroMailMapperValidator()
+            {
+                RuleFor(d => d.PageIndex).Must(d => d > 0).WithMessage("页索引不能小于等于0");
+                RuleFor(d => d.PageSize).Must(d => d > 0).WithMessage("页大小不能小于等于0");
+            }
+        }
+    }
 }

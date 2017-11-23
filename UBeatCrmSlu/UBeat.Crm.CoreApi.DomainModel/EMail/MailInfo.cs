@@ -130,7 +130,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// <summary>
         /// 每页返回的数量
         /// </summary>
-        public int pageSize { get; set; }
+        public int PageSize { get; set; }
     }
     /// <summary>
     /// 邮件打标签的入口参数

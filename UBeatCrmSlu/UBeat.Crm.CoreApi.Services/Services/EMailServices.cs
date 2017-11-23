@@ -880,6 +880,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return lst;
         }
 
+        public OutputResult<object> InnerToAndFroListMail(InnerToAndFroMailModel model, int userId)
+        {
+
+            var entity = _mapper.Map<InnerToAndFroMailModel, InnerToAndFroMailMapper>(model);
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            var lst = _mailRepository.InnerToAndFroListMail(entity, userId);
+            foreach (var tmp in lst.DataList)
+            {
+                tmp.Summary = CommonHelper.NoHTML(tmp.MailBody);
+            }
+            return new OutputResult<object>(lst);
+        }
+
         public OutputResult<object> TagMails(TagMailModel model, int userNum)
         {
             var entity = _mapper.Map<TagMailModel, TagMailMapper>(model);
@@ -1048,8 +1064,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> GetMailBoxList(MailListActionParamInfo dynamicModel, int userId)
         {
             int pageSize = 10;
-            if (dynamicModel != null && dynamicModel.pageSize > 0)
-                pageSize = dynamicModel.pageSize;
+            if (dynamicModel != null && dynamicModel.PageSize > 0)
+                pageSize = dynamicModel.PageSize;
             return new OutputResult<object>(_mailRepository.GetMailBoxList(dynamicModel.PageIndex, pageSize, userId));
         }
 
@@ -1080,8 +1096,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> GetCustomerContact(MailListActionParamInfo dynamicModel, int userId)
         {
             int pageSize = 10;
-            if (dynamicModel != null && dynamicModel.pageSize > 0)
-                pageSize = dynamicModel.pageSize;
+            if (dynamicModel != null && dynamicModel.PageSize > 0)
+                pageSize = dynamicModel.PageSize;
             return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.PageIndex, pageSize, userId));
         }
         /// <summary>
@@ -1092,7 +1108,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>      
         public OutputResult<object> GetInnerToAndFroUser(ContactSearchInfo dynamicModel, int userId)
         {
-            return new OutputResult<object>(_mailRepository.GetInnerToAndFroUser(dynamicModel.keyword,userId));
+            return new OutputResult<object>(_mailRepository.GetInnerToAndFroUser(dynamicModel.keyword, userId));
         }
 
         /// <summary>
@@ -1102,8 +1118,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> GetRecentContact(MailListActionParamInfo dynamicModel, int userId)
         {
             int pageSize = 10;
-            if (dynamicModel != null && dynamicModel.pageSize > 0)
-                pageSize = dynamicModel.pageSize;
+            if (dynamicModel != null && dynamicModel.PageSize > 0)
+                pageSize = dynamicModel.PageSize;
             return new OutputResult<object>(_mailRepository.GetRecentContact(dynamicModel.PageIndex, pageSize, userId));
         }
 
