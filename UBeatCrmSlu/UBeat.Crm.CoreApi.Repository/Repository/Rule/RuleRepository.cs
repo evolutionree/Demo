@@ -91,7 +91,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
         public List<RuleDataInfo> GetRule(Guid ruleid, int userNumber, DbTransaction tran = null)
         {
             var executeSql = @" 
-                                SELECT r.ruleid::text,r.rulename,r.entityid::text,f.entityid::text,r.recstatus,i.itemid::text,i.fieldid::text,i.itemname,i.operate,i.usetype,i.ruletype,i.ruledata,s.ruleset,r.rulesql 
+                                SELECT r.ruleid::text,r.rulename,r.entityid::text,f.entityid::text AS itemIdEntityId,r.recstatus,i.itemid::text,i.fieldid::text,i.itemname,i.operate,i.usetype,i.ruletype,i.ruledata,s.ruleset,r.rulesql 
                                 FROM crm_sys_rule r
                                 Left JOIN crm_sys_rule_item_relation ir ON r.ruleid=ir.ruleid 
                                 Left JOIN crm_sys_rule_item  i on i.itemid=ir.itemid
