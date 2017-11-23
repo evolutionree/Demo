@@ -123,8 +123,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid CatalogId { get; set; }
         public string CatalogName { get; set; }
         public int Ctype { get; set; }
-        public Guid CustCatelog { get; set; }
         public Guid CustCataLog { get; set; }
+        public Guid CustId { get; set; }
         public Guid CatalogPId { get; set; }
         public int Recorder { get; set; }
         public bool IsAdd { get; set; }

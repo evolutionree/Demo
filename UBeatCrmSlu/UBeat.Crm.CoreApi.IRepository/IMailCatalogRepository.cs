@@ -41,6 +41,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         MailCatalogInfo GetMailCataLogById(Guid catalog, int userNum, DbTransaction p);
 
+        MailCatalogInfo GetMailCataLogByViewUserId(Guid catalog, int userNum, DbTransaction p);
+
         UserMailInfo GetUserMailInfo(string fromAddress, int userId);
 
         IList<UserMailInfo> GetAllUserMail(int deviceType,int userId);

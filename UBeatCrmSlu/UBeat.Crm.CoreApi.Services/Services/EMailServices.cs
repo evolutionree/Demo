@@ -156,29 +156,45 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             DbTransaction tran = null;
             if (userId == paramInfo.newUserId) throw (new Exception("无需转移"));
-            MailCatalogInfo catalog = _mailCatalogRepository.GetMailCataLogById(paramInfo.recId, userId, tran);
+            MailCatalogInfo catalog = _mailCatalogRepository.GetMailCataLogByViewUserId(paramInfo.recId, userId, tran);
             if (catalog == null) throw (new Exception("转移目录错误"));
-            if (catalog.ViewUserId != userId) throw (new Exception("没有权限转移此目录"));
 
-            if (catalog.CType != MailCatalogType.Cust) throw (new Exception("只能转移客户的目录"));
-            MailCatalogInfo parentCatalog = _mailCatalogRepository.GetMailCataLogById(catalog.PId, userId, tran);
-            if (parentCatalog.CType != MailCatalogType.CustType) throw (new Exception("目录异常"));
+            if (catalog.CType != MailCatalogType.CustDyn) throw (new Exception("只能转移客户的目录"));
+            MailCatalogInfo parentCatalog = _mailCatalogRepository.GetMailCataLogByViewUserId(catalog.VPId, userId, tran);
+            if (parentCatalog==null||parentCatalog.CType != MailCatalogType.CustType) throw (new Exception("目录异常"));
             if (parentCatalog.CustCatalog == null || parentCatalog.CustCatalog == Guid.Empty) { throw (new Exception("目录异常")); }
             MailCatalogInfo newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
             Guid newParentCatalogid;
             if (newParentCatalog == null)
             {
                 this.InitMailCatalog(paramInfo.newUserId);
-                //找新用户的收件箱
-                MailCatalogInfo inboxCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, MailCatalogType.InBox.ToString());
-
+                //没有客户分类目录，创建客户分类目录
+                int custEum=(int)MailCatalogType.Cust;
+                MailCatalogInfo custCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, custEum.ToString());
+                CUMailCatalogMapper entity = new CUMailCatalogMapper
+                {
+                    CatalogName = parentCatalog.RecName,
+                    Ctype = (int)MailCatalogType.CustType,
+                    CustId = parentCatalog.CustId,
+                    CustCataLog = parentCatalog.CustCatalog,
+                    CatalogPId = custCatalog.RecId
+                };
+                OperateResult optResult=_mailCatalogRepository.InsertCatalog(entity, paramInfo.newUserId);
+                if (optResult.Flag == 1)
+                {
+                    newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
+                    _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalog.RecId, tran);
+                }
+                else {
+                    return new OutputResult<object>("操作失败");
+                }
             }
             else
             {
                 newParentCatalogid = newParentCatalog.RecId;
+                _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalogid, tran);
             }
-            _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalogid, tran);
-            return null;
+            return new OutputResult<object>("操作成功");
         }
 
         /// <summary>
