@@ -266,6 +266,7 @@ namespace UBeat.Crm.CoreApi.DomainMapper.Rule
     public class RoleRuleQueryMapper
     {
         public string EntityId { set; get; }
+        public string ItemIdEntityId { set; get; }
         public string Roleid { get; set; }
         public string RuleId { get; set; }
         public string RuleName { get; set; }
