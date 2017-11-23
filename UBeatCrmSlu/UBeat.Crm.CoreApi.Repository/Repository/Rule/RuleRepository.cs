@@ -108,12 +108,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
                 t.RuleId,
                 t.RuleName,
                 t.RuleSet,
-                t.RuleSql
+                t.RuleSql,
+                t.EntityId,
             }).Select(group => new RuleDataInfo
             {
                 RuleId = group.Key.RuleId,
                 RuleName = group.Key.RuleName,
                 Rulesql=group.Key.RuleSql,
+                EntityId=group.Key.EntityId,
                 RuleItems = group.Select(t => new RuleItemInfo
                 {
                     ItemId = t.ItemId,
@@ -122,7 +124,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
                     Operate = t.Operate,
                     UseType = t.UseType,
                     RuleData = t.RuleData,
-                    RuleType = t.RuleType
+                    RuleType = t.RuleType,
+                    EntityId=t.EntityId,
+
                 }).ToList(),
                 RuleSet = new RuleSetInfo
                 {
