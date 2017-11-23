@@ -166,40 +166,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             
                         }
                         break;
-                    case 11://分支流程条件
+                    case 2001://分支流程条件--发起人
                         {
-                            switch(entity.ControlType)
-                            {
-                                case 2001://分支流程条件--发起人
-                                    {
-                                        entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancher", entity.RuleData);
-                                    }
-                                    break;
-                                case 2002://分支流程条件--发起人部门 
-                                    {
-                                        entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherdeptid", entity.RuleData);
-                                    }
-                                    break;
-                                case 2003://分支流程条件--发起人上级部门 
-                                    {
-                                        entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherpredeptid", entity.RuleData);
-                                    }
-                                    break;
-                                case 2004://分支流程条件--发起人角色
-                                    {
-                                        entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherroleid", entity.RuleData);
-                                    }
-                                    break;
-                                case 2005://分支流程条件--是否是领导
-                                    {
-                                        entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherisleader", entity.RuleData);
-                                    }
-                                    break;
-                                default: throw new Exception("尚未实现的规则类型");
-                            }
+                            entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancher", entity.RuleData);
                         }
                         break;
-                    
+                    case 2002://分支流程条件--发起人部门 
+                        {
+                            entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherdeptid", entity.RuleData);
+                        }
+                        break;
+                    case 2003://分支流程条件--发起人上级部门 
+                        {
+                            entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherpredeptid", entity.RuleData);
+                        }
+                        break;
+                    case 2004://分支流程条件--发起人角色
+                        {
+                            entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherroleid", entity.RuleData);
+                        }
+                        break;
+                    case 2005://分支流程条件--是否是领导
+                        {
+                            entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherisleader", entity.RuleData);
+                        }
+                        break;
+
                     default: throw new Exception("尚未实现的规则类型");
                 }
                 entity.Relation.ParamIndex = -1;
