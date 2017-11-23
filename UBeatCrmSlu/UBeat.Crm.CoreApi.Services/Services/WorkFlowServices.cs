@@ -43,20 +43,100 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> CaseDetail(CaseDetailModel detailModel, int userNumber)
         {
-            return null;
+            var result = new CaseDetailDataModel();
+
             using (var conn = GetDbConnect())
             {
                 conn.Open();
                 var tran = conn.BeginTransaction();
                 try
                 {
-
-                    //获取casedetail
+                    #region --获取 casedetail--
+                    //获取流程数据信息
                     var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, detailModel.CaseId);
-                    //获取nodeauditinfo，包含caseoperate
+                    if (caseInfo == null)
+                        throw new Exception("流程数据不存在");
+                    //获取流程配置信息
+                    var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
+                    if (workflowInfo == null)
+                        throw new Exception("流程配置不存在");
 
+                    result.CaseDetail = new WorkFlowCaseInfoExt()
+                    {
+                        CaseId = caseInfo.CaseId,
+                        FlowId = caseInfo.FlowId,
+                        RecId = caseInfo.RecId,
+                        EntityId = caseInfo.EntityId,
+                        RelEntityId = caseInfo.RelEntityId,
+                        RelRecId = caseInfo.RelRecId,
+                        AuditStatus = caseInfo.AuditStatus,
+                        RecCode = caseInfo.RecCode,
+                        NodeNum = caseInfo.NodeNum,
+                        RecCreated = caseInfo.RecCreated,
+                        RecUpdated = caseInfo.RecUpdated,
+                        RecCreator = caseInfo.RecCreator,
+                        RecUpdator = caseInfo.RecUpdator,
+                        Recstatus = caseInfo.Recstatus,
+                        FlowName = workflowInfo.FlowName,
+                        BackFlag = workflowInfo.BackFlag,
+                        RecCreator_Name = workflowInfo.RecCreator_name
+                    };
+                    #endregion
 
+                    #region --获取 nodeauditinfo，包含 caseoperate--
+                    //获取当前审批的实例item
+                    var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
+                    if (caseitems == null || caseitems.Count == 0)
+                    {
+                        throw new Exception("流程节点数据异常");
+                    }
 
+                    result.CaseItem = new CaseItemAuditInfo();
+
+                    var nowcaseitem = caseitems.Find(m => m.HandleUser == userNumber);
+                    if (caseInfo.NodeNum == -1)
+                    {
+                        result.CaseItem.NodeName = "已完成审批";
+                    }
+                    else
+                    {
+                        var nodeid = caseitems.FirstOrDefault().NodeId;
+                        var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
+                        string nodeName = string.Empty;
+                        if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
+                        {
+                            nodeName = "自由流程";
+                        }
+                        else
+                        {
+                            if (flowNodeInfo == null)
+                                throw new Exception("不存在有效节点");
+                            else nodeName = flowNodeInfo.NodeName;
+                        }
+                        result.CaseItem.NodeId = nodeid;
+                        result.CaseItem.NodeName = nodeName;
+
+                        if (caseInfo.NodeNum == 0)//如果处于第一个节点
+                        {
+                            //如果审批关联的实体为简单实体且简单实体无关联的独立实体时，则允许编辑审批信息重新提交或者中止审批
+                            //如果审批关联的实体为独立实体或关联的简单实体有关联的独立实体时，则不允许编辑审批信息，只能中止审批
+                            result.CaseItem.IsCanTerminate = 1;
+                            if (caseInfo.RecCreator == userNumber)
+                            {
+                                result.CaseItem.IsCanEdit = _workFlowRepository.CanEditWorkFlowCase(workflowInfo, userNumber, tran) ? 1 : 0;
+                            }
+                        }
+                        else
+                        {
+                            result.CaseItem.IsCanAllow = 1;
+                            result.CaseItem.IsCanReject = 1;
+                            result.CaseItem.IsCanReback = workflowInfo.BackFlag;
+                        }
+                    }
+
+                    #endregion
+
+                    #region --获取 entitydetail--
                     //获取 entitydetail
                     var detailMapper = new DynamicEntityDetailtMapper()
                     {
@@ -64,8 +144,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         RecId = caseInfo.RecId,
                         NeedPower = 0
                     };
-                    var entitydetail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
+                    result.EntityDetail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
+                    #endregion
 
+                    #region --获取 relatedetail--
                     //获取 relatedetail
                     if (caseInfo.RelEntityId != Guid.Empty && caseInfo.RelRecId != Guid.Empty)
                     {
@@ -75,8 +157,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             RecId = caseInfo.RelRecId,
                             NeedPower = 0
                         };
-                        var relatedetail = _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
+                        result.RelateDetail = _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
                     }
+                    #endregion
 
                     tran.Commit();
                 }
@@ -91,6 +174,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     conn.Dispose();
                 }
             }
+            return new OutputResult<object>(result);
         }
 
         public OutputResult<object> AddCase(WorkFlowAddCaseModel caseModel, int userNumber)

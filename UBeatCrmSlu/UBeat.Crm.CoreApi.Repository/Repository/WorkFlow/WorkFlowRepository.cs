@@ -387,8 +387,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         public WorkFlowInfo GetWorkFlowInfo(DbTransaction trans, Guid flowid)
         {
-            var executeSql = @"SELECT w.*,e.relentityid FROM crm_sys_workflow  AS w
+            var executeSql = @"SELECT w.*,e.relentityid,u.username AS RecCreator_name FROM crm_sys_workflow  AS w
                                LEFT JOIN crm_sys_entity AS e ON e.entityid = w.entityid 
+                               LEFT JOIN crm_sys_userinfo AS u ON u.userid = w.reccreator
                                WHERE flowid=@flowid";
 
             var param = new DbParameter[]
@@ -1245,6 +1246,40 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             var result= ExecuteNonQuery(case_sql, caseParameters.ToArray(), trans);
 
             return result > 0;
+        }
+
+
+        /// <summary>
+        /// 判断是否允许编辑审批数据
+        /// </summary>
+        /// <returns></returns>
+        public bool CanEditWorkFlowCase(WorkFlowInfo workflow, int userno, DbTransaction trans = null)
+        {
+            string sql = string.Format(@" SELECT e.modeltype,re.modeltype AS relmodeltype FROM crm_sys_entity AS e
+                                          LEFT JOIN crm_sys_entity AS re ON re.entityid=e.relentityid
+                                          WHERE e.entityid= @entityid;");
+
+            var sqlParameters = new List<DbParameter>();
+            sqlParameters.Add(new NpgsqlParameter("entityid", workflow.Entityid));
+
+            var result = ExecuteQuery(sql, sqlParameters.ToArray(), trans).FirstOrDefault();
+            //modeltype IS '实体模型类型0独立实体1嵌套实体2简单(应用)实体3动态实体'
+            //如果审批关联的实体为简单实体且简单实体无关联独立实体时，则允许编辑审批信息重新提交
+            //如果审批关联的实体为独立实体或关联的简单实体有关联的独立实体时，则不允许编辑审批信息
+            var modeltypeobj = result["modeltype"];
+            var relmodeltypeobj = result["relmodeltype"];
+            int modeltype = -1;
+            
+            if (modeltypeobj != null && int.TryParse(modeltypeobj.ToString(), out modeltype))
+            {
+                int relmodeltype = -1;
+                if (modeltype==2 &&(relmodeltypeobj==null||( int.TryParse(relmodeltypeobj.ToString(), out relmodeltype) && relmodeltype!=0)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
     }
