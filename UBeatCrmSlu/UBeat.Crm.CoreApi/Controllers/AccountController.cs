@@ -333,6 +333,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _accountServices.SetLeader(entityModel, UserId);
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("downloadapp")]
+        public OutputResult<object> DownloadApp()
+        {
+            IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+            var downloadappurl = config.GetSection("DownloadAppUrl").Value;
+
+            return new OutputResult<object>(downloadappurl);
+        }
+
         [HttpPost]
         [AllowAnonymous]
         [Route("updatesoftware")]
