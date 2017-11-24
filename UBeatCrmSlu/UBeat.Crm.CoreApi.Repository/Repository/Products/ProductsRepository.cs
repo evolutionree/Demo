@@ -66,17 +66,36 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
             };
             return ExecuteQuery<OperateResult>(executeSql, param, trans).FirstOrDefault();
         }
-
-
-
-        public dynamic GetProductSeries(DbTransaction trans, Guid? productSetId, string direction, int userNumber)
+        public OperateResult ToEnableProductSeries(DbTransaction trans, Guid productSeriesId, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_product_series_select(@productsetid,@direction,@userno)";
+            var executeSql = @"update crm_sys_products_series
+	                           set recstatus=1,
+	                               recupdator=@userno,
+	                               recupdated=now()
+	                           where productsetid=@productsetid;";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("productsetid", productSeriesId),
+                new NpgsqlParameter("userno", userNumber),
+            };
+            var resutl = new OperateResult();
+            int res= ExecuteNonQuery(executeSql, param, trans);
+            if (res > 0)
+                resutl.Flag = 1;
+            return resutl;
+        }
+
+
+        public dynamic GetProductSeries(DbTransaction trans, Guid? productSetId, string direction, int isGetDisable, int userNumber)
+        {
+            var executeSql = @"SELECT * FROM crm_func_product_series_select_improve(@productsetid,@direction,@isgetdisable,@userno)";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("productsetid", productSetId.ToString()),
                 new NpgsqlParameter("direction", direction),
+                new NpgsqlParameter("isgetdisable", isGetDisable),
                 new NpgsqlParameter("userno", userNumber),
 
             };
@@ -122,7 +141,25 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
             return ExecuteQuery<OperateResult>(executeSql, param, trans).FirstOrDefault();
 
         }
+        public OperateResult ToEnableProduct(DbTransaction trans, string productIds, int userNumber)
+        {
+            var executeSql = @" UPDATE crm_sys_product
+			                    SET recstatus=1,
+			                    recupdator=@userno,
+			                    recupdated=now()
+			                    WHERE recid::text IN (select * from regexp_split_to_table(@productids,','));";
 
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("productids", productIds),
+                new NpgsqlParameter("userno", userNumber),
+            };
+            var resutl = new OperateResult();
+            int res = ExecuteNonQuery(executeSql, param, trans);
+            if (res > 0)
+                resutl.Flag = 1;
+            return resutl;
+        }
 
         public dynamic GetProducts(DbTransaction trans, string ruleSql, PageParam page, ProductList productData, string serachKey, int userNumber)
         {

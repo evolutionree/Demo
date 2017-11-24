@@ -35,12 +35,14 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         OperateResult DeleteProductSeries(DbTransaction trans, Guid productSeriesId, int userNumber);
 
+        //启用产品系列
+        OperateResult ToEnableProductSeries(DbTransaction trans, Guid productSeriesId, int userNumber);
 
         /// <summary>
         /// 获取产品系列树
         /// </summary>
         /// <returns></returns>
-        dynamic GetProductSeries(DbTransaction trans, Guid? productSetId, string direction, int userNumbe);
+        dynamic GetProductSeries(DbTransaction trans, Guid? productSetId, string direction,int isGetDisable, int userNumbe);
 
 
 
@@ -52,8 +54,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="usernumber"></param>
         /// <returns></returns>
         OperateResult DeleteProduct(DbTransaction trans, string productIds, int userNumber);
-
-
+        // 启用产品
+        OperateResult ToEnableProduct(DbTransaction trans, string productIds, int userNumber);
         /// <summary>
         /// 获取产品
         /// </summary>

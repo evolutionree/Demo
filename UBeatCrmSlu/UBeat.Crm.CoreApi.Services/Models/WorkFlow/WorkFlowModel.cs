@@ -77,6 +77,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Dictionary<string,string> RuleConfig { get; set; }
         public Dictionary<string, object> ColumnConfig { get; set; }
         public int AuditSucc { get; set; }
+
+        public string NodeEvent { set; get; }
     }
 
     public class WorkFlowLineModel
