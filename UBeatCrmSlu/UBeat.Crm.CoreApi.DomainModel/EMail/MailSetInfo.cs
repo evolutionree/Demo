@@ -200,5 +200,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public int ImapPort { get; set; }
         public string SmtpAddress { get; set; }
         public int SmtpPort { get; set; }
+        public int EnableSsl { get; set; }
     }
 }
