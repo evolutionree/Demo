@@ -317,6 +317,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
                     {
                         nodetemp.NodeId = null;
+                        nodetemp.FlowType = WorkFlowType.FreeFlow;
                         nodetemp.NodeName = "自由选择审批人";
                         nodetemp.NodeType = NodeType.Normal;
                         nodetemp.NodeNum = 1;
@@ -352,6 +353,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
 
                         nodetemp.NodeId = flowNodeInfo.NodeId;
+                        nodetemp.FlowType = WorkFlowType.FixedFlow;
                         nodetemp.NodeName = flowNodeInfo.NodeName;
                         nodetemp.NodeType = flowNodeInfo.NodeType;
                         nodetemp.NodeNum = caseInfo.NodeNum;
@@ -384,7 +386,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 m.NodeState = 0;
                                 m.NodeNum = caseInfo.NodeNum;
-                                nodetemp.NeedSuccAuditCount = 1;
+                                m.NeedSuccAuditCount = 1;
+                                m.FlowType = WorkFlowType.FixedFlow;
                                 var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, m.NodeId.GetValueOrDefault(), userNumber, workflowInfo.FlowType, tran);
                                 result.Add(new NextNodeDataModel()
                                 {

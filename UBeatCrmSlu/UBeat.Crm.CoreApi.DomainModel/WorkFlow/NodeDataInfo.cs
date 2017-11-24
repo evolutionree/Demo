@@ -15,6 +15,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// </summary>
         public NodeType NodeType { set; get; }
 
+        /// <summary>
+        /// 流程类型 0自由流程 1固定流程
+        /// </summary>
+        public WorkFlowType FlowType { set; get; }
 
         public int NodeNum { set; get; }
         /// <summary>
