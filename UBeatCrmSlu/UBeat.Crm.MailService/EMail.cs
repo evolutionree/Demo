@@ -42,7 +42,7 @@ namespace UBeat.Crm.MailService
              });
         }
 
-        public async Task<List<MimeMessage>> ImapRecMessageAsync(string host, int port, string userAccount, string userPassword, SearchQuery searchQuery, bool enableSsl = true)
+        public async Task<List<MimeMessage>> ImapRecMessageAsync(string host, int port, string userAccount, string userPassword, SearchQuery searchQuery, bool enableSsl)
         {
             return await Task.Run(() =>
             {

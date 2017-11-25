@@ -184,9 +184,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
         public string MailBody { get; set; }
 
-        public DateTime ReceiveTime { get; set; }
+        public DateTime ReceivedTime { get; set; }
 
-        public DateTime SendTime { get; set; }
+        public DateTime SentTime { get; set; }
 
         public Int64 IsTag { get; set; }
 

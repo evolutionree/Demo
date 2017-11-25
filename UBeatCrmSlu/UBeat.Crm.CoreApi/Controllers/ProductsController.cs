@@ -73,7 +73,19 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _service.DeleteProductSeries(body, UserId);
 
         }
+        /// <summary>
+        /// 启用产品系列
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("toenableseries")]
+        public OutputResult<object> ToEnableProductSeries([FromBody] ProductSeriesDeleteModel body)
+        {
 
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _service.ToEnableProductSeries(body, UserId);
+
+        }
 
         /// <summary>
         /// 获取产品系列树
@@ -139,6 +151,19 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         }
 
+        /// <summary>
+        /// 启用产品
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        /// 
+        [HttpPost("toenableproduct")]
+        public OutputResult<object> ToEnableProduct([FromBody] ProductDeleteModel body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _service.ToEnableProduct(body.ProductId, UserId);
+
+        }
 
         /// <summary>
         /// 获取产品

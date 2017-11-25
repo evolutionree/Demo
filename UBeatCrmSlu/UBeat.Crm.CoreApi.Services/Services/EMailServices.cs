@@ -302,8 +302,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 OutputResult<object> repResult = new OutputResult<object>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
+                    if(userMailInfo.EncryptPwd==null)
+                        continue;
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
-                    var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, false);
+                    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                    var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
 

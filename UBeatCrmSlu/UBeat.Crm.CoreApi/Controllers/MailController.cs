@@ -41,7 +41,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("receiveemail")]
         public OutputResult<object> ReceiveEMailAsync([FromBody] ReceiveEMailModel model = null)
         {
-            if (model == null)
+            if (model == null|| model.ConditionVal==null)
             {
                 model = new ReceiveEMailModel();
                 model.Conditon = SearchQueryEnum.None;
