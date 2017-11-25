@@ -70,9 +70,11 @@ namespace UBeat.Crm.CoreApi
             var containerBuilder = new ContainerBuilder();
             containerBuilder.Populate(services);
             // Regists Dependency
+
             CoreApiRegistEngine.RegisterServices(containerBuilder, "UBeat.Crm.CoreApi.Services", "Services");
             CoreApiRegistEngine.RegisterImplemented(containerBuilder, "UBeat.Crm.CoreApi.Repository", "Repository");
 
+            LoadCustomerProjectAssemblyForService(containerBuilder);
             Container = containerBuilder.Build();
 
             // Service Locator
@@ -116,7 +118,7 @@ namespace UBeat.Crm.CoreApi
             app.UseMvc();
         }
         /// <summary>
-        /// 根据情况装载客户项目的dll情况
+        /// 装载第三方（插件）的Controller
         /// </summary>
         /// <param name="mvcBuilder"></param>
         public void LoadCustomerProjectAssembly(IMvcBuilder mvcBuilder) {
@@ -150,7 +152,14 @@ namespace UBeat.Crm.CoreApi
                 }
                 currentDirectory = d.Parent.Parent.Parent.Parent.FullName;
                 foreach (string item in plugins) {
-                    string filePath = string.Format("{0}{1}{2}{1}obj{1}Debug{1}netcoreapp1.1{1}{2}.dll", currentDirectory, filesplite, item);
+                    string filePath = "";
+                    if (item.EndsWith(".dll")) {
+                        filePath = item;
+                    }
+                    else
+                    {
+                        filePath = string.Format("{0}{1}{2}{1}obj{1}Debug{1}netcoreapp1.1{1}{2}.dll", currentDirectory, filesplite, item);
+                    }
                     FileInfo fileInfo = new FileInfo(filePath);
                     if (fileInfo.Exists == false) continue;
                     Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(fileInfo.FullName);
@@ -169,6 +178,92 @@ namespace UBeat.Crm.CoreApi
                     mvcBuilder.AddApplicationPart(assembly);
                 }
             }
+        }
+        /// <summary>
+        /// 装载并初始化第三方（插件）的Services和Repository
+        /// </summary>
+        /// <param name="containerBuilder"></param>
+        public void LoadCustomerProjectAssemblyForService(ContainerBuilder containerBuilder)
+        {
+            var config = new ConfigurationBuilder()
+              .SetBasePath(Directory.GetCurrentDirectory())
+              .AddJsonFile("plugin.json")
+              .Build();
+            List<string> plugins = new List<string>();
+            IEnumerator<IConfigurationSection> it = config.GetSection("PluginProjectList").GetChildren().GetEnumerator();
+            while (it.MoveNext())
+            {
+                IConfigurationSection item = it.Current;
+                if (item.Value != null && item.Value.Length != 0)
+                {
+                    plugins.Add(item.Value);
+                }
+            }
+            dynamic type = this.GetType();
+            string currentDirectory = Path.GetDirectoryName(type.Assembly.Location);
+            DirectoryInfo d = new DirectoryInfo(currentDirectory);
+
+            string filesplite = "\\";
+            string env = config.GetSection("Environment").Value;
+            if (env == null) env = "";
+            if (env.ToUpper().Equals("DEBUG"))
+            {
+                if (!(d != null
+                    && d.Parent != null
+                    && d.Parent.Parent != null
+                    && d.Parent.Parent.Parent != null
+                    && d.Parent.Parent.Parent.Parent != null))
+                {
+                    return;
+                }
+                currentDirectory = d.Parent.Parent.Parent.Parent.FullName;
+                foreach (string item in plugins)
+                {
+                    string filePath = "";
+                    if (item.EndsWith(".dll"))
+                    {
+                        filePath = item;
+                    }
+                    else
+                    {
+                        filePath = string.Format("{0}{1}{2}{1}obj{1}Debug{1}netcoreapp1.1{1}{2}.dll", currentDirectory, filesplite, item);
+                    }
+                    FileInfo fileInfo = new FileInfo(filePath);
+                    if (fileInfo.Exists == false) continue;
+                    Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(fileInfo.FullName);
+                    string endWithName = "Services";
+                    containerBuilder.RegisterAssemblyModules(assembly);
+                    containerBuilder.RegisterAssemblyTypes(assembly)
+                    .Where(t => t.Name.EndsWith(endWithName)).SingleInstance().PropertiesAutowired();
+                    string endWithName2 = "Repository";
+                    containerBuilder.RegisterAssemblyTypes(assembly)
+                    .Where(t => t.Name.EndsWith(endWithName2)).AsImplementedInterfaces().SingleInstance().PropertiesAutowired();
+
+                }
+            }
+            else
+            {
+                filesplite = "/";
+                foreach (string item in plugins)
+                {
+                    string filePath = string.Format("{0}{1}{2}.dll", currentDirectory, filesplite, item);
+                    FileInfo fileInfo = new FileInfo(filePath);
+                    if (fileInfo.Exists == false) continue;
+                    Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(fileInfo.FullName);
+                    string endWithName = "Services";
+                    containerBuilder.RegisterAssemblyModules(assembly);
+                    containerBuilder.RegisterAssemblyTypes(assembly)
+                    .Where(t => t.Name.EndsWith(endWithName)).SingleInstance().PropertiesAutowired();
+                    string endWithName2 = "Repository";
+                    //containerBuilder.RegisterAssemblyModules(assembly)
+                    containerBuilder.RegisterAssemblyTypes(assembly)
+                    .Where(t => t.Name.EndsWith(endWithName2)).AsImplementedInterfaces().SingleInstance().PropertiesAutowired();
+
+                }
+            }
+            //var assembly = Assembly.Load(new AssemblyName(fileInfo.FullName));
+            //CoreApiRegistEngine.RegisterServices(containerBuilder, "UBeat.Crm.CoreApi.Services", "Services");
+            
         }
     }
 }
