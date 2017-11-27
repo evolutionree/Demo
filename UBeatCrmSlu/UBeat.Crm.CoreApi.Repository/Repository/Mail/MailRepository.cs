@@ -398,7 +398,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             var subDeptUserSql = @"SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN 
                                            (SELECT deptid FROM crm_func_department_tree(@deptid,1)) AND userid!=@userid";
 
-            var emailUserSql = @" SELECT Distinct owner::int4 FROM crm_sys_mail_mailbox WHERE owner IN (@userids)  ";
+            var emailUserSql = @" SELECT Distinct owner::int4 FROM crm_sys_mail_mailbox WHERE owner::int4 IN (SELECT regexp_split_to_table(@userids,',')::int4)  ";
 
             var cataHandleSql = "Select * From  crm_func_mail_cata_related_handle(@mailid,null,'{\"issendoreceive\":\"1\"}',null,@userid);";
 
