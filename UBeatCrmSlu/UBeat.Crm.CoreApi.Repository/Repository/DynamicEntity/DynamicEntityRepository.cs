@@ -1121,7 +1121,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         /// <param name="userId"></param>
         /// <param name="tran"></param>
         /// <returns></returns>
-        public object ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null)
+        public object ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string [] recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null)
         {
             string functionname = funcInfo.FunctionName;
             string paramNames = funcInfo.Parameters;
@@ -1134,7 +1134,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                     if (realParam.ContainsKey(tmpitem)) continue;
                     if (tmpitem.Equals("recids"))
                     {
-                        realParam.Add("recids", recIds);
+                        realParam.Add("recids",Newtonsoft.Json.JsonConvert.SerializeObject( recIds));
                     }
                     else if (tmpitem.Equals("userid")) {
                         realParam.Add("userid", userId.ToString());

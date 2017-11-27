@@ -299,7 +299,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                 var dataKey = resultSetName.ToString().Replace("cursor", "");
 
                 var result = ExecuteQuery(trans, resultSetReferenceCmdText, null, CommandType.Text);
-
+                var closeCursorSQL = string.Format("close \"{0}\";", resultSetName);
+                ExecuteNonQuery(trans, closeCursorSQL, new DbParameter[] { });
                 resultList.Add(dataKey, result);
             }
             return resultList;
@@ -327,7 +328,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                     var dataKey = resultSetName.ToString().Replace("cursor", "");
 
                     var result = ExecuteQuery(tran, resultSetReferenceCmdText, null, CommandType.Text);
-
+                    var closeCursorSQL = string.Format("close \"{0}\";", resultSetName);
+                    ExecuteNonQuery(tran, closeCursorSQL, new DbParameter[] { });
                     resultList.Add(dataKey, result);
                 }
                 conn.Close();
@@ -382,7 +384,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                     var dataKey = resultSetName.ToString().Replace("cursor", "");
 
                     var result = ExecuteQuery<T>(tran, resultSetReferenceCmdText, null, CommandType.Text);
-
+                    var closeCursorSQL = string.Format("close \"{0}\";", resultSetName);
+                    ExecuteNonQuery(tran, closeCursorSQL, new DbParameter[] { });
                     resultList.Add(dataKey, result);
                 }
                 conn.Close();

@@ -307,7 +307,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// <summary>
         /// 执行自定义函数的记录ids
         /// </summary>
-        public string RecIds { get; set; }
+        public string []RecIds { get; set; }
         /// <summary>
         /// 属于哪个实体的函数
         /// </summary>
