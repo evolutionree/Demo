@@ -61,7 +61,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
             orderbyfield = string.Format(@"order by {0} desc", orderbyfield);
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
-            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex );
+            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
         }
 
         /// <summary>
@@ -709,7 +709,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
 
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
             {
-                whereSql = @"  Where recstatus=1 and  mailid IN (
+                whereSql = @"  Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
@@ -927,6 +927,24 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
                 new NpgsqlParameter("userId", userId)
             };
             return ExecuteQuery<OrgAndStaffTree>(newSql, param);
+        }
+
+        public MailBodyMapper GetMailInfo(List<Guid> mailIds,int userId)
+        {
+            string strSQL = @"SELECT " +
+                            "body.recid mailid," +
+                            "body.title," +
+                            "body.mailbody," +
+                            "body.senttime," +
+                            "body.receivedtime," +
+                            "body.istag," +
+                            "body.isread" +
+                            " FROM crm_sys_mail_mailbody body Where body.recstatus=1 AND body.recid IN (select regexp_split_to_table(@mailids,',')::uuid)";
+            var param = new
+            {
+                MailIds = string.Join(",", mailIds.ToArray())
+            };
+            return DataBaseHelper.QuerySingle<MailBodyMapper>(strSQL, param);
         }
 
         #endregion
