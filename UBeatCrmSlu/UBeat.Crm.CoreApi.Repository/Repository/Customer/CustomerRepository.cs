@@ -214,10 +214,9 @@ WHERE (wc.auditstatus=0 OR wc.auditstatus=3 ) AND cr.relrecid =ANY (@recids)
             var result = 0;
 
             var sql = string.Format(@" UPDATE crm_sys_customer SET recstatus=0,recupdator=@recupdator,recupdated=@recupdated  WHERE recid=ANY (@oldrecid);
-                                       UPDATE crm_sys_custcommon SET recstatus=0,recupdator=@recupdator,recupdated=@recupdated  WHERE recid in(
-                                              SELECT commonid FROM crm_sys_custcommon_customer_relate AS cr WHERE cr.custid=ANY (@oldrecid) 
-                                              AND (SELECT COUNT(1) FROM crm_sys_custcommon_customer_relate WHERE commonid=cr.commonid)=1);
-                                       DELETE FROM crm_sys_custcommon_customer_relate WHERE custid=ANY (@oldrecid);");
+                                       DELETE FROM crm_sys_custcommon_customer_relate WHERE custid=ANY (@oldrecid);
+                                       UPDATE crm_sys_custcommon SET recstatus=0,recupdator=@recupdator,recupdated=@recupdated  WHERE recid not in(
+                                              SELECT commonid FROM crm_sys_custcommon_customer_relate );");
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("oldrecid", oldCustid.ToArray()));
