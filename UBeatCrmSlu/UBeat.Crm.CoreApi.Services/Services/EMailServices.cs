@@ -111,6 +111,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             fieldData.Add("relativemailbox", BuilderAddress(msgResult.Msg.From));//邮件发送人
             fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
             fieldData.Add("title", msgResult.Msg.Subject);//邮件主题
+
             fieldData.Add("mailbody", msgResult.Msg.GetTextBody(TextFormat.Html));//邮件主题内容
             fieldData.Add("sender", BuilderAddress(msgResult.Msg.From));//邮件发送人
             fieldData.Add("receivers", BuilderAddress(msgResult.Msg.To));//邮件接收人
@@ -161,7 +162,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             if (catalog.CType != MailCatalogType.CustDyn) throw (new Exception("只能转移客户的目录"));
             MailCatalogInfo parentCatalog = _mailCatalogRepository.GetMailCataLogByViewUserId(catalog.VPId, userId, tran);
-            if (parentCatalog==null||parentCatalog.CType != MailCatalogType.CustType) throw (new Exception("目录异常"));
+            if (parentCatalog == null || parentCatalog.CType != MailCatalogType.CustType) throw (new Exception("目录异常"));
             if (parentCatalog.CustCatalog == null || parentCatalog.CustCatalog == Guid.Empty) { throw (new Exception("目录异常")); }
             MailCatalogInfo newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
             Guid newParentCatalogid;
@@ -169,7 +170,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 this.InitMailCatalog(paramInfo.newUserId);
                 //没有客户分类目录，创建客户分类目录
-                int custEum=(int)MailCatalogType.Cust;
+                int custEum = (int)MailCatalogType.Cust;
                 MailCatalogInfo custCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, custEum.ToString());
                 CUMailCatalogMapper entity = new CUMailCatalogMapper
                 {
@@ -179,13 +180,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     CustCataLog = parentCatalog.CustCatalog,
                     CatalogPId = custCatalog.RecId
                 };
-                OperateResult optResult=_mailCatalogRepository.InsertCatalog(entity, paramInfo.newUserId);
+                OperateResult optResult = _mailCatalogRepository.InsertCatalog(entity, paramInfo.newUserId);
                 if (optResult.Flag == 1)
                 {
                     newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
                     _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalog.RecId, tran);
                 }
-                else {
+                else
+                {
                     return new OutputResult<object>("操作失败");
                 }
             }
@@ -245,8 +247,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BuilderEmailAddress(entity, out fromAddressList, out toAddressList, out ccAddressList, out bccAddressList);
             List<ExpandoObject> attachFileRecord;//用来批量写db记录的
             BuilderAttachmentFile(entity, out attachFileRecord);
+            BuilderMailBody(entity, userNumber);
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
-
             AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
@@ -255,6 +257,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 taskResult.GetAwaiter().OnCompleted(() =>
                {
                    var msg = taskResult.Result;
+
                    MimeMessageResult msgResult = new MimeMessageResult
                    {
                        Msg = msg,
@@ -302,7 +305,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 OutputResult<object> repResult = new OutputResult<object>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
-                    if(userMailInfo.EncryptPwd==null)
+                    if (userMailInfo.EncryptPwd == null)
                         continue;
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
@@ -383,7 +386,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 };
             }
         }
-
+        private void BuilderMailBody(SendEMailMapper entity, int userNumber)
+        {
+            if (entity.PMailId != Guid.Empty)
+            {
+                List<Guid> lstGuid = new List<Guid>();
+                lstGuid.Add(entity.PMailId);
+                var mailDetail = _mailRepository.GetMailInfo(lstGuid, userNumber);
+                entity.BodyContent = entity.BodyContent + mailDetail.MailBody;
+            }
+        }
         private void BuilderAttachmentFile(SendEMailMapper entity, out List<ExpandoObject> attachFileRecord)
         {
             attachFileRecord = new List<ExpandoObject>();

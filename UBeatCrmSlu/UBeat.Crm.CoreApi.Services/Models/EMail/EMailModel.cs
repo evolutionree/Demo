@@ -42,6 +42,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
         /// </summary>
         public string BodyContent { get; set; }
 
+        public Guid PMailId { get; set; }
+
         public IList<AttachmentFileModel> AttachmentFile { get; set; }
 
         public EmailType EmailType
@@ -214,7 +216,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
         public List<Guid> DeptIds { get; set; }
         public List<MailAttachmentMapper> Attachment { get; set; }
     }
- 
+
 
     public class MoveMailModel
     {

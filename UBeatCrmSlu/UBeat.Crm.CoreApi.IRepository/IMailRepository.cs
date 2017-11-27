@@ -67,5 +67,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         ReceiveMailRelatedMapper GetUserReceiveMailTime(int userId);
 
         List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId);
+
+        MailBodyMapper GetMailInfo(List<Guid> mailIds,int userId);
     }
 }
