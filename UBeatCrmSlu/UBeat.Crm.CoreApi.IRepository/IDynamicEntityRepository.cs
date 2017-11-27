@@ -99,6 +99,6 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult MarkRecordComplete(Guid recId, int userNumber);
         EntityExtFunctionInfo getExtFunctionByFunctionName(Guid entityId, string functionname,DbTransaction tran = null);
-        object  ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null);
+        object  ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string [] recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null);
     }
 }
