@@ -100,13 +100,13 @@ namespace UBeat.Crm.MailService.Mail.Helper
                     break;
                 case EmailAddrType.CC:
                     {
-                        mimeMessage.To.AddRange(addressList);
+                        mimeMessage.Cc.AddRange(addressList);
                     }
 
                     break;
                 case EmailAddrType.Bcc:
                     {
-                        mimeMessage.To.AddRange(addressList);
+                        mimeMessage.Bcc.AddRange(addressList);
                     }
                     break;
                 default:
