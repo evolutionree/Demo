@@ -328,7 +328,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nodetemp.NodeType = NodeType.Normal;
                         nodetemp.NodeNum = 1;
                         nodetemp.NodeState = 0;
-                        nodetemp.StepTypeId = NodeStepType.SelectByUser;
+                        //nodetemp.StepTypeId = NodeStepType.SelectByUser;
 
                         if (caseInfo.NodeNum == -1)//审批已经结束
                         {
@@ -364,7 +364,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nodetemp.NodeType = flowNodeInfo.NodeType;
                         nodetemp.NodeNum = caseInfo.NodeNum;
                         nodetemp.NodeState = 0;
-                        nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
+                        //nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
                         if (caseInfo.NodeNum == -1)//审批已经结束
                         {
                             nodetemp.NodeState = -1;
@@ -390,7 +390,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                             foreach (var m in nextnodes)
                             {
-                                m.NodeState = 0;
+                                m.NodeState = m.StepTypeId == NodeStepType.End ? 2 : 0; //如果下一节点为结束审批节点，说明当前审批节点到达审批的最后节点
                                 m.NodeNum = caseInfo.NodeNum;
                                 m.NeedSuccAuditCount = 1;
                                 m.FlowType = WorkFlowType.FixedFlow;

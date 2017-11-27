@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -22,13 +23,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
         public int NodeNum { set; get; }
         /// <summary>
-        /// 节点状态：-1=流程已结束，0=可进入下一步，1=等待其他人会审
+        /// 节点状态：-1=流程已结束，0=可进入下一步，1=等待其他人会审,2=到达最后审批节点
         /// </summary>
         public int NodeState { set; get; }
 
         /// <summary>
         /// 当前节点审批人类型
         /// </summary>
+        [JsonIgnore]
         public NodeStepType StepTypeId { set; get; }
 
         /// <summary>
