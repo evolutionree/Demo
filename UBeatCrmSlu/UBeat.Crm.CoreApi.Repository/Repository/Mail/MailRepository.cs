@@ -61,7 +61,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
             orderbyfield = string.Format(@"order by {0} desc", orderbyfield);
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
-            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, (paramInfo.PageIndex - 1) * paramInfo.PageSize);
+            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex );
         }
 
         /// <summary>
@@ -638,7 +638,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
 
             }
 
-            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime  desc "), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
+            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime  desc "), param, entity.PageSize, entity.PageIndex);
         }
 
 
@@ -662,7 +662,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             }
             else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
             {
-                whereSql = @" Where recstatus=1 and  mailid IN (
+                whereSql = @" Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
@@ -673,7 +673,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             }
             else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
             {
-                whereSql = @" Where recstatus=1 and  mailid IN (
+                whereSql = @" Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
@@ -684,7 +684,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
             {
-                whereSql = @"  Where recstatus=1 and  mailid IN (
+                whereSql = @"  Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
@@ -696,7 +696,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
             {
-                whereSql = @"  Where recstatus=1 and  mailid IN (
+                whereSql = @"  Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
@@ -720,7 +720,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
 
             }
 
-            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime desc "), param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
+            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime desc "), param, entity.PageSize, entity.PageIndex);
         }
 
         public PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId)
