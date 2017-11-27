@@ -151,19 +151,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             entity.RuleSql = string.Format(@"({0})", data["dataVal"].ToString());
                             break;
                         }
-                    case 10://分支流程条件--全部实体字段
+                    case 10://分支流程条件--实体字段
                         {
                             List<EntityFieldProMapper> entityfields= _entityProRepository.FieldQuery(entityModel.EntityId, userId);
-                            List<EntityFieldProMapper> relentityfields=new List<EntityFieldProMapper>();
-                            if (!string.IsNullOrEmpty( entityModel.RelEntityId))
-                                relentityfields = _entityProRepository.FieldQuery(entityModel.RelEntityId, userId);
-                            var entityField = entityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
-                            if(entityField==null)
-                                entityField= relentityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
-                            if (entityField.ControlType != entity.ControlType)
-                                throw new Exception("配置字段类型不匹配");
-                            entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField,"rel");
                             
+                            var entityField = entityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
+                            if (entityField == null||entityField.ControlType != entity.ControlType)
+                                throw new Exception("配置字段类型不匹配");
+                            entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField);
+                            
+                        }
+                        break;
+                    case 11://分支流程条件--rel实体字段
+                        {
+                           
+                            List<EntityFieldProMapper> relentityfields = _entityProRepository.FieldQuery(entityModel.RelEntityId, userId);
+                            var entityField = relentityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
+                            if (entityField == null||entityField.ControlType != entity.ControlType)
+                                throw new Exception("配置字段类型不匹配");
+                            entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField, "rel");
+
                         }
                         break;
                     case 2001://分支流程条件--发起人
