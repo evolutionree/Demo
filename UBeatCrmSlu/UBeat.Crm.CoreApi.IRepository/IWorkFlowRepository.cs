@@ -17,7 +17,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult AuditCaseItem(WorkFlowAuditCaseItemMapper caseItemMapper, int userNumber);
 
-        List<IDictionary<string, object>> CaseItemList(Guid caseId, int userNumber);
+        List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber);
 
         Dictionary<string, List<IDictionary<string, object>>> NodeLineInfo(Guid flowId, int userNumber);
 
@@ -130,8 +130,16 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// 添加审批节点
         /// </summary>
         /// <returns></returns>
-        bool AddCaseItem(List<WorkFlowCaseItemInfo> caseitems, int userno, AuditStatusType auditstatus = AuditStatusType.Approving, DbTransaction trans = null); 
+        bool AddCaseItem(List<WorkFlowCaseItemInfo> caseitems, int userno, AuditStatusType auditstatus = AuditStatusType.Approving, DbTransaction trans = null);
 
+
+
+
+        /// <summary>
+        /// 判断是否允许编辑审批数据
+        /// </summary>
+        /// <returns></returns>
+        bool CanEditWorkFlowCase(WorkFlowInfo workflow, int userno, DbTransaction trans = null);
     }
 }
 

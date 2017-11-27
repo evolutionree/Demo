@@ -191,6 +191,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherisleader", entity.RuleData);
                         }
                         break;
+
                     default: throw new Exception("尚未实现的规则类型");
                 }
                 entity.Relation.ParamIndex = -1;

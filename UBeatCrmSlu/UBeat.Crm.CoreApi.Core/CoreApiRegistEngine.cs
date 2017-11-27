@@ -21,7 +21,7 @@ namespace UBeat.Crm.CoreApi.Core
             var assembly = Assembly.Load(new AssemblyName(assemblyName));
             // Registers both modules
             builder.RegisterAssemblyModules(assembly);
-
+            
             // Registers both interfaces
             builder.RegisterAssemblyTypes(assembly)
             .Where(t => t.Name.EndsWith(endWithName)).SingleInstance().PropertiesAutowired();

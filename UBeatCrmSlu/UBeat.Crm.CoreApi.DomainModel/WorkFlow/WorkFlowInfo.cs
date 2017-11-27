@@ -67,6 +67,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// 创建人
         /// </summary>
         public int RecCreator { set; get; }
+
+        /// <summary>
+        /// 创建人
+        /// </summary>
+        public string RecCreator_name { set; get; }
+
         /// <summary>
         /// 修改人
         /// </summary>

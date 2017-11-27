@@ -23,12 +23,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 CatalogPId = entity.CatalogPId
             };
             var recOrder = DataBaseHelper.QuerySingle<int>(sql, param, CommandType.Text);
-            sql = "INSERT INTO public.crm_sys_mail_catalog (recname, userid, viewuserid, ctype, pid, vpid, recorder,isdynamic) VALUES (@catalogname,@userid,@userid,@ctype,@catalogpid,@catalogpid,@recorder,1)";
+            sql = "INSERT INTO public.crm_sys_mail_catalog (recname, userid, viewuserid, ctype,CustCataLog,CustId, pid, vpid,recstatus,recorder,isdynamic) VALUES (@catalogname,@userid,@userid,@ctype,@CustCataLog,@CustId,@catalogpid,@catalogpid,1,@recorder,1)";
             var args = new
             {
                 CatalogName = entity.CatalogName,
                 UserId = userId,
                 Ctype = entity.Ctype,
+                CustId=entity.CustId,
+                CustCataLog = entity.CustCataLog,
                 CatalogPId = entity.CatalogPId,
                 Recorder = recOrder
             };
@@ -438,6 +440,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return result.FirstOrDefault();
         }
 
+        public MailCatalogInfo GetMailCataLogByViewUserId(Guid catalog, int userid, DbTransaction p)
+        {
+            var sql = "select * from crm_sys_mail_catalog where recid=@catalog and viewuserid=@userid";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("catalog",  catalog ),
+                new NpgsqlParameter("userid",  userid )
+            };
+            var result = ExecuteQuery<MailCatalogInfo>(sql, param, p, CommandType.Text);
+            return result.FirstOrDefault();
+        }
+
         public List<MailCatalogInfo> GetMailCataLogTreeByUserId(int userid, string catalogType)
         {
             var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
@@ -522,7 +536,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         }
         public IList<UserMailInfo> GetAllUserMail(int deviceType, int userId)
         {
-            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox  Where  recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid {0}";
+            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox  Where  recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid {0}";
             string condition = string.Empty;
             var param = new DynamicParameters();
             if (deviceType != 3)
@@ -596,8 +610,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public MailCatalogInfo GetCatalogForCustType(Guid custCatalog, int userid, DbTransaction tran)
         {
+            int ctype = (int)MailCatalogType.CustType;
             string strSQL = string.Format("select * from crm_sys_mail_catalog where ctype = {0} and userid = {1} and custcatalog = '{2}'",
-                MailCatalogType.Cust, userid, custCatalog.ToString());
+                ctype, userid, custCatalog.ToString());
             return ExecuteQuery<MailCatalogInfo>(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
         }
 

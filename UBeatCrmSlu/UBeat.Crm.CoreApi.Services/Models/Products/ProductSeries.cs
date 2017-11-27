@@ -66,6 +66,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
         public Guid ? ProductsetId { get; set; }
 
         public string Direction { get; set; }
+        /// <summary>
+        /// 是否获取停用的
+        /// </summary>
+        public int IsGetDisable{ set; get; } 
 
 
     }

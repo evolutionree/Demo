@@ -110,6 +110,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+        //启用产品系列
+        public OutputResult<object> ToEnableProductSeries(ProductSeriesDeleteModel body, int userNumber)
+        {
+
+
+            var res = ExcuteAction((transaction, arg, userData) =>
+            {
+                return HandleResult(_repository.ToEnableProductSeries(transaction, body.ProductsetId, userNumber));
+            }, body, userNumber);
+            IncreaseDataVersion(DataVersionType.ProductData, null);
+            return res;
+
+        }
+
+
         /// <summary>
         /// 根据id获取产品系列详情，不包含子系列
         /// </summary>
@@ -138,7 +153,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
            
             return ExcuteAction((transaction, arg, userData) =>
             {
-                return new OutputResult<object>(_repository.GetProductSeries(transaction,body.ProductsetId, body.Direction, userNumber));
+                return new OutputResult<object>(_repository.GetProductSeries(transaction,body.ProductsetId, body.Direction, body.IsGetDisable, userNumber));
             }, body, userNumber);
         }
 
@@ -172,14 +187,45 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 //判断某个实体的业务是否有权限新增文档，此处是判断实体业务表的id
                 if (!userData.HasDataAccess(transaction, RoutePath, productEntityId, DeviceClassic, recids))
                 {
-                    throw new Exception("您没有权限删除该数据");
+                    throw new Exception("您没有权限停用该数据");
                 }
                 return HandleResult(_repository.DeleteProduct(transaction,productIds, userNumber));
             }, productIds, userNumber);
             IncreaseDataVersion(DataVersionType.ProductData, null);
             return res;
         }
+        /// <summary>
+        /// 启用产品
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public OutputResult<object> ToEnableProduct(string productIds, int userNumber)
+        {
 
+            var res = ExcuteAction((transaction, arg, userData) =>
+            {
+                if (string.IsNullOrEmpty(productIds))
+                {
+                    throw new Exception("productIds不可为空");
+                }
+                var productIdsArray = productIds.Split(',');
+                var recids = new List<Guid>();
+                foreach (var pid in productIdsArray)
+                {
+                    recids.Add(new Guid(pid));
+                }
+
+                //判断某个实体的业务是否有权限新增文档，此处是判断实体业务表的id
+                if (!userData.HasDataAccess(transaction, RoutePath, productEntityId, DeviceClassic, recids))
+                {
+                    throw new Exception("您没有权限启用该数据");
+                }
+                return HandleResult(_repository.ToEnableProduct(transaction, productIds, userNumber));
+            }, productIds, userNumber);
+            IncreaseDataVersion(DataVersionType.ProductData, null);
+            return res;
+        }
 
         /// <summary>
         /// 获取产品
