@@ -94,43 +94,49 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     result.CaseItem = new CaseItemAuditInfo();
 
                     var nowcaseitem = caseitems.Find(m => m.HandleUser == userNumber);
-                    if (caseInfo.NodeNum == -1)
+                    if(nowcaseitem!=null)
                     {
-                        result.CaseItem.NodeName = "已完成审批";
-                    }
-                    else
-                    {
-                        var nodeid = caseitems.FirstOrDefault().NodeId;
-                        var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
-                        string nodeName = string.Empty;
-                        if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
+                        if (caseInfo.NodeNum == -1)
                         {
-                            nodeName = "自由流程";
+                            result.CaseItem.NodeName = "已完成审批";
                         }
                         else
                         {
-                            if (flowNodeInfo == null)
-                                throw new Exception("不存在有效节点");
-                            else nodeName = flowNodeInfo.NodeName;
-                        }
-                        result.CaseItem.NodeId = nodeid;
-                        result.CaseItem.NodeName = nodeName;
 
-                        if (caseInfo.NodeNum == 0)//如果处于第一个节点
-                        {
-                            //如果审批关联的实体为简单实体且简单实体无关联的独立实体时，则允许编辑审批信息重新提交或者中止审批
-                            //如果审批关联的实体为独立实体或关联的简单实体有关联的独立实体时，则不允许编辑审批信息，只能中止审批
-                            result.CaseItem.IsCanTerminate = 1;
-                            if (caseInfo.RecCreator == userNumber)
+                            string nodeName = string.Empty;
+                            if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
                             {
-                                result.CaseItem.IsCanEdit = _workFlowRepository.CanEditWorkFlowCase(workflowInfo, userNumber, tran) ? 1 : 0;
+                                nodeName = "自由流程";
                             }
-                        }
-                        else
-                        {
-                            result.CaseItem.IsCanAllow = 1;
-                            result.CaseItem.IsCanReject = 1;
-                            result.CaseItem.IsCanReback = workflowInfo.BackFlag;
+                            else
+                            {
+                                var nodeid = caseitems.FirstOrDefault().NodeId;
+                                var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
+                                if (flowNodeInfo == null)
+                                    throw new Exception("不存在有效节点");
+                                else nodeName = flowNodeInfo.NodeName;
+
+                                result.CaseItem.NodeId = nodeid;
+                            }
+
+                            result.CaseItem.NodeName = nodeName;
+
+                            if (caseInfo.NodeNum == 0)//如果处于第一个节点
+                            {
+                                //如果审批关联的实体为简单实体且简单实体无关联的独立实体时，则允许编辑审批信息重新提交或者中止审批
+                                //如果审批关联的实体为独立实体或关联的简单实体有关联的独立实体时，则不允许编辑审批信息，只能中止审批
+                                result.CaseItem.IsCanTerminate = 1;
+                                if (caseInfo.RecCreator == userNumber)
+                                {
+                                    result.CaseItem.IsCanEdit = _workFlowRepository.CanEditWorkFlowCase(workflowInfo, userNumber, tran) ? 1 : 0;
+                                }
+                            }
+                            else
+                            {
+                                result.CaseItem.IsCanAllow = 1;
+                                result.CaseItem.IsCanReject = 1;
+                                result.CaseItem.IsCanReback = workflowInfo.BackFlag;
+                            }
                         }
                     }
 
