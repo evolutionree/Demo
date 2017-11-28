@@ -98,6 +98,7 @@ namespace Ubeat.Crm.EncryptLicense
             {
                 try
                 {
+
                     date = DateTime.Parse(Console.ReadLine());
                     return date.ToString("yyyy-MM-dd");
                 }
