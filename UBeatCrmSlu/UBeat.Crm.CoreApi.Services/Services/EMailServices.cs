@@ -722,10 +722,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertPersonalCatalog(int userId, AddCatalogModel dynamicModel)
         {
             MailCatalogInfo catalogInfo = _mailCatalogRepository.GetMailCataLogById(dynamicModel.pid, userId, null);
-            int Ctype = 3001;
-            if (catalogInfo.CType == MailCatalogType.CustType)
+            int Ctype = 3002;
+            if (catalogInfo.CType != MailCatalogType.Personal)
             {
-                Ctype = 2002;
+                return HandleResult(new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "只有用户个人目录可以添加目录"
+                });
             }
 
             var catalog = new CUMailCatalogMapper
