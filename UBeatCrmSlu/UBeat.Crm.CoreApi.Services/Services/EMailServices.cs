@@ -646,10 +646,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertPersonalCatalog(int userId, AddCatalogModel dynamicModel)
         {
             MailCatalogInfo catalogInfo = _mailCatalogRepository.GetMailCataLogById(dynamicModel.pid, userId, null);
-            int Ctype = 3001;
-            if (catalogInfo.CType == MailCatalogType.CustType)
+            int Ctype = 3002;
+            if (catalogInfo.CType != MailCatalogType.Personal)
             {
-                Ctype = 2002;
+                return HandleResult(new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "只有用户个人目录可以添加目录"
+                });
             }
 
             var catalog = new CUMailCatalogMapper
@@ -1018,7 +1022,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region  模糊查询我的通讯人员限制10个
         public OutputResult<object> GetContactByKeyword(ContactSearchInfo paramInfo, int userId)
         {
-            return new OutputResult<object>(_mailRepository.GetContactByKeyword(paramInfo.keyword, paramInfo.count, userId));
+            List<MailUserMapper>  list=_mailRepository.GetContactByKeyword(paramInfo.keyword, paramInfo.count, userId);
+            //分拆多个邮箱
+            List<MailUserMapper> resultList = new List<MailUserMapper>();
+            foreach (var userMail in list) {
+                string[] mails=userMail.EmailAddress.Split(';');
+                if (mails.Length > 1)
+                {
+                    foreach (var mail in mails) {
+                        MailUserMapper newMail = new MailUserMapper();
+                        newMail.EmailAddress = mail;
+                        newMail.customer = userMail.customer;
+                        newMail.Name = userMail.Name;
+                        newMail.icon = userMail.icon;
+                        resultList.Add(newMail);
+                    };
+                    
+                }
+                else {
+                    resultList.Add(userMail);
+                }
+            };
+            return new OutputResult<object>(resultList);
         }
 
         public OutputResult<object> GetInnerContact(OrgAndStaffTreeModel dynamicModel, int userId)
