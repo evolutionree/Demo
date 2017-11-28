@@ -450,6 +450,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string OwnerName { get; set; }
     }
 
+    public class InnerUserMailMapper
+    {
+        public string UserId { get; set; }
+        public string UserEMail { get; set; }
+    }
+
     public class MailUserMapper
     {
         public string EmailAddress { get; set; }

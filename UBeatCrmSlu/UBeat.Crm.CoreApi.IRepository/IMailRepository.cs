@@ -27,8 +27,13 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="tran"></param>
         /// <returns></returns>
         OperateResult TagMails(string mailids, MailTagActionType actionType, int userNum);
-        List<MailUserMapper> GetManagerContactAndInnerUser(int userId);
         List<MailBoxMapper> GetIsWhiteList(int isWhiteLst, int userId);
+        /// <summary>
+        /// 我负责的客户的联系人和内部人员
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        List<InnerUserMailMapper> GetUserMailList(int userId);
         bool IsHasSubUserAuth(int leaderUserId, int userId);
 
         PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId);

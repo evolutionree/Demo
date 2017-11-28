@@ -11,11 +11,14 @@ using UBeat.Crm.MailService.Mail.Enum;
 using MailKit.Net.Pop3;
 using MailKit.Net.Imap;
 using MailKit.Search;
+using System.IO;
 
 namespace UBeat.Crm.MailService
 {
     public class EMail
     {
+
+        public static CancellationTokenSource timeout = new CancellationTokenSource(new TimeSpan(0, 9, 0));
 
         public async Task<MimeMessage> SendMessageAsync(string host, int port, string userAccount, string userPassword, MimeMessage message, bool enableSsl = true, bool isPostFile = false)
         {
@@ -28,9 +31,32 @@ namespace UBeat.Crm.MailService
                          client.Send(message);
                          return message;
                      }
-                     catch (Exception ex)
+                     catch (ArgumentNullException ex)
                      {
-                         client.Disconnect(true);
+                         throw ex;
+                     }
+                     catch (ObjectDisposedException ex)
+                     {
+                         throw ex;
+                     }
+                     catch (InvalidOperationException ex)
+                     {
+                         throw ex;
+                     }
+                     catch (OperationCanceledException ex)
+                     {
+                         throw ex;
+                     }
+                     catch (IOException ex)
+                     {
+                         throw ex;
+                     }
+                     catch (CommandException ex)
+                     {
+                         throw ex;
+                     }
+                     catch (ProtocolException ex)
+                     {
                          throw ex;
                      }
                      finally
@@ -48,34 +74,36 @@ namespace UBeat.Crm.MailService
             {
                 using (ImapClient client = new ImapHelper(host, port, enableSsl, userAccount, userPassword).ImapClient)
                 {
-                    var inBox = client.GetFolder("INBOX");
-                    try
+                    lock (client.SyncRoot)
                     {
-                        inBox.Open(FolderAccess.ReadWrite);
-                        List<MimeMessage> lstMsg = new List<MimeMessage>();
-                        if (searchQuery != null)
+                        var inBox = client.GetFolder("INBOX");
+                        try
                         {
-                            var uids = inBox.Search(searchQuery);
-
-                            foreach (var item in uids)
+                            inBox.Open(FolderAccess.ReadWrite);
+                            List<MimeMessage> lstMsg = new List<MimeMessage>();
+                            if (searchQuery != null)
                             {
-                                client.NoOp();
-                                MimeMessage message = inBox.GetMessage(new UniqueId(item.Id));
-                                inBox.SetFlags(item, MessageFlags.Seen, true);
-                                lstMsg.Add(message);
+                                var uids = inBox.Search(searchQuery);
+                                foreach (var item in uids)
+                                {
+                                    client.NoOp();
+                                    MimeMessage message = inBox.GetMessage(new UniqueId(item.Id));
+                                    inBox.SetFlags(item, MessageFlags.Seen, true);
+                                    lstMsg.Add(message);
+                                }
                             }
+                            return lstMsg;
                         }
-                        return lstMsg;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ex;
-                    }
-                    finally
-                    {
-                        inBox.Close();
-                        if (client.IsConnected)
-                            client.Disconnect(true);
+                        catch (Exception ex)
+                        {
+                            throw ex;
+                        }
+                        finally
+                        {
+                            inBox.Close();
+                            if (client.IsConnected)
+                                client.Disconnect(true);
+                        }
                     }
                 }
             });
