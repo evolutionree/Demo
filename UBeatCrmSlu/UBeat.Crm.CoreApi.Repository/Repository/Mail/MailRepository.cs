@@ -861,7 +861,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>       
-        public List<OrgAndStaffMapper> GetInnerContact(string deptId,string keyword,int userId)
+        public List<OrgAndStaffMapper> GetInnerContact(string deptId,int userId)
         {
             if (string.IsNullOrEmpty(deptId))
             {
@@ -889,7 +889,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// <param name="userId"></param>
         /// <param name="keyword"></param>
         /// <returns></returns>       
-        public List<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int userId)
+        public PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
             string sql = @"select b.useremail mail, b.userid::text treeid, b.username treename, a1.deptname,1 nodetype 
              from crm_sys_account_userinfo_relate a inner join crm_sys_userinfo b on a.userid = b.userid 
@@ -904,7 +904,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             }
             string newSql = string.Format(sql, condition);
 
-            return ExecuteQuery<OrgAndStaffMapper>(newSql, new DbParameter[] { });
+            return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageIndex,pageSize);
         }
 
         /// <summary>
