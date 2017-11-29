@@ -1014,7 +1014,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return null;
         }
 
-        public OutputResult<object> SaveWhiteList(List<Guid> Mails, int enable)
+        public OutputResult<object> SaveWhiteList(List<Guid> Mails, string enable)
         {
             _mailCatalogRepository.SaveWhiteList(Mails, enable);
             return null;

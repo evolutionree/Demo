@@ -22,7 +22,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         int InitCatalog(Dictionary<string, object> newCatalog, int userId);
         int NeedInitCatalog(int userId);
         void SaveMailOwner(List<Guid> MailBoxs, int newUserId);
-        void SaveWhiteList(List<Guid> MailBoxs, int enable);
+        void SaveWhiteList(List<Guid> MailBoxs, string enable);
         OperateResult ToOrderCatalog(Guid recId, int doType);
 
         OperateResult InsertCatalog(CUMailCatalogMapper entity, int userId);

@@ -657,7 +657,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// </summary>
         /// <param name="MailBoxs"></param>
         /// <param name="enable"></param>
-        public void SaveWhiteList(List<Guid> MailBoxs, int enable)
+        public void SaveWhiteList(List<Guid> MailBoxs, string enable)
         {
             string strSQL = "update crm_sys_mail_mailbox set inwhitelist=@enable where recid=@recid";
             List<DbParameter[]> paramList = new List<DbParameter[]>();
