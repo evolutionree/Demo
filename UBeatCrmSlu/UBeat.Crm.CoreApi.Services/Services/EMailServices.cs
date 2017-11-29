@@ -240,7 +240,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var errors = ValidEmailAddressAuth(model, userNumber);
             if (errors.Count > 0)
             {
-                return ShowError<object>(string.Join(";", errors.Select(t=>t.ErrorMsg)));
+                return ShowError<object>(string.Join(";", errors.Select(t => t.ErrorMsg)));
             }
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
             if (userMailInfo == null)
@@ -576,7 +576,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var userMails = _mailRepository.GetUserMailList(userId);
                 foreach (var tmp in model.ToAddress)
                 {
-
                     var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
                     if (userMail == null)
                     {
@@ -799,15 +798,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public PageDataInfo<MailBodyMapper> ListMail(MailListActionParamInfo paramInfo, int userNum)
         {
             //判断catalog是否该用户所有
-            MailCatalogInfo catalogInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.Catalog, userNum, null);
-            if (catalogInfo == null || catalogInfo.ViewUserId != userNum)
+            MailCatalogInfo catalogInfo = null;
+            if (paramInfo.FetchUserId == userNum && paramInfo.FetchUserId > 0)
             {
-                throw (new Exception("用户与目录不匹配"));
+                catalogInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.Catalog, userNum, null);
+                if (catalogInfo == null || catalogInfo.ViewUserId != userNum)
+                {
+                    throw (new Exception("用户与目录不匹配"));
+                }
             }
-            if (paramInfo.FetchUserId != userNum && paramInfo.FetchUserId > 0)
+            else if (paramInfo.FetchUserId != userNum && paramInfo.FetchUserId > 0)
             {
                 if (!_mailRepository.IsHasSubUserAuth(paramInfo.FetchUserId, userNum))
-                    throw (new Exception("没有权限查看该下属的邮件"));
+                    throw (new Exception("该员工不是你的下属，没有权限查看其邮件"));
+                catalogInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.Catalog, paramInfo.FetchUserId, null);
+                if (catalogInfo == null || catalogInfo.ViewUserId != paramInfo.FetchUserId)
+                {
+                    throw (new Exception("用户与目录不匹配"));
+                }
             }
 
             #region 处理排序规则
@@ -1022,14 +1030,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region  模糊查询我的通讯人员限制10个
         public OutputResult<object> GetContactByKeyword(ContactSearchInfo paramInfo, int userId)
         {
-            List<MailUserMapper>  list=_mailRepository.GetContactByKeyword(paramInfo.keyword, paramInfo.count, userId);
+            List<MailUserMapper> list = _mailRepository.GetContactByKeyword(paramInfo.keyword, paramInfo.count, userId);
             //分拆多个邮箱
             List<MailUserMapper> resultList = new List<MailUserMapper>();
-            foreach (var userMail in list) {
-                string[] mails=userMail.EmailAddress.Split(';');
+            foreach (var userMail in list)
+            {
+                string[] mails = userMail.EmailAddress.Split(';');
                 if (mails.Length > 1)
                 {
-                    foreach (var mail in mails) {
+                    foreach (var mail in mails)
+                    {
                         MailUserMapper newMail = new MailUserMapper();
                         newMail.EmailAddress = mail;
                         newMail.customer = userMail.customer;
@@ -1037,9 +1047,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         newMail.icon = userMail.icon;
                         resultList.Add(newMail);
                     };
-                    
+
                 }
-                else {
+                else
+                {
                     resultList.Add(userMail);
                 }
             };
