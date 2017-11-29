@@ -727,9 +727,9 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         {
             var sql = @"
                  Select * From (
-                            SELECT fileid,filename
+                            SELECT fileid,filename,filelength as filesize
 				            FROM public.crm_sys_documents AS d Where entityid='a3500e78-fe1c-11e6-aee4-005056ae7f49'  AND recstatus=1  {0}   UNION ALL 
-                             SELECT  fileid,filename 
+                             SELECT  fileid,filename,filelength as filesize
                              FROM crm_sys_documents  AS d   WHERE entityid IN (
                             SELECT entityid FROM crm_sys_entity WHERE modeltype=0 AND recstatus=1 )  AND recstatus=1 AND reccreator=@userid) as t Where 1=1 {1}";
             string whereSql = string.Empty;
