@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         IList<UserMailInfo> GetAllUserMail(int deviceType,int userId);
         bool checkHasMails(string recid,DbTransaction tran);
         bool checkCycleCatalog(string parentid, string recid,DbTransaction tran);
-        void MoveCatalog(string v1, string v2, DbTransaction tran);
+        void MoveCatalog(string v1, string v2,string v3, DbTransaction tran);
         MailCatalogInfo GetCatalogForCustType(Guid custCatalog, int newUserId, DbTransaction tran);
         void TransferCatalog(Guid recId, int newUserId, Guid newParentCatalogid, DbTransaction tran);
     }

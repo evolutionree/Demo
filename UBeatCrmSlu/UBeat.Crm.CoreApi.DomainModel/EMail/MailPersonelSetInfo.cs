@@ -62,6 +62,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// 要移动的目录的id
         /// </summary>
         public Guid recId { get; set; }
+
+        public string recName { get; set; }
         /// <summary>
         /// 新的父目录id
         /// </summary>
