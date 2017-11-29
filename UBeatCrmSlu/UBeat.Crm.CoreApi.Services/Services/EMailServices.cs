@@ -1072,6 +1072,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 treeId = dynamicModel.treeId;
             return new OutputResult<object>(_mailRepository.GetInnerContact(treeId, userId));
         }
+
+        public OutputResult<object> GetInnerPersonContact(OrgAndStaffTreeModel dynamicModel, int userId)
+        {
+            int pageSize = 10;
+            if (dynamicModel != null && dynamicModel.PageSize > 0)
+                pageSize = dynamicModel.PageSize;
+            return new OutputResult<object>(_mailRepository.GetInnerPersonContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize,userId));
+        }
         /// <summary>
         /// 获取客户联系人
         /// </summary>
