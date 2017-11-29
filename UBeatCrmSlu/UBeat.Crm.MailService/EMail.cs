@@ -76,10 +76,10 @@ namespace UBeat.Crm.MailService
                 {
                     lock (client.SyncRoot)
                     {
-                        var inBox = client.GetFolder("INBOX");
+                        var inBox = client.GetFolder("inbox");
                         try
                         {
-                            inBox.Open(FolderAccess.ReadWrite);
+                            inBox.Open(FolderAccess.ReadOnly);
                             List<MimeMessage> lstMsg = new List<MimeMessage>();
                             if (searchQuery != null)
                             {
