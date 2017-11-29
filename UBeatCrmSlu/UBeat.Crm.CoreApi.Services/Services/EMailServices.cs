@@ -75,8 +75,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var tmpLst = userMailInfoLst.Skip(avg * i).Take(avg).ToList();
                 _dataWrapper = new DataWrapper
                 {
-                    entity = entity,
-                    userMailInfoLst = tmpLst
+                    Entity = entity,
+                    UserMailInfoLst = tmpLst
                 };
                 ThreadPool.QueueUserWorkItem(EnqueueMimeMessageTask, _dataWrapper);
             }
