@@ -727,9 +727,9 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         {
             var sql = @"
                  Select * From (
-                            SELECT fileid,filename
+                            SELECT fileid,filename,filelength as filesize
 				            FROM public.crm_sys_documents AS d Where entityid='a3500e78-fe1c-11e6-aee4-005056ae7f49'  AND recstatus=1  {0}   UNION ALL 
-                             SELECT  fileid,filename 
+                             SELECT  fileid,filename,filelength as filesize
                              FROM crm_sys_documents  AS d   WHERE entityid IN (
                             SELECT entityid FROM crm_sys_entity WHERE modeltype=0 AND recstatus=1 )  AND recstatus=1 AND reccreator=@userid) as t Where 1=1 {1}";
             string whereSql = string.Empty;
@@ -861,7 +861,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>       
-        public List<OrgAndStaffMapper> GetInnerContact(string deptId,string keyword,int userId)
+        public List<OrgAndStaffMapper> GetInnerContact(string deptId, int userId)
         {
             if (string.IsNullOrEmpty(deptId))
             {
@@ -881,30 +881,6 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
                 new NpgsqlParameter("deptId", deptId)
             };
             return ExecuteQuery<OrgAndStaffMapper>(sql, param);
-        }
-
-        /// <summary>
-        /// 获取企业内部通讯录_人员查询
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="keyword"></param>
-        /// <returns></returns>       
-        public List<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int userId)
-        {
-            string sql = @"select b.useremail mail, b.userid::text treeid, b.username treename, a1.deptname,1 nodetype 
-             from crm_sys_account_userinfo_relate a inner join crm_sys_userinfo b on a.userid = b.userid 
-             left join crm_sys_department a1 on a1.deptid = a.deptid 
-             where a.recstatus = 1 and b.useremail is not null  and useremail!= '' 
-             {0} order by b.username";
-            string condition = string.Empty;
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                condition = string.Format(" and b.username like '%{0}%'", keyword);
-
-            }
-            string newSql = string.Format(sql, condition);
-
-            return ExecuteQuery<OrgAndStaffMapper>(newSql, new DbParameter[] { });
         }
 
         /// <summary>
