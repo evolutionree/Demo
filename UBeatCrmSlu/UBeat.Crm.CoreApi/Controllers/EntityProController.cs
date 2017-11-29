@@ -514,6 +514,38 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         #endregion
 
+        #region --function 列表--
+        /// <summary>
+        /// 获取功能列表
+        /// </summary>
+        /// <param name="dynamicModel"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("functionlist")]
+        public OutputResult<object> GetFunctionList([FromBody] FunctionBtnListModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.GetFunctionList(dynamicModel, UserId);
+        }
+
+        [HttpPost]
+        [Route("savefunctions")]
+        public OutputResult<object> SaveFunctionList([FromBody] SaveFuncsModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.SaveFunctionList(dynamicModel, UserId);
+        }
+        //同步function到function表
+        [HttpPost]
+        [Route("syncfunctions")]
+        public OutputResult<object> SyncFunctionList([FromBody] SyncFuncListModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.SyncFunctionList(dynamicModel, UserId);
+        }
+
+        #endregion
+
         #region --特别页面--
         /// <summary>
         /// 获取页面入口信息

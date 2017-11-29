@@ -1779,7 +1779,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> GetFunctionBtns(FunctionBtnsModel dynamicModel, int userNumber)
         {
             List<FunctionBtnInfo> funcBtns = new List<FunctionBtnInfo>();
-            var info = _entityProRepository.GetFunctionButtonJsonInfo(dynamicModel.EntityId);
+            var info = _entityProRepository.GetFunctionJsonInfo(dynamicModel.EntityId);
             if (info == null)
                 return new OutputResult<object>(funcBtns);
             //获取个人用户数据

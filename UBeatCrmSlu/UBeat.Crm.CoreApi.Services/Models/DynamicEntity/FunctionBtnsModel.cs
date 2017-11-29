@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
+using UBeat.Crm.CoreApi.DomainModel.Vocation;
 
 namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 {
@@ -24,9 +25,32 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 实体id（必填）
         /// </summary>
         public Guid EntityId { set; get; }
-
-        
     }
+
+    public class SaveFuncsModel
+    {
+        /// <summary>
+        /// 实体id（必填）
+        /// </summary>
+        public Guid EntityId { set; get; }
+
+        public List<FunctionInfo> WebFuncs { set; get; }
+
+        public List<FunctionInfo> MobileFuncs { set; get; }
+
+    }
+
+
+    public class SyncFuncListModel
+    {
+        /// <summary>
+        /// 实体id（必填）
+        /// </summary>
+        public Guid EntityId { set; get; }
+
+
+    }
+
 
     public class ServiceJsonModel
     {
