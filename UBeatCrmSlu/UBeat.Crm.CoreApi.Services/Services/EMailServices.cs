@@ -301,6 +301,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Message = "发送邮件失败"
                 };
             }
+            finally
+            {
+                _workerEvent.Dispose();
+            }
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
@@ -392,6 +396,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Status = 1,
                     Message = "接收邮件失败"
                 };
+            }
+            finally
+            {
+                _workerEvent.Dispose();
             }
         }
         private void BuilderMailBody(SendEMailMapper entity, int userNumber)
