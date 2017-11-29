@@ -104,7 +104,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
     public enum MailCatalogType
     {
         InBox = 1001,//收件箱
-        UnSpec = 1002,//未归类邮件目录
+        UnSpec = 2003,//未归类邮件目录
         SendBox = 1003,//发件箱
         OutBox = 1004,//已发送
         DrafBox = 1005,//草稿箱
