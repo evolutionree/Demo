@@ -255,7 +255,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
-           // AutoResetEvent _workerEvent = new AutoResetEvent(false);
+            AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
                 var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, false);
@@ -274,9 +274,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                    var result = SaveMailDataInDb(msgResult, userNumber);
                    if (result.Status != 0)
                        throw new Exception("保存邮件数据异常");
-                  // _workerEvent.Set();
+                   _workerEvent.Set();
                });
-               // _workerEvent.WaitOne();
+                _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
                     Status = repResult.Status,
@@ -301,16 +301,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Message = "发送邮件失败"
                 };
             }
-            //finally
-            //{
-            //    _workerEvent.Dispose();
-            //}
+            finally
+            {
+                _workerEvent.Dispose();
+            }
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-           // AutoResetEvent _workerEvent = new AutoResetEvent(false);
+            AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
                 OutputResult<object> repResult = new OutputResult<object>();
@@ -377,10 +377,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
                         _dynamicEntityServices.AddList(addList, header, userNumber);
 
-                       // _workerEvent.Set();
+                        _workerEvent.Set();
                     });
                 }
-               // _workerEvent.WaitOne();
+                _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
                     Status = repResult.Status,
@@ -396,10 +396,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Message = "接收邮件失败"
                 };
             }
-            //finally
-            //{
-            //    _workerEvent.Dispose();
-            //}
+            finally
+            {
+                _workerEvent.Dispose();
+            }
         }
         private void BuilderMailBody(SendEMailMapper entity, int userNumber)
         {
@@ -1077,7 +1077,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int pageSize = 10;
             if (dynamicModel != null && dynamicModel.PageSize > 0)
                 pageSize = dynamicModel.PageSize;
-            return new OutputResult<object>(_mailRepository.GetInnerPersonContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize,userId));
+            return new OutputResult<object>(_mailRepository.GetInnerPersonContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize, userId));
         }
         /// <summary>
         /// 获取客户联系人

@@ -344,9 +344,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                     mailid=@mailid And ctype=1)  AND 
                                                    recstatus=1 LIMIT 1) AS tmp )";
             var contactsSql = @"SELECT  crm_func_entity_protocol_data_list('e450bfd7-ff17-4b29-a2db-7ddaf1e79342','75ce6617-2016-46f0-8cb4-8467b77ef468','and t.recid IN (
-Select recid From crm_sys_contact Where (belcust->>'id') IN ( SELECT regexp_split_to_table(custid,',')  FROM (SELECT (belcust->>'id') as  custid FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid='a7c0deaa-6edf-427c-a1e2-928c391d2fbe'  And ctype=1)  AND recstatus=1 LIMIT 1) AS tmp )
-)','',0,NULL,1,@maxpagesize,0,@userid)
-";
+Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_split_to_table(custid,'','')  FROM (SELECT (belcust->>''id'') as  custid FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=''" + entity.MailId.ToString() + "''  And ctype=1 LIMIT 1)  AND recstatus=1 LIMIT 1) AS tmp ))','',0,NULL,1,@maxpagesize,0,@userid)";
             var param = new DynamicParameters();
             param.Add("mailid", entity.MailId);
             param.Add("userid", userId);
@@ -360,7 +358,7 @@ Select recid From crm_sys_contact Where (belcust->>'id') IN ( SELECT regexp_spli
             countRecord = DataBaseHelper.QuerySingle<int>(isConExistsSql, param, CommandType.Text);
             List<dynamic> contactsResult = new List<dynamic>();
             if (countRecord > 0)
-                contactsResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(contactsSql, param,CommandType.Text);
+                contactsResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(contactsSql, param, CommandType.Text);
             Dictionary<string, object> dicResult = new Dictionary<string, object>();
             dicResult.Add("maildetail", mailDetail);
             dicResult.Add("sender", senderResult);
