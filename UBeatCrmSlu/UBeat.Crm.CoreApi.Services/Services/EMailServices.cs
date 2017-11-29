@@ -222,7 +222,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (_mailCatalogRepository.checkHasMails(newParentInfo.RecId.ToString(), tran)) throw (new Exception("目标目录不能拥有邮件"));
             if (_mailCatalogRepository.checkCycleCatalog(newParentInfo.RecId.ToString(), catalogInfo.RecId.ToString(), tran)) throw (new Exception("造成循环目录，移动失败"));
             //现在开始移动
-            _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), tran);
+            _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
             return new OutputResult<object>("成功移动");
 
 
