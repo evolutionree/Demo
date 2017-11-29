@@ -440,6 +440,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid FileId { get; set; }
 
         public string FileName { get; set; }
+
+        public Int64 FileSize { get; set; }
     }
 
 
