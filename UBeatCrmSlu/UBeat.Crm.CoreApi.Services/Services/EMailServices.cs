@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly DynamicEntityServices _dynamicEntityServices;
         private readonly IMailCatalogRepository _mailCatalogRepository;
         private readonly IMailRepository _mailRepository;
-        private readonly IDocumentsRepository _docmentsRepository;
+
         public EMailServices(IMapper mapper, FileServices fileServices, DynamicEntityServices dynamicEntityServices,
             IMailCatalogRepository mailCatalogRepository,
             IMailRepository mailRepository)
@@ -236,6 +236,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
+            //校验白名单之类的验证
+            var errors = ValidEmailAddressAuth(model, userNumber);
+            if (errors.Count > 0)
+            {
+                return ShowError<object>(string.Join(";", errors.Select(t=>t.ErrorMsg)));
+            }
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
             if (userMailInfo == null)
                 throw new Exception("缺少发件人邮箱信息");
@@ -283,6 +289,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 MimeMessageResult msgResult = new MimeMessageResult
                 {
                     Msg = emailMsg,
+                    ExceptionMsg = ex.Message,
                     ActionType = (int)MailActionType.ExternalSend,
                     Status = (int)MailStatus.SendFail,
                     AttachFileRecord = attachFileRecord,
@@ -343,6 +350,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
                             fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
                             fieldData.Add("urgency", 1);//邮件优先级
+
                             fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
                             var fileTask = UploadAttachmentFiles(msg.Attachments);
                             fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
@@ -562,143 +570,59 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private IList<MailError> ValidEmailAddressAuth(SendEMailModel model, int userId)
         {
             IList<MailError> errors = new List<MailError>();
-            //#region 拿出邮件白名单
-            //var whiteList = _mailRepository.GetIsWhiteList(0, userId);
-            //foreach (var tmp in whiteList)
-            //{
-            //    foreach (var dic in model.ToAddress)
-            //    {
-            //        if (tmp.Accountid == dic.Key)//不在白名单内
-            //        {
-            //            errors.Add(new MailError
-            //            {
-            //                DisplayName = tmp.OwnerName,
-            //                EmailAddress = tmp.Accountid,
-            //                ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                Status = 0,
-            //                ErrorMsg = "该收件人邮箱不在白名单内"
-            //            });
-            //        }
-            //    }
-            //    foreach (var dic in model.CCAddress)
-            //    {
-            //        if (tmp.Accountid == dic.Key)//不在白名单内
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Accountid);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该抄送人邮箱不在白名单内";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.OwnerName,
-            //                    EmailAddress = tmp.Accountid,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该抄送人邮箱不在白名单内"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    foreach (var dic in model.BCCAddress)
-            //    {
-            //        if (tmp.Accountid == dic.Key)//不在白名单内
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Accountid);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该抄送人邮箱不在白名单内";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.OwnerName,
-            //                    EmailAddress = tmp.Accountid,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该密送人邮箱不在白名单内"
-            //                });
-            //            }
-            //        }
-            //    }
-            //}
-            //#endregion
-            ////当白名单校验通过则不再校验其他规则 
-            //if (errors.Count > 0)
-            //{
-            //    #region 客户联系人
-            //    var lst = _mailRepository.GetManagerContactAndInnerUser(userId).Select(t => t.EmailAddress);
-            //    foreach (var tmp in model.ToAddress)
-            //    {
-            //        if (!lst.Contains(tmp.Key))
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Key);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该收件人邮箱不是自己负责客户的联系人也不是内部人员";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.Value,
-            //                    EmailAddress = tmp.Key,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该收件人邮箱不是自己负责客户的联系人也不是内部人员"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    foreach (var tmp in model.CCAddress)
-            //    {
-            //        if (!lst.Contains(tmp.Key))
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Key);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该收件人邮箱不是自己负责客户的联系人也不是内部人员";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.Value,
-            //                    EmailAddress = tmp.Key,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该收件人邮箱不是自己负责客户的联系人也不是内部人员"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    foreach (var tmp in model.BCCAddress)
-            //    {
-            //        if (!lst.Contains(tmp.Key))
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Key);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该收件人邮箱不是自己负责客户的联系人也不是内部人员";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.Value,
-            //                    EmailAddress = tmp.Key,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该收件人邮箱不是自己负责客户的联系人也不是内部人员"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    #endregion
-            //}
+            var mailBox = _mailRepository.GetIsWhiteList(1, userId).FirstOrDefault(t => t.Accountid == model.FromAddress);
+            if (mailBox == null)
+            {
+                var userMails = _mailRepository.GetUserMailList(userId);
+                foreach (var tmp in model.ToAddress)
+                {
+
+                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
+                    if (userMail == null)
+                    {
+                        errors.Add(new MailError
+                        {
+                            DisplayName = tmp.DisplayName,
+                            EmailAddress = tmp.Address,
+                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
+                            Status = 0,
+                            ErrorMsg = "发件人不在白名单内，不能发送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
+                        });
+                    }
+                }
+                foreach (var tmp in model.BCCAddress)
+                {
+
+                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
+                    if (userMail == null)
+                    {
+                        errors.Add(new MailError
+                        {
+                            DisplayName = tmp.DisplayName,
+                            EmailAddress = tmp.Address,
+                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
+                            Status = 0,
+                            ErrorMsg = "件人不在白名单内，不能密送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
+                        });
+                    }
+                }
+                foreach (var tmp in model.CCAddress)
+                {
+
+                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
+                    if (userMail == null)
+                    {
+                        errors.Add(new MailError
+                        {
+                            DisplayName = tmp.DisplayName,
+                            EmailAddress = tmp.Address,
+                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
+                            Status = 0,
+                            ErrorMsg = "发件人不在白名单内，不能抄送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
+                        });
+                    }
+                }
+            }
             return errors;
         }
 

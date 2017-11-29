@@ -789,13 +789,34 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// <returns></returns>
         public List<MailBoxMapper> GetIsWhiteList(int isWhiteLst, int userId)
         {
-            var sql = "SELECT box.accountid,u.userid,u.username FROM crm_sys_mail_mailbox box LEFT JOIN crm_sys_userinfo u ON box.owner::int4 = u.userid and inwhitelist = @iswhitelst ";
+            var sql = "SELECT box.accountid,u.userid,u.username FROM crm_sys_mail_mailbox box LEFT JOIN crm_sys_userinfo u ON box.owner::int4 = u.userid  WHERE box.inwhitelist = @iswhitelst ";
             var param = new
             {
                 IsWhiteLst = isWhiteLst,
                 UserId = userId
             };
             return DataBaseHelper.Query<MailBoxMapper>(sql, param, CommandType.Text);
+        }
+        /// <summary>
+        /// 我负责的客户的联系人和内部人员
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public List<InnerUserMailMapper> GetUserMailList(int userId)
+        {
+            var sql = @"SELECT userid,useremail FROM crm_sys_userinfo WHERE recstatus=1
+                               UNION 
+                               SELECT owner::int4,accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 "+
+                               "  UNION "+
+                               "SELECT 0,contact.email FROM (SELECT regexp_split_to_table(custids,',') custid,tmp.email FROM ( "+
+                               "SELECT email,(belcust->> 'id') AS custids FROM crm_sys_contact  WHERE recstatus = 1 AND(email IS NOT NULL OR email <> '')"+
+                               ")  AS tmp )  AS contact  WHERE contact.custid::uuid IN(SELECT recid FROM crm_sys_customer WHERE recmanager = @userid)";
+                               ;
+            var param = new
+            {
+                UserId = userId
+            };
+            return DataBaseHelper.Query<InnerUserMailMapper>(sql, param, CommandType.Text);
         }
         #endregion
         #region  模糊查询我的通讯人员
@@ -972,19 +993,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         }
 
         #endregion
-        #region  我负责的客户的联系人和内部人员
-        public List<MailUserMapper> GetManagerContactAndInnerUser(int userId)
-        {
-            var sql = "SELECT email,recname as name FROM crm_sys_contact WHERE(belcust->> 'id')::uuid IN(SELECT recid FROM crm_sys_customer WHERE recmanager = @userid); " +
-                "UNION ALL" +
-                "SELECT useremail as email,username as name FROM crm_sys_userinfo WHERE recstatus = 1";
-            var param = new
-            {
-                UserId = userId
-            };
-            return DataBaseHelper.Query<MailUserMapper>(sql, param, CommandType.Text);
-        }
-        #endregion
+
 
         #region 判断领导是否拥有该下属
         public bool IsHasSubUserAuth(int leaderUserId, int userId)
