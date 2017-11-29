@@ -25,6 +25,7 @@ using System.IO;
 using System.Dynamic;
 using System.Data.Common;
 using MailKit;
+using Microsoft.Extensions.Configuration;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -38,18 +39,190 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IMailCatalogRepository _mailCatalogRepository;
         private readonly IMailRepository _mailRepository;
 
-
+        class DataWrapper
+        {
+            public ReceiveEMailMapper entity { get; set; }
+            public IList<UserMailInfo> userMailInfoLst { get; set; }
+        }
         #region 定时接收邮件
-        private static int _maxThreads;
+        private static int _receiveThreads;
+        private static int _writeThreads;
         // 任务队列
         private static Queue<MimeMessage> _tasks = new Queue<MimeMessage>();
         // 为保证线程安全，使用一个锁来保护_task的访问
         private readonly static object _locker = new object();
+        // 通过 _wh 给工作线程发信号
+        private static EventWaitHandle _wh = new AutoResetEvent(false);
+        private DataWrapper _dataWrapper;
         #endregion
         static EMailServices()
         {
-
+            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("ReceiveMailConfig");
+            _receiveThreads = config.GetValue<int>("ReceiveThreads");
+            _writeThreads = config.GetValue<int>("WriteThreads");
         }
+
+
+        #region 定时收取邮件
+
+        public OutputResult<object> QueueReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
+        {
+            var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
+            IList<UserMailInfo> userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
+            for (int i = 0; i < _writeThreads; i++)
+            {
+                int avg = Convert.ToInt32(Math.Ceiling((userMailInfoLst.Count * 1.0) / (_writeThreads * 1.0)));
+                var tmpLst = userMailInfoLst.Skip(avg * i).Take(avg).ToList();
+                _dataWrapper = new DataWrapper
+                {
+                    entity = entity,
+                    userMailInfoLst = tmpLst
+                };
+                ThreadPool.QueueUserWorkItem(EnqueueMimeMessageTask, tmpLst);
+            }
+
+            for (int i = 0; i < _receiveThreads; i++)
+            {
+                ThreadPool.QueueUserWorkItem((state) =>
+                {
+
+                }, new { num1 = 2 });
+            }
+            #region 代码
+            AutoResetEvent _workerEvent = new AutoResetEvent(false);
+            try
+            {
+                OutputResult<object> repResult = new OutputResult<object>();
+                foreach (var userMailInfo in userMailInfoLst)
+                {
+                    if (userMailInfo.EncryptPwd == null)
+                        continue;
+                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
+                    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                    var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+                    taskResult.GetAwaiter().OnCompleted(() =>
+                    {
+                        DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
+                        {
+                            EntityFields = new List<DynamicEntityFieldDataModel>()
+                        };
+                        var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
+                        foreach (var msg in taskResult.Result)
+                        {
+                            var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                            if (obj != null)
+                                continue;
+                            Dictionary<string, string> dicHeader = new Dictionary<string, string>();
+                            string key = String.Empty;
+                            foreach (var header in msg.Headers)
+                            {
+                                key = header.Id.ToHeaderName();
+                                if (!dicHeader.ContainsKey(key))
+                                    dicHeader.Add(key, header.Value);
+                            }
+                            var fieldData = new Dictionary<string, object>();
+                            fieldData.Add("recname", msg.Subject);//邮件主题
+                            fieldData.Add("relativemailbox", BuilderAddress(msg.From));//收件人
+                            fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
+                            fieldData.Add("title", msg.Subject);//邮件主题
+                            fieldData.Add("mailbody", msg.GetTextBody(TextFormat.Html));//邮件主题内容
+                            fieldData.Add("sender", BuilderAddress(msg.From));//邮件发送人
+                            fieldData.Add("receivers", BuilderAddress(msg.To));//邮件接收人
+                            fieldData.Add("ccers", BuilderAddress(msg.Cc));//邮件抄送人
+                            fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
+                            fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
+                            fieldData.Add("urgency", 1);//邮件优先级
+
+                            fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
+                            var fileTask = UploadAttachmentFiles(msg.Attachments);
+                            fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
+                            var extraData = new Dictionary<string, object>();
+                            extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
+                            extraData.Add("attachfile", fileTask.Result);
+                            extraData.Add("issendoreceive", 1);
+                            extraData.Add("receivetimerecord", new
+                            {
+                                ReceiveTime = msg.Date,
+                                ServerId = msg.MessageId
+                            });
+                            DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
+                            {
+                                TypeId = Guid.Parse(_entityId),
+                                FieldData = fieldData,
+                                ExtraData = extraData
+                            };
+                            addList.EntityFields.Add(dynamicEntity);
+                        }
+                        _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
+                        _dynamicEntityServices.AddList(addList, header, userNumber);
+
+                        _workerEvent.Set();
+                    });
+                }
+                _workerEvent.WaitOne();
+                repResult = new OutputResult<object>()
+                {
+                    Status = repResult.Status,
+                    Message = repResult.Status == 0 ? "接收邮件成功" : "接收邮件失败"
+                };
+                return repResult;
+            }
+            catch (Exception ex)
+            {
+                return new OutputResult<object>()
+                {
+                    Status = 1,
+                    Message = "接收邮件失败"
+                };
+            }
+            finally
+            {
+                _workerEvent.Dispose();
+            }
+            #endregion
+        }
+
+        /// <summary>插入任务</summary>
+        static void EnqueueMimeMessageTask(object state)
+        {
+            //IList<UserMailInfo> userMailInfoLst = state as IList<UserMailInfo>;
+            //foreach (var userMailInfo in userMailInfoLst)
+            //{
+            //    if (userMailInfo.EncryptPwd == null)
+            //        continue;
+            //    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
+            //    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+            //    var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+            //}
+            //lock (_locker)
+            //{
+            //    _tasks.Enqueue(task);  // 向队列中插入任务 
+            //}
+
+
+            //_wh.Set();  // 给工作线程发信号
+        }
+
+
+        #endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         public EMailServices(IMapper mapper, FileServices fileServices, DynamicEntityServices dynamicEntityServices,
             IMailCatalogRepository mailCatalogRepository,
@@ -144,104 +317,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
-
-        public OutputResult<object> QueueReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
-        {
-            var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
-            var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-            AutoResetEvent _workerEvent = new AutoResetEvent(false);
-            try
-            {
-                OutputResult<object> repResult = new OutputResult<object>();
-                foreach (var userMailInfo in userMailInfoLst)
-                {
-                    if (userMailInfo.EncryptPwd == null)
-                        continue;
-                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
-                    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
-                    var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
-                    taskResult.GetAwaiter().OnCompleted(() =>
-                    {
-                        DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
-                        {
-                            EntityFields = new List<DynamicEntityFieldDataModel>()
-                        };
-                        var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
-                        foreach (var msg in taskResult.Result)
-                        {
-                            var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
-                            if (obj != null)
-                                continue;
-                            Dictionary<string, string> dicHeader = new Dictionary<string, string>();
-                            string key = String.Empty;
-                            foreach (var header in msg.Headers)
-                            {
-                                key = header.Id.ToHeaderName();
-                                if (!dicHeader.ContainsKey(key))
-                                    dicHeader.Add(key, header.Value);
-                            }
-                            var fieldData = new Dictionary<string, object>();
-                            fieldData.Add("recname", msg.Subject);//邮件主题
-                            fieldData.Add("relativemailbox", BuilderAddress(msg.From));//收件人
-                            fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
-                            fieldData.Add("title", msg.Subject);//邮件主题
-                            fieldData.Add("mailbody", msg.GetTextBody(TextFormat.Html));//邮件主题内容
-                            fieldData.Add("sender", BuilderAddress(msg.From));//邮件发送人
-                            fieldData.Add("receivers", BuilderAddress(msg.To));//邮件接收人
-                            fieldData.Add("ccers", BuilderAddress(msg.Cc));//邮件抄送人
-                            fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
-                            fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
-                            fieldData.Add("urgency", 1);//邮件优先级
-
-                            fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
-                            var fileTask = UploadAttachmentFiles(msg.Attachments);
-                            fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
-                            var extraData = new Dictionary<string, object>();
-                            extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
-                            extraData.Add("attachfile", fileTask.Result);
-                            extraData.Add("issendoreceive", 1);
-                            extraData.Add("receivetimerecord", new
-                            {
-                                ReceiveTime = msg.Date,
-                                ServerId = msg.MessageId
-                            });
-                            DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
-                            {
-                                TypeId = Guid.Parse(_entityId),
-                                FieldData = fieldData,
-                                ExtraData = extraData
-                            };
-                            addList.EntityFields.Add(dynamicEntity);
-                        }
-                        _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
-                        _dynamicEntityServices.AddList(addList, header, userNumber);
-
-                        _workerEvent.Set();
-                    });
-                }
-                _workerEvent.WaitOne();
-                repResult = new OutputResult<object>()
-                {
-                    Status = repResult.Status,
-                    Message = repResult.Status == 0 ? "接收邮件成功" : "接收邮件失败"
-                };
-                return repResult;
-            }
-            catch (Exception ex)
-            {
-                return new OutputResult<object>()
-                {
-                    Status = 1,
-                    Message = "接收邮件失败"
-                };
-            }
-            finally
-            {
-                _workerEvent.Dispose();
-            }
-        }
-
-
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
 
@@ -269,7 +344,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
-            AutoResetEvent _workerEvent = new AutoResetEvent(false);
+            //AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
                 var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, false);
@@ -288,9 +363,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                    var result = SaveMailDataInDb(msgResult, userNumber);
                    if (result.Status != 0)
                        throw new Exception("保存邮件数据异常");
-                   _workerEvent.Set();
+                  // _workerEvent.Set();
                });
-                _workerEvent.WaitOne();
+               // _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
                     Status = repResult.Status,
@@ -315,16 +390,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Message = "发送邮件失败"
                 };
             }
-            finally
-            {
-                _workerEvent.Dispose();
-            }
+            //finally
+            //{
+            //    _workerEvent.Dispose();
+            //}
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-            AutoResetEvent _workerEvent = new AutoResetEvent(false);
+          //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
                 OutputResult<object> repResult = new OutputResult<object>();
@@ -391,10 +466,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
                         _dynamicEntityServices.AddList(addList, header, userNumber);
 
-                        _workerEvent.Set();
+                     //   _workerEvent.Set();
                     });
                 }
-                _workerEvent.WaitOne();
+               // _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
                     Status = repResult.Status,
@@ -410,10 +485,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Message = "接收邮件失败"
                 };
             }
-            finally
-            {
-                _workerEvent.Dispose();
-            }
+            //finally
+            //{
+            //    _workerEvent.Dispose();
+            //}
         }
 
         private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, int userId)
@@ -565,7 +640,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             ms.Position = 0;
                             buffer = new byte[ms.Length];
                             ms.Seek(0, SeekOrigin.Begin);
-                            ms.WriteAsync(buffer, 0, buffer.Length);
+                            ms.Write(buffer, 0, buffer.Length);
                         }
                         string fileId = _fileServices.UploadFile(string.Empty, Guid.NewGuid().ToString(), part.FileName, buffer);
                         attachFileRecord.Add(new
