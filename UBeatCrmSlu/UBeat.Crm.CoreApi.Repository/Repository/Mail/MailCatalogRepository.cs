@@ -595,9 +595,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <param name="parentid"></param>
         /// <param name="tran"></param>
 
-        public void MoveCatalog(string recid, string parentid, DbTransaction tran)
+        public void MoveCatalog(string recid, string parentid,string recname, DbTransaction tran)
         {
-            string strSQL = string.Format("update crm_sys_mail_catalog set pid='{0}',vpid='{0}' where recid = '{1}'", parentid, recid);
+            string strSQL = string.Format("update crm_sys_mail_catalog set recname='{2}',pid='{0}',vpid='{0}' where recid = '{1}'", parentid, recid, recname);
             ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
         }
 
@@ -657,7 +657,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// </summary>
         /// <param name="MailBoxs"></param>
         /// <param name="enable"></param>
-        public void SaveWhiteList(List<Guid> MailBoxs, int enable)
+        public void SaveWhiteList(List<Guid> MailBoxs, string enable)
         {
             string strSQL = "update crm_sys_mail_mailbox set inwhitelist=@enable where recid=@recid";
             List<DbParameter[]> paramList = new List<DbParameter[]>();
