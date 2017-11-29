@@ -904,7 +904,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             }
             string newSql = string.Format(sql, condition);
 
-            return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageIndex,pageSize);
+            return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageSize,pageIndex);
         }
 
         /// <summary>
