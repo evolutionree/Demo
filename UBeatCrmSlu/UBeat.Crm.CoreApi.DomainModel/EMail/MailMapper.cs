@@ -477,6 +477,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
         public string DeptName { get; set; }
 
+        public Guid Icon { get; set; }
+
         /// <summary>
         /// 0是部门类型 1是人员类型
         /// </summary>
