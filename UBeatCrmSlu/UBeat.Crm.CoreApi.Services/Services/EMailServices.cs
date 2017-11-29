@@ -323,7 +323,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
-
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
                         {
                             EntityFields = new List<DynamicEntityFieldDataModel>()
@@ -331,7 +330,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
                         foreach (var msg in taskResult.Result)
                         {
-                            var obj = mailRelatedLst.SingleOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                            var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
                             if (obj != null)
                                 continue;
                             Dictionary<string, string> dicHeader = new Dictionary<string, string>();

@@ -336,14 +336,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             var isCustExistsSql = @"Select count(1) From crm_sys_customer Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
             var custSql = @"SELECT crm_func_entity_protocol_data_detail('f9db9d79-e94b-4678-a5cc-aa6e281c1246',
 (SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid,0,@userid);";
-            var isConExistsSql = @"Select count(1) From crm_sys_contact Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
-            var contactsSql = @"SELECT * FROM crm_func_entity_protocol_data_list
-('e450bfd7-ff17-4b29-a2db-7ddaf1e79342','75ce6617-2016-46f0-8cb4-8467b77ef468',' and t.recid IN (SELECT recid FROM crm_sys_contact WHERE belcust->>'id' IN (
-SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1))','',0,NULL,1,@maxpagesize,0,@userid)
+            var isConExistsSql = @"Select count(1) From crm_sys_contact Where (belcust->>'id') IN (
+                                                SELECT regexp_split_to_table(custid,'id') 
+                                                   FROM (SELECT (belcust->>'id') custid FROM crm_sys_contact 
+                                                WHERE email=(Select mailaddress From 
+                                                   crm_sys_mail_senderreceivers Where
+                                                    mailid=@mailid And ctype=1)  AND 
+                                                   recstatus=1 LIMIT 1) AS tmp )";
+            var contactsSql = @"SELECT  crm_func_entity_protocol_data_list('e450bfd7-ff17-4b29-a2db-7ddaf1e79342','75ce6617-2016-46f0-8cb4-8467b77ef468','and t.recid IN (
+Select recid From crm_sys_contact Where (belcust->>'id') IN ( SELECT regexp_split_to_table(custid,',')  FROM (SELECT (belcust->>'id') as  custid FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid='a7c0deaa-6edf-427c-a1e2-928c391d2fbe'  And ctype=1)  AND recstatus=1 LIMIT 1) AS tmp )
+)','',0,NULL,1,@maxpagesize,0,@userid)
 ";
             var param = new DynamicParameters();
             param.Add("mailid", entity.MailId);
             param.Add("userid", userId);
+            param.Add("maxpagesize", 99999);
             var mailDetail = DataBaseHelper.QuerySingle<MailBodyDetailMapper>(sql, param, CommandType.Text);
             var senderResult = DataBaseHelper.Query<dynamic>(senderSql, param, CommandType.Text);
             var countRecord = DataBaseHelper.QuerySingle<int>(isCustExistsSql, param, CommandType.Text);
@@ -352,8 +359,8 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
                 custResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(custSql, param, CommandType.Text);
             countRecord = DataBaseHelper.QuerySingle<int>(isConExistsSql, param, CommandType.Text);
             List<dynamic> contactsResult = new List<dynamic>();
-            if (countRecord == 1)
-                contactsResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(contactsSql, param, CommandType.Text);
+            if (countRecord > 0)
+                contactsResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(contactsSql, param,CommandType.Text);
             Dictionary<string, object> dicResult = new Dictionary<string, object>();
             dicResult.Add("maildetail", mailDetail);
             dicResult.Add("sender", senderResult);
@@ -806,12 +813,12 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         {
             var sql = @"SELECT userid,useremail FROM crm_sys_userinfo WHERE recstatus=1
                                UNION 
-                               SELECT owner::int4,accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 "+
-                               "  UNION "+
-                               "SELECT 0,contact.email FROM (SELECT regexp_split_to_table(custids,',') custid,tmp.email FROM ( "+
-                               "SELECT email,(belcust->> 'id') AS custids FROM crm_sys_contact  WHERE recstatus = 1 AND(email IS NOT NULL OR email <> '')"+
+                               SELECT owner::int4,accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 " +
+                               "  UNION " +
+                               "SELECT 0,contact.email FROM (SELECT regexp_split_to_table(custids,',') custid,tmp.email FROM ( " +
+                               "SELECT email,(belcust->> 'id') AS custids FROM crm_sys_contact  WHERE recstatus = 1 AND(email IS NOT NULL OR email <> '')" +
                                ")  AS tmp )  AS contact  WHERE contact.custid::uuid IN(SELECT recid FROM crm_sys_customer WHERE recmanager = @userid)";
-                               ;
+            ;
             var param = new
             {
                 UserId = userId
@@ -861,7 +868,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>       
-        public List<OrgAndStaffMapper> GetInnerContact(string deptId,int userId)
+        public List<OrgAndStaffMapper> GetInnerContact(string deptId, int userId)
         {
             if (string.IsNullOrEmpty(deptId))
             {
@@ -904,7 +911,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             }
             string newSql = string.Format(sql, condition);
 
-            return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageSize,pageIndex);
+            return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageSize, pageIndex);
         }
 
         /// <summary>
@@ -974,7 +981,7 @@ SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From 
             return ExecuteQuery<OrgAndStaffTree>(newSql, param);
         }
 
-        public MailBodyMapper GetMailInfo(List<Guid> mailIds,int userId)
+        public MailBodyMapper GetMailInfo(List<Guid> mailIds, int userId)
         {
             string strSQL = @"SELECT " +
                             "body.recid mailid," +
