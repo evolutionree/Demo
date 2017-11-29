@@ -41,8 +41,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         class DataWrapper
         {
-            public ReceiveEMailMapper entity { get; set; }
-            public IList<UserMailInfo> userMailInfoLst { get; set; }
+            public ReceiveEMailMapper Entity { get; set; }
+            public IList<UserMailInfo> UserMailInfoLst { get; set; }
         }
         #region 定时接收邮件
         private static int _receiveThreads;
@@ -78,7 +78,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     entity = entity,
                     userMailInfoLst = tmpLst
                 };
-                ThreadPool.QueueUserWorkItem(EnqueueMimeMessageTask, tmpLst);
+                ThreadPool.QueueUserWorkItem(EnqueueMimeMessageTask, _dataWrapper);
             }
 
             for (int i = 0; i < _receiveThreads; i++)
@@ -183,24 +183,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
         /// <summary>插入任务</summary>
-        static void EnqueueMimeMessageTask(object state)
+        void EnqueueMimeMessageTask(object state)
         {
-            //IList<UserMailInfo> userMailInfoLst = state as IList<UserMailInfo>;
-            //foreach (var userMailInfo in userMailInfoLst)
-            //{
-            //    if (userMailInfo.EncryptPwd == null)
-            //        continue;
-            //    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
-            //    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
-            //    var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
-            //}
-            //lock (_locker)
-            //{
-            //    _tasks.Enqueue(task);  // 向队列中插入任务 
-            //}
-
-
-            //_wh.Set();  // 给工作线程发信号
+            DataWrapper dataWrapper = state as DataWrapper;
+            foreach (var userMailInfo in dataWrapper.UserMailInfoLst)
+            {
+                if (userMailInfo.EncryptPwd == null)
+                    continue;
+                SearchQuery searchQuery = BuilderSearchQuery((SearchQueryEnum)dataWrapper.Entity.Conditon, dataWrapper.Entity.ConditionVal, userMailInfo.Owner);
+                bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+                lock (_locker)
+                {
+                    foreach (var tmp in taskResult)
+                        _tasks.Enqueue(tmp);  // 向队列中插入任务 
+                }
+            }
+            _wh.Set();  // 给工作线程发信号
         }
 
 
@@ -351,6 +350,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 OutputResult<object> repResult = new OutputResult<object>();
                 taskResult.GetAwaiter().OnCompleted(() =>
                {
+                   if (taskResult.Exception != null) return;
                    var msg = taskResult.Result;
 
                    MimeMessageResult msgResult = new MimeMessageResult
@@ -363,9 +363,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                    var result = SaveMailDataInDb(msgResult, userNumber);
                    if (result.Status != 0)
                        throw new Exception("保存邮件数据异常");
-                  // _workerEvent.Set();
+                   // _workerEvent.Set();
                });
-               // _workerEvent.WaitOne();
+                // _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
                     Status = repResult.Status,
@@ -399,7 +399,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-          //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
+            //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
                 OutputResult<object> repResult = new OutputResult<object>();
@@ -412,6 +412,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
+                        if (taskResult.Exception != null) return;
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
                         {
                             EntityFields = new List<DynamicEntityFieldDataModel>()
@@ -466,10 +467,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
                         _dynamicEntityServices.AddList(addList, header, userNumber);
 
-                     //   _workerEvent.Set();
+                        //   _workerEvent.Set();
                     });
                 }
-               // _workerEvent.WaitOne();
+                // _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
                     Status = repResult.Status,
