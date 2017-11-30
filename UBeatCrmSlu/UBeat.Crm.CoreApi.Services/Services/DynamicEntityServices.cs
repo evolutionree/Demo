@@ -2250,7 +2250,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                         if (!string.IsNullOrEmpty(uuid))
                         {
-                            var functions = t.Functions.Where(b => b.EntityId == entity.EntityId && b.RecType == FunctionType.Tab && b.DeviceType == (int)DeviceClassic);//拿子节点对上一级 的父节点的id
+                            var functions = t.Functions.Where(b => b.EntityId == entity.EntityId && b.RecType == FunctionType.EntityTab && b.DeviceType == (int)DeviceClassic);//拿子节点对上一级 的父节点的id
                             if (functions.Count() != 1) throw new Exception("职能权限数据异常");
                             var function = functions.SingleOrDefault();
                             functions = t.Functions.Where(a => a.ParentId == function.FuncId);
