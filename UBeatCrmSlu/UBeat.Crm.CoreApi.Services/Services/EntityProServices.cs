@@ -582,10 +582,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("参数不可为空");
             if (dynamicModel.EntityId == Guid.Empty)
                 throw new Exception("参数EntityId不可为空");
-            if (dynamicModel.MobileFuncs == null)
-                throw new Exception("参数MobileFuncs不可为空");
-            if (dynamicModel.WebFuncs == null )
-                throw new Exception("参数WebFuncs不可为空");
+            if (dynamicModel.MobileFuncs == null)//不可为null，如果不配置节点，则传空list，否则影响其他地方的业务逻辑
+                throw new Exception("参数MobileFuncs不可为NULL");
+            if (dynamicModel.WebFuncs == null )//不可为null，如果不配置节点，则传空list，否则影响其他地方的业务逻辑
+                throw new Exception("参数WebFuncs不可为NULL");
            
             var info = _entityProRepository.GetFunctionJsonInfo(dynamicModel.EntityId);
             if (info == null)
@@ -626,7 +626,95 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>("OK");
         }
 
+        public void SaveFunctionNode(Guid entityid, FunctionType nodeType, string funcname, string relateValue, int userNumber, string funccode=null, string routePath=null)
+        {
+            if (entityid==Guid.Empty)
+                throw new Exception("参数entityid不可为空");
+            if (string.IsNullOrEmpty(funcname))
+                throw new Exception("参数funcname不可为空");
 
+            var info = _entityProRepository.GetFunctionJsonInfo(entityid);
+            if (info == null)
+            {
+                info = new FunctionJsonInfo();
+            }
+            var entityInfo = _entityProRepository.GetEntityInfo(entityid);
+
+          
+            if (info.WebFunctions == null )//如果为null ，则说明该节点还未生成，需要初始化数据
+                info.WebFunctions = GetDefaultFunctions(entityInfo, 0);
+            if (info.MobileFunctions == null)//如果为null ，则说明该节点还未生成，需要初始化数据
+                info.MobileFunctions = GetDefaultFunctions(entityInfo, 1);
+            switch(nodeType)
+            {
+                case FunctionType.EntityMenu: //relateValue为menuid
+                    if (string.IsNullOrEmpty(relateValue))
+                        throw new Exception("relateValue必须为有效的menuid");
+                    UpdateMenuFunctions(entityid, funcname, relateValue, info.WebFunctions, entityInfo);
+                    UpdateMenuFunctions(entityid, funcname, relateValue, info.MobileFunctions, entityInfo);
+                    break;
+                case FunctionType.EntityFunc:
+                    if (string.IsNullOrEmpty(funccode))
+                        throw new Exception("funccode不可为空");
+                    UpdateEntityFuncs(entityid, funcname, funccode, relateValue, info.WebFunctions, entityInfo, routePath);
+                    UpdateEntityFuncs(entityid, funcname, funccode, relateValue, info.MobileFunctions, entityInfo, routePath);
+                    break;
+                case FunctionType.EntityTab:
+                    break;
+                case FunctionType.EntityDynamicTab:
+                    break;
+            }
+
+            if (!_entityProRepository.SaveFunctionJson(entityid, info, userNumber))
+                throw new Exception("生成function节点失败");
+        }
+
+
+        #region --更新菜单列表的function数据--
+        private void UpdateMenuFunctions(Guid entityid, string funcname, string relateValue, List<FunctionInfo> functions, SimpleEntityInfo entityInfo)
+        {
+            var rootNode = functions.Find(m => m.RecType == FunctionType.EntityMenu);
+            if (rootNode == null)//如果此时为null，说明该节点已被手动设置为空
+            {
+                return;
+            }
+            var menuNode = functions.Find(m => m.RecType == FunctionType.Function && m.RelationValue == relateValue);
+            if (menuNode != null)//如果已经存在，则update
+            {
+                menuNode.RelationValue = relateValue;
+                menuNode.FuncName = funcname;
+            }
+            else
+            {
+                menuNode = new FunctionInfo(Guid.NewGuid(), rootNode.FuncId, funcname, "EntityDataList", entityInfo.EntityId, rootNode.DeviceType, FunctionType.Function, -1, relateValue, "api/dynamicentity/list");
+                functions.Add(menuNode);
+            }
+        }
+        #endregion
+
+        #region --更新功能列表的function数据--
+        private void UpdateEntityFuncs(Guid entityid, string funcname, string funccode, string relateValue, List<FunctionInfo> functions, SimpleEntityInfo entityInfo, string routePath)
+        {
+            var rootNode = functions.Find(m => m.RecType == FunctionType.EntityFunc);
+            if (rootNode == null)//如果此时为null，说明该节点已被手动设置为空
+            {
+                return;
+            }
+            var node = functions.Find(m => m.RecType == FunctionType.Function && m.Funccode== funccode);
+            if (node != null)//如果已经存在，则update
+            {
+                node.FuncName = funcname;
+                node.Funccode = funccode;
+                node.RoutePath = routePath;
+                node.RelationValue = relateValue;
+            }
+            else
+            {
+                node = new FunctionInfo(Guid.NewGuid(), rootNode.FuncId, funcname, funccode, entityInfo.EntityId, rootNode.DeviceType, FunctionType.Function, -1, relateValue, routePath);
+                functions.Add(node);
+            }
+        }
+        #endregion
 
         #region --获取默认的实体function--
         public List<FunctionInfo> GetDefaultFunctions(SimpleEntityInfo entityInfo, int deviceType)
@@ -643,40 +731,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 functions.Add(entityroot);
 
                 //一级节点：菜单
-                var menuNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "菜单", "EntityMenu", entityId, deviceType, FunctionType.Menu, 0, null, null);
+                var menuNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "菜单", "EntityMenu", entityId, deviceType, FunctionType.EntityMenu, 0, null, null);
                 functions.Add(menuNode);
                 #region --二级节点 ：菜单--
-                //获取 menuid
-                string menuid = null;
                 var menus = _entityProRepository.GetEntityMenuInfoList(entityId);
-                var menuinfo = menus.Find(m => m.MenuType == MenuType.AllList);
-                menuid = menuinfo == null ? null : menuinfo.MenuId.ToString();
-                functions.Add(new FunctionInfo(Guid.NewGuid(), menuNode.FuncId, "全部数据", "AllEntityData", entityId, deviceType, FunctionType.Default, -1, menuid, "api/dynamicentity/list"));
-                if (modelType == EntityModelType.Independent)
+                foreach(var menuinfo in menus)
                 {
-                    menuinfo = menus.Find(m => m.MenuType == MenuType.TransferList);
-                    menuid = menuinfo == null ? null : menuinfo.MenuId.ToString();
-                    functions.Add(new FunctionInfo(Guid.NewGuid(), menuNode.FuncId, "待转移数据", "TransferEntityData", entityId, deviceType, FunctionType.Default, -1, menuid, "api/dynamicentity/list"));
+                   var menuid = menuinfo == null ? null : menuinfo.MenuId.ToString();
+                    functions.Add(new FunctionInfo(Guid.NewGuid(), menuNode.FuncId, menuinfo.MenuName, "EntityDataList", entityId, deviceType, FunctionType.Function, -1, menuid, "api/dynamicentity/list"));
                 }
+                
                 #endregion
 
                 //一级节点：功能
-                var funcNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "功能", "EntityFunc", entityId, deviceType, FunctionType.Function, 0, null, null);
+                var funcNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "功能", "EntityFunc", entityId, deviceType, FunctionType.EntityFunc, 0, null, null);
                 functions.Add(funcNode);
                 #region --二级节点 ：功能--
                 //获取 menuid
 
-                functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "新增", "EntityDataAdd", entityId, deviceType, FunctionType.Default, -1, null, "api/dynamicentity/add"));
-                functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "编辑", "EntityDataEdit", entityId, deviceType, FunctionType.Default, -1, null, "api/dynamicentity/edit"));
-                functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "删除", "EntityDataDelete", entityId, deviceType, FunctionType.Default, -1, null, "api/dynamicentity/delete"));
+                functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "新增", "EntityDataAdd", entityId, deviceType, FunctionType.Function, -1, null, "api/dynamicentity/add"));
+                functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "编辑", "EntityDataEdit", entityId, deviceType, FunctionType.Function, -1, null, "api/dynamicentity/edit"));
+                functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "删除", "EntityDataDelete", entityId, deviceType, FunctionType.Function, -1, null, "api/dynamicentity/delete"));
                 if (modelType == EntityModelType.Independent)
                 {
-                    functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "转移", "EntityDataTransfer", entityId, deviceType, FunctionType.Default, -1, null, "api/dynamicentity/transfer"));
+                    functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "转移", "EntityDataTransfer", entityId, deviceType, FunctionType.Function, -1, null, "api/dynamicentity/transfer"));
                 }
                 if (deviceType == 0)//web
                 {
-                    functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "导出", "EntityDataExport", entityId, deviceType, FunctionType.Default, -1, null, "api/dynamicentity/exportdata"));
-                    functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "导入", "EntityDataImport", entityId, deviceType, FunctionType.Default, -1, null, "api/dynamicentity/importdata"));
+                    functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "导出", "EntityDataExport", entityId, deviceType, FunctionType.Function, -1, null, "api/dynamicentity/exportdata"));
+                    functions.Add(new FunctionInfo(Guid.NewGuid(), funcNode.FuncId, "导入", "EntityDataImport", entityId, deviceType, FunctionType.Function, -1, null, "api/dynamicentity/importdata"));
                 }
 
                 #endregion
@@ -685,33 +768,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (modelType == EntityModelType.Independent)
                 {
                     //一级节点：主页Tab
-                    var tabNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "主页Tab", "EntityTab", entityId, deviceType, FunctionType.Tab, 0, null, null);
+                    var tabNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "主页Tab", "EntityTab", entityId, deviceType, FunctionType.EntityTab, 0, null, null);
                     functions.Add(tabNode);
                     #region --二级节点 ：主页Tab--
 
                     string docs_relateValue = _entityProRepository.GetEntityRelTabId(entityId, "docs").ToString();
-                    var documet_tabNode = new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "文档", "EntityDataDocment", entityId, deviceType, FunctionType.Document, 0, null, null);
+                    var documet_tabNode = new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "文档", "EntityDataDocment", entityId, deviceType, FunctionType.DocumentList, 0, null, null);
                     functions.Add(documet_tabNode);
                     if (deviceType == 0)//web
                     {
-                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档列表", "EntityDataDocmentList", entityId, deviceType, FunctionType.Default, -1, docs_relateValue, "api/dynamicentity/documentlist"));
-                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档上传", "DocumentUpload", entityId, deviceType, FunctionType.Default, -1, null, "api/documents/adddocument"));
-                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档删除", "DocumentDelete", entityId, deviceType, FunctionType.Default, -1, null, "api/documents/deletedocument"));
+                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档列表", "EntityDataDocmentList", entityId, deviceType, FunctionType.Function, -1, docs_relateValue, "api/dynamicentity/documentlist"));
+                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档上传", "DocumentUpload", entityId, deviceType, FunctionType.Function, -1, null, "api/documents/adddocument"));
+                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档删除", "DocumentDelete", entityId, deviceType, FunctionType.Function, -1, null, "api/documents/deletedocument"));
                         string relateValue = _entityProRepository.GetEntityRelTabId(entityId, "info").ToString();
-                        functions.Add(new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "基础信息", "EntityDataDetail", entityId, deviceType, FunctionType.Default, -1, relateValue, "api/dynamicentity/detial"));
+                        functions.Add(new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "基础信息", "EntityDataDetail", entityId, deviceType, FunctionType.Function, -1, relateValue, "api/dynamicentity/detial"));
                         relateValue = _entityProRepository.GetEntityRelTabId(entityId, "activities").ToString();
-                        functions.Add(new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "动态", "EntityDataDynamicList", entityId, deviceType, FunctionType.Default, -1, relateValue, "api/dynamicentity/getdynamiclist"));
+                        functions.Add(new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "动态", "EntityDataDynamicList", entityId, deviceType, FunctionType.Function, -1, relateValue, "api/dynamicentity/getdynamiclist"));
                     }
                     else
                     {
 
-                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档列表", "EntityDataDocmentList", entityId, deviceType, FunctionType.Default, -1, docs_relateValue, "api/dynamicentity/documentlist"));
+                        functions.Add(new FunctionInfo(Guid.NewGuid(), documet_tabNode.FuncId, "文档列表", "EntityDataDocmentList", entityId, deviceType, FunctionType.Function, -1, docs_relateValue, "api/dynamicentity/documentlist"));
                         string chat_relateValue = _entityProRepository.GetEntityRelTabId(entityId, "chat").ToString();
-                        functions.Add(new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "沟通", "EntityDataChat", entityId, deviceType, FunctionType.Default, -1, chat_relateValue, "api/chat/send"));
+                        functions.Add(new FunctionInfo(Guid.NewGuid(), tabNode.FuncId, "沟通", "EntityDataChat", entityId, deviceType, FunctionType.Function, -1, chat_relateValue, "api/chat/send"));
                     }
                     #endregion
                     //一级节点：主页动态
-                    var dynamicNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "主页动态Tab", "EntityDynamicTab", entityId, deviceType, FunctionType.Dynamic, 0, null, null);
+                    var dynamicNode = new FunctionInfo(Guid.NewGuid(), entityroot.FuncId, entityName + "主页动态Tab", "EntityDynamicTab", entityId, deviceType, FunctionType.EntityDynamicTab, 0, null, null);
                     functions.Add(dynamicNode);
                 }
             }
@@ -792,7 +875,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var func = totalFunctions.FirstOrDefault(m => m.RoutePath == dynamicModel.RoutePath && m.EntityId == dynamicModel.EntityId && m.DeviceType == deviceType);
             if (func == null)
             {
-                var parentFunction = totalFunctions.FirstOrDefault(m => m.EntityId == dynamicModel.EntityId && m.DeviceType == deviceType && m.RecType == FunctionType.Function);
+                var parentFunction = totalFunctions.FirstOrDefault(m => m.EntityId == dynamicModel.EntityId && m.DeviceType == deviceType && m.RecType == FunctionType.EntityFunc);
                 if (parentFunction == null)
                     throw new Exception("找不到该实体的Function功能节点");
                 func = new FunctionInfo()
@@ -803,7 +886,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ParentId = parentFunction.FuncId,
                     EntityId = dynamicModel.EntityId,
                     DeviceType = deviceType,
-                    RecType = FunctionType.Default,
+                    RecType = FunctionType.Function,
                     ChildType = 1,
                     IsLastChild = 1,
                     RoutePath = dynamicModel.RoutePath,

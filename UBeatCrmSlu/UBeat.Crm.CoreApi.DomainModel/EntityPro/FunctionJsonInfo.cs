@@ -13,17 +13,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public List<FunctionBtnInfo> FuncBtns { set; get; }
 
         /// <summary>
-        /// 实体拥有的功能列表
+        /// 实体拥有的功能列表，若为null，表示未设置数据，若为空list，则说明用户自己去除配置
         /// </summary>
         public List<FunctionInfo> WebFunctions { set; get; }
 
         /// <summary>
-        /// 实体拥有的功能列表
+        /// 实体拥有的功能列表，若为null，表示未设置数据，若为空list，则说明用户自己去除配置
         /// </summary>
         public List<FunctionInfo> MobileFunctions { set; get; }
-
-
-        
+       
     }
 
     #region --FunctionBtnInfo定义--
