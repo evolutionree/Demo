@@ -22,9 +22,9 @@ namespace UBeat.Crm.MailService
 
         public async Task<MimeMessage> SendMessageAsync(string host, int port, string userAccount, string userPassword, MimeMessage message, bool enableSsl = true, bool isPostFile = false)
         {
-            return await Task.Run(() =>
-             {
-                 using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
+            using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
+            {
+                return await Task.Run(() =>
                  {
                      try
                      {
@@ -64,15 +64,15 @@ namespace UBeat.Crm.MailService
                          if (client.IsConnected)
                              client.Disconnect(true);
                      }
-                 }
-             });
+                 });
+            }
         }
 
         public async Task<List<MimeMessage>> ImapRecMessageAsync(string host, int port, string userAccount, string userPassword, SearchQuery searchQuery, bool enableSsl)
         {
-            return await Task.Run(() =>
+            using (ImapClient client = new ImapHelper(host, port, enableSsl, userAccount, userPassword).ImapClient)
             {
-                using (ImapClient client = new ImapHelper(host, port, enableSsl, userAccount, userPassword).ImapClient)
+                return await Task.Run(() =>
                 {
                     lock (client.SyncRoot)
                     {
@@ -105,8 +105,8 @@ namespace UBeat.Crm.MailService
                                 client.Disconnect(true);
                         }
                     }
-                }
-            });
+                });
+            }
         }
         public List<MimeMessage> ImapRecMessage(string host, int port, string userAccount, string userPassword, SearchQuery searchQuery, bool enableSsl)
         {
@@ -150,47 +150,47 @@ namespace UBeat.Crm.MailService
         public MimeMessage SendMessage(string host, int port, string userAccount, string userPassword, MimeMessage message, bool enableSsl = true, bool isPostFile = false)
         {
 
-                using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
+            using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
+            {
+                try
                 {
-                    try
-                    {
-                        client.Send(message);
-                        return message;
-                    }
-                    catch (ArgumentNullException ex)
-                    {
-                        throw ex;
-                    }
-                    catch (ObjectDisposedException ex)
-                    {
-                        throw ex;
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        throw ex;
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        throw ex;
-                    }
-                    catch (IOException ex)
-                    {
-                        throw ex;
-                    }
-                    catch (CommandException ex)
-                    {
-                        throw ex;
-                    }
-                    catch (ProtocolException ex)
-                    {
-                        throw ex;
-                    }
-                    finally
-                    {
-                        if (client.IsConnected)
-                            client.Disconnect(true);
-                    }
+                    client.Send(message);
+                    return message;
                 }
+                catch (ArgumentNullException ex)
+                {
+                    throw ex;
+                }
+                catch (ObjectDisposedException ex)
+                {
+                    throw ex;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw ex;
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw ex;
+                }
+                catch (IOException ex)
+                {
+                    throw ex;
+                }
+                catch (CommandException ex)
+                {
+                    throw ex;
+                }
+                catch (ProtocolException ex)
+                {
+                    throw ex;
+                }
+                finally
+                {
+                    if (client.IsConnected)
+                        client.Disconnect(true);
+                }
+            }
         }
     }
 }
