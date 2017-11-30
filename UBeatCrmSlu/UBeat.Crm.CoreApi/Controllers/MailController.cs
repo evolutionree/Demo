@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 model.ConditionVal = string.Empty;
                 model.IsFirstInit = false;
             }
-            return _emailServices.ReceiveEMailAsync(model, UserId);
+            return _emailServices.QueueReceiveEMailAsync(model, UserId);
         }
 
         #region 邮件CRUD

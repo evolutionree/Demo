@@ -11,6 +11,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 {
     public class SendEMailModel
     {
+        public Guid MailId { get; set; }
         /// <summary>
         /// 发件人
         /// </summary>

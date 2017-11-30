@@ -76,5 +76,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId);
 
         MailBodyMapper GetMailInfo(List<Guid> mailIds,int userId);
+
+        OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null);
     }
 }
