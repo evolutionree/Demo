@@ -83,24 +83,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             IList<UserMailInfo> userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-            for (int i = 0; i < _writeThreads; i++)
-            {
-                int avg = Convert.ToInt32(Math.Ceiling((userMailInfoLst.Count * 1.0) / (_writeThreads * 1.0)));
-                var tmpLst = userMailInfoLst.Skip(avg * i).Take(avg).ToList();
-                DataWrapper _dataWrapper = new DataWrapper
-                {
-                    Entity = entity,
-                    UserMailInfoLst = tmpLst
-                };
-                try
-                {
-                    ThreadPool.QueueUserWorkItem(EnqueueMimeMessageTask, _dataWrapper);
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("接收邮件异常");
-                }
-            }
 
             for (int i = 0; i < _receiveThreads; i++)
             {
@@ -113,6 +95,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("接收邮件异常");
                 }
             }
+            EnqueueMimeMessageTask(new DataWrapper
+            {
+                Entity = entity,
+                UserMailInfoLst = userMailInfoLst
+            });
+            //for (int i = 0; i < _writeThreads; i++)
+            //{
+            //    int avg = Convert.ToInt32(Math.Ceiling((userMailInfoLst.Count * 1.0) / (_writeThreads * 1.0)));
+            //    var tmpLst = userMailInfoLst.Skip(avg * i).Take(avg).ToList();
+            //    DataWrapper _dataWrapper = new DataWrapper
+            //    {
+            //        Entity = entity,
+            //        UserMailInfoLst = tmpLst
+            //    };
+            //    try
+            //    {
+            //        ThreadPool.QueueUserWorkItem(EnqueueMimeMessageTask, _dataWrapper);
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        throw new Exception("接收邮件异常");
+            //    }
+            //}
             return new OutputResult<object>
             {
                 Status = 0,
@@ -193,9 +198,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
         /// <summary>插入任务</summary>
-        void EnqueueMimeMessageTask(object state)
+        void EnqueueMimeMessageTask(DataWrapper dataWrapper)
         {
-            DataWrapper dataWrapper = state as DataWrapper;
             foreach (var userMailInfo in dataWrapper.UserMailInfoLst)
             {
                 if (userMailInfo.EncryptPwd == null)
