@@ -1517,6 +1517,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+        #region --旧接口--
         public OutputResult<object> NodeLinesConfig(WorkFlowNodeLinesConfigModel configModel, int userNumber)
         {
             //获取该实体分类的字段
@@ -1526,7 +1527,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(configEntity);
             }
 
-            //var result = _workFlowRepository.NodeLinesConfig(configEntity, userNumber);
+            var result = _workFlowRepository.NodeLinesConfig(configEntity, userNumber);
+            IncreaseDataVersion(DataVersionType.FlowData, null);
+            return new OutputResult<object>("");
+        }
+        #endregion
+
+        public OutputResult<object> SaveNodeLinesConfig(WorkFlowNodeLinesConfigModel configModel, int userNumber)
+        {
+            //获取该实体分类的字段
+            var configEntity = _mapper.Map<WorkFlowNodeLinesConfigModel, WorkFlowNodeLinesConfigMapper>(configModel);
+            if (configEntity == null || !configEntity.IsValid())
+            {
+                return HandleValid(configEntity);
+            }
             _workFlowRepository.SaveNodeLinesConfig(configEntity, userNumber);
             IncreaseDataVersion(DataVersionType.FlowData, null);
             return new OutputResult<object>("");
