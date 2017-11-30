@@ -11,6 +11,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 {
     public class SendEMailModel
     {
+        public Guid MailId { get; set; }
         /// <summary>
         /// 发件人
         /// </summary>
@@ -114,9 +115,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
         public List<int> UserIds { get; set; }
 
         /// <summary>
-        /// 是否设置
+        /// 是否设置 1:是  2：否
         /// </summary>
-        public int enable { get; set; }
+        public string enable { get; set; }
 
     }
 

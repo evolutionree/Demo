@@ -525,7 +525,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public UserMailInfo GetUserMailInfo(string fromAddress, int userId)
         {
-            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox Where recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid Where box.owner=@userid ANd accountid=@fromaddress  ";
+            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox Where recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid Where box.owner=@userid ANd accountid=@fromaddress  ";
             string condition = string.Empty;
             var param = new
             {
@@ -595,9 +595,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <param name="parentid"></param>
         /// <param name="tran"></param>
 
-        public void MoveCatalog(string recid, string parentid, DbTransaction tran)
+        public void MoveCatalog(string recid, string parentid,string recname, DbTransaction tran)
         {
-            string strSQL = string.Format("update crm_sys_mail_catalog set pid='{0}',vpid='{0}' where recid = '{1}'", parentid, recid);
+            string strSQL = string.Format("update crm_sys_mail_catalog set recname='{2}',pid='{0}',vpid='{0}' where recid = '{1}'", parentid, recid, recname);
             ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
         }
 
@@ -657,7 +657,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// </summary>
         /// <param name="MailBoxs"></param>
         /// <param name="enable"></param>
-        public void SaveWhiteList(List<Guid> MailBoxs, int enable)
+        public void SaveWhiteList(List<Guid> MailBoxs, string enable)
         {
             string strSQL = "update crm_sys_mail_mailbox set inwhitelist=@enable where recid=@recid";
             List<DbParameter[]> paramList = new List<DbParameter[]>();

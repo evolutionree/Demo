@@ -25,6 +25,8 @@ using System.IO;
 using System.Dynamic;
 using System.Data.Common;
 using MailKit;
+using Microsoft.Extensions.Configuration;
+using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -35,12 +37,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly EMail _email;
         private readonly FileServices _fileServices;
         private readonly DynamicEntityServices _dynamicEntityServices;
+        private readonly IDynamicEntityRepository _dynamicEntityRepository;
         private readonly IMailCatalogRepository _mailCatalogRepository;
         private readonly IMailRepository _mailRepository;
-        private readonly IDocumentsRepository _docmentsRepository;
         public EMailServices(IMapper mapper, FileServices fileServices, DynamicEntityServices dynamicEntityServices,
             IMailCatalogRepository mailCatalogRepository,
-            IMailRepository mailRepository)
+            IMailRepository mailRepository, IDynamicEntityRepository dynamicEntityRepository)
         {
             _email = new EMail();
             _mapper = mapper;
@@ -48,104 +50,176 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dynamicEntityServices = dynamicEntityServices;
             _mailCatalogRepository = mailCatalogRepository;
             _mailRepository = mailRepository;
+            _dynamicEntityRepository = dynamicEntityRepository;
         }
 
-        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, int userId)
+        class DataWrapper
         {
-            SearchQuery dataQuery = null;
-            switch (query)
+            public ReceiveEMailMapper Entity { get; set; }
+            public IList<UserMailInfo> UserMailInfoLst { get; set; }
+        }
+        #region 定时接收邮件
+        private static int _receiveThreads;
+        private static int _writeThreads;
+        // 任务队列
+        private static Queue<MimeMessage> _tasks = new Queue<MimeMessage>();
+        // 为保证线程安全，使用一个锁来保护_task的访问
+        private readonly static object _locker = new object();
+        // 通过 _wh 给工作线程发信号
+        private static EventWaitHandle _wh = new AutoResetEvent(false);
+
+        #endregion
+        static EMailServices()
+        {
+            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("ReceiveMailConfig");
+            _receiveThreads = config.GetValue<int>("ReceiveThreads");
+            _writeThreads = config.GetValue<int>("WriteThreads");
+        }
+
+
+        #region 定时收取邮件
+
+        public OutputResult<object> QueueReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
+        {
+            var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
+            IList<UserMailInfo> userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
+
+            for (int i = 0; i < _receiveThreads; i++)
             {
-                case SearchQueryEnum.None:
-                    ReceiveMailRelatedMapper receiveConfig = _mailRepository.GetUserReceiveMailTime(userId);
-                    if (receiveConfig != null)
-                    {
-                        dataQuery = SearchQuery.DeliveredAfter(receiveConfig.ReceiveTime);
-                    }
-                    else
-                    {
-                        dataQuery = SearchQuery.All;
-                    }
-                    return dataQuery;
-                case SearchQueryEnum.DeliveredBetweenDate:
-                    string[] split1 = conditionVal.Split(',');
-                    if (split1.Length != 2)
-                        throw new Exception("邮件搜索条件的时间索引溢出");
-                    foreach (var tmp in split1)
-                    {
-                        if (!CommonHelper.IsMatchDateTime(tmp))
-                            throw new Exception("邮件搜索条件的时间格式不正确");
-                    }
-                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(split1[0])), SearchQuery.DeliveredBefore(DateTime.Parse(split1[1])));
-                    return dataQuery;
-                case SearchQueryEnum.DeliveredAfterDate:
-                    if (!CommonHelper.IsMatchDateTime(conditionVal))
-                        throw new Exception("邮件搜索条件的时间格式不正确");
-                    dataQuery = SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal));
-                    return dataQuery;
-                case SearchQueryEnum.FirstInit:
-                    dataQuery = SearchQuery.All;
-                    return dataQuery;
-                case SearchQueryEnum.DeliveredAfterDateAndNotSeen:
-                    if (!CommonHelper.IsMatchDateTime(conditionVal))
-                        throw new Exception("邮件搜索条件的时间格式不正确");
-                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal)), SearchQuery.NotSeen);
-                    return dataQuery;
-                default:
-                    throw new Exception("不支持该邮件搜索条件");
-
+                try
+                {
+                    ThreadPool.QueueUserWorkItem(DequeueMimeMessageWork, userNumber);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("接收邮件异常");
+                }
             }
+            EnqueueMimeMessageTask(new DataWrapper
+            {
+                Entity = entity,
+                UserMailInfoLst = userMailInfoLst
+            });
+            //for (int i = 0; i < _writeThreads; i++)
+            //{
+            //    int avg = Convert.ToInt32(Math.Ceiling((userMailInfoLst.Count * 1.0) / (_writeThreads * 1.0)));
+            //    var tmpLst = userMailInfoLst.Skip(avg * i).Take(avg).ToList();
+            //    DataWrapper _dataWrapper = new DataWrapper
+            //    {
+            //        Entity = entity,
+            //        UserMailInfoLst = tmpLst
+            //    };
+            //    try
+            //    {
+            //        ThreadPool.QueueUserWorkItem(EnqueueMimeMessageTask, _dataWrapper);
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        throw new Exception("接收邮件异常");
+            //    }
+            //}
+            return new OutputResult<object>
+            {
+                Status = 0,
+            };
         }
-
-        private OutputResult<object> SaveMailDataInDb(MimeMessageResult msgResult, int userNumber)
+        void SaveRecMailDataInDb(MimeMessage msg, int userNumber)
         {
+            var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
+
+            var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+            if (obj != null)
+                return;
             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
             string key = String.Empty;
-            foreach (var tmp in msgResult.Msg.Headers)
+            foreach (var header in msg.Headers)
             {
-                key = tmp.Id.ToHeaderName();
+                key = header.Id.ToHeaderName();
                 if (!dicHeader.ContainsKey(key))
-                    dicHeader.Add(key, tmp.Value);
+                    dicHeader.Add(key, header.Value);
             }
             var fieldData = new Dictionary<string, object>();
-            fieldData.Add("recname", msgResult.Msg.Subject);//邮件主题
-            fieldData.Add("relativemailbox", BuilderAddress(msgResult.Msg.From));//邮件发送人
+            fieldData.Add("recname", msg.Subject);//邮件主题
+            fieldData.Add("relativemailbox", BuilderAddress(msg.From));//收件人
             fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
-            fieldData.Add("title", msgResult.Msg.Subject);//邮件主题
+            fieldData.Add("title", msg.Subject);//邮件主题
+            fieldData.Add("mailbody", msg.GetTextBody(TextFormat.Html));//邮件主题内容
+            fieldData.Add("sender", BuilderAddress(msg.From));//邮件发送人
+            fieldData.Add("receivers", BuilderAddress(msg.To));//邮件接收人
+            fieldData.Add("ccers", BuilderAddress(msg.Cc));//邮件抄送人
+            fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
+            fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
+            fieldData.Add("urgency", 1);//邮件优先级
 
-            fieldData.Add("mailbody", msgResult.Msg.GetTextBody(TextFormat.Html));//邮件主题内容
-            fieldData.Add("sender", BuilderAddress(msgResult.Msg.From));//邮件发送人
-            fieldData.Add("receivers", BuilderAddress(msgResult.Msg.To));//邮件接收人
-            fieldData.Add("ccers", BuilderAddress(msgResult.Msg.Cc));//邮件抄送人
-            fieldData.Add("bccers", BuilderAddress(msgResult.Msg.Bcc));//邮件密送人
-            fieldData.Add("attachcount", msgResult.Msg.Attachments.Count());//邮件附件
-            fieldData.Add("urgency", msgResult.Msg.Attachments.Count());//邮件优先级          
-            fieldData.Add("senttime", DateTime.Now);//邮件优先级
-            fieldData.Add("mongoid", string.Join(";", msgResult.AttachFileRecord.Select(t => ((dynamic)t).mongoid)));//文件id
-            var extraData = new Dictionary<string, object>();            //额外数据
-            extraData.Add("relatedmailuser", BuilderSenderReceivers(msgResult.Msg));
-            extraData.Add("attachfile", msgResult.AttachFileRecord.Select(t => new
+            fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
+            var fileTask = UploadAttachmentFiles(msg.Attachments);
+            fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
+            var extraData = new Dictionary<string, object>();
+            extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
+            extraData.Add("attachfile", fileTask.Result);
+            extraData.Add("issendoreceive", 1);
+            extraData.Add("receivetimerecord", new
             {
-                mongoid = ((dynamic)t).mongoid,
-                filename = ((dynamic)t).filename,
-                filesize = ((dynamic)t).filesize,
-                filetype = ((dynamic)t).filetype
-            }));
-            extraData.Add("sendrecord", new
-            {
-                aciontype = msgResult.ActionType,
-                status = msgResult.Status,
-                message = msgResult.ExceptionMsg
+                ReceiveTime = msg.Date,
+                ServerId = msg.MessageId
             });
-            extraData.Add("issendoreceive", 0);
-            DynamicEntityAddModel dynamicEntity = new DynamicEntityAddModel()
+            DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
             {
                 TypeId = Guid.Parse(_entityId),
                 FieldData = fieldData,
                 ExtraData = extraData
             };
-            _dynamicEntityServices.RoutePath = "api/dynamicentity/add";//赋予新增权限
-            return _dynamicEntityServices.Add(dynamicEntity, header, userNumber);
+            _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
+            _dynamicEntityRepository.DynamicAdd(null, Guid.Parse(_entityId), fieldData, extraData, userNumber);
         }
+
+        /// <summary>执行工作</summary>
+        void DequeueMimeMessageWork(object state)
+        {
+            int userId = (int)state;
+            while (true)
+            {
+                MimeMessage work = null;
+                lock (_locker)
+                {
+                    if (_tasks.Count > 0)
+                    {
+                        work = _tasks.Dequeue(); // 有任务时，出列任务
+
+                        if (work == null)  // 退出机制：当遇见一个null任务时，代表任务结束
+                            return;
+                    }
+                }
+
+                if (work != null)
+                    SaveRecMailDataInDb(work, userId);  // 任务不为null时，处理并保存数据
+                else
+                    _wh.WaitOne();   // 没有任务了，等待信号
+            }
+        }
+        /// <summary>插入任务</summary>
+        void EnqueueMimeMessageTask(DataWrapper dataWrapper)
+        {
+            foreach (var userMailInfo in dataWrapper.UserMailInfoLst)
+            {
+                if (userMailInfo.EncryptPwd == null)
+                    continue;
+                SearchQuery searchQuery = BuilderSearchQuery((SearchQueryEnum)dataWrapper.Entity.Conditon, dataWrapper.Entity.ConditionVal, userMailInfo.Owner);
+                bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+                lock (_locker)
+                {
+                    foreach (var tmp in taskResult)
+                        _tasks.Enqueue(tmp);  // 向队列中插入任务 
+                }
+            }
+            _wh.Set();  // 给工作线程发信号
+        }
+
+
+        #endregion
+
+
 
         /// <summary>
         /// 转移客户的目录，只能移动客户目录
@@ -222,7 +296,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (_mailCatalogRepository.checkHasMails(newParentInfo.RecId.ToString(), tran)) throw (new Exception("目标目录不能拥有邮件"));
             if (_mailCatalogRepository.checkCycleCatalog(newParentInfo.RecId.ToString(), catalogInfo.RecId.ToString(), tran)) throw (new Exception("造成循环目录，移动失败"));
             //现在开始移动
-            _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), tran);
+            _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
             return new OutputResult<object>("成功移动");
 
 
@@ -235,6 +309,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
+            }
+            //校验白名单之类的验证
+            var errors = ValidEmailAddressAuth(model, userNumber);
+            if (errors.Count > 0)
+            {
+                return ShowError<object>(string.Join(";", errors.Select(t => t.ErrorMsg)));
             }
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
             if (userMailInfo == null)
@@ -249,57 +329,60 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
-            AutoResetEvent _workerEvent = new AutoResetEvent(false);
-            try
+            MimeMessageResult msgResult = new MimeMessageResult
             {
-                var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, false);
-                OutputResult<object> repResult = new OutputResult<object>();
-                taskResult.GetAwaiter().OnCompleted(() =>
-               {
-                   var msg = taskResult.Result;
-
-                   MimeMessageResult msgResult = new MimeMessageResult
-                   {
-                       Msg = msg,
-                       ActionType = (int)MailActionType.ExternalSend,
-                       Status = (int)MailStatus.SendSuccess,
-                       AttachFileRecord = attachFileRecord,
-                   };
-                   var result = SaveMailDataInDb(msgResult, userNumber);
-                   if (result.Status != 0)
-                       throw new Exception("保存邮件数据异常");
-                   _workerEvent.Set();
-               });
-                _workerEvent.WaitOne();
-                repResult = new OutputResult<object>()
-                {
-                    Status = repResult.Status,
-                    Message = repResult.Status == 0 ? "发送邮件成功" : "发送邮件失败"
-                };
-                return repResult;
-            }
-            catch (Exception ex)
+                Msg = emailMsg,
+                ActionType = (int)MailActionType.ExternalSend,
+                Status = (int)MailStatus.Sending,
+                AttachFileRecord = attachFileRecord,
+            };
+            var repResult = SaveSendMailDataInDb(msgResult, userNumber);
+            if (repResult.Flag == 0)
+                throw new Exception("邮件实体异常:" + repResult.Msg);
+            var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
-                MimeMessageResult msgResult = new MimeMessageResult
+                try
                 {
-                    Msg = emailMsg,
-                    ActionType = (int)MailActionType.ExternalSend,
-                    Status = (int)MailStatus.SendFail,
-                    AttachFileRecord = attachFileRecord,
-                };
-                SaveMailDataInDb(msgResult, userNumber);
-                return new OutputResult<object>()
+                    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                    var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
+                    while (true)
+                    {
+                        if (taskResult.IsCompleted)
+                        {
+                            if (taskResult.Exception != null)
+                            {
+                                _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber, transaction);
+                                throw new Exception("发送邮件异常");
+                            }
+                            else
+                            {
+                                repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber, transaction);
+                                if (repResult.Flag == 0)
+                                    throw new Exception("更新邮件状态失败");
+                                else
+                                    repResult.Msg = "发送邮件成功";
+                            }
+                            break;
+                        }
+                    }
+                    return HandleResult(repResult);
+                }
+                catch (Exception ex)
                 {
-                    Status = 1,
-                    Message = "发送邮件失败"
-                };
-            }
+                    return new OutputResult<object>()
+                    {
+                        Status = 1,
+                        Message = "发送邮件失败"
+                    };
+                }
+            }, entity, Guid.Parse(_entityId), userNumber);
+            return res;
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-            AutoResetEvent _workerEvent = new AutoResetEvent(false);
+            //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
                 OutputResult<object> repResult = new OutputResult<object>();
@@ -312,7 +395,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
-
+                        if (taskResult.Exception != null) return;
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
                         {
                             EntityFields = new List<DynamicEntityFieldDataModel>()
@@ -320,7 +403,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
                         foreach (var msg in taskResult.Result)
                         {
-                            var obj = mailRelatedLst.SingleOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                            var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
                             if (obj != null)
                                 continue;
                             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
@@ -343,6 +426,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
                             fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
                             fieldData.Add("urgency", 1);//邮件优先级
+
                             fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
                             var fileTask = UploadAttachmentFiles(msg.Attachments);
                             fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
@@ -366,10 +450,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
                         _dynamicEntityServices.AddList(addList, header, userNumber);
 
-                        _workerEvent.Set();
+                        //   _workerEvent.Set();
                     });
                 }
-                _workerEvent.WaitOne();
+                // _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
                     Status = repResult.Status,
@@ -385,6 +469,107 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Message = "接收邮件失败"
                 };
             }
+            //finally
+            //{
+            //    _workerEvent.Dispose();
+            //}
+        }
+
+        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, int userId)
+        {
+            SearchQuery dataQuery = null;
+            switch (query)
+            {
+                case SearchQueryEnum.None:
+                    ReceiveMailRelatedMapper receiveConfig = _mailRepository.GetUserReceiveMailTime(userId);
+                    if (receiveConfig != null)
+                    {
+                        dataQuery = SearchQuery.DeliveredAfter(receiveConfig.ReceiveTime);
+                    }
+                    else
+                    {
+                        dataQuery = SearchQuery.All;
+                    }
+                    return dataQuery;
+                case SearchQueryEnum.DeliveredBetweenDate:
+                    string[] split1 = conditionVal.Split(',');
+                    if (split1.Length != 2)
+                        throw new Exception("邮件搜索条件的时间索引溢出");
+                    foreach (var tmp in split1)
+                    {
+                        if (!CommonHelper.IsMatchDateTime(tmp))
+                            throw new Exception("邮件搜索条件的时间格式不正确");
+                    }
+                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(split1[0])), SearchQuery.DeliveredBefore(DateTime.Parse(split1[1])));
+                    return dataQuery;
+                case SearchQueryEnum.DeliveredAfterDate:
+                    if (!CommonHelper.IsMatchDateTime(conditionVal))
+                        throw new Exception("邮件搜索条件的时间格式不正确");
+                    dataQuery = SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal));
+                    return dataQuery;
+                case SearchQueryEnum.FirstInit:
+                    dataQuery = SearchQuery.All;
+                    return dataQuery;
+                case SearchQueryEnum.DeliveredAfterDateAndNotSeen:
+                    if (!CommonHelper.IsMatchDateTime(conditionVal))
+                        throw new Exception("邮件搜索条件的时间格式不正确");
+                    dataQuery = SearchQuery.And(SearchQuery.DeliveredAfter(DateTime.Parse(conditionVal)), SearchQuery.NotSeen);
+                    return dataQuery;
+                default:
+                    throw new Exception("不支持该邮件搜索条件");
+
+            }
+        }
+
+        private OperateResult SaveSendMailDataInDb(MimeMessageResult msgResult, int userNumber)
+        {
+            Dictionary<string, string> dicHeader = new Dictionary<string, string>();
+            string key = String.Empty;
+            foreach (var tmp in msgResult.Msg.Headers)
+            {
+                key = tmp.Id.ToHeaderName();
+                if (!dicHeader.ContainsKey(key))
+                    dicHeader.Add(key, tmp.Value);
+            }
+            var fieldData = new Dictionary<string, object>();
+            fieldData.Add("recname", msgResult.Msg.Subject);//邮件主题
+            fieldData.Add("relativemailbox", BuilderAddress(msgResult.Msg.From));//邮件发送人
+            fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
+            fieldData.Add("title", msgResult.Msg.Subject);//邮件主题
+
+            fieldData.Add("mailbody", msgResult.Msg.GetTextBody(TextFormat.Html));//邮件主题内容
+            fieldData.Add("sender", BuilderAddress(msgResult.Msg.From));//邮件发送人
+            fieldData.Add("receivers", BuilderAddress(msgResult.Msg.To));//邮件接收人
+            fieldData.Add("ccers", BuilderAddress(msgResult.Msg.Cc));//邮件抄送人
+            fieldData.Add("bccers", BuilderAddress(msgResult.Msg.Bcc));//邮件密送人
+            fieldData.Add("attachcount", msgResult.Msg.Attachments.Count());//邮件附件
+            fieldData.Add("urgency", msgResult.Msg.Attachments.Count());//邮件优先级          
+            fieldData.Add("senttime", DateTime.Now);//邮件优先级
+            fieldData.Add("mongoid", string.Join(";", msgResult.AttachFileRecord.Select(t => ((dynamic)t).mongoid)));//文件id
+            var extraData = new Dictionary<string, object>();            //额外数据
+            extraData.Add("relatedmailuser", BuilderSenderReceivers(msgResult.Msg));
+            extraData.Add("attachfile", msgResult.AttachFileRecord.Select(t => new
+            {
+                mongoid = ((dynamic)t).mongoid,
+                filename = ((dynamic)t).filename,
+                filesize = ((dynamic)t).filesize,
+                filetype = ((dynamic)t).filetype
+            }));
+            extraData.Add("sendrecord", new
+            {
+                aciontype = msgResult.ActionType,
+                status = msgResult.Status,
+                message = msgResult.ExceptionMsg
+            });
+            extraData.Add("issendoreceive", 0);
+            DynamicEntityAddModel dynamicEntity = new DynamicEntityAddModel()
+            {
+                TypeId = Guid.Parse(_entityId),
+                FieldData = fieldData,
+                ExtraData = extraData
+            };
+            _dynamicEntityServices.RoutePath = "api/dynamicentity/add";//赋予新增权限
+            return _dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
         }
         private void BuilderMailBody(SendEMailMapper entity, int userNumber)
         {
@@ -439,7 +624,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             ms.Position = 0;
                             buffer = new byte[ms.Length];
                             ms.Seek(0, SeekOrigin.Begin);
-                            ms.WriteAsync(buffer, 0, buffer.Length);
+                            ms.Write(buffer, 0, buffer.Length);
                         }
                         string fileId = _fileServices.UploadFile(string.Empty, Guid.NewGuid().ToString(), part.FileName, buffer);
                         attachFileRecord.Add(new
@@ -562,143 +747,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private IList<MailError> ValidEmailAddressAuth(SendEMailModel model, int userId)
         {
             IList<MailError> errors = new List<MailError>();
-            //#region 拿出邮件白名单
-            //var whiteList = _mailRepository.GetIsWhiteList(0, userId);
-            //foreach (var tmp in whiteList)
-            //{
-            //    foreach (var dic in model.ToAddress)
-            //    {
-            //        if (tmp.Accountid == dic.Key)//不在白名单内
-            //        {
-            //            errors.Add(new MailError
-            //            {
-            //                DisplayName = tmp.OwnerName,
-            //                EmailAddress = tmp.Accountid,
-            //                ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                Status = 0,
-            //                ErrorMsg = "该收件人邮箱不在白名单内"
-            //            });
-            //        }
-            //    }
-            //    foreach (var dic in model.CCAddress)
-            //    {
-            //        if (tmp.Accountid == dic.Key)//不在白名单内
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Accountid);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该抄送人邮箱不在白名单内";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.OwnerName,
-            //                    EmailAddress = tmp.Accountid,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该抄送人邮箱不在白名单内"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    foreach (var dic in model.BCCAddress)
-            //    {
-            //        if (tmp.Accountid == dic.Key)//不在白名单内
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Accountid);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该抄送人邮箱不在白名单内";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.OwnerName,
-            //                    EmailAddress = tmp.Accountid,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该密送人邮箱不在白名单内"
-            //                });
-            //            }
-            //        }
-            //    }
-            //}
-            //#endregion
-            ////当白名单校验通过则不再校验其他规则 
-            //if (errors.Count > 0)
-            //{
-            //    #region 客户联系人
-            //    var lst = _mailRepository.GetManagerContactAndInnerUser(userId).Select(t => t.EmailAddress);
-            //    foreach (var tmp in model.ToAddress)
-            //    {
-            //        if (!lst.Contains(tmp.Key))
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Key);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该收件人邮箱不是自己负责客户的联系人也不是内部人员";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.Value,
-            //                    EmailAddress = tmp.Key,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该收件人邮箱不是自己负责客户的联系人也不是内部人员"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    foreach (var tmp in model.CCAddress)
-            //    {
-            //        if (!lst.Contains(tmp.Key))
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Key);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该收件人邮箱不是自己负责客户的联系人也不是内部人员";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.Value,
-            //                    EmailAddress = tmp.Key,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该收件人邮箱不是自己负责客户的联系人也不是内部人员"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    foreach (var tmp in model.BCCAddress)
-            //    {
-            //        if (!lst.Contains(tmp.Key))
-            //        {
-            //            var error = errors.FirstOrDefault(t => t.EmailAddress == tmp.Key);
-            //            if (error != null)
-            //            {
-            //                error.ErrorMsg += ";该收件人邮箱不是自己负责客户的联系人也不是内部人员";
-            //            }
-            //            else
-            //            {
-            //                errors.Add(new MailError
-            //                {
-            //                    DisplayName = tmp.Value,
-            //                    EmailAddress = tmp.Key,
-            //                    ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-            //                    Status = 0,
-            //                    ErrorMsg = "该收件人邮箱不是自己负责客户的联系人也不是内部人员"
-            //                });
-            //            }
-            //        }
-            //    }
-            //    #endregion
-            //}
+            var mailBox = _mailRepository.GetIsWhiteList(1, userId).FirstOrDefault(t => t.Accountid == model.FromAddress);
+            if (mailBox == null)
+            {
+                var userMails = _mailRepository.GetUserMailList(userId);
+                foreach (var tmp in model.ToAddress)
+                {
+                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
+                    if (userMail == null)
+                    {
+                        errors.Add(new MailError
+                        {
+                            DisplayName = tmp.DisplayName,
+                            EmailAddress = tmp.Address,
+                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
+                            Status = 0,
+                            ErrorMsg = "发件人不在白名单内，不能发送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
+                        });
+                    }
+                }
+                foreach (var tmp in model.BCCAddress)
+                {
+
+                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
+                    if (userMail == null)
+                    {
+                        errors.Add(new MailError
+                        {
+                            DisplayName = tmp.DisplayName,
+                            EmailAddress = tmp.Address,
+                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
+                            Status = 0,
+                            ErrorMsg = "件人不在白名单内，不能密送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
+                        });
+                    }
+                }
+                foreach (var tmp in model.CCAddress)
+                {
+
+                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
+                    if (userMail == null)
+                    {
+                        errors.Add(new MailError
+                        {
+                            DisplayName = tmp.DisplayName,
+                            EmailAddress = tmp.Address,
+                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
+                            Status = 0,
+                            ErrorMsg = "发件人不在白名单内，不能抄送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
+                        });
+                    }
+                }
+            }
             return errors;
         }
 
@@ -875,15 +975,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public PageDataInfo<MailBodyMapper> ListMail(MailListActionParamInfo paramInfo, int userNum)
         {
             //判断catalog是否该用户所有
-            MailCatalogInfo catalogInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.Catalog, userNum, null);
-            if (catalogInfo == null || catalogInfo.ViewUserId != userNum)
+            MailCatalogInfo catalogInfo = null;
+            if (paramInfo.FetchUserId == userNum && paramInfo.FetchUserId > 0)
             {
-                throw (new Exception("用户与目录不匹配"));
+                catalogInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.Catalog, userNum, null);
+                if (catalogInfo == null || catalogInfo.ViewUserId != userNum)
+                {
+                    throw (new Exception("用户与目录不匹配"));
+                }
             }
-            if (paramInfo.FetchUserId != userNum && paramInfo.FetchUserId > 0)
+            else if (paramInfo.FetchUserId != userNum && paramInfo.FetchUserId > 0)
             {
                 if (!_mailRepository.IsHasSubUserAuth(paramInfo.FetchUserId, userNum))
-                    throw (new Exception("没有权限查看该下属的邮件"));
+                    throw (new Exception("该员工不是你的下属，没有权限查看其邮件"));
+                catalogInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.Catalog, paramInfo.FetchUserId, null);
+                if (catalogInfo == null || catalogInfo.ViewUserId != paramInfo.FetchUserId)
+                {
+                    throw (new Exception("用户与目录不匹配"));
+                }
             }
 
             #region 处理排序规则
@@ -1074,7 +1183,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return null;
         }
 
-        public OutputResult<object> SaveWhiteList(List<Guid> Mails, int enable)
+        public OutputResult<object> SaveWhiteList(List<Guid> Mails, string enable)
         {
             _mailCatalogRepository.SaveWhiteList(Mails, enable);
             return null;
@@ -1098,14 +1207,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region  模糊查询我的通讯人员限制10个
         public OutputResult<object> GetContactByKeyword(ContactSearchInfo paramInfo, int userId)
         {
-            List<MailUserMapper>  list=_mailRepository.GetContactByKeyword(paramInfo.keyword, paramInfo.count, userId);
+            List<MailUserMapper> list = _mailRepository.GetContactByKeyword(paramInfo.keyword, paramInfo.count, userId);
             //分拆多个邮箱
             List<MailUserMapper> resultList = new List<MailUserMapper>();
-            foreach (var userMail in list) {
-                string[] mails=userMail.EmailAddress.Split(';');
+            foreach (var userMail in list)
+            {
+                string[] mails = userMail.EmailAddress.Split(';');
                 if (mails.Length > 1)
                 {
-                    foreach (var mail in mails) {
+                    foreach (var mail in mails)
+                    {
                         MailUserMapper newMail = new MailUserMapper();
                         newMail.EmailAddress = mail;
                         newMail.customer = userMail.customer;
@@ -1113,9 +1224,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         newMail.icon = userMail.icon;
                         resultList.Add(newMail);
                     };
-                    
+
                 }
-                else {
+                else
+                {
                     resultList.Add(userMail);
                 }
             };
@@ -1128,6 +1240,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (dynamicModel != null)
                 treeId = dynamicModel.treeId;
             return new OutputResult<object>(_mailRepository.GetInnerContact(treeId, userId));
+        }
+
+        public OutputResult<object> GetInnerPersonContact(OrgAndStaffTreeModel dynamicModel, int userId)
+        {
+            int pageSize = 10;
+            if (dynamicModel != null && dynamicModel.PageSize > 0)
+                pageSize = dynamicModel.PageSize;
+            return new OutputResult<object>(_mailRepository.GetInnerPersonContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize, userId));
         }
         /// <summary>
         /// 获取客户联系人

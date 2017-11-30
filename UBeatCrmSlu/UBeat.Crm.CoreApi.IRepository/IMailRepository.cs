@@ -27,8 +27,13 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="tran"></param>
         /// <returns></returns>
         OperateResult TagMails(string mailids, MailTagActionType actionType, int userNum);
-        List<MailUserMapper> GetManagerContactAndInnerUser(int userId);
         List<MailBoxMapper> GetIsWhiteList(int isWhiteLst, int userId);
+        /// <summary>
+        /// 我负责的客户的联系人和内部人员
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        List<InnerUserMailMapper> GetUserMailList(int userId);
         bool IsHasSubUserAuth(int leaderUserId, int userId);
 
         PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId);
@@ -50,6 +55,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<OrgAndStaffMapper> GetInnerContact(string deptId, int userId);
 
+        PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId);
+
         PageDataInfo<MailUserMapper> GetCustomerContact(int pageIndex, int pageSize, int userId);
 
         PageDataInfo<MailBodyMapper> GetInnerToAndFroMail(ToAndFroMapper entity, int userId);
@@ -69,5 +76,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId);
 
         MailBodyMapper GetMailInfo(List<Guid> mailIds,int userId);
+
+        OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null);
     }
 }

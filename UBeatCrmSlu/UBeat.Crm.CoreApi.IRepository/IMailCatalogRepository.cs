@@ -22,7 +22,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         int InitCatalog(Dictionary<string, object> newCatalog, int userId);
         int NeedInitCatalog(int userId);
         void SaveMailOwner(List<Guid> MailBoxs, int newUserId);
-        void SaveWhiteList(List<Guid> MailBoxs, int enable);
+        void SaveWhiteList(List<Guid> MailBoxs, string enable);
         OperateResult ToOrderCatalog(Guid recId, int doType);
 
         OperateResult InsertCatalog(CUMailCatalogMapper entity, int userId);
@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         IList<UserMailInfo> GetAllUserMail(int deviceType,int userId);
         bool checkHasMails(string recid,DbTransaction tran);
         bool checkCycleCatalog(string parentid, string recid,DbTransaction tran);
-        void MoveCatalog(string v1, string v2, DbTransaction tran);
+        void MoveCatalog(string v1, string v2,string v3, DbTransaction tran);
         MailCatalogInfo GetCatalogForCustType(Guid custCatalog, int newUserId, DbTransaction tran);
         void TransferCatalog(Guid recId, int newUserId, Guid newParentCatalogid, DbTransaction tran);
     }

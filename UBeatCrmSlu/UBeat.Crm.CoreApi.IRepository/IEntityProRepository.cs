@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
+using UBeat.Crm.CoreApi.DomainModel.Vocation;
 
 namespace UBeat.Crm.CoreApi.IRepository
 {
@@ -102,13 +103,13 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        FunctionButtonJsonInfo GetFunctionButtonJsonInfo(Guid entityId);
+        FunctionJsonInfo GetFunctionJsonInfo(Guid entityId);
         /// <summary>
         /// 保存功能按钮json配置
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        bool SaveFunctionButtonJson(Guid entityId, FunctionButtonJsonInfo info,int userNumber);
+        bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info,int userNumber);
 
 
         Dictionary<string, List<IDictionary<string, object>>> SetRepeatList(string entityId, int userId);
@@ -135,5 +136,27 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="usernumber"></param>
         /// <returns></returns>
         List<RelateEntity> GetRelateEntityList( Guid entityid, int usernumber);
+        /// <summary>
+        /// 获取实体的菜单列表
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <returns></returns>
+        List<EntityMenuInfo> GetEntityMenuInfoList(Guid entityId);
+
+
+        /// <summary>
+        /// 获取实体的tabid
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <returns></returns>
+        Guid GetEntityRelTabId(Guid entityId,string entitytaburl);
+
+        /// <summary>
+        /// 同步实体功能列表到function表
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <returns></returns>
+        void SyncFunctionList(Guid entityId, List<FunctionInfo> webfuncs, List<FunctionInfo> mobilefuncs, int usernumber);
+
     }
 }

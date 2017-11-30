@@ -113,6 +113,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (nodeLineModel == null) return ResponseError<object>("参数格式错误");
             return _workFlowServices.GetNodeLinesInfo(nodeLineModel, UserId);
         }
+
+        #region --旧代码--
         [HttpPost]
         [Route("nodelinesconfig")]
         public OutputResult<object> NodeLinesConfig([FromBody] WorkFlowNodeLinesConfigModel configModel = null)
@@ -120,6 +122,16 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (configModel == null) return ResponseError<object>("参数格式错误");
             WriteOperateLog("修改审批节点配置", configModel);
             return _workFlowServices.NodeLinesConfig(configModel, UserId);
+        } 
+        #endregion
+
+        [HttpPost]
+        [Route("savenodesconfig")]
+        public OutputResult<object> SaveNodeLinesConfig([FromBody] WorkFlowNodeLinesConfigModel configModel = null)
+        {
+            if (configModel == null) return ResponseError<object>("参数格式错误");
+            WriteOperateLog("修改审批节点配置", configModel);
+            return _workFlowServices.SaveNodeLinesConfig(configModel, UserId);
         }
 
         [HttpPost]

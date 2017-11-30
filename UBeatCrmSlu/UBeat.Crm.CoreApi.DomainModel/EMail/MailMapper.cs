@@ -440,6 +440,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Guid FileId { get; set; }
 
         public string FileName { get; set; }
+
+        public Int64 FileSize { get; set; }
     }
 
 
@@ -450,8 +452,16 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string OwnerName { get; set; }
     }
 
+    public class InnerUserMailMapper
+    {
+        public string UserId { get; set; }
+        public string UserEMail { get; set; }
+    }
+
     public class MailUserMapper
     {
+        public Guid RecId { get; set; }
+
         public string EmailAddress { get; set; }
 
         public string Name { get; set; }
@@ -468,6 +478,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string TreeName { get; set; }
 
         public string DeptName { get; set; }
+
+        //只有人员可以使用
+        public Guid Icon { get; set; }
 
         /// <summary>
         /// 0是部门类型 1是人员类型

@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 model.ConditionVal = string.Empty;
                 model.IsFirstInit = false;
             }
-            return _emailServices.ReceiveEMailAsync(model, UserId);
+            return _emailServices.QueueReceiveEMailAsync(model, UserId);
         }
 
         #region 邮件CRUD
@@ -216,6 +216,18 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetInnerContact([FromBody] OrgAndStaffTreeModel dynamicModel, int userId)
         {
             return _emailServices.GetInnerContact(dynamicModel, UserId);
+        }
+
+        /// <summary>
+        /// 获取企业内部通讯录_人员查询
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("getinnerpersoncontact")]
+        public OutputResult<object> GetInnerPersonContact([FromBody] OrgAndStaffTreeModel dynamicModel, int userId)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.GetInnerPersonContact(dynamicModel, UserId);
         }
         /// <summary>
         /// 获取客户通讯录

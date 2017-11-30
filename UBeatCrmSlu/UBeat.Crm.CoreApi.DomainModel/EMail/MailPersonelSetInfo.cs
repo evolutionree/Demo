@@ -34,6 +34,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string treeId { get; set; }
 
         public string keyword { get; set; }
+        /// <summary>
+        /// 要查询的页码
+        /// </summary>
+        public int PageIndex { get; set; }
+        /// <summary>
+        /// 每页返回的数量
+        /// </summary>
+        public int PageSize { get; set; }
     }
 
     public class AddCatalogModel
@@ -54,6 +62,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// 要移动的目录的id
         /// </summary>
         public Guid recId { get; set; }
+
+        public string recName { get; set; }
         /// <summary>
         /// 新的父目录id
         /// </summary>

@@ -1,78 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel.Vocation;
 
 namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 {
-    public class FunctionButtonJsonInfo
+    public class FunctionJsonInfo
     {
         /// <summary>
         /// 页面功能按钮定义
         /// </summary>
         public List<FunctionBtnInfo> FuncBtns { set; get; }
+
+        /// <summary>
+        /// 实体拥有的功能列表，若为null，表示未设置数据，若为空list，则说明用户自己去除配置
+        /// </summary>
+        public List<FunctionInfo> WebFunctions { set; get; }
+
+        /// <summary>
+        /// 实体拥有的功能列表，若为null，表示未设置数据，若为空list，则说明用户自己去除配置
+        /// </summary>
+        public List<FunctionInfo> MobileFunctions { set; get; }
+       
     }
 
-    public class ServiceJsonInfo
-    {
-        /// <summary>
-        /// 页面入口
-        /// </summary>
-        public ServicePageInfo EntryPages { set; get; }
-    }
-
-
-    public class ServicePageInfo
-    {
-        /// <summary>
-        /// WEB实体列表页面
-        /// </summary>
-        public string WebListPage { set; get; }
-        /// <summary>
-        /// WEB实体主页
-        /// </summary>
-        public string WebIndexPage { set; get; }
-        /// <summary>
-        /// WEB实体编辑页
-        /// </summary>
-        public string WebEditPage { set; get; }
-        /// <summary>
-        /// WEB实体查看页
-        /// </summary>
-        public string WebViewPage { set; get; }
-        /// <summary>
-        /// 安卓实体列表页
-        /// </summary>
-        public string AndroidListPage { set; get; }
-        /// <summary>
-        /// 安卓实体主页
-        /// </summary>
-        public string AndroidIndexPage { set; get; }
-        /// <summary>
-        /// 安卓实体编辑页
-        /// </summary>
-        public string AndroidEditPage { set; get; }
-        /// <summary>
-        /// 安卓实体查看页
-        /// </summary>
-        public string AndroidViewPage { set; get; }
-        /// <summary>
-        /// 苹果实体列表页
-        /// </summary>
-        public string IOSListPage { set; get; }
-        /// <summary>
-        /// 苹果实体主页
-        /// </summary>
-        public string IOSIndexpage { set; get; }
-        /// <summary>
-        /// 苹果实体编辑页
-        /// </summary>
-        public string IOSEditPage { set; get; }
-        /// <summary>
-        /// 苹果实体查看页
-        /// </summary>
-        public string IOSViewPage { set; get; }
-
-    }
+    #region --FunctionBtnInfo定义--
 
     public class FunctionBtnInfo
     {
@@ -132,21 +84,21 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         /// <summary>
         /// web列表
         /// </summary>
-        WebList=0,
+        WebList = 0,
         /// <summary>
         /// web详情
         /// </summary>
-        WebDetail=1,
+        WebDetail = 1,
 
 
         /// <summary>
         /// 手机列表
         /// </summary>
-        MobileList=100,
+        MobileList = 100,
         /// <summary>
         /// 手机详情
         /// </summary>
-        MobileDetail=101
+        MobileDetail = 101
     }
 
     public enum DataSelectType
@@ -154,14 +106,20 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         /// <summary>
         /// 默认类型，不关联数据
         /// </summary>
-        Default =0,
+        Default = 0,
         /// <summary>
         /// 单选
         /// </summary>
-        Single=1,
+        Single = 1,
         /// <summary>
         /// 多选
         /// </summary>
-        Multiple=2
+        Multiple = 2
     }
+    #endregion
+
+    #region --Function
+
+    #endregion
+
 }
