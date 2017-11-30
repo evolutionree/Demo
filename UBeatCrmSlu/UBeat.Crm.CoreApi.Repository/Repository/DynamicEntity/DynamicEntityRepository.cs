@@ -70,7 +70,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 new NpgsqlParameter("userNo",userNumber)
             };
             if (tran == null)
-                return DBHelper.ExecuteQuery<OperateResult>("", sql, param).FirstOrDefault();
+            {
+                var asds = DBHelper.ExecuteQuery<OperateResult>("", sql, param).FirstOrDefault();
+                return asds;
+            }
 
             var result = DBHelper.ExecuteQuery<OperateResult>(tran, sql, param);
 
@@ -142,7 +145,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
             return result;
         }
-        public Dictionary<string, List<IDictionary<string, object>>> DataListUseFunc(string funcName, PageParam pageParam, Dictionary<string, object> extraData, DynamicEntityListMapper searchParm, int userNumber) {
+        public Dictionary<string, List<IDictionary<string, object>>> DataListUseFunc(string funcName, PageParam pageParam, Dictionary<string, object> extraData, DynamicEntityListMapper searchParm, int userNumber)
+        {
             var param = new
             {
                 EntityId = searchParm.EntityId,
@@ -167,7 +171,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         /// </summary>
         /// <param name="entityid"></param>
         /// <returns></returns>
-        public string CheckDataListSpecFunction(Guid entityid) {
+        public string CheckDataListSpecFunction(Guid entityid)
+        {
             string strSQL = string.Format("select funcname from crm_sys_entity_func_event where typeid = '{0}' AND operatetype = 3 ", entityid.ToString());
             List<Dictionary<string, object>> specFuncList = ExecuteQuery(strSQL, new DbParameter[] { }, null);
             if (specFuncList != null && specFuncList.Count > 0 && specFuncList[0]["funcname"] != null)
@@ -1056,10 +1061,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             string strSQL = "select a.datasrcid ,b.entitytable    from crm_sys_entity_datasource a inner join crm_sys_entity b on a.entityid = b.entityid where a.entityid is not null  and b.entitytable is not null  ";
             List<Dictionary<string, object>> ret = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
             Dictionary<string, object> retObj = new Dictionary<string, object>();
-            foreach (Dictionary<string, object> item in ret) {
+            foreach (Dictionary<string, object> item in ret)
+            {
                 string recid = null;
                 if (item.ContainsKey("datasrcid") && item["datasrcid"] != null
-                    && item.ContainsKey("entitytable") && item["entitytable"] != null) {
+                    && item.ContainsKey("entitytable") && item["entitytable"] != null)
+                {
                     string did = item["datasrcid"].ToString();
                     string eid = item["entitytable"].ToString();
                     retObj.Add(did, eid);
@@ -1121,29 +1128,34 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         /// <param name="userId"></param>
         /// <param name="tran"></param>
         /// <returns></returns>
-        public object ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string [] recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null)
+        public object ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string[] recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null)
         {
             string functionname = funcInfo.FunctionName;
             string paramNames = funcInfo.Parameters;
             Dictionary<string, string> realParam = new Dictionary<string, string>();
-            if (paramNames != null) {
+            if (paramNames != null)
+            {
                 string[] tmp = paramNames.Split(',');
-                foreach (string item in tmp) {
+                foreach (string item in tmp)
+                {
                     string tmpitem = item.ToLower();
                     if (tmpitem.StartsWith("@")) tmpitem = tmpitem.Substring(1);
                     if (realParam.ContainsKey(tmpitem)) continue;
                     if (tmpitem.Equals("recids"))
                     {
-                        realParam.Add("recids",Newtonsoft.Json.JsonConvert.SerializeObject( recIds));
+                        realParam.Add("recids", Newtonsoft.Json.JsonConvert.SerializeObject(recIds));
                     }
-                    else if (tmpitem.Equals("userid")) {
+                    else if (tmpitem.Equals("userid"))
+                    {
                         realParam.Add("userid", userId.ToString());
                     }
                     else
                     {
                         bool isOk = false;
-                        foreach (string key in otherParams.Keys) {
-                            if (key.ToLower().Equals(tmpitem) || key.ToLower().Equals("@" + tmpitem)) {
+                        foreach (string key in otherParams.Keys)
+                        {
+                            if (key.ToLower().Equals(tmpitem) || key.ToLower().Equals("@" + tmpitem))
+                            {
                                 realParam.Add(tmpitem, otherParams[key].ToString());
                                 isOk = true;
                                 break;
@@ -1161,13 +1173,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 strSQL = string.Format("select {0}({1})", functionname, paramNames);
                 param = new DbParameter[realParam.Keys.Count];
                 int i = 0;
-                foreach (string key in realParam.Keys) {
+                foreach (string key in realParam.Keys)
+                {
                     param[i] = new NpgsqlParameter(key, realParam[key]);
                     i++;
                 }
 
             }
-            else {
+            else
+            {
                 strSQL = string.Format("select {0}()", functionname);
                 param = new DbParameter[] { };
             }
@@ -1184,10 +1198,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             {
                 return ExecuteQueryRefCursor(strSQL, param, tran);
             }
-            else {
+            else
+            {
                 throw (new Exception("函数定义异常"));
             }
         }
-        
+
     }
 }
