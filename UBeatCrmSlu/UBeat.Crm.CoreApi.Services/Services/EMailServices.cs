@@ -181,7 +181,85 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             #endregion
         }
+        void SaveData(MimeMessage msg, int userNumber)
+        {
+            DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
+            {
+                EntityFields = new List<DynamicEntityFieldDataModel>()
+            };
+            var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
 
+            var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+            if (obj != null)
+                return;
+            Dictionary<string, string> dicHeader = new Dictionary<string, string>();
+            string key = String.Empty;
+            foreach (var header in msg.Headers)
+            {
+                key = header.Id.ToHeaderName();
+                if (!dicHeader.ContainsKey(key))
+                    dicHeader.Add(key, header.Value);
+            }
+            var fieldData = new Dictionary<string, object>();
+            fieldData.Add("recname", msg.Subject);//邮件主题
+            fieldData.Add("relativemailbox", BuilderAddress(msg.From));//收件人
+            fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
+            fieldData.Add("title", msg.Subject);//邮件主题
+            fieldData.Add("mailbody", msg.GetTextBody(TextFormat.Html));//邮件主题内容
+            fieldData.Add("sender", BuilderAddress(msg.From));//邮件发送人
+            fieldData.Add("receivers", BuilderAddress(msg.To));//邮件接收人
+            fieldData.Add("ccers", BuilderAddress(msg.Cc));//邮件抄送人
+            fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
+            fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
+            fieldData.Add("urgency", 1);//邮件优先级
+
+            fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
+            var fileTask = UploadAttachmentFiles(msg.Attachments);
+            fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
+            var extraData = new Dictionary<string, object>();
+            extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
+            extraData.Add("attachfile", fileTask.Result);
+            extraData.Add("issendoreceive", 1);
+            extraData.Add("receivetimerecord", new
+            {
+                ReceiveTime = msg.Date,
+                ServerId = msg.MessageId
+            });
+            DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
+            {
+                TypeId = Guid.Parse(_entityId),
+                FieldData = fieldData,
+                ExtraData = extraData
+            };
+            addList.EntityFields.Add(dynamicEntity);
+            _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
+            _dynamicEntityServices.AddList(addList, header, userNumber);
+        }
+
+        /// <summary>执行工作</summary>
+        void Work()
+        {
+            while (true)
+            {
+                MimeMessage work = null;
+                lock (_locker)
+                {
+                    if (_tasks.Count > 0)
+                    {
+                        work = _tasks.Dequeue(); // 有任务时，出列任务
+
+                        if (work == null)  // 退出机制：当遇见一个null任务时，代表任务结束
+                            return;
+                    }
+                }
+
+                if (work != null)
+                { }
+                //SaveData(work);  // 任务不为null时，处理并保存数据
+                else
+                    _wh.WaitOne();   // 没有任务了，等待信号
+            }
+        }
         /// <summary>插入任务</summary>
         void EnqueueMimeMessageTask(object state)
         {
@@ -346,7 +424,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
-                var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, false);
+                bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
                 OutputResult<object> repResult = new OutputResult<object>();
                 taskResult.GetAwaiter().OnCompleted(() =>
                {
@@ -363,8 +442,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                    var result = SaveMailDataInDb(msgResult, userNumber);
                    if (result.Status != 0)
                        throw new Exception("保存邮件数据异常");
-                   // _workerEvent.Set();
-               });
+               // _workerEvent.Set();
+           });
                 // _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
                 {
@@ -433,21 +512,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             var fieldData = new Dictionary<string, object>();
                             fieldData.Add("recname", msg.Subject);//邮件主题
-                            fieldData.Add("relativemailbox", BuilderAddress(msg.From));//收件人
-                            fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
-                            fieldData.Add("title", msg.Subject);//邮件主题
-                            fieldData.Add("mailbody", msg.GetTextBody(TextFormat.Html));//邮件主题内容
-                            fieldData.Add("sender", BuilderAddress(msg.From));//邮件发送人
-                            fieldData.Add("receivers", BuilderAddress(msg.To));//邮件接收人
-                            fieldData.Add("ccers", BuilderAddress(msg.Cc));//邮件抄送人
-                            fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
-                            fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
-                            fieldData.Add("urgency", 1);//邮件优先级
+                        fieldData.Add("relativemailbox", BuilderAddress(msg.From));//收件人
+                        fieldData.Add("headerinfo", JsonHelper.ToJson(dicHeader));//邮件头文件 用json存
+                        fieldData.Add("title", msg.Subject);//邮件主题
+                        fieldData.Add("mailbody", msg.GetTextBody(TextFormat.Html));//邮件主题内容
+                        fieldData.Add("sender", BuilderAddress(msg.From));//邮件发送人
+                        fieldData.Add("receivers", BuilderAddress(msg.To));//邮件接收人
+                        fieldData.Add("ccers", BuilderAddress(msg.Cc));//邮件抄送人
+                        fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
+                        fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
+                        fieldData.Add("urgency", 1);//邮件优先级
 
-                            fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
-                            var fileTask = UploadAttachmentFiles(msg.Attachments);
+                        fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
+                        var fileTask = UploadAttachmentFiles(msg.Attachments);
                             fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
-                            var extraData = new Dictionary<string, object>();
+                        var extraData = new Dictionary<string, object>();
                             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
                             extraData.Add("attachfile", fileTask.Result);
                             extraData.Add("issendoreceive", 1);
@@ -467,8 +546,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
                         _dynamicEntityServices.AddList(addList, header, userNumber);
 
-                        //   _workerEvent.Set();
-                    });
+                    //   _workerEvent.Set();
+                });
                 }
                 // _workerEvent.WaitOne();
                 repResult = new OutputResult<object>()
@@ -1181,7 +1260,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ExcuteSelectAction((transaction, arg, userData) =>
             {
                 var ruleSql = userData.RuleSqlFormat("api/documents/documentlist", Guid.Parse("a3500e78-fe1c-11e6-aee4-005056ae7f49"), DeviceClassic);//获取权限
-                return new OutputResult<object>(_mailRepository.GetLocalFileFromCrm(entity, ruleSql, userId));
+            return new OutputResult<object>(_mailRepository.GetLocalFileFromCrm(entity, ruleSql, userId));
             }, entity, Guid.Parse("a3500e78-fe1c-11e6-aee4-005056ae7f49"), userId);
         }
 

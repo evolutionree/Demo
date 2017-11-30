@@ -76,7 +76,7 @@ namespace UBeat.Crm.MailService
                 {
                     lock (client.SyncRoot)
                     {
-                        var inBox = client.GetFolder("inbox");
+                        var inBox = client.GetFolder("INBOX");
                         try
                         {
                             inBox.Open(FolderAccess.ReadOnly);
