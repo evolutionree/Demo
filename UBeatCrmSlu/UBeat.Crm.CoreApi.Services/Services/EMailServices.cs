@@ -329,35 +329,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
-
+            MimeMessageResult msgResult = new MimeMessageResult
+            {
+                Msg = emailMsg,
+                ActionType = (int)MailActionType.ExternalSend,
+                Status = (int)MailStatus.Sending,
+                AttachFileRecord = attachFileRecord,
+            };
+            var repResult = SaveSendMailDataInDb(msgResult, userNumber);
+            if (repResult.Flag == 0)
+                throw new Exception("邮件实体异常:" + repResult.Msg);
             var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
-                MimeMessageResult msgResult = new MimeMessageResult
-                {
-                    Msg = emailMsg,
-                    ActionType = (int)MailActionType.ExternalSend,
-                    Status = (int)MailStatus.Sending,
-                    AttachFileRecord = attachFileRecord,
-                };
-                var repResult = SaveSendMailDataInDb(msgResult, transaction, userNumber);
-                if (repResult.Flag == 0)
-                    throw new Exception("邮件实体异常:" + repResult.Msg);
                 try
                 {
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
-                    if (taskResult.Exception != null)
+                    while (true)
                     {
-                        _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber, transaction);
-                        throw new Exception("发送邮件异常");
-                    }
-                    else
-                    {
-                        repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber, transaction);
-                        if (repResult.Flag == 0)
-                            throw new Exception("更新邮件状态失败");
-                        else
-                            repResult.Msg = "发送邮件成功";
+                        if (taskResult.IsCompleted)
+                        {
+                            if (taskResult.Exception != null)
+                            {
+                                _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber, transaction);
+                                throw new Exception("发送邮件异常");
+                            }
+                            else
+                            {
+                                repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber, transaction);
+                                if (repResult.Flag == 0)
+                                    throw new Exception("更新邮件状态失败");
+                                else
+                                    repResult.Msg = "发送邮件成功";
+                            }
+                            break;
+                        }
                     }
                     return HandleResult(repResult);
                 }
@@ -515,7 +521,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        private OperateResult SaveSendMailDataInDb(MimeMessageResult msgResult, DbTransaction dbTrans, int userNumber)
+        private OperateResult SaveSendMailDataInDb(MimeMessageResult msgResult, int userNumber)
         {
             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
             string key = String.Empty;
@@ -563,7 +569,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ExtraData = extraData
             };
             _dynamicEntityServices.RoutePath = "api/dynamicentity/add";//赋予新增权限
-            return _dynamicEntityRepository.DynamicAdd(dbTrans, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
+            return _dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
         }
         private void BuilderMailBody(SendEMailMapper entity, int userNumber)
         {
