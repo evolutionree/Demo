@@ -460,6 +460,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
     public class MailUserMapper
     {
+        public Guid RecId { get; set; }
+
         public string EmailAddress { get; set; }
 
         public string Name { get; set; }
