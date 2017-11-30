@@ -146,5 +146,51 @@ namespace UBeat.Crm.MailService
                 }
             }
         }
+
+        public MimeMessage SendMessage(string host, int port, string userAccount, string userPassword, MimeMessage message, bool enableSsl = true, bool isPostFile = false)
+        {
+
+                using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
+                {
+                    try
+                    {
+                        client.Send(message);
+                        return message;
+                    }
+                    catch (ArgumentNullException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (ObjectDisposedException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (IOException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (CommandException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (ProtocolException ex)
+                    {
+                        throw ex;
+                    }
+                    finally
+                    {
+                        if (client.IsConnected)
+                            client.Disconnect(true);
+                    }
+                }
+        }
     }
 }

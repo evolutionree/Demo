@@ -344,31 +344,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 try
                 {
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
-                    var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
-                    while (true)
-                    {
-                        if (taskResult.IsCompleted)
-                        {
-                            if (taskResult.Exception != null)
-                            {
-                                _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber, transaction);
-                                throw new Exception("发送邮件异常");
-                            }
-                            else
-                            {
-                                repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber, transaction);
-                                if (repResult.Flag == 0)
-                                    throw new Exception("更新邮件状态失败");
-                                else
-                                    repResult.Msg = "发送邮件成功";
-                            }
-                            break;
-                        }
-                    }
+                    _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
+                    repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber, transaction);
                     return HandleResult(repResult);
                 }
                 catch (Exception ex)
                 {
+                    _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber, transaction);
                     return new OutputResult<object>()
                     {
                         Status = 1,
