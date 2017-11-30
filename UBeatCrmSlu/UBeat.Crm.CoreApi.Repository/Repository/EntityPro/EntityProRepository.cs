@@ -14,6 +14,7 @@ using System.Text;
 using System.Collections;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UBeat.Crm.CoreApi.DomainModel.Vocation;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 {
@@ -940,7 +941,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        public FunctionButtonJsonInfo GetFunctionButtonJsonInfo(Guid entityId)
+        public FunctionJsonInfo GetFunctionJsonInfo(Guid entityId)
         {
             //插入操作
             //生成插入语句
@@ -949,10 +950,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("entityid", entityId));
             var functionjson = ExecuteScalar(sql, sqlParameters.ToArray());
-            FunctionButtonJsonInfo result = null;
+            FunctionJsonInfo result = null;
             if (functionjson != null && !string.IsNullOrEmpty(functionjson.ToString()))
             {
-                result = JsonConvert.DeserializeObject<FunctionButtonJsonInfo>(functionjson.ToString());
+                result = JsonConvert.DeserializeObject<FunctionJsonInfo>(functionjson.ToString());
             }
             return result;
         }
@@ -1002,7 +1003,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        public bool SaveFunctionButtonJson(Guid entityId, FunctionButtonJsonInfo info, int userNumber)
+        public bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info, int userNumber)
         {
 
             var sql = @"UPDATE crm_sys_entity SET functionbuttons =@functionbuttons ,recupdator=@recupdator,recupdated=now() WHERE entityid=@entityid; ";
@@ -1316,6 +1317,207 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             return resutl;
         }
 
+        /// <summary>
+        /// 获取实体的菜单列表
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <returns></returns>
+        public List<EntityMenuInfo> GetEntityMenuInfoList(Guid entityId)
+        {
+            List<RelateEntity> resutl = new List<RelateEntity>();
+            var sql = @" SELECT * FROM crm_sys_entity_menu WHERE entityid=@entityid";
+
+            var sqlParameters = new List<DbParameter>();
+            sqlParameters.Add(new NpgsqlParameter("entityid", entityId));
+
+            return ExecuteQuery<EntityMenuInfo>(sql, sqlParameters.ToArray());
+
+
+        }
+
+        /// <summary>
+        /// 获取实体的tabid
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <returns></returns>
+        public Guid GetEntityRelTabId(Guid entityId, string entitytaburl)
+        {
+            var sql = @"SELECT relid FROM crm_sys_entity_rel_tab WHERE entityid=@entityid AND entitytaburl=@entitytaburl AND recstatus=1 LIMIT 1;";
+
+            var sqlParameters = new List<DbParameter>();
+            sqlParameters.Add(new NpgsqlParameter("entityid", entityId));
+            sqlParameters.Add(new NpgsqlParameter("entitytaburl", entitytaburl));
+            var resutl = ExecuteScalar(sql, sqlParameters.ToArray());
+            Guid relid = Guid.Empty;
+            if (resutl != null && Guid.TryParse(resutl.ToString(), out relid))
+            {
+                return relid;
+            }
+            else throw new Exception(string.Format("crm_sys_entity_rel_tab不存在entityid={0}和entitytaburl={1}的记录", entityId, entitytaburl));
+        }
+
+
+        /// <summary>
+        /// 获取实体的tabid
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <returns></returns>
+        public void SyncFunctionList(Guid entityId, List<FunctionInfo> webfuncs, List<FunctionInfo> mobilefuncs, int usernumber)
+        {
+            using (var conn = myDBHelper.GetDbConnect())
+            {
+                conn.Open();
+                var tran = conn.BeginTransaction();
+                try
+                {
+
+                    List<FunctionInfo> funclist = new List<FunctionInfo>();
+                    if (webfuncs != null && webfuncs.Count > 0)
+                        funclist.AddRange(webfuncs);
+                    if (mobilefuncs != null && mobilefuncs.Count > 0)
+                        funclist.AddRange(mobilefuncs);
+
+                    #region --获取根节点的父节点--
+                    var entrytype_sql = @"SELECT entrytype FROM crm_sys_entrance WHERE entityid =@entityid AND recstatus=1  LIMIT 1";
+                    DbParameter[] entrytypeParms = new DbParameter[]
+                    {
+                        new NpgsqlParameter("entityid", entityId),
+                    };
+                    var entrytypeResult = ExecuteScalar(entrytype_sql, entrytypeParms, tran);
+                    int entrytype = -1;
+                    if (entrytypeResult != null )
+                    {
+                        int.TryParse(entrytypeResult.ToString(), out entrytype);
+                    }
+                    Guid webRootfuncid = Guid.Empty;
+                    Guid mobileRootfuncid = Guid.Empty;
+                    switch (entrytype)
+                    {
+                        case 0://crm的function根
+                            webRootfuncid = Guid.Parse("c84ff512-fe7d-4d7e-8cf2-f0dc72ea9cb3");
+                            mobileRootfuncid = Guid.Parse("da5fbce8-8c52-4d3c-8e44-8aa5bfdfaae1");
+                            break;
+                        case 1://办公的function根
+                            webRootfuncid = Guid.Parse("7c927ecd-bdf9-424f-bed8-e577783c3922");
+                            mobileRootfuncid = Guid.Parse("39287afa-8254-446b-960d-2924cebfc84b");
+                            break;
+                        default://其他实体的function根
+                            webRootfuncid = Guid.Parse("26177703-12c4-46d8-8594-3372705524fb");
+                            mobileRootfuncid = Guid.Parse("da67b7fc-a16e-4c74-bb44-c3d833416645");
+                            break;
+                    }
+
+                    var rootfuncs = funclist.Where(m => m.ParentId == Guid.Empty);
+                    foreach (var root in rootfuncs)
+                    {
+                        root.ParentId = root.DeviceType == 0 ? webRootfuncid : mobileRootfuncid;
+                    } 
+
+                    #endregion
+
+                    #region --获取关联的动态实体列表--
+                    var entity_sql = @"SELECT entityid FROM crm_sys_entity WHERE relentityid =@entityid AND modeltype=3 AND recstatus=1";
+                    DbParameter[] entityParms = new DbParameter[]
+                    {
+                        new NpgsqlParameter("entityid", entityId),
+                    };
+                    var dynamicEntityIds = ExecuteQuery(entity_sql, entityParms, tran);
+                    List<Guid> entityids = new List<Guid>();
+                    entityids.Add(entityId);
+                    foreach (var m in dynamicEntityIds)
+                    {
+                        Guid dynamicEntityId = Guid.Empty;
+                        if (m != null && m.ContainsKey("entityid") && m["entityid"] != null && Guid.TryParse(m["entityid"].ToString(), out dynamicEntityId))
+                        {
+                            entityids.Add(dynamicEntityId);
+                        }
+                    } 
+                    #endregion
+
+                    #region --清空旧数据--
+                    var deletedfuncid_sql = @"SELECT funcid FROM crm_sys_function  WHERE entityid=ANY(@entityids);";
+                    DbParameter[] deleteFuncid_Parms = new DbParameter[]
+                    {
+                        new NpgsqlParameter("entityids", entityids.ToArray()),
+                    };
+                    var deleteFuncIdsResult = ExecuteQuery(deletedfuncid_sql, deleteFuncid_Parms, tran);
+                    List<Guid> allDeleteFuncIds = new List<Guid>();
+                    List<Guid> deleteFuncIds = new List<Guid>();
+                    foreach (var m in deleteFuncIdsResult)
+                    {
+                        Guid funcid = Guid.Empty;
+                        if (m != null && m.ContainsKey("funcid") && m["funcid"] != null && Guid.TryParse(m["funcid"].ToString(), out funcid))
+                        {
+                            allDeleteFuncIds.Add(funcid);
+                            if(!funclist.Exists(a=>a.FuncId==funcid))//如果当前function不在保存列表中，则表示永久删除
+                            {
+                                deleteFuncIds.Add(funcid);
+                            }
+                        }
+                    }
+
+                    var delete_sql = @"DELETE FROM crm_sys_function WHERE entityid=ANY(@entityids);
+                                       DELETE FROM crm_sys_function_treepaths WHERE ancestor=ANY(@funcids) OR descendant=ANY(@funcids);
+                                       DELETE FROM crm_sys_vocation_function_relation WHERE functionid=ANY(@deletedfuncids) ;
+                                       DELETE FROM crm_sys_vocation_function_rule_relation WHERE functionid=ANY(@deletedfuncids) ;
+                                    ";
+                    DbParameter[] deleteParms = new DbParameter[]
+                    {
+                        new NpgsqlParameter("entityids", entityids.ToArray()),
+                        new NpgsqlParameter("funcids", allDeleteFuncIds.ToArray()),
+                        new NpgsqlParameter("deletedfuncids", deleteFuncIds.ToArray())
+                     };
+                    ExecuteNonQuery(delete_sql, deleteParms, tran);
+                    #endregion
+
+                    #region --插入新数据--
+                    var insert_sql = @"INSERT INTO crm_sys_function (funcid,funcname,funccode,parentid,entityid,devicetype,reccreator,recupdator,rectype,relationvalue,routepath,islastchild) 
+		                             VALUES (@funcid,@funcname,@funccode,@parentid,@entityid,@devicetype,@reccreator,@recupdator,@rectype,@relationvalue,@routepath,@islastchild);
+                                     INSERT INTO crm_sys_function_treepaths(ancestor,descendant,nodepath)
+		                                    SELECT t.ancestor,@funcid,nodepath+1
+		                                    FROM crm_sys_function_treepaths AS t
+		                                    WHERE t.descendant = @parentid
+		                                    UNION ALL
+		                                    SELECT @funcid,@funcid,0;
+                                    ";
+                    var insert_params = new List<DbParameter[]>();
+
+                    foreach (var func in funclist)
+                    {
+                        insert_params.Add(new DbParameter[] {
+                            new NpgsqlParameter("funcid", func.FuncId),
+                            new NpgsqlParameter("funcname", func.FuncName),
+                            new NpgsqlParameter("funccode", func.Funccode),
+                            new NpgsqlParameter("parentid", func.ParentId),
+                            new NpgsqlParameter("entityid", func.EntityId),
+                            new NpgsqlParameter("devicetype", func.DeviceType),
+                            new NpgsqlParameter("reccreator", usernumber),
+                            new NpgsqlParameter("recupdator", usernumber),
+                            new NpgsqlParameter("rectype", (int)func.RecType),
+                            new NpgsqlParameter("relationvalue", func.RelationValue),
+                            new NpgsqlParameter("routepath", func.RoutePath),
+                            new NpgsqlParameter("islastchild", func.IsLastChild)
+                        });
+                    }
+
+                    ExecuteNonQueryMultiple(insert_sql, insert_params, tran);
+                    #endregion
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
+
+
+
+        }
 
     }
 }
