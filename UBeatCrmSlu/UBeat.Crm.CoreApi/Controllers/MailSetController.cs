@@ -193,7 +193,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 recid = new Guid("10e59749-28fa-42f5-9ce5-9f2b6cd70834"),
                 accountid = "yinjunyu@renqiankeji.com",
                 recname = "œ˙ €1",
-                inwhitelist = "1"
+                //inwhitelist = "1"
             };
             PersonalSign ret = new PersonalSign()
             {
