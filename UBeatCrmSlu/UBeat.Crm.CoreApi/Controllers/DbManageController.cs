@@ -25,10 +25,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             //return this._dbManageServices.GenerateProcSQL("crm_func_daily_add", UserId);
         }
 
-        [HttpGet("export/platform/init/struct")]
+        [HttpGet("export")]
         [AllowAnonymous]
-        public async Task<IActionResult> ExportPlatFormInitStructSQL() {
-            return null;
+        public async Task<IActionResult> ExportSQL([FromBody] SQLExportParamInfo paramInfo) {
+            if (paramInfo == null)
+                return ResponseError("缺乏查询参数");
+            return await Task.Run<IActionResult>(() =>
+            {
+                IActionResult result = NotFound();
+               // this._dbManageServices.ExportSQL(paramInfo, UserId);
+                return result;
+            });
         }
         [HttpPost("reflect")]
         [AllowAnonymous]

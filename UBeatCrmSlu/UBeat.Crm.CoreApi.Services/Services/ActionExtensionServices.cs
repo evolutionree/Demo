@@ -71,7 +71,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //数据库函数方式实现
             if (actionExtModel.implementtype == 0)
             {
-                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData, userData.UserId);
+                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData,null,null, userData.UserId);
                 return new OutputResult<object>(result);
             }
             else
@@ -95,7 +95,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //数据库函数方式实现
             if (actionExtModel.implementtype == 0)
             {
-                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData, userData.UserId);
+                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData,preActionResult,actionResult, userData.UserId);
                 return new OutputResult<object>(result);
             }
             else

@@ -220,15 +220,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                 model.checkEmpty();
                 string strSQL = string.Format(@"insert into crm_sys_dbmgr_object (
                             id,objtype,sqlpath,lastversion,objname,
-                            remark,relativeobj,name)
+                            remark,relativeobj,name,recstatus,belongto)
                             VALUES
-	                            (		'{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}');",
+	                            (		'{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}',{8},{9});",
                                 model.Id, (int)model.ObjType, model.SqlPath.Replace("'", "''"),
                                 model.LastVersion.Replace("'", "''"),
                                 model.ObjName.Replace("'", "''"),
                                 model.Remark.Replace("'", "''"),
                                 model.RelativeObj.Replace("'", "''"),
-                                model.Name.Replace("'", "''"));
+                                model.Name.Replace("'", "''"),
+                                model.RecStatus,
+                                (int)model.belongTo);
                 ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
             }
             else
@@ -236,13 +238,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                 model.checkEmpty();
                 string strSQL = string.Format(@"update crm_sys_dbmgr_object set objtype={1}," +
                     "sqlpath='{2}' ,lastversion='{3}' , objname='{4}'," +
-                    "remark='{5}',relativeobj='{6}',name='{7}' where id='{0}'", 
+                    "remark='{5}',relativeobj='{6}',name='{7}',recstatus={8},belongto={9} where id='{0}'", 
                                 model.Id, (int)model.ObjType, model.SqlPath.Replace("'", "''"),
                                 model.LastVersion.Replace("'", "''"),
                                 model.ObjName.Replace("'", "''"),
                                 model.Remark.Replace("'", "''"),
                                 model.RelativeObj.Replace("'", "''"),
-                                model.Name.Replace("'", "''"));
+                                model.Name.Replace("'", "''"),
+                                model.RecStatus,
+                                (int)model.belongTo);
                 ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
             }
         }
