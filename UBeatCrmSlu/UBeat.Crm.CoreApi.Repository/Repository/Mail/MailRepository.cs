@@ -787,37 +787,65 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
         public OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null)
         {
-            var sql = @" update crm_sys_mail_sendrecord set status=@mailstatus where mailid=@mailid;";
-            var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=1004";
-            var mailCatalogChangeSql = @" update crm_sys_mail_catalog_relation set catalogid=@catalogid where mailid=@mailid;";
-            var param = new DbParameter[]
+
+            if (dbTrans == null)
             {
+                 DbConnection conn= DBHelper.GetDbConnect();
+                if (conn.State == ConnectionState.Closed)
+                {
+                    conn.Open();
+                }
+                dbTrans = conn.BeginTransaction();
+            }
+            try
+            {
+                var sql = @" update crm_sys_mail_sendrecord set status=@mailstatus where mailid=@mailid;";
+                var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=1004";
+                var mailCatalogChangeSql = @" update crm_sys_mail_catalog_relation set catalogid=@catalogid where mailid=@mailid;";
+                var param = new DbParameter[]
+                {
                 new NpgsqlParameter("mailstatus",mailStatus),
                 new NpgsqlParameter("mailid",mailId)
-            };
-            int count = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
-            if (count > 0)
-            {
-                var arg = new
-                {
-                    UserId = userId
                 };
-                var catalogId = DataBaseHelper.QuerySingle<Guid>(mailCatalogSql, arg);
-                if (catalogId == Guid.Empty)
-                    throw new Exception("该用户没有已发送目录");
-                param = new DbParameter[]
-                {
-                    new NpgsqlParameter("catalogid",catalogId),
-                    new NpgsqlParameter("mailid",mailId)
-                };
-                count = DBHelper.ExecuteNonQuery(dbTrans, mailCatalogChangeSql, param, CommandType.Text);
+
+                int count = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
                 if (count > 0)
                 {
-                    return new OperateResult
+                    var arg = new
                     {
-                        Flag = 1
+                        UserId = userId
                     };
+                    var catalogId = DataBaseHelper.QuerySingle<Guid>(mailCatalogSql, arg);
+                    if (catalogId == Guid.Empty)
+                        throw new Exception("该用户没有已发送目录");
+                    param = new DbParameter[]
+                    {
+                    new NpgsqlParameter("catalogid",catalogId),
+                    new NpgsqlParameter("mailid",mailId)
+                    };
+                    count = DBHelper.ExecuteNonQuery(dbTrans, mailCatalogChangeSql, param, CommandType.Text);
+                    if (count > 0)
+                    {
+                        return new OperateResult
+                        {
+                            Flag = 1
+                        };
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                dbTrans.Rollback();
+                return new OperateResult
+                {
+                    Flag = 1
+                };
+            }
+            finally
+            {
+                dbTrans.Commit();
+                dbTrans.Dispose();
+
             }
             return new OperateResult
             {

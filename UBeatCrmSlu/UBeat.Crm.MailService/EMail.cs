@@ -18,8 +18,6 @@ namespace UBeat.Crm.MailService
     public class EMail
     {
 
-        public static CancellationTokenSource timeout = new CancellationTokenSource(new TimeSpan(0, 9, 0));
-
         public async Task<MimeMessage> SendMessageAsync(string host, int port, string userAccount, string userPassword, MimeMessage message, bool enableSsl = true, bool isPostFile = false)
         {
             using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
@@ -74,36 +72,33 @@ namespace UBeat.Crm.MailService
             {
                 return await Task.Run(() =>
                 {
-                    lock (client.SyncRoot)
+                    var inBox = client.GetFolder("INBOX");
+                    try
                     {
-                        var inBox = client.GetFolder("INBOX");
-                        try
+                        inBox.Open(FolderAccess.ReadOnly);
+                        List<MimeMessage> lstMsg = new List<MimeMessage>();
+                        if (searchQuery != null)
                         {
-                            inBox.Open(FolderAccess.ReadOnly);
-                            List<MimeMessage> lstMsg = new List<MimeMessage>();
-                            if (searchQuery != null)
+                            var uids = inBox.Search(searchQuery);
+                            foreach (var item in uids)
                             {
-                                var uids = inBox.Search(searchQuery);
-                                foreach (var item in uids)
-                                {
-                                    client.NoOp();
-                                    MimeMessage message = inBox.GetMessage(new UniqueId(item.Id));
-                                    inBox.SetFlags(item, MessageFlags.Seen, true);
-                                    lstMsg.Add(message);
-                                }
+                                client.NoOp();
+                                MimeMessage message = inBox.GetMessage(new UniqueId(item.Id));
+                                inBox.SetFlags(item, MessageFlags.Seen, true);
+                                lstMsg.Add(message);
                             }
-                            return lstMsg;
                         }
-                        catch (Exception ex)
-                        {
-                            throw ex;
-                        }
-                        finally
-                        {
-                            inBox.Close();
-                            if (client.IsConnected)
-                                client.Disconnect(true);
-                        }
+                        return lstMsg;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    finally
+                    {
+                        inBox.Close();
+                        if (client.IsConnected)
+                            client.Disconnect(true);
                     }
                 });
             }
@@ -149,7 +144,6 @@ namespace UBeat.Crm.MailService
 
         public MimeMessage SendMessage(string host, int port, string userAccount, string userPassword, MimeMessage message, bool enableSsl = true, bool isPostFile = false)
         {
-
             using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
             {
                 try
