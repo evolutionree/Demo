@@ -277,6 +277,14 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         List<Dictionary<string, object>> GetProductSeriesByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData);
 
-
+        
+        /// <summary>
+        /// 通过版本号获取邮箱信息
+        /// </summary>
+        /// <param name="recVersion"></param>
+        /// <param name="userNumber"></param>
+        /// <param name="maxVersion"></param>
+        /// <returns></returns>
+        List<Dictionary<string, object>> GetMailboxDataByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData);
     }
 }

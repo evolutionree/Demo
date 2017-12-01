@@ -651,6 +651,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         #endregion
 
 
+        #region --邮箱信息--
+        /// <summary>
+        /// 通过版本号获取邮箱信息
+        /// </summary>
+        /// <param name="recVersion"></param>
+        /// <param name="userNumber"></param>
+        /// <param name="maxVersion"></param>
+        /// <returns></returns>
+        public List<Dictionary<string, object>> GetMailboxDataByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
+        {
+
+            //var selectFields = "comptid,entityid,comptname,comptaction,icon,recorder,recstatus ";
+            return GetDatasByVersion("crm_sys_mail_mailbox", null, recVersion, userNumber, out maxVersion, out hasMoreData);
+        }
+        #endregion
+
+       
+
 
     }
 }

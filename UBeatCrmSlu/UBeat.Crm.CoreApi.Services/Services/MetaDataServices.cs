@@ -141,6 +141,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case "usersync"://用户信息配置(通讯录)
                     resutl = _repository.GetUserInfoByVersion(recVersion, userNumber, out maxVersion, out hasMoreData);
                     break;
+                case "mailboxsync"://邮箱信息管理 
+                    resutl = _repository.GetMailboxDataByVersion(recVersion, userNumber, out maxVersion, out hasMoreData);
+                    break;
             }
 
             return resutl;
@@ -325,8 +328,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return resutl;
         }
+        //
+        private List<Dictionary<string, object>> GetMailboxData(string versionKey, long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
+        {
+            List<Dictionary<string, object>> resutl = null;
+            maxVersion = 0;
+            hasMoreData = false;
+            switch (versionKey)
+            {
+                case "mailboxsync"://邮箱信息管理 
+                    resutl = _repository.GetMailboxDataByVersion(recVersion, userNumber, out maxVersion, out hasMoreData);
+                    break;
+               
+            }
 
-
+            return resutl;
+        }
 
     }
 }
