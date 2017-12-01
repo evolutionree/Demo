@@ -96,7 +96,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var nowcaseitem = caseitems.Find(m => m.HandleUser == userNumber);
                     if(nowcaseitem!=null)
                     {
-                        if (caseInfo.NodeNum == -1)
+                        if (caseInfo.NodeNum == -1|| caseInfo.AuditStatus== AuditStatusType.Finished|| caseInfo.AuditStatus== AuditStatusType.NotAllowed)
                         {
                             result.CaseItem.NodeName = "已完成审批";
                         }
@@ -894,6 +894,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (caseItemEntity.NodeNum == -1)//通过并结束流程
                     {
                         auditstatus = AuditStatusType.Finished;
+                        casenodenum = -1;
                         casefinish = true;
                     }
                     else
