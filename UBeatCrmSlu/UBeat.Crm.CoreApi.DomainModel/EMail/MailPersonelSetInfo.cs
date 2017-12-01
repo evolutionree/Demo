@@ -24,7 +24,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string mailserver { get; set; }
         public int mailprovider { get; set; }
         public string imapaddress { get; set; }
-        public int refreshinterval { get; set; }
+        public Int64 refreshinterval { get; set; }
         public int servertype { get; set; }
         public string smtpaddress { get; set; }
     }
