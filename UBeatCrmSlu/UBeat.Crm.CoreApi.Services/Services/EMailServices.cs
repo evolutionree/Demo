@@ -108,6 +108,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     thr.Start();
                 }
             }
+
+            public void WaitAllTask()
+            {
+                try
+                {
+                    Task.WaitAll(_wordThreads.ToArray());
+                }
+                catch (AggregateException ex)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    // enumerate the exceptions that have been aggregated
+                    foreach (Exception inner in ex.InnerExceptions)
+                    {
+                        sb.Append(inner.Message);
+                    }
+                    throw new Exception(sb.ToString());
+                }
+
+            }
             void AddFinishFlag()
             {
                 _tasks.Enqueue(null);//添加结束标志
@@ -188,6 +207,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                 thrManager.EnqueueTask(taskResult);
             }
+            thrManager.WaitAllTask();
             return new OutputResult<object>
             {
                 Status = 0
