@@ -530,8 +530,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                     if (parm.NpgsqlValue != DBNull.Value&&( parm.NpgsqlDbType == NpgsqlTypes.NpgsqlDbType.Text || parm.NpgsqlDbType == NpgsqlTypes.NpgsqlDbType.Varchar))
                     {
                         
-                        if (CheckDbParameterInjection(parm.NpgsqlValue.ToString()))
-                            throw new Exception("SQL参数不可包含系统关键字");
+                        //if (CheckDbParameterInjection(parm.NpgsqlValue.ToString()))
+                        //   throw new Exception("SQL参数不可包含系统关键字");
                         
                     }
                     cmd.Parameters.Add(parm);
@@ -560,6 +560,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
         /// <returns></returns>
         private static bool CheckDbParameterInjection(string s)
         {
+            
             bool res = false;
             if (string.IsNullOrEmpty(s))
                 return false;
