@@ -88,16 +88,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             public void CreateThreadPool(int i, int userId)
             {
                 _wordThreads = new Queue<Task>();
-                lock (_wordThreads)
+                for (int j = 0; j < i; j++)
                 {
-                    for (int j = 0; j < i; j++)
+                    Task task = new Task((state) =>
                     {
-                        Task task = new Task((state) =>
-                        {
-                            DequeueWork(state);
-                        }, userId);
-                        _wordThreads.Enqueue(task);
-                    }
+                        DequeueWork(state);
+                    }, userId);
+                    _wordThreads.Enqueue(task);
                 }
             }
             public void StartTask(int userId)
@@ -138,43 +135,47 @@ namespace UBeat.Crm.CoreApi.Services.Services
             /// <summary>执行工作</summary>
             void DequeueWork(object state)
             {
-                int userId = (int)state;
-                while (true)
+                try
                 {
-                    MimeMessage work = null;
-                    lock (_locker)
+                    int userId = (int)state;
+                    while (true)
                     {
-                        try
+                        MimeMessage work = null;
+                        lock (_locker)
                         {
-                            if (_tasks.Count > 0)
+                            try
                             {
-                                work = _tasks.Dequeue(); // 有任务时，出列任务
-
-                                if (work == null)  // 退出机制：当遇见一个null任务时，代表任务结束
+                                if (_tasks.Count > 0)
                                 {
-                                    _isQuit = true;
-                                    _wh.Dispose();
-                                    _wordThreads.Clear();
-                                    return;
+                                    work = _tasks.Dequeue(); // 有任务时，出列任务
+
+                                    if (work == null)  // 退出机制：当遇见一个null任务时，代表任务结束
+                                    {
+                                        _isQuit = true;
+                                        _wh.Dispose();
+                                        _wordThreads.Clear();
+                                        return;
+                                    }
                                 }
                             }
+                            catch (Exception)
+                            {
+                                _tasks.Clear();
+                            }
                         }
-                        catch (Exception)
-                        {
-                            _tasks.Clear();
-                        }
-                    }
 
-                    if (work != null)
-                        _callBack.Invoke(work, userId);  // 任务不为null时，处理并保存数据
-                    else
-                    {
-                        if (!_isQuit)
-                            _wh.WaitOne();   // 没有任务了，等待信号
+                        if (work != null)
+                            _callBack.Invoke(work, userId);  // 任务不为null时，处理并保存数据
                         else
-                            return;
+                        {
+                            if (!_isQuit)
+                                _wh.WaitOne();   // 没有任务了，等待信号
+                            else
+                                return;
+                        }
                     }
                 }
+                catch { }
             }
             /// <summary>插入任务</summary>
             public void EnqueueTask(IList<MimeMessage> msg)
@@ -244,6 +245,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
             var fileTask = UploadAttachmentFiles(msg.Attachments);
+            fileTask.Wait();
             fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
             var extraData = new Dictionary<string, object>();
             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
