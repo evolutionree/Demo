@@ -108,36 +108,33 @@ namespace UBeat.Crm.MailService
 
             using (ImapClient client = new ImapHelper(host, port, enableSsl, userAccount, userPassword).ImapClient)
             {
-                lock (client.SyncRoot)
+                var inBox = client.GetFolder("INBOX");
+                try
                 {
-                    var inBox = client.GetFolder("INBOX");
-                    try
+                    inBox.Open(FolderAccess.ReadWrite);
+                    List<MimeMessage> lstMsg = new List<MimeMessage>();
+                    if (searchQuery != null)
                     {
-                        inBox.Open(FolderAccess.ReadWrite);
-                        List<MimeMessage> lstMsg = new List<MimeMessage>();
-                        if (searchQuery != null)
+                        var uids = inBox.Search(searchQuery);
+                        foreach (var item in uids)
                         {
-                            var uids = inBox.Search(searchQuery);
-                            foreach (var item in uids)
-                            {
-                                client.NoOp();
-                                MimeMessage message = inBox.GetMessage(new UniqueId(item.Id));
-                                inBox.SetFlags(item, MessageFlags.Seen, true);
-                                lstMsg.Add(message);
-                            }
+                            client.NoOp();
+                            MimeMessage message = inBox.GetMessage(new UniqueId(item.Id));
+                            inBox.SetFlags(item, MessageFlags.Seen, true);
+                            lstMsg.Add(message);
                         }
-                        return lstMsg;
                     }
-                    catch (Exception ex)
-                    {
-                        throw ex;
-                    }
-                    finally
-                    {
-                        inBox.Close();
-                        if (client.IsConnected)
-                            client.Disconnect(true);
-                    }
+                    return lstMsg;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+                finally
+                {
+                    inBox.Close();
+                    if (client.IsConnected)
+                        client.Disconnect(true);
                 }
             }
         }

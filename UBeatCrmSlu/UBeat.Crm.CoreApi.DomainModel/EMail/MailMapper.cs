@@ -531,6 +531,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string MailServerId { get; set; }
 
         public Guid MailId { get; set; }
+
+        public string MailAddress { get; set; }
     }
 
     public class InnerToAndFroMailMapper:BaseEntity

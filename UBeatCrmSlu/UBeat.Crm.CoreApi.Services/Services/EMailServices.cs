@@ -71,14 +71,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private static EventWaitHandle _wh = new AutoResetEvent(false);
         void CreateThreadPool(int i)
         {
-            if (_wordThreads == null || _wordThreads.Count == 0)
                 _wordThreads = new Queue<Thread>();
             lock (_wordThreads)
             {
                 for (int j = 0; j < i; j++)
                 {
                     Thread workthread = new Thread(DequeueMimeMessageWork);
-                    //  workthread.IsBackground = true;
+                    workthread.IsBackground = true;
                     _wordThreads.Enqueue(workthread);
                 }
             }
@@ -128,7 +127,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         void SaveRecMailDataInDb(MimeMessage msg, int userNumber)
         {
             var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
-
+            var mailBoxLst = _mailRepository.GetMailBoxList(1, int.MaxValue, userNumber);
             var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
             if (obj != null)
                 return;
@@ -160,10 +159,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
             extraData.Add("attachfile", fileTask.Result);
             extraData.Add("issendoreceive", 1);
+            string mailAddress = string.Empty;
+            foreach (var tmp in msg.To)
+            {
+                var mailBoxAddress = tmp as MailboxAddress;
+                if (mailBoxAddress != null)
+                {
+                    var entity = mailBoxLst.DataList.FirstOrDefault(t => t.accountid == mailBoxAddress.Address);
+                    if (entity != null)
+                    {
+                        mailAddress = entity.accountid;
+                        break;
+                    }
+                }
+            }
             extraData.Add("receivetimerecord", new
             {
                 ReceiveTime = msg.Date,
-                ServerId = msg.MessageId
+                ServerId = msg.MessageId,
+                MailAddress = mailAddress
             });
             DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
             {
@@ -222,7 +236,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 if (userMailInfo.EncryptPwd == null)
                     continue;
-                SearchQuery searchQuery = BuilderSearchQuery((SearchQueryEnum)dataWrapper.Entity.Conditon, dataWrapper.Entity.ConditionVal, userMailInfo.Owner);
+                SearchQuery searchQuery = BuilderSearchQuery((SearchQueryEnum)dataWrapper.Entity.Conditon, dataWrapper.Entity.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                 bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                 var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                 foreach (var tmp in taskResult)
@@ -405,7 +419,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (userMailInfo.EncryptPwd == null)
                         continue;
-                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.Owner);
+                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, "", userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
@@ -490,13 +504,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //}
         }
 
-        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, int userId)
+        private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, string mailAddress, int userId)
         {
             SearchQuery dataQuery = null;
             switch (query)
             {
                 case SearchQueryEnum.None:
-                    ReceiveMailRelatedMapper receiveConfig = _mailRepository.GetUserReceiveMailTime(userId);
+                    ReceiveMailRelatedMapper receiveConfig = _mailRepository.GetUserReceiveMailTime(mailAddress, userId);
                     if (receiveConfig != null)
                     {
                         dataQuery = SearchQuery.DeliveredAfter(receiveConfig.ReceiveTime);

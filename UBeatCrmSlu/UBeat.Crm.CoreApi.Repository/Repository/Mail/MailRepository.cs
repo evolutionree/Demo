@@ -752,10 +752,10 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             return ExecuteQueryByPaging<AttachmentChooseListMapper>(string.Format(sql, ruleSql, whereSql), param.ToArray(), entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex); ;
         }
 
-        public ReceiveMailRelatedMapper GetUserReceiveMailTime(int userId)
+        public ReceiveMailRelatedMapper GetUserReceiveMailTime(string mailAddress, int userId)
         {
-            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid ORDER BY  receivetime desc LIMIT 1";
-            return DataBaseHelper.QuerySingle<ReceiveMailRelatedMapper>(sql, new { UserId = userId });
+            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid and mailaddress=@mailaddress ORDER BY  receivetime desc LIMIT 1";
+            return DataBaseHelper.QuerySingle<ReceiveMailRelatedMapper>(sql, new { UserId = userId, MailAddress = mailAddress });
         }
 
         public List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId)
@@ -790,7 +790,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             if (dbTrans == null)
             {
-                 DbConnection conn= DBHelper.GetDbConnect();
+                DbConnection conn = DBHelper.GetDbConnect();
                 if (conn.State == ConnectionState.Closed)
                 {
                     conn.Open();
