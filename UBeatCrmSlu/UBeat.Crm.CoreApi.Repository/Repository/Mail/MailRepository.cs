@@ -941,14 +941,16 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                 string rootsql = "select deptid::text from crm_sys_department where pdeptid::text = '00000000-0000-0000-0000-000000000000' and recstatus=1 ";
                 deptId = (string)ExecuteScalar(rootsql, new DbParameter[] { });
             }
-            var sql = "select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a  " +
-                " where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t " +
-                 "UNION ALL " +
-                " select* from(select b.useremail mail, b.userid::text treeid, b.username treename, a1.deptname,1 nodetype,b.usericon::uuid icon " +
-                " from crm_sys_account_userinfo_relate a inner join crm_sys_userinfo b on a.userid = b.userid " +
-                " left join crm_sys_department a1 on a1.deptid = a.deptid " +
-                " where a.recstatus = 1 and b.useremail is not null  and useremail!= '' " +
-                "and a.deptid::text =@deptId order by b.username) t1";
+            var sql = @"select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
+                 where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
+                 UNION ALL 
+                select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
+                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.useremail is not null  and a.useremail!= '' 
+                UNION all 
+                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid ) x
+                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                left join crm_sys_department d on d.deptid=ur.deptid
+                 where ur.recstatus = 1 and d.pdeptid::text=@deptId";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("deptId", deptId)
@@ -964,15 +966,18 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         /// <returns></returns>       
         public PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
-            string sql = @"select b.useremail mail, b.userid::text treeid, b.username treename, a1.deptname,1 nodetype,b.usericon::uuid icon 
-             from crm_sys_account_userinfo_relate a inner join crm_sys_userinfo b on a.userid = b.userid 
-             left join crm_sys_department a1 on a1.deptid = a.deptid 
-             where a.recstatus = 1 and b.useremail is not null  and useremail!= '' 
-             {0} order by b.username";
+            string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
+                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.useremail is not null  and a.useremail!= '' 
+                UNION all 
+                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid ) x
+                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                left join crm_sys_department d on d.deptid=ur.deptid
+                 where ur.recstatus = 1 {0}
+                order by x.username";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(keyword))
             {
-                condition = string.Format(" and b.username like '%{0}%'", keyword);
+                condition = string.Format(" and x.username like '%{0}%'", keyword);
 
             }
             string newSql = string.Format(sql, condition);
