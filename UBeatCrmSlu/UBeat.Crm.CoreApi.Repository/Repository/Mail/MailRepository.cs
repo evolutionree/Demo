@@ -752,10 +752,10 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             return ExecuteQueryByPaging<AttachmentChooseListMapper>(string.Format(sql, ruleSql, whereSql), param.ToArray(), entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex); ;
         }
 
-        public ReceiveMailRelatedMapper GetUserReceiveMailTime(int userId)
+        public ReceiveMailRelatedMapper GetUserReceiveMailTime(string mailAddress, int userId)
         {
-            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid ORDER BY  receivetime desc LIMIT 1";
-            return DataBaseHelper.QuerySingle<ReceiveMailRelatedMapper>(sql, new { UserId = userId });
+            var sql = @"SELECT * FROM crm_sys_mail_receivemailrelated WHERE userid=@userid and mailaddress=@mailaddress ORDER BY  receivetime desc LIMIT 1";
+            return DataBaseHelper.QuerySingle<ReceiveMailRelatedMapper>(sql, new { UserId = userId, MailAddress = mailAddress });
         }
 
         public List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId)
@@ -787,37 +787,65 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
         public OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null)
         {
-            var sql = @" update crm_sys_mail_sendrecord set status=@mailstatus where mailid=@mailid;";
-            var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=1004";
-            var mailCatalogChangeSql = @" update crm_sys_mail_catalog_relation set catalogid=@catalogid where mailid=@mailid;";
-            var param = new DbParameter[]
+
+            if (dbTrans == null)
             {
+                DbConnection conn = DBHelper.GetDbConnect();
+                if (conn.State == ConnectionState.Closed)
+                {
+                    conn.Open();
+                }
+                dbTrans = conn.BeginTransaction();
+            }
+            try
+            {
+                var sql = @" update crm_sys_mail_sendrecord set status=@mailstatus where mailid=@mailid;";
+                var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=1004";
+                var mailCatalogChangeSql = @" update crm_sys_mail_catalog_relation set catalogid=@catalogid where mailid=@mailid;";
+                var param = new DbParameter[]
+                {
                 new NpgsqlParameter("mailstatus",mailStatus),
                 new NpgsqlParameter("mailid",mailId)
-            };
-            int count = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
-            if (count > 0)
-            {
-                var arg = new
-                {
-                    UserId = userId
                 };
-                var catalogId = DataBaseHelper.QuerySingle<Guid>(mailCatalogSql, arg);
-                if (catalogId == Guid.Empty)
-                    throw new Exception("该用户没有已发送目录");
-                param = new DbParameter[]
-                {
-                    new NpgsqlParameter("catalogid",catalogId),
-                    new NpgsqlParameter("mailid",mailId)
-                };
-                count = DBHelper.ExecuteNonQuery(dbTrans, mailCatalogChangeSql, param, CommandType.Text);
+
+                int count = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
                 if (count > 0)
                 {
-                    return new OperateResult
+                    var arg = new
                     {
-                        Flag = 1
+                        UserId = userId
                     };
+                    var catalogId = DataBaseHelper.QuerySingle<Guid>(mailCatalogSql, arg);
+                    if (catalogId == Guid.Empty)
+                        throw new Exception("该用户没有已发送目录");
+                    param = new DbParameter[]
+                    {
+                    new NpgsqlParameter("catalogid",catalogId),
+                    new NpgsqlParameter("mailid",mailId)
+                    };
+                    count = DBHelper.ExecuteNonQuery(dbTrans, mailCatalogChangeSql, param, CommandType.Text);
+                    if (count > 0)
+                    {
+                        return new OperateResult
+                        {
+                            Flag = 1
+                        };
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                dbTrans.Rollback();
+                return new OperateResult
+                {
+                    Flag = 1
+                };
+            }
+            finally
+            {
+                dbTrans.Commit();
+                dbTrans.Dispose();
+
             }
             return new OperateResult
             {
@@ -963,7 +991,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                 " from (select a.reccreated,c.*,u.usericon from crm_sys_mail_mailbody a " +
                 " inner join crm_sys_mail_sendrecord b on a.recid=b.mailid " +
                 " inner join crm_sys_mail_senderreceivers c ON c.mailid = b.mailid " +
-                " left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and a.recmanager =@userId ) x " +
+                " left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and c.displayname is not null and c.displayname!='' and a.recmanager =@userId ) x " +
                 " group by x.mailaddress,x.usericon,displayname order by max(reccreated) DESC ";
             var param = new DbParameter[]
             {
