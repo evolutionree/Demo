@@ -58,52 +58,115 @@ namespace UBeat.Crm.CoreApi.Services.Services
             public ReceiveEMailMapper Entity { get; set; }
             public IList<UserMailInfo> UserMailInfoLst { get; set; }
         }
-        #region 定时接收邮件
         private static int _receiveThreads;
         private static int _writeThreads;
-        // 任务队列
-        private static Queue<MimeMessage> _tasks = new Queue<MimeMessage>();
-        private Queue<Thread> _wordThreads;
-        private bool _isQuit = false;//是否退出
-        // 为保证线程安全，使用一个锁来保护_task的访问
-        private readonly static object _locker = new object();
-        // 通过 _wh 给工作线程发信号
-        private static EventWaitHandle _wh = new AutoResetEvent(false);
-        void CreateThreadPool(int i)
-        {
-                _wordThreads = new Queue<Thread>();
-            lock (_wordThreads)
-            {
-                for (int j = 0; j < i; j++)
-                {
-                    Thread workthread = new Thread(DequeueMimeMessageWork);
-                    workthread.IsBackground = true;
-                    _wordThreads.Enqueue(workthread);
-                }
-            }
-        }
-        void StartTask(int userId)
-        {
-            if (_wordThreads == null || _wordThreads.Count == 0) return;
-            foreach (var thr in _wordThreads)
-            {
-                thr.Start(userId);
-            }
-        }
-        void AddFinishFlag()
-        {
-            _tasks.Enqueue(null);//添加结束标志
-        }
-
-
-        #endregion
         static EMailServices()
         {
             var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("ReceiveMailConfig");
             _receiveThreads = config.GetValue<int>("ReceiveThreads");
             _writeThreads = config.GetValue<int>("WriteThreads");
         }
+        #region 定时接收邮件
+        class ThreadPoolManager
+        {
+            Action<MimeMessage, Int32> _callBack;
+            public ThreadPoolManager(int thrNum, Action<MimeMessage, Int32> callBack)
+            {
+                _tasks = _tasks = new Queue<MimeMessage>();
+                _wh = new AutoResetEvent(false);
+                _callBack = callBack;
+                CreateThreadPool(thrNum);
+            }
+            // 任务队列
+            private Queue<MimeMessage> _tasks;
+            private Queue<Thread> _wordThreads;
+            private bool _isQuit = false;//是否退出
+                                         // 为保证线程安全，使用一个锁来保护_task的访问
+            private readonly static object _locker = new object();
+            // 通过 _wh 给工作线程发信号
+            private EventWaitHandle _wh;
+            void CreateThreadPool(int i)
+            {
+                _wordThreads = new Queue<Thread>();
+                lock (_wordThreads)
+                {
+                    for (int j = 0; j < i; j++)
+                    {
+                        Thread workthread = new Thread(DequeueWork);
+                        workthread.IsBackground = true;
+                        _wordThreads.Enqueue(workthread);
+                    }
+                }
+            }
+            public void StartTask(int userId)
+            {
+                if (_wordThreads == null || _wordThreads.Count == 0) return;
+                foreach (var thr in _wordThreads)
+                {
+                    thr.Start(userId);
+                }
+            }
+            void AddFinishFlag()
+            {
+                _tasks.Enqueue(null);//添加结束标志
+            }
 
+
+            #endregion
+
+            /// <summary>执行工作</summary>
+            void DequeueWork(object state)
+            {
+                int userId = (int)state;
+                while (true)
+                {
+                    MimeMessage work = null;
+                    lock (_locker)
+                    {
+                        try
+                        {
+                            if (_tasks.Count > 0)
+                            {
+                                work = _tasks.Dequeue(); // 有任务时，出列任务
+
+                                if (work == null)  // 退出机制：当遇见一个null任务时，代表任务结束
+                                {
+                                    _isQuit = true;
+                                    _wh.Dispose();
+                                    _wordThreads.Clear();
+                                    return;
+                                }
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            _tasks.Clear();
+                        }
+                    }
+
+                    if (work != null)
+                        _callBack.Invoke(work, userId);  // 任务不为null时，处理并保存数据
+                    else
+                    {
+                        if (!_isQuit)
+                            _wh.WaitOne();   // 没有任务了，等待信号
+                        else
+                            return;
+                    }
+                }
+            }
+            /// <summary>插入任务</summary>
+            public void EnqueueTask(IList<MimeMessage> msg)
+            {
+                foreach (var tmp in msg)
+                {
+                    _tasks.Enqueue(tmp);
+                }
+                AddFinishFlag();
+                _wh.Set();  // 给工作线程发信号
+            }
+
+        }
 
         #region 定时收取邮件
 
@@ -111,18 +174,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             IList<UserMailInfo> userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-
-            CreateThreadPool(_receiveThreads);
-            StartTask(userNumber);
-            EnqueueMimeMessageTask(new DataWrapper
+            ThreadPoolManager thrManager = new ThreadPoolManager(_writeThreads, SaveRecMailDataInDb);
+            thrManager.StartTask(userNumber);
+            foreach (var userMailInfo in userMailInfoLst)
             {
-                Entity = entity,
-                UserMailInfoLst = userMailInfoLst
-            });
+                if (userMailInfo.EncryptPwd == null)
+                    continue;
+                SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
+                bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+                thrManager.EnqueueTask(taskResult);
+            }
             return new OutputResult<object>
             {
-                Status = 0,
+                Status = 0
             };
+
         }
         void SaveRecMailDataInDb(MimeMessage msg, int userNumber)
         {
@@ -188,66 +255,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
             _dynamicEntityRepository.DynamicAdd(null, Guid.Parse(_entityId), fieldData, extraData, userNumber);
         }
-        /// <summary>执行工作</summary>
-        void DequeueMimeMessageWork(object state)
-        {
-            int userId = (int)state;
-            while (true)
-            {
-                MimeMessage work = null;
-                lock (_locker)
-                {
-                    try
-                    {
-                        if (_tasks.Count > 0)
-                        {
-                            work = _tasks.Dequeue(); // 有任务时，出列任务
-
-                            if (work == null)  // 退出机制：当遇见一个null任务时，代表任务结束
-                            {
-                                _isQuit = true;
-                                _wh.Dispose();
-                                _wordThreads.Clear();
-                                return;
-                            }
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        _tasks.Clear();
-                    }
-                }
-
-                if (work != null)
-                    SaveRecMailDataInDb(work, userId);  // 任务不为null时，处理并保存数据
-                else
-                {
-                    if (!_isQuit)
-                        _wh.WaitOne();   // 没有任务了，等待信号
-                    else
-                        return;
-                }
-            }
-        }
-        /// <summary>插入任务</summary>
-        void EnqueueMimeMessageTask(DataWrapper dataWrapper)
-        {
-            foreach (var userMailInfo in dataWrapper.UserMailInfoLst)
-            {
-                if (userMailInfo.EncryptPwd == null)
-                    continue;
-                SearchQuery searchQuery = BuilderSearchQuery((SearchQueryEnum)dataWrapper.Entity.Conditon, dataWrapper.Entity.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
-                bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
-                var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
-                foreach (var tmp in taskResult)
-                    _tasks.Enqueue(tmp);  // 向队列中插入任务 
-            }
-            AddFinishFlag();
-            _wh.Set();  // 给工作线程发信号
-        }
 
 
         #endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
