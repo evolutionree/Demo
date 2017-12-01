@@ -14,6 +14,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         public string Remark { get; set; }
         public string RelativeObj { get; set; }
         public string Name { get; set; }
+        public int RecStatus { get; set; }
+        public SQLObjectBelongSysEnum belongTo { get; set; }
         public void checkEmpty() {
             if (SqlPath == null) SqlPath = "";
             if (LastVersion == null) LastVersion = "";
@@ -43,8 +45,24 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
 
 
     }
+    public enum SQLObjectBelongSysEnum {
+        Platform = 1,
+        Product = 2,
+        Project = 3,
+        Other = 4,
+        All = 0
+    }
     public class SQLReflectQueryModel {
         public string[] RecIds { get; set; }
+    }
+
+    /// <summary>
+    /// 脚本导出的参数对象
+    /// </summary>
+    public class SQLExportParamInfo {
+        public SQLObjectBelongSysEnum ExportSys { get; set; }
+        public InitOrUpdate IsInit { get; set; }
+        public StructOrData IsStruct { get; set; }
     }
     public enum SQLObjectTypeEnum {
         All =0,
