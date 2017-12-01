@@ -991,7 +991,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                 " from (select a.reccreated,c.*,u.usericon from crm_sys_mail_mailbody a " +
                 " inner join crm_sys_mail_sendrecord b on a.recid=b.mailid " +
                 " inner join crm_sys_mail_senderreceivers c ON c.mailid = b.mailid " +
-                " left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and a.recmanager =@userId ) x " +
+                " left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and c.displayname is not null and c.displayname!='' and a.recmanager =@userId ) x " +
                 " group by x.mailaddress,x.usericon,displayname order by max(reccreated) DESC ";
             var param = new DbParameter[]
             {
