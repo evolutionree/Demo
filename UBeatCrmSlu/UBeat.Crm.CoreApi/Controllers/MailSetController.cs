@@ -26,14 +26,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("catalogtree")]
-        public OutputResult<object> GetCatalogTree([FromBody] CatalogModel dynamicModel = null) {
+        public OutputResult<object> GetCatalogTree([FromBody] CatalogModel dynamicModel = null)
+        {
             int userid = UserId;
             if (dynamicModel != null && dynamicModel.SearchUserId != 0)
             {
                 userid = dynamicModel.SearchUserId;
             }
 
-            List<MailCatalogInfo> retList = _eMailServices.GetMailCataLog(dynamicModel.CatalogType, dynamicModel.CatalogName,userid);
+            List<MailCatalogInfo> retList = _eMailServices.GetMailCataLog(dynamicModel.CatalogType, dynamicModel.CatalogName, userid);
             return new OutputResult<object>(retList);
         }
 
@@ -102,7 +103,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("updatepersonalcatalog")]
-        public OutputResult<object> UpdatePersonalCatalog([FromBody] AddCatalogModel dynamicModel) {
+        public OutputResult<object> UpdatePersonalCatalog([FromBody] AddCatalogModel dynamicModel)
+        {
             int userid = UserId;
             if (dynamicModel == null) { return new OutputResult<object>("参数异常", "参数异常", -1); }
             OutputResult<object> ret = _eMailServices.UpdatePersonalCatalog(userid, dynamicModel);
@@ -116,23 +118,26 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("movecatalog")]
-        public OutputResult<object> MovePersonCatalog([FromBody] MoveCatalogModel paramInfo) {
-            
+        public OutputResult<object> MovePersonCatalog([FromBody] MoveCatalogModel paramInfo)
+        {
+
             if (paramInfo == null) return new OutputResult<object>("参数异常", "参数异常", -1);
             return _eMailServices.MovePersonalCatalog(paramInfo, UserId);
         }
 
         [HttpPost]
         [Route("transfercatalog")]
-        public OutputResult<object> TransferCatalog([FromBody] TransferCatalogModel paramInfo) {
+        public OutputResult<object> TransferCatalog([FromBody] TransferCatalogModel paramInfo)
+        {
             if (paramInfo == null) return new OutputResult<object>("参数异常", "参数异常", -1);
             return _eMailServices.TransferCatalog(paramInfo, UserId);
         }
 
         [HttpPost]
         [Route("toordercatalog")]
-        public OutputResult<object> ToOrderCatalog([FromBody] OrderCatalogModel dynamicModel) {
-            if (dynamicModel == null|| dynamicModel.doType==null|| dynamicModel.recId==null)
+        public OutputResult<object> ToOrderCatalog([FromBody] OrderCatalogModel dynamicModel)
+        {
+            if (dynamicModel == null || dynamicModel.doType == null || dynamicModel.recId == null)
                 new OutputResult<object>("参数异常", "参数异常", -1);
             return _eMailServices.ToOrderCatalog(dynamicModel);
         }
@@ -147,7 +152,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("getwebmaillayout")]
-        public OutputResult<object> GetWebMailLayout (){
+        public OutputResult<object> GetWebMailLayout()
+        {
             int userid = UserId;
             WebMailPersonelLayoutInfo ret = new WebMailPersonelLayoutInfo()
             {
@@ -167,7 +173,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("savewebmaillayout")]
-        public OutputResult<object> SaveWebMailLayaout([FromBody] WebMailPersonelLayoutInfo layoutInfo) {
+        public OutputResult<object> SaveWebMailLayaout([FromBody] WebMailPersonelLayoutInfo layoutInfo)
+        {
             if (layoutInfo == null) { return new OutputResult<object>("参数异常", "参数异常", -1); }
             layoutInfo.UserId = UserId;
             return new OutputResult<object>(layoutInfo);
@@ -186,15 +193,15 @@ namespace UBeat.Crm.CoreApi.Controllers
                 recid = new Guid("10e59749-28fa-42f5-9ce5-9f2b6cd70834"),
                 accountid = "yinjunyu@renqiankeji.com",
                 recname = "销售1",
-                inwhitelist = 1
+                inwhitelist = "1"
             };
             PersonalSign ret = new PersonalSign()
             {
-                recname="签名1",
-                signcontent="xxx 公司",
-                devicetype=1,
-                recid= new Guid("4024dd18-b8de-47ee-83a4-1ee7a46eeb05"),
-                mailbox= ret1
+                recname = "签名1",
+                signcontent = "xxx 公司",
+                devicetype = 1,
+                recid = new Guid("4024dd18-b8de-47ee-83a4-1ee7a46eeb05"),
+                mailbox = ret1
             };
             List<PersonalSign> list = new List<PersonalSign>();
             list.Add(ret);
@@ -230,7 +237,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("指定邮箱拥有人", dynamicModel);
             OutputResult<object> result = new OutputResult<object>();
-             _eMailServices.SaveMailOwner(dynamicModel.RecIds, dynamicModel.NewUserId);
+            _eMailServices.SaveMailOwner(dynamicModel.RecIds, dynamicModel.NewUserId);
             result.Message = "指定成功";
             return result;
         }
@@ -244,7 +251,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("savewhitelist")]
         public OutputResult<object> SaveWhiteList([FromBody] WhiteListModel dynamicModel = null)
         {
-            if (dynamicModel == null|| dynamicModel.RecIds==null)
+            if (dynamicModel == null || dynamicModel.RecIds == null)
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("设置邮箱白名单", dynamicModel);
             OutputResult<object> result = new OutputResult<object>();
