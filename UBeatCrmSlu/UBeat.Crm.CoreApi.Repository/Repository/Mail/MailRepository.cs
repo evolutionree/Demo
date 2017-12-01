@@ -1005,11 +1005,16 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>       
-        public PageDataInfo<MailUserMapper> GetCustomerContact(int pageIndex, int pageSize, int userId)
+        public PageDataInfo<MailUserMapper> GetCustomerContact(string keyword,int pageIndex, int pageSize, int userId)
         {
             var executeSql = "SELECT a.recid,a.email EmailAddress,a.recname as name,b.recname customer,COALESCE(a.headicon,'00000000-0000-0000-0000-000000000000')::uuid icon" +
                 " FROM crm_sys_contact a inner join crm_sys_customer b on(a.belcust ->> 'id') ::uuid = b.recid " +
                 " where a.email is not null and a.email != ''  and a.recstatus = 1 and b.recstatus = 1 and b.recmanager = @userid";
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                executeSql = string.Format(executeSql+ " and a.recname like '%{0}%'", keyword);
+
+            }
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userId", userId)
