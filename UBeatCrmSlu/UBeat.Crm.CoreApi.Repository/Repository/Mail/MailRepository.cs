@@ -650,7 +650,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         public PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId)
         {
 
-            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid,body.receivedtime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0} {1}";
+            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid,body.receivedtime,body.senttime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0} {1}";
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件

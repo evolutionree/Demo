@@ -607,6 +607,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             fieldData.Add("attachcount", msgResult.Msg.Attachments.Count());//邮件附件
             fieldData.Add("urgency", msgResult.Msg.Attachments.Count());//邮件优先级          
             fieldData.Add("senttime", DateTime.Now);//邮件优先级
+            fieldData.Add("isread", 1);//邮件优先级
             fieldData.Add("mongoid", string.Join(";", msgResult.AttachFileRecord.Select(t => ((dynamic)t).mongoid)));//文件id
             var extraData = new Dictionary<string, object>();            //额外数据
             extraData.Add("relatedmailuser", BuilderSenderReceivers(msgResult.Msg));
