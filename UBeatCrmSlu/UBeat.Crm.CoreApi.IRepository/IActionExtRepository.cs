@@ -11,7 +11,7 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
         List<ActionExtModel> GetActionExtData();
 
-        dynamic ExcuteActionExt(DbTransaction transaction, string funcname,object basicParamData, int usernumber);
+        dynamic ExcuteActionExt(DbTransaction transaction, string funcname,object basicParamData, object preActionResult,object actionResult,int usernumber);
 
       
 

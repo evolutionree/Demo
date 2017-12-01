@@ -70,31 +70,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
         class ThreadPoolManager
         {
             Action<MimeMessage, Int32> _callBack;
-            public ThreadPoolManager(int thrNum, Action<MimeMessage, Int32> callBack)
+            public ThreadPoolManager(Action<MimeMessage, Int32> callBack)
             {
                 _tasks = _tasks = new Queue<MimeMessage>();
                 _wh = new AutoResetEvent(false);
                 _callBack = callBack;
-                CreateThreadPool(thrNum);
+
             }
             // 任务队列
             private Queue<MimeMessage> _tasks;
-            private Queue<Thread> _wordThreads;
+            private Queue<Task> _wordThreads;
             private bool _isQuit = false;//是否退出
                                          // 为保证线程安全，使用一个锁来保护_task的访问
             private readonly static object _locker = new object();
             // 通过 _wh 给工作线程发信号
             private EventWaitHandle _wh;
-            void CreateThreadPool(int i)
+            public void CreateThreadPool(int i, int userId)
             {
-                _wordThreads = new Queue<Thread>();
+                _wordThreads = new Queue<Task>();
                 lock (_wordThreads)
                 {
                     for (int j = 0; j < i; j++)
                     {
-                        Thread workthread = new Thread(DequeueWork);
-                        workthread.IsBackground = true;
-                        _wordThreads.Enqueue(workthread);
+                        Task task = new Task((state) =>
+                        {
+                            DequeueWork(state);
+                        }, userId);
+                        _wordThreads.Enqueue(task);
                     }
                 }
             }
@@ -103,8 +105,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (_wordThreads == null || _wordThreads.Count == 0) return;
                 foreach (var thr in _wordThreads)
                 {
-                    thr.Start(userId);
+                    thr.Start();
                 }
+            }
+
+            public void WaitAllTask()
+            {
+                try
+                {
+                    Task.WaitAll(_wordThreads.ToArray());
+                }
+                catch (AggregateException ex)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    // enumerate the exceptions that have been aggregated
+                    foreach (Exception inner in ex.InnerExceptions)
+                    {
+                        sb.Append(inner.Message);
+                    }
+                    throw new Exception(sb.ToString());
+                }
+
             }
             void AddFinishFlag()
             {
@@ -178,7 +199,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             IList<UserMailInfo> userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-            ThreadPoolManager thrManager = new ThreadPoolManager(_writeThreads, SaveRecMailDataInDb);
+            ThreadPoolManager thrManager = new ThreadPoolManager(SaveRecMailDataInDb);
+            thrManager.CreateThreadPool(_receiveThreads, userNumber);
             thrManager.StartTask(userNumber);
             foreach (var userMailInfo in userMailInfoLst)
             {
@@ -189,6 +211,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                 thrManager.EnqueueTask(taskResult);
             }
+            thrManager.WaitAllTask();
             return new OutputResult<object>
             {
                 Status = 0
@@ -263,22 +286,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         #endregion
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         /// <summary>
         /// 转移客户的目录，只能移动客户目录
