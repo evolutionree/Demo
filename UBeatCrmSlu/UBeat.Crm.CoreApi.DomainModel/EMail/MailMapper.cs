@@ -65,7 +65,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
             {
                 RuleFor(d => d.FromAddress).NotEmpty().WithMessage("发件人地址不能为空");
                 RuleFor(d => d.FromAddress).Matches(EmailRegex).WithMessage("发件人地址格式不符合邮箱格式");
-                RuleFor(d => d.FromName).NotEmpty().WithMessage("发件人昵称不能为空");
                 RuleFor(d => d.ToAddress).NotNull().Must(d => d.Count > 0).WithMessage("收件人不能为空");
                 RuleFor(d => d.ToAddress).Must(ValidAddress).WithMessage("发件人信息异常");
                 RuleFor(d => d.CCAddress).Must(ValidAddress).WithMessage("抄送人信息异常");
