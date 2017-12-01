@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// 昵称
         /// </summary>
         public string recname { get; set; }
-        public int inwhitelist { get; set; }
+        public string inwhitelist { get; set; }
         public string mailserver { get; set; }
         public int mailprovider { get; set; }
         public string imapaddress { get; set; }
