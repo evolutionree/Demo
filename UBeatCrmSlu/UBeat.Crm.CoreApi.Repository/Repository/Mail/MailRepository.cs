@@ -561,10 +561,10 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             string sql = @" Select                               
                                         body.recid mailid, 
-                                        (SELECT row_to_json(t) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender, 
-                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers, 
-                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccers, 
-                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers, 
+                                        (SELECT row_to_json(t) FROM (SELECT mailaddress as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender, 
+                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers, 
+                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccers, 
+                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers, 
                                         body.title, 
                                         body.mailbody as summary, 
                                         body.senttime, 
@@ -643,7 +643,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             }
 
-            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime  desc "), param, entity.PageSize, entity.PageIndex);
+            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime ,body.senttime desc "), param, entity.PageSize, entity.PageIndex);
         }
 
 
@@ -725,7 +725,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             }
 
-            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime desc "), param, entity.PageSize, entity.PageIndex);
+            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, "  ORDER BY body.receivedtime ,body.senttime desc "), param, entity.PageSize, entity.PageIndex);
         }
 
         public PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId)
