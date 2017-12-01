@@ -1320,7 +1320,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int pageSize = 10;
             if (dynamicModel != null && dynamicModel.PageSize > 0)
                 pageSize = dynamicModel.PageSize;
-            return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.PageIndex, pageSize, userId));
+            return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.SearchKey,dynamicModel.PageIndex, pageSize, userId));
         }
         /// <summary>
         /// 获取内部往来人员列表
