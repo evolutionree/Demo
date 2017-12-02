@@ -651,28 +651,31 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
                     {
                         // Functions
                         var functions_sql = string.Format(@"
-                                SELECT f.funcid,f.funcname,f.funccode,f.parentid,f.entityid,f.devicetype,f.rectype,f.relationvalue,f.routepath 
+                                SELECT f.funcid,f.funcname,f.funccode,f.parentid,f.entityid,f.devicetype,f.rectype,f.relationvalue,f.routepath , row_to_json(r) ""Rule""
                                 FROM crm_sys_function AS f 
-                                WHERE funcid NOT IN (  SELECT functionid FROM crm_sys_vocation_function_relation 
-                                WHERE vocationid in (@vocationid) ) and f.recstatus=1 ;");
+                                    left outer join (select * from crm_sys_vocation_function_rule_relation  where vocationid in (@vocationid) )  as vr 
+                                         on   vr.functionid = f.funcid
+                                    left outer join crm_sys_rule AS r on  vr.ruleid=r.ruleid
+                                WHERE f.funcid NOT IN (  SELECT functionid FROM crm_sys_vocation_function_relation 
+                                WHERE  vocationid in (@vocationid) ) and f.recstatus=1 ;");
                         var functions_sqlParameters = new List<DbParameter>();
                         functions_sqlParameters.Add(new NpgsqlParameter("vocationid", voc.VocationId));
                         var fuctions = DBHelper.ExecuteQuery<FunctionInfo>(tran, functions_sql, functions_sqlParameters.ToArray());
 
-                        foreach (var fun in fuctions)
-                        {
-                            // RuleInfo
-                            var rule_sql = string.Format(@"
-                                SELECT r.ruleid,r.rulename,r.entityid,r.rulesql 
-                                FROM crm_sys_rule AS r
-                                INNER JOIN crm_sys_vocation_function_rule_relation AS vr ON vr.ruleid=r.ruleid
-                                WHERE r.recstatus=1 AND vr.functionid=@functionid AND vr.vocationid=@vocationid");
-                            var rule_sqlParameters = new List<DbParameter>();
-                            rule_sqlParameters.Add(new NpgsqlParameter("functionid", fun.FuncId));
-                            rule_sqlParameters.Add(new NpgsqlParameter("vocationid", voc.VocationId));
-                            var rules = DBHelper.ExecuteQuery<RuleInfo>(tran, rule_sql, rule_sqlParameters.ToArray());
-                            fun.Rule = rules.FirstOrDefault();
-                        }
+                        //foreach (var fun in fuctions)
+                        //{
+                        //    // RuleInfo
+                        //    var rule_sql = string.Format(@"
+                        //        SELECT r.ruleid,r.rulename,r.entityid,r.rulesql 
+                        //        FROM crm_sys_rule AS r
+                        //        INNER JOIN crm_sys_vocation_function_rule_relation AS vr ON vr.ruleid=r.ruleid
+                        //        WHERE r.recstatus=1 AND vr.functionid=@functionid AND vr.vocationid=@vocationid");
+                        //    var rule_sqlParameters = new List<DbParameter>();
+                        //    rule_sqlParameters.Add(new NpgsqlParameter("functionid", fun.FuncId));
+                        //    rule_sqlParameters.Add(new NpgsqlParameter("vocationid", voc.VocationId));
+                        //    var rules = DBHelper.ExecuteQuery<RuleInfo>(tran, rule_sql, rule_sqlParameters.ToArray());
+                        //    fun.Rule = rules.FirstOrDefault();
+                        //}
 
                         voc.Functions = fuctions;
 
