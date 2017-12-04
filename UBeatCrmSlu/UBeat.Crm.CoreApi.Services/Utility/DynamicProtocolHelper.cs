@@ -488,7 +488,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         {
                             if (field.IsLike == 0)
                             {
-                                result.FieldData = string.Format("(t.{0}->>'id')='{1}'", columnKey, dataStr);
+                                result.FieldData = string.Format("(e.{0}->>'id')='{1}'", columnKey, dataStr);
                             }
                             else
                             {
@@ -500,7 +500,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         {
                             if (field.IsLike == 0)
                             {
-                                result.FieldData = string.Format("(t.{0}->>'id') in ('{1}')", columnKey, dataStr.Replace(",", "','"));
+                                result.FieldData = string.Format("(e.{0}->>'id') in ('{1}')", columnKey, dataStr.Replace(",", "','"));
                             }
                             else
                             {
