@@ -74,7 +74,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public PageDataInfo<MailBodyMapper> InnerToAndFroListMail(InnerToAndFroMailMapper entity, int userId)
         {
-            string strSQL = @"SELECT " +
+            string strSQL = @" SELECT " +
                                         "body.recid mailid," +
                                         "(SELECT row_to_json(t) FROM (SELECT mailaddress as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
@@ -88,7 +88,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
-                                        " FROM crm_sys_mail_mailbody body Where body.recstatus=1 AND body.recid IN (" +
+                                        " FROM crm_sys_mail_mailbody body Where body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN(SELECT recid FROM crm_sys_mail_catalog WHERE recstatus = 1 AND viewuserid = @userid AND ctype != 1003) AND body.recstatus=1 AND body.recid IN (" +
                                         "SELECT DISTINCT tmp.mailid FROM (SELECT * FROM crm_sys_mail_senderreceivers where mailid in(\n" +
                                         "SELECT\n" +
                                         " mailid FROM crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userid) AND ctype=1) ) AS tmp\n" +
@@ -106,7 +106,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "select\n" +
                                         " mailid from crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userid) AND (ctype=2 OR ctype=3 OR ctype=4)) ) AS tmp1\n" +
                                         "ON tmp.mailid=tmp1.mailid" +
-                                        ") {0} ORDER BY body.receivedtime DESC; ";
+                                        ") {0} ORDER BY body.receivedtime DESC)";
             var sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
@@ -960,7 +960,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                 select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid ) x
                 inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                 left join crm_sys_department d on d.deptid=ur.deptid
-                 where ur.recstatus = 1 and d.pdeptid::text=@deptId";
+                 where ur.recstatus = 1 and d.deptid::text=@deptId";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("deptId", deptId)

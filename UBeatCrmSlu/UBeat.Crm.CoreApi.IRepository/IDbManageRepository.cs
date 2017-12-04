@@ -34,6 +34,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<SQLTextModel> getSQLTextList(string objid, InitOrUpdate initorupdate, StructOrData structordata,int userid, DbTransaction tran);
         void deleteSQLTextByObjId(string objid, InitOrUpdate initorupdate, StructOrData structordata, int userid, DbTransaction tran);
         void deleteSQLText(string id, int userid, DbTransaction tran);
-
+        List<SQLTextModel> ListInitSQLForFunc(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId,DbTransaction tran);
+        List<SQLTextModel> ListInitSQLForTable(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId ,DbTransaction tran);
     }
 }

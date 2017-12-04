@@ -196,6 +196,50 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
             }
         }
 
+        public List<SQLTextModel> ListInitSQLForFunc(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId,DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = @"select b.*
+                                from crm_sys_dbmgr_object a inner join crm_sys_dbmgr_sql b on a.""id"" = b.sqlobjid 
+                                where b.initorupdate = 1 and   a.objtype =2";
+                if (exportSys != SQLObjectBelongSysEnum.All) {
+                    strSQL = strSQL + " And a.belongto=" + ((int)exportSys).ToString();
+                }
+                if (isStruct != StructOrData.All) {
+                    strSQL = strSQL + " And b.structordata=" + ((int)isStruct).ToString();
+                }
+                return ExecuteQuery<SQLTextModel>(strSQL, new DbParameter[] { }, tran);
+
+            }
+            catch (Exception ex) {
+                return null;
+            }
+        }
+        public List<SQLTextModel> ListInitSQLForTable(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId,DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = @"select b.*
+                                from crm_sys_dbmgr_object a inner join crm_sys_dbmgr_sql b on a.""id"" = b.sqlobjid 
+                                where b.initorupdate = 1 and   a.objtype =1";
+                if (exportSys != SQLObjectBelongSysEnum.All)
+                {
+                    strSQL = strSQL + " And a.belongto=" + ((int)exportSys).ToString();
+                }
+                if (isStruct != StructOrData.All)
+                {
+                    strSQL = strSQL + " And b.structordata=" + ((int)isStruct).ToString();
+                }
+                return ExecuteQuery<SQLTextModel>(strSQL, new DbParameter[] { }, tran);
+
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
         public SQLObjectModel querySQLObject(string id, int userid, DbTransaction tran)
         {
             try

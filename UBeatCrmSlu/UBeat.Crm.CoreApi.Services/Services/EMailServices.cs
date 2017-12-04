@@ -70,6 +70,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         class ThreadPoolManager
         {
             Action<MimeMessage, Int32> _callBack;
+
             public ThreadPoolManager(Action<MimeMessage, Int32> callBack)
             {
                 _tasks = _tasks = new Queue<MimeMessage>();
@@ -104,9 +105,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     thr.Start();
                 }
+                WaitAllTask();
             }
 
-            public void WaitAllTask()
+            void WaitAllTask()
             {
                 try
                 {
@@ -208,7 +210,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                 thrManager.EnqueueTask(taskResult);
             }
-            thrManager.WaitAllTask();
             return new OutputResult<object>
             {
                 Status = 0
@@ -1321,7 +1322,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int pageSize = 10;
             if (dynamicModel != null && dynamicModel.PageSize > 0)
                 pageSize = dynamicModel.PageSize;
-            return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.SearchKey,dynamicModel.PageIndex, pageSize, userId));
+            return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.SearchKey, dynamicModel.PageIndex, pageSize, userId));
         }
         /// <summary>
         /// 获取内部往来人员列表
