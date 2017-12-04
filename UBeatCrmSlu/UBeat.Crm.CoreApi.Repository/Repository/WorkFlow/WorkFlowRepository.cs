@@ -1004,10 +1004,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             string relFieldSql = string.Empty;
             if (!string.IsNullOrEmpty(relEntityTableName))
             {
-                var relentityFieldSql = @"SELECT array_to_string(
-                                      ARRAY(SELECT 'rel.'||fieldname ||' AS rel'||fieldname FROM crm_sys_entity_fields WHERE entityid =@entityid AND recstatus=1),
-                                      ',')";
+                var relentityFieldSql = @"  SELECT array_to_string(ARRAY(
+                                            SELECT 'rel.'||ef.fieldname ||' AS rel'||ef.fieldname
+                                            FROM pg_attribute AS a 
+                                            LEFT JOIN pg_attrdef f ON f.adrelid = a.attrelid  AND f.adnum = a.attnum
+                                            INNER JOIN crm_sys_entity_fields ef ON ef.fieldname=a.attname 
+                                            WHERE  a.attrelid = @relEntityTableName::regclass	AND ef.entityid=@entityid AND ef.recstatus=1),',')";
                 var relfieldParameters = new List<DbParameter>();
+                relfieldParameters.Add(new NpgsqlParameter("relEntityTableName", relEntityTableName));
                 relfieldParameters.Add(new NpgsqlParameter("entityid", caseInfo.RelEntityId));
 
 

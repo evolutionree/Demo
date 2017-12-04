@@ -117,6 +117,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 else nodeName = flowNodeInfo.NodeName;
 
                                 result.CaseItem.NodeId = nodeid;
+                                result.CaseItem.ColumnConfig = flowNodeInfo.ColumnConfig;
                             }
 
                             result.CaseItem.NodeName = nodeName;
