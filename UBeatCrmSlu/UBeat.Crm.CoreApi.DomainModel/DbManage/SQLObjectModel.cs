@@ -63,6 +63,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         public SQLObjectBelongSysEnum ExportSys { get; set; }
         public InitOrUpdate IsInit { get; set; }
         public StructOrData IsStruct { get; set; }
+        public string FromVersion { get; set; }
     }
     public enum SQLObjectTypeEnum {
         All =0,

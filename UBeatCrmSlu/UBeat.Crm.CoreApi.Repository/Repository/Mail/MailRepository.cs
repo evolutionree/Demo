@@ -960,7 +960,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                 select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid ) x
                 inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                 left join crm_sys_department d on d.deptid=ur.deptid
-                 where ur.recstatus = 1 and d.pdeptid::text=@deptId";
+                 where ur.recstatus = 1 and d.deptid::text=@deptId";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("deptId", deptId)
