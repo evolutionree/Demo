@@ -76,10 +76,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             string strSQL = @"SELECT " +
                                         "body.recid mailid," +
-                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
-                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
-                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccers," +
-                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers," +
+                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccers," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers," +
                                         "body.title," +
                                         "body.mailbody," +
                                         "body.senttime," +
@@ -332,7 +332,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid) attachcount," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT filename,mongoid AS fileid FROM crm_sys_mail_attach WHERE  mailid=body.recid ) t)::jsonb attachinfojson" +
                                         " FROM crm_sys_mail_mailbody body Where body.recid=@mailid ";
-            var senderSql = @"SELECT recname,phone,email,headicon FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 UNION ALL SELECT username,usertel,useremail,usericon FROM crm_sys_userinfo WHERE useremail=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)   AND recstatus=1;";
+            var senderSql = @"SELECT recname,phone,email,headicon FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 UNION SELECT username,usertel,useremail,usericon FROM crm_sys_userinfo WHERE
+               userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1)AND  recstatus=1;";
             var isCustExistsSql = @"Select count(1) From crm_sys_customer Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
             var custSql = @"SELECT crm_func_entity_protocol_data_detail('f9db9d79-e94b-4678-a5cc-aa6e281c1246',
 (SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid,0,@userid);";
