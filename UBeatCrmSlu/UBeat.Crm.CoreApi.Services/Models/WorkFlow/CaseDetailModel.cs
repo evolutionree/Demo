@@ -105,6 +105,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
         public string NodeName { set; get; }
 
+        public object ColumnConfig { set; get; }
 
         /// <summary>
         /// 是否允许拒绝
