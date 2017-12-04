@@ -121,6 +121,56 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return createTableSQL + "\r\n" + ConstraintSQL +"\r\n" + IndexSQL +"\r\n" + TriggerSQL  +"\r\n";
         }
 
+        public OutputResult<object> SaveUpgradeSQL(SQLTextModel paramInfo, int userId)
+        {
+            try
+            {
+                this._dbManageRepository.saveSQLText(paramInfo, userId, null);
+                return new OutputResult<object>("ok");
+            }
+            catch (Exception ex) {
+                return new OutputResult<object>(ex.Message, ex.Message, -1);
+            }
+
+        }
+
+        public OutputResult<object> SaveObject(SQLObjectModel paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            try
+            {
+                this._dbManageRepository.saveSQLObject(paramInfo, userId, tran);
+                return new OutputResult<object>("ok");
+            }
+            catch (Exception ex) {
+                return new OutputResult<object>("", ex.Message, -1);
+            }
+        }
+
+        public string ExportInitSQL(SQLExportParamInfo paramInfo, int userId)
+        {
+            try
+            {
+                List<SQLTextModel> funcsList = this._dbManageRepository.ListInitSQLForFunc(paramInfo.ExportSys, paramInfo.IsStruct, userId, null);
+                List<SQLTextModel> tablesList = this._dbManageRepository.ListInitSQLForTable(paramInfo.ExportSys, paramInfo.IsStruct, userId, null);
+                StringBuilder sb = new StringBuilder();
+                foreach (SQLTextModel item in funcsList) {
+                    if (item.SqlText != null && item.SqlText.Length >0 ) {
+                        sb.AppendLine(item.SqlText);
+                    }
+                }
+                foreach (SQLTextModel item in tablesList) {
+                    if (item.SqlText != null && item.SqlText.Length > 0) {
+                        sb.AppendLine(item.SqlText);
+                    }
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex) {
+            }
+            return "";
+        }
+
         public OutputResult<object> ReflectInitStructSQL(string[] recIds, int userId)
         {
             DbTransaction tran = null;
