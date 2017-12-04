@@ -94,7 +94,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     result.CaseItem = new CaseItemAuditInfo();
 
                     var nowcaseitem = caseitems.Find(m => m.HandleUser == userNumber);
-                    if(nowcaseitem!=null)
+                    if(nowcaseitem!=null&&  (nowcaseitem.ChoiceStatus== ChoiceStatusType.Edit|| nowcaseitem.ChoiceStatus == ChoiceStatusType.AddNode))
                     {
                         if (caseInfo.NodeNum == -1|| caseInfo.AuditStatus== AuditStatusType.Finished|| caseInfo.AuditStatus== AuditStatusType.NotAllowed)
                         {
