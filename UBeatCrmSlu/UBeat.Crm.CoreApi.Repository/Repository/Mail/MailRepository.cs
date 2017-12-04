@@ -319,10 +319,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             var sql = @"SELECT " +
                                         "body.recid mailid," +
-                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
-                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receiversjson," +
-                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccersjson," +
-                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccersjson," +
+                                        "(SELECT row_to_json(t) FROM (SELECT mailaddress address,displayname ,box.nickname  FROM crm_sys_mail_senderreceivers sender LEFT JOIN  crm_sys_mail_mailbox box ON sender.mailaddress = box.accountid   WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname,box.nickname  FROM crm_sys_mail_senderreceivers sender LEFT JOIN  crm_sys_mail_mailbox box ON sender.mailaddress = box.accountid   WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receiversjson," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname ,box.nickname  FROM crm_sys_mail_senderreceivers sender LEFT JOIN  crm_sys_mail_mailbox box ON sender.mailaddress = box.accountid  WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccersjson," +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname,box.nickname  FROM crm_sys_mail_senderreceivers sender LEFT JOIN  crm_sys_mail_mailbox box ON sender.mailaddress = box.accountid  WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccersjson," +
                                         "body.title," +
                                         "body.mailbody," +
                                         "body.senttime," +
@@ -330,6 +330,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.istag," +
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid) attachcount," +
+                                        "(SELECT  mailaddress FROM crm_sys_mail_receivemailrelated WHERE mailid=recid LIMIT 1) frommailaddress," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT filename,mongoid AS fileid FROM crm_sys_mail_attach WHERE  mailid=body.recid ) t)::jsonb attachinfojson" +
                                         " FROM crm_sys_mail_mailbody body Where body.recid=@mailid ";
             var isConExistsSql = @"Select count(1) From crm_sys_contact Where (belcust->>'id') IN (
@@ -881,25 +882,14 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             return DataBaseHelper.Query<MailBoxMapper>(sql, param, CommandType.Text);
         }
         /// <summary>
-        /// 我负责的客户的联系人和内部人员
+        /// 内部人员
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
         public List<InnerUserMailMapper> GetUserMailList(int userId)
         {
-            var sql = @"SELECT userid,useremail FROM crm_sys_userinfo WHERE recstatus=1
-                               UNION 
-                               SELECT owner::int4,accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 " +
-                               "  UNION " +
-                               "SELECT 0,contact.email FROM (SELECT regexp_split_to_table(custids,',') custid,tmp.email FROM ( " +
-                               "SELECT email,(belcust->> 'id') AS custids FROM crm_sys_contact  WHERE recstatus = 1 AND(email IS NOT NULL OR email <> '')" +
-                               ")  AS tmp )  AS contact  WHERE contact.custid::uuid IN(SELECT recid FROM crm_sys_customer WHERE recmanager = @userid)";
-            ;
-            var param = new
-            {
-                UserId = userId
-            };
-            return DataBaseHelper.Query<InnerUserMailMapper>(sql, param, CommandType.Text);
+            var sql = @"SELECT userid,useremail FROM crm_sys_userinfo WHERE recstatus=1;";
+            return DataBaseHelper.Query<InnerUserMailMapper>(sql, CommandType.Text);
         }
         #endregion
         #region  模糊查询我的通讯人员

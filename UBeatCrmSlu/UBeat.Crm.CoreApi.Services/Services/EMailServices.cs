@@ -27,6 +27,7 @@ using System.Data.Common;
 using MailKit;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
+using Microsoft.Extensions.Logging;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -40,9 +41,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
         private readonly IMailCatalogRepository _mailCatalogRepository;
         private readonly IMailRepository _mailRepository;
+        private readonly ILogger<EMailServices> _logger;
         public EMailServices(IMapper mapper, FileServices fileServices, DynamicEntityServices dynamicEntityServices,
             IMailCatalogRepository mailCatalogRepository,
-            IMailRepository mailRepository, IDynamicEntityRepository dynamicEntityRepository)
+            IMailRepository mailRepository, IDynamicEntityRepository dynamicEntityRepository, ILogger<EMailServices> logger)
         {
             _email = new EMail();
             _mapper = mapper;
@@ -51,6 +53,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _mailCatalogRepository = mailCatalogRepository;
             _mailRepository = mailRepository;
             _dynamicEntityRepository = dynamicEntityRepository;
+            _logger = logger;
         }
 
         class DataWrapper
@@ -71,12 +74,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Action<MimeMessage, Int32> _callBack;
 
-            public ThreadPoolManager(Action<MimeMessage, Int32> callBack)
+            ILogger<EMailServices> _logger;
+            public ThreadPoolManager(Action<MimeMessage, Int32> callBack, ILogger<EMailServices> logger)
             {
                 _tasks = _tasks = new Queue<MimeMessage>();
                 _wh = new AutoResetEvent(false);
                 _callBack = callBack;
-
+                _logger = logger;
             }
             // 任务队列
             private Queue<MimeMessage> _tasks;
@@ -104,28 +108,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (var thr in _wordThreads)
                 {
                     thr.Start();
-                }
-                WaitAllTask();
-            }
-
-            void WaitAllTask()
-            {
-                try
-                {
-                    Task.WaitAll(_wordThreads.ToArray());
-                }
-                catch (AggregateException ex)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    // enumerate the exceptions that have been aggregated
-                    foreach (Exception inner in ex.InnerExceptions)
+                    thr.ContinueWith(task =>
                     {
-                        sb.Append(inner.Message);
-                    }
-                    throw new Exception(sb.ToString());
+                        if (task.IsFaulted)
+                        {
+                            foreach (var ex in task.Exception.InnerExceptions)
+                            {
+                                _logger.LogError(ex.Message);
+                            }
+                        }
+                    });
                 }
-
             }
+
             void AddFinishFlag()
             {
                 _tasks.Enqueue(null);//添加结束标志
@@ -198,7 +193,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             IList<UserMailInfo> userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-            ThreadPoolManager thrManager = new ThreadPoolManager(SaveRecMailDataInDb);
+            ThreadPoolManager thrManager = new ThreadPoolManager(SaveRecMailDataInDb, _logger);
             thrManager.CreateThreadPool(_receiveThreads, userNumber);
             thrManager.StartTask(userNumber);
             foreach (var userMailInfo in userMailInfoLst)
@@ -366,20 +361,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+
+        public dynamic ValidSendEMailData(SendEMailModel model, int userNumber)
+        {
+            //校验白名单之类的验证
+            var errors = ValidEmailAddressAuth(model, userNumber);
+            dynamic result = null;
+            if (errors.Count > 0)
+            {
+                var mailInfoCol = errors.Select(t => t.DisplayName + "(" + t.EmailAddress + ")");
+                result = new
+                {
+                    Flag = 0,
+                    TipMsg = string.Join(",", mailInfoCol) + "不是内部人员也不是自己负责客户的联系人，不允许发送，是否继续？",
+                    AddressData = errors
+                };
+                return result;
+            }
+            else
+            {
+                return result = new
+                {
+                    Flag = 1,
+                    TipMsg = "",
+                    AddressData = errors,
+
+                };
+            }
+        }
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
-
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
-            //校验白名单之类的验证
-            var errors = ValidEmailAddressAuth(model, userNumber);
-            if (errors.Count > 0)
-            {
-                return ShowError<object>(string.Join(";", errors.Select(t => t.ErrorMsg)));
-            }
+
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
             if (userMailInfo == null)
                 throw new Exception("缺少发件人邮箱信息");
@@ -814,11 +831,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var mailBox = _mailRepository.GetIsWhiteList(1, userId).FirstOrDefault(t => t.Accountid == model.FromAddress);
             if (mailBox == null)
             {
-                var userMails = _mailRepository.GetUserMailList(userId);
-                foreach (var tmp in model.ToAddress)
+                var custContacts = _mailRepository.GetCustomerContact("", 1, int.MaxValue, userId);
+                var innerContacts = _mailRepository.GetUserMailList(userId);
+                var tmpCol = model.ToAddress.Concat(model.BCCAddress).Concat(model.CCAddress);
+                foreach (var tmp in tmpCol)
                 {
-                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
-                    if (userMail == null)
+                    var custContact = custContacts.DataList.FirstOrDefault(t => t.EmailAddress == tmp.Address);
+                    var innerContact = innerContacts.FirstOrDefault(t => t.UserEMail == tmp.Address);
+                    if (custContact == null && innerContact == null)
                     {
                         errors.Add(new MailError
                         {
@@ -826,39 +846,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             EmailAddress = tmp.Address,
                             ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
                             Status = 0,
-                            ErrorMsg = "发件人不在白名单内，不能发送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
-                        });
-                    }
-                }
-                foreach (var tmp in model.BCCAddress)
-                {
-
-                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
-                    if (userMail == null)
-                    {
-                        errors.Add(new MailError
-                        {
-                            DisplayName = tmp.DisplayName,
-                            EmailAddress = tmp.Address,
-                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-                            Status = 0,
-                            ErrorMsg = "件人不在白名单内，不能密送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
-                        });
-                    }
-                }
-                foreach (var tmp in model.CCAddress)
-                {
-
-                    var userMail = userMails.FirstOrDefault(t => t.UserEMail == tmp.Address);
-                    if (userMail == null)
-                    {
-                        errors.Add(new MailError
-                        {
-                            DisplayName = tmp.DisplayName,
-                            EmailAddress = tmp.Address,
-                            ErrorTime = DateTime.Now.ToString("yyyy-MM-dd hh::mm"),
-                            Status = 0,
-                            ErrorMsg = "发件人不在白名单内，不能抄送(" + tmp.Address + ")给既不是内部人员也不是自己负责的客户对应的联系人"
+                            ErrorMsg = "不是内部人员也不是自己负责客户的联系人"
                         });
                     }
                 }

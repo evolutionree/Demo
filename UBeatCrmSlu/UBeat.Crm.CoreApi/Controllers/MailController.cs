@@ -18,7 +18,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             _emailServices = emailServices;
         }
-
+        /// <summary>
+        /// 发邮件
+        /// </summary>
+        /// <param name="emailServices"></param>
+        [HttpPost]
+        [Route("validsendmaildata")]
+        public dynamic ValidSendEMailData([FromBody]SendEMailModel model = null)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.ValidSendEMailData(model, UserId);
+        }
         /// <summary>
         /// 发邮件
         /// </summary>
