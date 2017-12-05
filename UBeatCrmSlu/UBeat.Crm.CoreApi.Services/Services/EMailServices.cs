@@ -362,7 +362,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
 
-        public dynamic ValidSendEMailData(SendEMailModel model, int userNumber)
+        public dynamic ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
             //校验白名单之类的验证
             var errors = ValidEmailAddressAuth(model, userNumber);
@@ -380,13 +380,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
-                return result = new
+                var outPutResult = SendEMailAsync(model, header, userNumber);
+                if (outPutResult.Status == 0)
                 {
-                    Flag = 1,
-                    TipMsg = "",
-                    AddressData = errors,
-
-                };
+                    return new
+                    {
+                        Status = 0
+                    };
+                }
+                else
+                {
+                    return new
+                    {
+                        Status = 1,
+                        Message = outPutResult.Message
+                    };
+                }
             }
         }
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
