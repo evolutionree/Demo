@@ -525,7 +525,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public UserMailInfo GetUserMailInfo(string fromAddress, int userId)
         {
-            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox Where recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid Where box.owner=@userid ANd accountid=@fromaddress  ";
+            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl,mailserver.wgvhhx FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox Where recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid Where box.owner=@userid ANd accountid=@fromaddress  ";
             string condition = string.Empty;
             var param = new
             {

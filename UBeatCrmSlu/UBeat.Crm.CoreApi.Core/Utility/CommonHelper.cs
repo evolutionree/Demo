@@ -186,5 +186,27 @@ namespace UBeat.Crm.CoreApi.Core.Utility
             Htmlstring.Replace("\r\n", "");
             return Htmlstring;
         }
+
+        /// <summary>
+        /// 获取中英文混排字符串的实际长度(字节数)
+        /// </summary>
+        /// <param name="str">要获取长度的字符串</param>
+        /// <returns>字符串的实际长度值（字节数）</returns>
+        public static int GetStringLength(string str)
+        {
+            if (str.Equals(string.Empty))
+                return 0;
+            int strlen = 0;
+            ASCIIEncoding strData = new ASCIIEncoding();
+            //将字符串转换为ASCII编码的字节数字
+            byte[] strBytes = strData.GetBytes(str);
+            for (int i = 0; i <= strBytes.Length - 1; i++)
+            {
+                if (strBytes[i] == 63)  //中文都将编码为ASCII编码63,即"?"号
+                    strlen++;
+                strlen++;
+            }
+            return strlen;
+        }
     }
 }
