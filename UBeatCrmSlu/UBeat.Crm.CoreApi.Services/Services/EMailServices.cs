@@ -425,12 +425,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
-                    repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
+                    repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber, transaction);
                     return HandleResult(repResult);
                 }
                 catch (Exception ex)
                 {
-                    _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber, transaction);
+                    _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber);
                     return new OutputResult<object>()
                     {
                         Status = 1,
@@ -838,7 +838,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         private string ValidMailSize(string mailBody, int attLenght)
         {
-
+            return "";
         }
 
         /// <summary>

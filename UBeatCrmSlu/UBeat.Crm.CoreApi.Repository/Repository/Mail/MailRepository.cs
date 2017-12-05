@@ -1096,7 +1096,10 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             return DataBaseHelper.QuerySingle<MailBodyMapper>(strSQL, param);
         }
 
-        public dynamic GetMailServer
+        public dynamic GetMailServer()
+        {
+            return null;
+        }
 
         #endregion
 
