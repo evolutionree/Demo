@@ -881,22 +881,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             MailCatalogInfo catalogInfo = _mailCatalogRepository.GetMailCataLogById(dynamicModel.pid, userId, null);
             int Ctype = 3002;
-            if (catalogInfo.CType != MailCatalogType.Personal)
+            if (catalogInfo.CType == MailCatalogType.Personal || catalogInfo.CType == MailCatalogType.PersonalDyn)
             {
+                var catalog = new CUMailCatalogMapper
+                {
+                    CatalogName = dynamicModel.recName,
+                    Ctype = Ctype,
+                    CatalogPId = dynamicModel.pid,
+                };
+                return HandleResult(_mailCatalogRepository.InsertCatalog(catalog, userId));
+            }
+            else {
                 return HandleResult(new OperateResult()
                 {
                     Flag = 0,
-                    Msg = "只有用户个人目录可以添加目录"
+                    Msg = "只有个人目录可以添加目录"
                 });
             }
-
-            var catalog = new CUMailCatalogMapper
-            {
-                CatalogName = dynamicModel.recName,
-                Ctype = Ctype,
-                CatalogPId = dynamicModel.pid,
-            };
-            return HandleResult(_mailCatalogRepository.InsertCatalog(catalog, userId));
         }
 
         /// <summary>
