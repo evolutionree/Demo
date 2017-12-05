@@ -559,7 +559,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 info = new FunctionJsonInfo();
             }
             var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.EntityId);
-
+            if(entityInfo==null)
+                throw new Exception("实体数据不存在");
             webfuncs = info.WebFunctions;
             mobilefuncs = info.MobileFunctions;
             if (info.WebFunctions == null || info.WebFunctions.Count == 0)
@@ -578,7 +579,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>
         public OutputResult<object> SaveFunctionList(SaveFuncsModel dynamicModel, int userNumber)
         {
-            throw new Exception("当前接口当前不开放");
+            
             if (dynamicModel == null)
                 throw new Exception("参数不可为空");
             if (dynamicModel.EntityId == Guid.Empty)
