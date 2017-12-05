@@ -14,6 +14,7 @@ using System.Net;
 using Microsoft.AspNetCore.Http.Headers;
 using Microsoft.Net.Http.Headers;
 using UBeat.Crm.CoreApi.Services.Utility;
+using System.Text;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -294,12 +295,14 @@ namespace UBeat.Crm.CoreApi.Controllers
                     WriteLog(LogLevel.Information, null, string.Format("下载文件【{0}】", fileInfo.FileName));
                     //设置header
                     RequestHeaders requestHeaders = new RequestHeaders(Request.Headers);
-                    Response.ContentType = "application/octet-stream";
-                    Response.Headers.Add("Content-Disposition", "attachment; filename=" + WebUtility.UrlEncode(fileInfo.FileName));
+                   
+                    Response.ContentType = "application/octet-stream; charset=utf-8" ;
+                    Response.Headers.Add("Content-Disposition", string.Format("attachment; filename={0}; filename*=utf-8''{0}", WebUtility.UrlEncode(fileInfo.FileName)));
                     Response.Headers.Add("Accept-Ranges", "bytes");//告诉客户端接受资源为字节
                     Response.Headers.Add("filename", WebUtility.UrlEncode(fileInfo.FileName));
                     Response.Headers.Add("filelength", fileInfo.Length.ToString());
                     Response.Headers.Add("Content-Length", fileInfo.Length.ToString());//添加头文件，指定文件的大小，让浏览器显示文件下载的速度
+                    //Response.Headers.Add("Content-Encoding", encoding);//告诉客户端接受资源为字节
 
                     //获取下载范围
                     RangeItemHeaderValue range = null;
@@ -359,8 +362,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                         readIndex = dataReader.Read(buffer, 0, bufferSize);
                         Response.Body.Write(buffer, 0, buffer.Length);
                     }
-
-                    result = File(Response.Body, "application/octet-stream");
+                    var ss = Response.ContentType.ToString();
+                    result = File(Response.Body, Response.ContentType.ToString());
 
                 }
                 catch (Exception ex)
