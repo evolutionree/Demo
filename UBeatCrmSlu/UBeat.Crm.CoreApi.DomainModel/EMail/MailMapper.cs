@@ -164,6 +164,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string CcersJson { get; set; }
         [JsonIgnore]
         public string BccersJson { get; set; }
+        public string CcersStr { get; set; }
+        public string BccersStr { get; set; }
+        public string ReceiversStr { get; set; }
+        public string SenderStr { get; set; }
 
         public JArray Receivers
         {

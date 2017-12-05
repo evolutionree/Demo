@@ -340,6 +340,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname,box.nickname  FROM crm_sys_mail_senderreceivers sender LEFT JOIN  crm_sys_mail_mailbox box ON sender.mailaddress = box.accountid   WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receiversjson," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname ,box.nickname  FROM crm_sys_mail_senderreceivers sender LEFT JOIN  crm_sys_mail_mailbox box ON sender.mailaddress = box.accountid  WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccersjson," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname,box.nickname  FROM crm_sys_mail_senderreceivers sender LEFT JOIN  crm_sys_mail_mailbox box ON sender.mailaddress = box.accountid  WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccersjson," +
+                                        "body.ccers ccersstr," +
+                                        "body.bccers bccersstr," +
+                                        "body.receivers receiversstr," +
+                                        "body.sender senderstr," +
                                         "body.title," +
                                         "body.mailbody," +
                                         "body.senttime," +

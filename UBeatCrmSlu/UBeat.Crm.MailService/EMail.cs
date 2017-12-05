@@ -58,7 +58,8 @@ namespace UBeat.Crm.MailService
                      try
                      {
                          client.Send(message);
-                         var addressLst = GetUndeliverableAddresses(message);
+                         //      var addressLst = GetUndeliverableAddresses(message);
+                         var asd = client.Verify("yjytest900@customer.local");
                          return message;
                      }
                      catch (ArgumentNullException ex)

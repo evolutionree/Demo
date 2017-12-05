@@ -362,40 +362,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
 
-        public dynamic ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
+        public OutputResult<object> ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
             //校验白名单之类的验证
             var errors = ValidEmailAddressAuth(model, userNumber);
-            dynamic result = null;
             if (errors.Count > 0)
             {
                 var mailInfoCol = errors.Select(t => t.DisplayName + "(" + t.EmailAddress + ")");
-                result = new
+                var errorObj = new
                 {
                     Flag = 0,
                     TipMsg = string.Join(",", mailInfoCol) + "不是内部人员也不是自己负责客户的联系人，不允许发送，是否继续？",
-                    AddressData = errors
+                    AddressTipData = errors
                 };
-                return result;
+                return new OutputResult<object>(errorObj);
             }
             else
             {
                 var outPutResult = SendEMailAsync(model, header, userNumber);
-                if (outPutResult.Status == 0)
+                var errorObj = new
                 {
-                    return new
-                    {
-                        Flag = 0
-                    };
-                }
-                else
-                {
-                    return new
-                    {
-                        Flag = 1,
-                        Message = outPutResult.Message
-                    };
-                }
+                    Flag = 1,
+                    TipMsg = string.Empty
+                };
+                return new OutputResult<object>(errorObj);
             }
         }
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
