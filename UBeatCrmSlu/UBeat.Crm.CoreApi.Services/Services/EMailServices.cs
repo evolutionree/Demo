@@ -28,6 +28,7 @@ using MailKit;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -408,7 +409,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<ExpandoObject> attachFileRecord;//用来批量写db记录的
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
+            string error = ValidMailSize(userMailInfo.Wgvhhx, entity.BodyContent, attachFileRecord);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return ShowError<object>(error);
+            }
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
+
             MimeMessageResult msgResult = new MimeMessageResult
             {
                 Msg = emailMsg,
@@ -425,7 +432,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
-                    repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber, transaction);
+                    repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
                     return HandleResult(repResult);
                 }
                 catch (Exception ex)
@@ -836,9 +843,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return errors;
         }
 
-        private string ValidMailSize(string mailBody, int attLenght)
+        private string ValidMailSize(Int64 limitSize, string bodyContent, List<ExpandoObject> attFiles)
         {
-            return "";
+
+            long kbSize = limitSize * 1024 * 1024;
+            int countSize = CommonHelper.GetStringLength(bodyContent);
+            foreach (var tmp in attFiles)
+            {
+                dynamic dyn = (dynamic)tmp;
+                countSize += dyn.data.Length;
+            }
+            if (kbSize < countSize)
+            {
+                return "发送的邮件大小超出限制";
+            }
+            return string.Empty;
         }
 
         /// <summary>
