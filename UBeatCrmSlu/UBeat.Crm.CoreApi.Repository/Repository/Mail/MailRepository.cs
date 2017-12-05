@@ -39,12 +39,29 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
-                                        " FROM crm_sys_mail_mailbody body Where body.recstatus=1 AND body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  {0} {1} ";
+                                        " FROM crm_sys_mail_mailbody body Where  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  {0} {1} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
             {
                 sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
+                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+            }
+            var validDeleteCatalogSql = @"SELECT count(1) FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid AND ctype = 1006 LIMIT 1; ";
+            var param = new
+            {
+                UserId = userId,
+                CatalogId = paramInfo.Catalog
+            };
+            int isDeleteCatalog = DataBaseHelper.QuerySingle<int>(validDeleteCatalogSql, param);
+            if (isDeleteCatalog > 0)
+            {
+                sqlCondition = "  body.recstatus=0 ";
+                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+            }
+            else
+            {
+                sqlCondition = "  body.recstatus=1 ";
                 sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
 
@@ -210,7 +227,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                    "Update  crm_sys_mail_attach set recstatus=2  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             else
                 sql = "update crm_sys_mail_mailbody set recstatus=0 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                    "update crm_sys_mail_catalog_relation set catalogid=(SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND ctype = 1006 LIMIT 1) where recid IN (select regexp_split_to_table(@mailids,',')::uuid);";
+                    "update crm_sys_mail_catalog_relation set catalogid=(SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND ctype = 1006 LIMIT 1) where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
 
             try
             {
@@ -368,7 +385,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             }
             var countRecord = DataBaseHelper.QuerySingle<int>(isCustExistsSql, param, CommandType.Text);
             List<dynamic> custResult = new List<dynamic>();
-            if (countRecord >0)
+            if (countRecord > 0)
                 custResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(custSql, param, CommandType.Text);
             Dictionary<string, object> dicResult = new Dictionary<string, object>();
             dicResult.Add("maildetail", mailDetail);
@@ -1010,14 +1027,14 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>       
-        public PageDataInfo<MailUserMapper> GetCustomerContact(string keyword,int pageIndex, int pageSize, int userId)
+        public PageDataInfo<MailUserMapper> GetCustomerContact(string keyword, int pageIndex, int pageSize, int userId)
         {
             var executeSql = "SELECT a.recid,a.email EmailAddress,a.recname as name,b.recname customer,COALESCE(a.headicon,'00000000-0000-0000-0000-000000000000')::uuid icon" +
                 " FROM crm_sys_contact a inner join crm_sys_customer b on(a.belcust ->> 'id') ::uuid = b.recid " +
                 " where a.email is not null and a.email != ''  and a.recstatus = 1 and b.recstatus = 1 and b.recmanager = @userid";
             if (!string.IsNullOrEmpty(keyword))
             {
-                executeSql = string.Format(executeSql+ " and a.recname like '%{0}%'", keyword);
+                executeSql = string.Format(executeSql + " and a.recname like '%{0}%'", keyword);
 
             }
             var param = new DbParameter[]
