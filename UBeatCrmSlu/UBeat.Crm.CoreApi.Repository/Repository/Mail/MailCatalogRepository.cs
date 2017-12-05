@@ -188,7 +188,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             {
                 //目标目录
                 int tarIndex = index + 1;
-                if (catalogResult.Count >= tarIndex)
+                if (catalogResult.Count > tarIndex)
                 {
                     tarCatalog = catalogResult[tarIndex];
                 }
