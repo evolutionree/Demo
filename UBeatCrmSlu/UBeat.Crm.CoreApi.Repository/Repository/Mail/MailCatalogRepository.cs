@@ -503,7 +503,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
                 " FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0} " +
                 " UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid " +
-                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid ) " +
+                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid where b.recstatus=1 ) " +
                 " select * from cata where VIEWuserid = @userid";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
@@ -586,8 +586,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public bool checkHasMails(string recid, DbTransaction tran)
         {
-            string strSQL = string.Format("select count(*)  totalcount  from crm_sys_mail_catalog_relation where catalogid = '{0}'", recid);
-            object obj = ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault()["totalcouont"];
+            string strSQL = string.Format("select COALESCE(count(*),0)  totalcount  from crm_sys_mail_catalog_relation where catalogid = '{0}'", recid);
+            List<Dictionary<string,object>> list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
+            object obj = null;
+            if (list.Count > 0)
+                obj = list.FirstOrDefault()["totalcount"]; 
             if (obj == null) return false;
             int totalCount = 0;
             int.TryParse(obj.ToString(), out totalCount);

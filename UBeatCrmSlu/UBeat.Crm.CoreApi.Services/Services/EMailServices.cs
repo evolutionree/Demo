@@ -344,20 +344,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbTransaction tran = null;
             MailCatalogInfo catalogInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.recId, userId, tran);
             if (catalogInfo == null) throw (new Exception("无法获取目录信息"));
-            if (catalogInfo.CType != MailCatalogType.Personal) throw (new Exception("只能移动个人目录"));
-            if (catalogInfo.UserId != userId) throw (new Exception("只能移动用户自己的目录"));
-            MailCatalogInfo currentParantInfo = _mailCatalogRepository.GetMailCataLogById(catalogInfo.PId, userId, tran);
+            if (catalogInfo.CType == MailCatalogType.Personal || catalogInfo.CType == MailCatalogType.PersonalDyn)
+            {
+                if (catalogInfo.UserId != userId) throw (new Exception("只能移动用户自己的目录"));
+                var catalog = new CUMailCatalogMapper
+                {
+                    CatalogId = paramInfo.recId,
+                    CatalogName = paramInfo.recName
+                };
+                _mailCatalogRepository.EditCatalog(catalog,userId);
+                MailCatalogInfo currentParantInfo = _mailCatalogRepository.GetMailCataLogById(catalogInfo.PId, userId, tran);
 
-            MailCatalogInfo newParentInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.newPid, userId, tran);
-            if (newParentInfo == null) throw (new Exception("目标目录不存在"));
-            if (newParentInfo.CType != MailCatalogType.Personal) throw (new Exception("新的父目录必须为个人目录"));
-            if (newParentInfo.UserId != userId) throw (new Exception("目标目录必须是用户自己的目录"));
-            //判断目录是否空目录，非空目录不能
-            if (_mailCatalogRepository.checkHasMails(newParentInfo.RecId.ToString(), tran)) throw (new Exception("目标目录不能拥有邮件"));
-            if (_mailCatalogRepository.checkCycleCatalog(newParentInfo.RecId.ToString(), catalogInfo.RecId.ToString(), tran)) throw (new Exception("造成循环目录，移动失败"));
-            //现在开始移动
-            _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
-            return new OutputResult<object>("成功移动");
+                MailCatalogInfo newParentInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.newPid, userId, tran);
+                if (newParentInfo == null) throw (new Exception("目标目录不存在"));
+                if (newParentInfo.CType != MailCatalogType.Personal) throw (new Exception("新的父目录必须为个人目录"));
+                if (newParentInfo.UserId != userId) throw (new Exception("目标目录必须是用户自己的目录"));
+                //判断目录是否空目录，非空目录不能
+                if (_mailCatalogRepository.checkHasMails(newParentInfo.RecId.ToString(), tran)) throw (new Exception("目标目录不能拥有邮件"));
+                if (_mailCatalogRepository.checkCycleCatalog(newParentInfo.RecId.ToString(), catalogInfo.RecId.ToString(), tran)) throw (new Exception("造成循环目录，移动失败"));
+                //现在开始移动
+                _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
+                return new OutputResult<object>("保存成功");
+            }
+            else {
+                throw (new Exception("只能移动个人目录"));
+            }
 
 
         }
