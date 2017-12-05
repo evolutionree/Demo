@@ -505,21 +505,30 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             };
             var searchList=ExecuteQuery<MailCatalogInfo>(sql, param);
             var wholeTree  =this.GetMailCataLogTreeByUserId(userid,catalogType);
+            List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in searchList)
             {
-                foreach (var item in wholeTree)
+                foreach (var itemTreeOne in wholeTree)
                 {
-                    if (item.VPId == catalog.RecId)
+                    if (catalog.RecId == itemTreeOne.RecId)
                     {
-                        if (catalog.SubCatalogs == null)
+                        resultList.Add(itemTreeOne);
+                    }
+                    foreach (var item in wholeTree)
+                    {
+                        if (item.VPId == itemTreeOne.RecId)
                         {
-                            catalog.SubCatalogs = new List<MailCatalogInfo>();
+                            if (itemTreeOne.SubCatalogs == null)
+                            {
+                                itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
+                            }
+                            itemTreeOne.SubCatalogs.Add(item);
                         }
-                        catalog.SubCatalogs.Add(item);
                     }
                 }
             }
-            return searchList;
+
+            return resultList;
         }
 
 
