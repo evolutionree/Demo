@@ -118,22 +118,31 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public OperateResult DeleteCatalog(DeleteMailCatalogMapper entity, int userId)
         {
-            var sql = "select isdynamic from crm_sys_mail_catalog where  recid=@catalogid and viewuserid=@userid and recstatus=1 limit 1;";
-            var args = new
+            var sql = @"WITH tarcatalog as (
+                select * from crm_sys_mail_catalog 
+                where  recid=@catalogid and viewuserid=@userid and recstatus=1 LIMIT 1),
+                childcatalog as(
+                    select vpid,count(*) catalogCount from crm_sys_mail_catalog where vpid=@catalogid and viewuserid=@userid and recstatus=1 group by vpid
+                ),
+                childmail as(
+                    select catalogid,count(*) mailCount from crm_sys_mail_catalog_relation where catalogid=@catalogid  group by catalogid)
+                select COALESCE(tarcatalog.isdynamic,0) isdynamic,COALESCE(childcatalog.catalogCount,0)::int catalogCount,COALESCE(childmail.mailCount,0)::int mailCount from tarcatalog left join childcatalog on tarcatalog.recid=childcatalog.vpid left join childmail on childmail.catalogid=tarcatalog.recid";
+            var param = new DbParameter[]
             {
-                CatalogId = entity.CatalogId,
-                UserId = userId
+                                new NpgsqlParameter("catalogid", entity.CatalogId),
+                                new NpgsqlParameter("userid", userId)
             };
-            var isdynamic = DataBaseHelper.QuerySingle<int?>(sql, args, CommandType.Text);
-            if (!isdynamic.HasValue)
-            {
+            List<Dictionary<string, object>> catalogList = ExecuteQuery(sql, param);
+            Dictionary<string, object> catalogMap = new Dictionary<string, object>();
+            if (catalogList.Count > 0)
+                catalogMap = catalogList.FirstOrDefault();
+            else
                 return new OperateResult()
                 {
                     Flag = 0,
-                    Msg = "该文件夹不存在"
+                    Msg = "目录异常不能删除"
                 };
-            }
-            if (isdynamic == 0)
+            if ((int)catalogMap["isdynamic"]==0)
             {
                 return new OperateResult()
                 {
@@ -141,7 +150,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     Msg = "该文件夹是系统文件夹,不允许删除"
                 };
             }
+            if ((int)catalogMap["catalogcount"] >0|| (int)catalogMap["mailcount"] >0)
+            {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "有子文件夹或者邮件不允许删除"
+                };
+            }
             sql = "update  crm_sys_mail_catalog set recstatus=0 where   recid=@catalogid and viewuserid=@userid;";
+            var args = new
+            {
+                CatalogId = entity.CatalogId,
+                UserId = userId
+            };
             var result = DataBaseHelper.ExecuteNonQuery(sql, args, CommandType.Text);
             if (result == 1)
             {
