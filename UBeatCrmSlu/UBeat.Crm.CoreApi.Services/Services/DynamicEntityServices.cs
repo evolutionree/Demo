@@ -406,9 +406,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbTransaction tran = null;
             if (paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) throw (new Exception("参数异常"));
             #region 检查职能权限
-            if (GetUserData(userId, false).HasFunction(this.RoutePath, paramInfo.EntityId, this.DeviceClassic) == false) {
-                throw (new Exception("权限项未配置或者您没有权限执行此方法"));
-            }
+            //if (GetUserData(userId, false).HasFunction(this.RoutePath, paramInfo.EntityId, this.DeviceClassic) == false) {
+            //    throw (new Exception("权限项未配置或者您没有权限执行此方法"));
+            //}
             #endregion
             #region  暂不检查数据权限
             #endregion 
