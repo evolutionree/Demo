@@ -385,14 +385,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     return new
                     {
-                        Status = 0
+                        Flag = 0
                     };
                 }
                 else
                 {
                     return new
                     {
-                        Status = 1,
+                        Flag = 1,
                         Message = outPutResult.Message
                     };
                 }

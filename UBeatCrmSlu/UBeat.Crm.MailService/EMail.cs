@@ -58,7 +58,7 @@ namespace UBeat.Crm.MailService
                      try
                      {
                          client.Send(message);
-                         //var addressLst = GetUndeliverableAddresses(message);
+                         var addressLst = GetUndeliverableAddresses(message);
                          return message;
                      }
                      catch (ArgumentNullException ex)

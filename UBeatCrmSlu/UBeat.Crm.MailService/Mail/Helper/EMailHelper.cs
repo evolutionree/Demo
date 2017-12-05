@@ -36,6 +36,7 @@ namespace UBeat.Crm.MailService.Mail.Helper
             {
                 Text = string.IsNullOrEmpty(bodyContent) ? string.Empty : bodyContent,
             };
+
             //multipart / mixed：附件。
             //multipart / related：内嵌资源。
             //multipart / alternative：纯文本与超文本共存。
