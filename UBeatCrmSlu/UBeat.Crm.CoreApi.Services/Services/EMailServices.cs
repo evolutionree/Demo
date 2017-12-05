@@ -424,25 +424,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 try
                 {
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
-                    #region 异步
-                    var taskResult = _email.SendMessageAsync(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
-                    taskResult.GetAwaiter().OnCompleted(() =>
-                    {
-                        if (taskResult.IsCompleted)
-                        {
-                            if (taskResult.Exception != null)
-                            {
-                                _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendFail, userNumber);
-                            }
-                            else
-                            {
-                                repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
-                                if (repResult.Flag == 1)
-                                    repResult.Msg = "发送邮件成功";
-                            }
-                        }
-                    });
-                    #endregion
+                    _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
+                    repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
                     return HandleResult(repResult);
                 }
                 catch (Exception ex)
@@ -851,6 +834,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
             return errors;
+        }
+
+        private string ValidMailSize(string mailBody, int attLenght)
+        {
+
         }
 
         /// <summary>

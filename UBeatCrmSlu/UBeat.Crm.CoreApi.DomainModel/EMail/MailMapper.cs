@@ -169,6 +169,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string ReceiversStr { get; set; }
         public string SenderStr { get; set; }
 
+        public string FromMailAddress { get; set; }
+
         public JArray Receivers
         {
             get
