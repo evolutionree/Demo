@@ -684,7 +684,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.EntityId);
             if (entityInfo == null)
                 throw new Exception("实体数据不存在");
-            if(entityInfo.ModelType!= EntityModelType.Independent|| entityInfo.ModelType!= EntityModelType.Simple)
+            if(entityInfo.ModelType!= EntityModelType.Independent&& entityInfo.ModelType!= EntityModelType.Simple)
                 throw new Exception("只有独立实体和简单实体可以配置function");
 
             info.WebFunctions = FunctionInfoMap( dynamicModel.WebFuncs,  0);
