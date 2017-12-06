@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ActionExt
 
         public dynamic ExcuteActionExt(DbTransaction transaction, string funcname, object basicParamData, object preActionResult, object actionResult, int usernumber)
         {
-            var sql = string.Format(@"SELECT {0}(@paramjson,@preresultjson,@actionresultjson,@userno);", funcname);
+            var sql = string.Format(@"SELECT * from {0}(@paramjson,@preresultjson,@actionresultjson,@userno);", funcname);
 
             var param = new DbParameter[]
                     {
