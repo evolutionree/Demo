@@ -512,7 +512,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
     public class TransferRecordMapper
     {
-        public int UserId { get; set; }
+        public string WorkCode { get; set; }
         public string UserName { get; set; }
         public string FromUser { get; set; }
         public DateTime TransferTime { get; set; }

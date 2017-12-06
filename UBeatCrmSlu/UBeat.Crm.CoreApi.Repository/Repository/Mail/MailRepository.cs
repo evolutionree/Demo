@@ -437,7 +437,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             var emailUserSql = @" SELECT Distinct owner::int4 FROM crm_sys_mail_mailbox WHERE owner::int4 IN (SELECT regexp_split_to_table(@userids,',')::int4)  ";
 
-            var cataHandleSql = "Select * From  crm_func_mail_cata_related_handle(@mailid,null,'{\"issendoreceive\":\"1\"}',null,@userid);";
+            var cataHandleSql = "Select * From  crm_func_mail_cata_related_handle(@mailid,null,'{\"issendoreceive\":\"1\",\"sendrecord\":{\"aciontype\":1,\"status\":6,\"message\":\"\"}}',null,@userid);";
 
             try
             {
@@ -516,7 +516,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
         public PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId)
         {
-            var sql = @"SELECT u1.userid,u1.username,u.username as fromuser ,transfer.reccreated as transfertime FROM  crm_sys_mail_intransferrecord transfer
+            var sql = @"SELECT u1.workcode,u1.username,u.username as fromuser ,transfer.reccreated as transfertime FROM  crm_sys_mail_intransferrecord transfer
                                 LEFT JOIN crm_sys_userinfo u ON transfer.fromuser=u.userid
                                 LEFT JOIN crm_sys_userinfo u1 ON transfer.transferuserid=u1.userid WHERE mailid=@mailid";
 
@@ -675,7 +675,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             }
 
-            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.receivedtime ,body.senttime desc "), param, entity.PageSize, entity.PageIndex);
+            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.reccreated desc "), param, entity.PageSize, entity.PageIndex);
         }
 
 
@@ -757,7 +757,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             }
 
-            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, "  ORDER BY body.receivedtime ,body.senttime desc "), param, entity.PageSize, entity.PageIndex);
+            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, "  ORDER BY body.reccreated desc  "), param, entity.PageSize, entity.PageIndex);
         }
 
         public PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId)
@@ -804,7 +804,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         public PageDataInfo<MailBox> GetMailBoxList(int pageIndex, int pageSize, int userId)
         {
             var sql = "select a.recid,a.accountid,a.recname,a.inwhitelist,b.recname mailserver,b.mailprovider,b.imapaddress," +
-                "b.refreshinterval,b.servertype,b.smtpaddress	" +
+                "b.refreshinterval,b.servertype,b.smtpaddress,a.signature	" +
                 " from crm_sys_mail_mailbox a " +
                 " inner join crm_sys_mail_server b on(a.mailserver->> 'id')::uuid = b.recid " +
                 " where a.OWNER= @userid ";
@@ -815,8 +815,6 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             var result = ExecuteQueryByPaging<MailBox>(sql, param, pageSize, pageIndex);
             return result;
         }
-
-
         public OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null)
         {
 

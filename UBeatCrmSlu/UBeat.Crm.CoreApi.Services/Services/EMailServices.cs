@@ -249,7 +249,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             extraData.Add("attachfile", fileTask.Result);
             extraData.Add("issendoreceive", 1);
             string mailAddress = string.Empty;
-            foreach (var tmp in msg.To)
+            foreach (var tmp in msg.To.Concat(msg.Cc).Concat(msg.Bcc))
             {
                 var mailBoxAddress = tmp as MailboxAddress;
                 if (mailBoxAddress != null)
@@ -409,6 +409,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<ExpandoObject> attachFileRecord;//用来批量写db记录的
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
+
             string error = ValidMailSize(userMailInfo.Wgvhhx, entity.BodyContent, attachFileRecord);
             if (!string.IsNullOrEmpty(error))
             {
