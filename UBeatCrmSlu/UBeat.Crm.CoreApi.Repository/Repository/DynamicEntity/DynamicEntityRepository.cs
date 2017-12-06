@@ -1170,7 +1170,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             DbParameter[] param = null;
             if (paramNames != null || paramNames.Length > 0)
             {
-                strSQL = string.Format("select {0}({1})", functionname, paramNames);
+                strSQL = string.Format("select * from {0}({1})", functionname, paramNames);
                 param = new DbParameter[realParam.Keys.Count];
                 int i = 0;
                 foreach (string key in realParam.Keys)
@@ -1182,7 +1182,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
             else
             {
-                strSQL = string.Format("select {0}()", functionname);
+                strSQL = string.Format("select  * from  {0}()", functionname);
                 param = new DbParameter[] { };
             }
             if (funcInfo.ReturnType == EntityExtFunctionReturnType.NoReturn)
