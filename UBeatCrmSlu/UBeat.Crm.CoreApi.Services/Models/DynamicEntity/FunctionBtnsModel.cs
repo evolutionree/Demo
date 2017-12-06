@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel.Vocation;
+using UBeat.Crm.CoreApi.Services.Models.EntityPro;
 
 namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 {
@@ -34,9 +35,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// </summary>
         public Guid EntityId { set; get; }
 
-        public List<FunctionInfo> WebFuncs { set; get; }
+        public List<FunctionModel> WebFuncs { set; get; }
 
-        public List<FunctionInfo> MobileFuncs { set; get; }
+        public List<FunctionModel> MobileFuncs { set; get; }
 
     }
 
