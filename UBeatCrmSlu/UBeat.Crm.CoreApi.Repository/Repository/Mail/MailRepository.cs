@@ -25,7 +25,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public PageDataInfo<MailBodyMapper> ListMail(MailListActionParamInfo paramInfo, string orderbyfield, string keyWord, int userId, DbTransaction tran = null)
         {
-            string strSQL = @"SELECT " +
+            string strSQL = @" SELECT  * FROM (SELECT " +
                                         "body.recid mailid," +
                                         "(SELECT row_to_json(t) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
@@ -35,11 +35,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.mailbody," +
                                         "body.senttime," +
                                         "body.receivedtime," +
+                                        "COALESCE(body.receivedtime,body.senttime) orderbytime," +
                                         "body.istag," +
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
-                                        " FROM crm_sys_mail_mailbody body Where  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  {0} {1} ";
+                                        " FROM crm_sys_mail_mailbody body Where  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  {0}  ) AS tmp  {1} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
@@ -76,7 +77,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             {
                 paramInfo.PageIndex = 1;
             }
-            orderbyfield = string.Format(@"order by {0} desc", orderbyfield);
+
+            orderbyfield =@" order by tmp.orderbytime desc ";
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
             return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
         }
@@ -91,7 +93,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public PageDataInfo<MailBodyMapper> InnerToAndFroListMail(InnerToAndFroMailMapper entity, int userId)
         {
-            string strSQL = @" SELECT " +
+            string strSQL = @" SELECT * FROM ( SELECT " +
                                         "body.recid mailid," +
                                         "(SELECT row_to_json(t) FROM (SELECT mailaddress as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
@@ -101,6 +103,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.mailbody," +
                                         "body.senttime," +
                                         "body.receivedtime," +
+                                        "COALESCE(body.receivedtime,body.senttime) orderbytime," +
                                         "body.istag," +
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
@@ -123,7 +126,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "select\n" +
                                         " mailid from crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userid) AND (ctype=2 OR ctype=3 OR ctype=4)) ) AS tmp1\n" +
                                         "ON tmp.mailid=tmp1.mailid" +
-                                        ") {0} ORDER BY body.receivedtime DESC)";
+                                        ") {0} )) AS tmp  ORDER BY tmp.orderbytime DESC";
             var sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
@@ -421,15 +424,16 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                                         SELECT recname, reccode, recaudits, recstatus, @userid
 	                                        , @userid, recmanager, relativemailbox, headerinfo, title
 	                                        , mailbody, sender, receivers, ccers, bccers
-	                                        , attachcount, urgency, mongoid, isread, istag
-	                                        , senttime, receivedtime FROM crm_sys_mail_mailbody
+	                                        , attachcount, urgency, mongoid, 0, 0
+	                                        , senttime, now() FROM crm_sys_mail_mailbody
                                         WHERE recid = @mailid
                                         RETURNING recid";
+
             var mailAttachSql = @"INSERT INTO crm_sys_mail_attach(filename,filetype,filesize,mongoid,mailid) Select @filename,@filetype,@filesize,@mongoid,@newmailid";
 
             var mailSenderreceiversSql = @"INSERT INTO crm_sys_mail_senderreceivers (mailid,ctype,biztype,mailaddress,displayname,ismailgroup,	relativetocotract,relativetouser,relativetodept,relativemailbox)
          SELECT @newmailid::uuid,ctype,biztype,mailaddress,displayname,ismailgroup,relativetocotract,relativetouser,relativetodept	,relativemailbox FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid";
-
+            var mailSendRecordSql = @"INSERT INTO crm_sys_mail_sendrecord (mailid,actiontype,status,message,createdtime, lastupdatetime, completedtime, nexttrytime) SELECT @newmailid,1,@status,@msg,now(),now(),now(),now();";
             var mailInnerTransferRecord = @"INSERT INTO crm_sys_mail_intransferrecord  ( reccreator, recupdator, recmanager, userid, transferuserid, fromuser,mailid,newmailid) Select @userid,@userid,@userid,@userid,@transferuserid,@userid,@mailid,@newmailid";
 
             var subDeptUserSql = @"SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN 
@@ -437,7 +441,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             var emailUserSql = @" SELECT Distinct owner::int4 FROM crm_sys_mail_mailbox WHERE owner::int4 IN (SELECT regexp_split_to_table(@userids,',')::int4)  ";
 
-            var cataHandleSql = "Select * From  crm_func_mail_cata_related_handle(@mailid,null,'{\"issendoreceive\":\"1\",\"sendrecord\":{\"aciontype\":1,\"status\":6,\"message\":\"\"}}',null,@userid);";
+            var cataHandleSql = "Select * From  crm_func_mail_cata_transfer_related_handle(@newmailid,@transferuserid,@userid);";
 
             try
             {
@@ -478,19 +482,28 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                             DBHelper.ExecuteNonQuery(tran, mailAttachSql, param, CommandType.Text);
                         }
                         param = new DbParameter[]
-                        {
+                       {
                             new NpgsqlParameter("userid",userId),
                             new NpgsqlParameter("transferuserid", user),
                             new NpgsqlParameter("mailid",mailId),
-                           new NpgsqlParameter("newmailid",Guid.Parse(result.ToString()))
-                        };
+                           new NpgsqlParameter("newmailid",result)
+                       };
                         DBHelper.ExecuteNonQuery(tran, mailInnerTransferRecord, param, CommandType.Text);
                         param = new DbParameter[]
                         {
-                            new NpgsqlParameter("mailid",mailId),
+                            new NpgsqlParameter("newmailid",result),
+                           new NpgsqlParameter("transferuserid", user),
                             new NpgsqlParameter("userid", userId),
                         };
                         var operateResult = DBHelper.ExecuteQuery<OperateResult>(tran, cataHandleSql, param).FirstOrDefault();
+                        // @newmailid,1,@status,@msg,
+                        param = new DbParameter[]
+                        {
+                            new NpgsqlParameter("newmailid",result),
+                            new NpgsqlParameter("status", operateResult.Flag==0?7:6),
+                            new NpgsqlParameter("msg", operateResult.Msg),
+                        };
+                        DBHelper.ExecuteNonQuery(tran, mailSendRecordSql, param, CommandType.Text);
                         if (operateResult.Flag == 0)
                         {
                             continue;

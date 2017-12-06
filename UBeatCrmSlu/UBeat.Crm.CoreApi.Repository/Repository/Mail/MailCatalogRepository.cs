@@ -17,16 +17,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
     {
         public OperateResult InsertCatalog(CUMailCatalogMapper entity, int userId)
         {
-            var sql = "select (COALESCE(max(recorder),0)+1) recorder from crm_sys_mail_catalog where pid=@catalogpid LIMIT 1";
+            var sql = "select (COALESCE(max(recorder),0)+1) recorder from crm_sys_mail_catalog where vpid=@catalogpid LIMIT 1";
             var param = new
             {
-                CatalogPId = entity.CatalogPId
+                CatalogPId = entity.CatalogPId,
+                CatalogName = entity.CatalogName.Trim(),
             };
+
+            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recname=@catalogname ";
+            var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
+            if (existCount > 0) {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "文件夹名称已存在"
+                };
+            }
             var recOrder = DataBaseHelper.QuerySingle<int>(sql, param, CommandType.Text);
             sql = "INSERT INTO public.crm_sys_mail_catalog (recname, userid, viewuserid, ctype,CustCataLog,CustId, pid, vpid,recstatus,recorder,isdynamic) VALUES (@catalogname,@userid,@userid,@ctype,@CustCataLog,@CustId,@catalogpid,@catalogpid,1,@recorder,1)";
             var args = new
             {
-                CatalogName = entity.CatalogName,
+                CatalogName = entity.CatalogName.Trim(),
                 UserId = userId,
                 Ctype = entity.Ctype,
                 CustId=entity.CustId,
@@ -88,11 +99,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //        Msg = "该文件夹下包含邮件,不能删除"
             //    };
             //}
+            var param = new
+            {
+                CatalogPId = entity.CatalogPId,
+                CatalogName = entity.CatalogName.Trim(),
+            };
+
+            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recname=@catalogname ";
+            var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
+            if (existCount > 0)
+            {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "文件夹名称已存在"
+                };
+            }
             string sql = "UPDATE crm_sys_mail_catalog SET recname=@catalogname WHERE recid=@catalogid and viewuserid=@userid;";
             var args = new
             {
                 CatalogId = entity.CatalogId,
-                CatalogName = entity.CatalogName,
+                CatalogName = entity.CatalogName.Trim(),
                 UserId = userId
             };
 
@@ -373,7 +400,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //判断是否领导用户
             string isLeaderSql = "select a.deptid from crm_sys_account_userinfo_relate a " +
                 "inner join crm_sys_userinfo b on a.userid = b.userid " +
-                "where b.isleader = 1 and b.recstatus = 1 and b.userid = @userid";
+                "where a.recstatus=1 and b.isleader = 1 and b.recstatus = 1 and b.userid = @userid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("UserId", userId),
