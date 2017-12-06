@@ -410,26 +410,34 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public List<MailCatalogInfo> GetMailCataLog(string catalogType,string keyword, int userId)
         {
-            var sql = "WITH RECURSIVE cata as" +
-                    "(" +
-                    "			SELECT  a.recid,a.vpid,ARRAY[ctype]::text as idpath,a.ctype,a.viewuserid FROM crm_sys_mail_catalog a where vpid::text='00000000-0000-0000-0000-000000000000' " +
-                    "			UNION ALL" +
-                    "			SELECT b.recid,b.vpid,cata.idpath || b.ctype,b.ctype,b.viewuserid" +
-                    "      FROM crm_sys_mail_catalog b INNER JOIN cata  on cata.recid= b.vpid" +
-                    ")," +
-                    "usercatalog AS(" +
-                    "     SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recstatus=1  " +
-                    ")," +
-                    "catalogrelation AS(" +
-                    "     SELECT a.catalogid,COUNT(mailid) AS unreadmail FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where(b.isread is null or b.isread = 0) GROUP BY a.catalogid" +
-                    ")" +
-                    "SELECT usercatalog.*," +
-                    "COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0))" +
-                    "WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1002' IN idpath) >0))" +
-                    "WHEN usercatalog.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0))" +
-                    "ELSE catalogrelation.unreadmail END,0) unreadmail,cata.idpath " +
-                    "FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid " +
-                    "left join cata on cata.recid=usercatalog.recid where 1=1 {0} order by vpid,recorder";
+            var sql = @"WITH RECURSIVE cata as
+            (
+			            SELECT  a.recid,a.vpid,ARRAY[ctype]::text as idpath,a.ctype,a.viewuserid FROM crm_sys_mail_catalog a where vpid::text='00000000-0000-0000-0000-000000000000'  and recstatus=1  
+			            UNION ALL
+			            SELECT b.recid,b.vpid,cata.idpath || b.ctype,b.ctype,b.viewuserid
+			            FROM crm_sys_mail_catalog b INNER JOIN cata  on cata.recid= b.vpid where  recstatus=1  
+            ),
+            usercatalog AS(
+		             SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recstatus=1  
+            ),
+            catalogrelation AS(
+		             SELECT a.catalogid,COUNT(mailid) AS unreadmail FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where(b.isread is null or b.isread = 0) GROUP BY a.catalogid
+            ),
+            catalogmailcount AS(
+		             SELECT a.catalogid,COUNT(mailid) AS mailcount FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid   GROUP BY a.catalogid
+            )
+            SELECT usercatalog.*,
+            COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=4001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('4001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)
+            WHEN usercatalog.CType=2002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2002' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)
+            WHEN usercatalog.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userid ))
+            ELSE catalogrelation.unreadmail END,0)::int unreadcount,COALESCE(catalogmailcount.mailcount,0)::int mailcount,cata.idpath 
+            FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid 
+            left join cata on cata.recid=usercatalog.recid left join catalogmailcount on catalogmailcount.catalogid=usercatalog.recid
+             where 1=1 {0} order by vpid,recorder";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
             {
