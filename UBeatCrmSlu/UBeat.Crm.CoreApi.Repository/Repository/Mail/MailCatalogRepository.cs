@@ -409,12 +409,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //该用户是领导岗，获取下属邮件逻辑
             if (result.Count > 0)
             {
-                string getOrgTreeSql = "select * from (select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a " +
-                    "where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t " +
-                    "UNION ALL" +
-                    " select * from(select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,0 unreadcount from crm_sys_account_userinfo_relate a " +
-                    "inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid  where(b.isleader is null or b.isleader <> 1) and a.recstatus = 1 " +
-                    "and a.deptid::text = @deptId order by b.username) t1 ) x where 1=1 ";
+                string getOrgTreeSql = @"select * from (select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a 
+	                where a.recstatus = 1 and a.pdeptid =@deptId order by recorder) t 
+                        UNION ALL
+                    select * from(
+                    WITH mails as(select viewuserid,count(1) unreadcount from crm_sys_mail_catalog a inner join crm_sys_mail_catalog_relation b on a.recid=b.catalogid
+                    inner join crm_sys_mail_mailbody c on c.recid=b.mailid where c.isread is null or c.isread = 0 group by viewuserid )
+                    select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
+                        inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where(b.isleader is null or b.isleader <> 1) and a.recstatus = 1 
+                            and a.deptid = @deptId  order by b.username) t1 ) x where 1=1";
                 string searchDept = result[0]["deptid"].ToString();
                 if (!string.IsNullOrEmpty(deptId))
                 {
@@ -422,12 +425,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 }
                 var paramTree = new DbParameter[]
                 {
-                    new NpgsqlParameter("deptId", searchDept),
+                    new NpgsqlParameter("deptId", new Guid(searchDept)),
+                    new NpgsqlParameter("UserId", userId)
                 };
                 //只返回人员
                 if (!string.IsNullOrEmpty(keyword))
                 {
-                    getOrgTreeSql = string.Format(getOrgTreeSql + " and x.nodetype=1 and x.treename like '%{0}%' ", keyword);
+                    getOrgTreeSql = @"WITH mails as(select viewuserid,count(1) unreadcount from crm_sys_mail_catalog a inner join crm_sys_mail_catalog_relation b on a.recid=b.catalogid
+                            inner join crm_sys_mail_mailbody c on c.recid=b.mailid where c.isread is null or c.isread = 0 group by viewuserid )
+		                            select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
+	                             inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where (b.isleader is null or b.isleader <> 1) and a.recstatus = 1 
+		                            and a.deptid in (SELECT deptid FROM crm_func_department_tree_power(@deptId,1,1,@userId)) order by b.username";
+                    getOrgTreeSql = string.Format(getOrgTreeSql + " and b.username like '%{0}%'  order by b.username ", keyword);
 
                 }
                 resultList = ExecuteQuery<OrgAndStaffTree>(getOrgTreeSql, paramTree);

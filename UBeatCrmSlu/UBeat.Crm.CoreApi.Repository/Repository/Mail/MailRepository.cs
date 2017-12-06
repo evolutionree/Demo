@@ -78,7 +78,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 paramInfo.PageIndex = 1;
             }
 
-            orderbyfield =@" order by tmp.orderbytime desc ";
+            orderbyfield = @" order by tmp.orderbytime desc ";
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
             return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
         }
@@ -613,6 +613,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                                         body.title, 
                                         body.mailbody as summary, 
                                         body.senttime, 
+                                        COALESCE(body.senttime,body.receivedtime) AS orderbytime, 
                                         body.receivedtime  FROM crm_sys_mail_mailbody body {0}";
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
@@ -687,15 +688,16 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                                         )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
 
             }
-
-            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(sql, whereSql, " ORDER BY body.reccreated desc "), param, entity.PageSize, entity.PageIndex);
+            sql = string.Format(sql, whereSql);
+            sql = string.Format(" SELECT * FROM ( {0} ) AS tmp  ORDER BY tmp.orderbytime desc ", sql);
+            return ExecuteQueryByPaging<MailBodyMapper>(sql, param, entity.PageSize, entity.PageIndex);
         }
 
 
         public PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId)
         {
 
-            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid,body.receivedtime,body.senttime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0} {1}";
+            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid,body.receivedtime,body.senttime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0}";
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
@@ -770,7 +772,9 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             }
 
-            return ExecuteQueryByPaging<ToAndFroFileMapper>(string.Format(sql, whereSql, "  ORDER BY body.reccreated desc  "), param, entity.PageSize, entity.PageIndex);
+            sql = string.Format(sql, whereSql);
+            sql = string.Format(" SELECT * FROM ( {0} ) AS tmp  ORDER BY tmp.orderbytime desc ", sql);
+            return ExecuteQueryByPaging<ToAndFroFileMapper>(sql, param, entity.PageSize, entity.PageIndex);
         }
 
         public PageDataInfo<AttachmentChooseListMapper> GetLocalFileFromCrm(AttachmentListMapper entity, string ruleSql, int userId)
@@ -1113,7 +1117,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         #region 判断领导是否拥有该下属
         public bool IsHasSubUserAuth(int leaderUserId, int userId)
         {
-            var sql = "Select count(1) as ishashauth  From (SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN(SELECT deptid FROM crm_func_department_tree((SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @leaderuserid AND recstatus = 1 LIMIT 1), 1))) as t Where t.userid=@userid ";
+            var sql = "Select count(1) as ishashauth  From (SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN(SELECT deptid FROM crm_func_department_tree((SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @userid AND recstatus = 1 LIMIT 1), 1))) as t Where t.userid=@leaderuserid ";
 
             var param = new
             {
