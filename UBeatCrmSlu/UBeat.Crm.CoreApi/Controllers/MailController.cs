@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.EMail;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -147,7 +148,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetInnerToAndFroMail([FromBody] ToAndFroModel model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
-
+            
             return _emailServices.GetInnerToAndFroMail(model, UserId);
         }
 
