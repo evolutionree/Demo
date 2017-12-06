@@ -43,7 +43,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult Transfer(DynamicEntityTransferMapper transMapper, int userNumber);
 
-        OperateResult Delete(Guid entityId, string recIds, int pageType, string pageCode, int userNumber);
+        OperateResult Delete(DbTransaction trans, Guid entityId, string recIds, int pageType, string pageCode, int userNumber);
 
         OperateResult DeleteDataSrcRelation(DataSrcDeleteRelationMapper entityMapper, int userNumber);
 
