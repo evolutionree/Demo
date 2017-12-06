@@ -19,7 +19,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ActionExt
 
         public List<ActionExtModel> GetActionExtData()
         {
-            var sql = @"SELECT DISTINCT ON(routepath,implementtype) recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,entityid FROM crm_sys_actionext_config WHERE recstatus=1;
+            var sql = @"SELECT recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,entityid FROM crm_sys_actionext_config WHERE recstatus=1;
                        ";
             return DBHelper.ExecuteQuery<ActionExtModel>("", sql, null);
         }
