@@ -1066,12 +1066,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
 
-            #region 处理排序规则
-            string sortfieldname = "reccreated";
-            #endregion
 
 
-            var lst = _mailRepository.ListMail(paramInfo, sortfieldname, paramInfo.SearchKey, userNum, null);
+            var lst = _mailRepository.ListMail(paramInfo, string.Empty, paramInfo.SearchKey, userNum, null);
             foreach (var tmp in lst.DataList)
             {
                 tmp.Summary = CommonHelper.NoHTML(tmp.MailBody);
