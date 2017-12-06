@@ -350,6 +350,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var catalog = new CUMailCatalogMapper
                 {
                     CatalogId = paramInfo.recId,
+                    CatalogPId= paramInfo.newPid,
                     CatalogName = paramInfo.recName
                 };
                 _mailCatalogRepository.EditCatalog(catalog,userId);
