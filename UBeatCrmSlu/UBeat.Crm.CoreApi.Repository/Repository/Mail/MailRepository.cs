@@ -145,7 +145,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 entity.PageIndex = 1;
             }
 
-            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(strSQL, sqlCondition), new DbParameter[] { new NpgsqlParameter("fromuserid", entity.FromUserId), new NpgsqlParameter("userid", userId), new NpgsqlParameter("keyword", entity.KeyWord) }, entity.PageSize, (entity.PageIndex - 1) * entity.PageSize);
+            return ExecuteQueryByPaging<MailBodyMapper>(string.Format(strSQL, sqlCondition), new DbParameter[] { new NpgsqlParameter("fromuserid", entity.FromUserId), new NpgsqlParameter("userid", userId), new NpgsqlParameter("keyword", entity.KeyWord) }, entity.PageSize, entity.PageIndex);
         }
 
         public OperateResult TagMails(string mailids, MailTagActionType actionType, int userId)
@@ -380,8 +380,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         SELECT (belcust->>'id') AS custids FROM crm_sys_contact WHERE email=
                                         (Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1) AS tmp ) AND recstatus=1";
 
-            var contactsSql = @"SELECT  crm_func_entity_protocol_data_list('e450bfd7-ff17-4b29-a2db-7ddaf1e79342','75ce6617-2016-46f0-8cb4-8467b77ef468','and t.recid IN (
-Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_split_to_table(custid,'','')  FROM (SELECT (belcust->>''id'') as  custid FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=''" + entity.MailId.ToString() + "''  And ctype=1 LIMIT 1)  AND recstatus=1 LIMIT 1) AS tmp ))','',0,NULL,1,@maxpagesize,0,@userid)";
+            var contactConfigSql = @"select   crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('e450bfd7-ff17-4b29-a2db-7ddaf1e79342',@userid)";
+            
+            var contactsSql = @" Select e.* {0} From crm_sys_contact as e Where (belcust->> 'id')   IN (SELECT regexp_split_to_table(custid, ',')  FROM(SELECT(belcust->> 'id') as custid FROM crm_sys_contact WHERE email = (Select mailaddress From  crm_sys_mail_senderreceivers Where mailid =@mailid  And ctype = 1 LIMIT 1)  AND recstatus = 1 LIMIT 1) AS tmp )";
             var param = new DynamicParameters();
             param.Add("mailid", entity.MailId);
             param.Add("userid", userId);
@@ -393,7 +394,8 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             if (custContactCount > 0)//优先找客户下的联系人 没有找邮箱信息的
             {
                 senderResult = DataBaseHelper.Query<dynamic>(conCustSql, param, CommandType.Text);
-                contactsResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(contactsSql, param, CommandType.Text);
+                contactsSql = string.Format(contactsSql, DataBaseHelper.QuerySingle<string>(contactConfigSql, param));
+                contactsResult = DataBaseHelper.Query<dynamic>(contactsSql, param, CommandType.Text);
             }
             else
             {
