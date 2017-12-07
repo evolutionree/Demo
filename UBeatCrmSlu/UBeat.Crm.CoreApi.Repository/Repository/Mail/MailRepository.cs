@@ -364,16 +364,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                    recstatus=1 LIMIT 1) AS tmp )";
             var senderSql = @" SELECT username,usertel,useremail,usericon FROM crm_sys_userinfo WHERE
                userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1)AND  recstatus=1;";
-            var conCustSql = @"SELECT recname,phone,email,headicon FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
+
+            var conCustSql = @"SELECT recname as username,phone as usertel,email as useremail,headicon as usericon FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
+
             var isCustExistsSql = @"Select count(1) From crm_sys_customer Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
             var custConfigSql = @"  SELECT tmp.columnkey||tmp1.extracolumn FROM (  SELECT string_agg(fieldname,',') AS columnkey     
                                                     FROM (
                                                         SELECT f.fieldid,f.fieldname FROM crm_sys_entity_fields AS f
                                                         WHERE f.entityid='349cba2f-42b0-44c2-89f5-207052f50a00' 
-                                                        AND controltype  NOT IN(20) AND recstatus=1
+                                                        AND controltype  NOT IN(20,1001,1002,1012,1003,1004,1005,1006,1007,1008) AND recstatus=1
                                                     ) AS t ) AS tmp, (select
                                                     crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('349cba2f-42b0-44c2-89f5-207052f50a00',@userid)) AS tmp1";
-            var custSql = @"SELECT  {0} FROM crm_sys_customer AS e WHERE recid IN (
+            var custSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0} FROM crm_sys_customer AS e WHERE recid IN (
                                         SELECT regexp_split_to_table(custids,',')::uuid custid FROM (
                                         SELECT (belcust->>'id') AS custids FROM crm_sys_contact WHERE email=
                                         (Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1) AS tmp ) AND recstatus=1";

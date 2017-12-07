@@ -1226,32 +1226,33 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     param.Add("userno", userNumber);
                     result = DataBaseHelper.QuerySingle<OperateResult>(conn, sql, param);
                     if (result.Flag == 0)
-                        throw new Exception("保存客户基础资料异常");
+                        throw new Exception("保存配置异常");
                     al.Add(result.Id);
                 }
                 param = new DynamicParameters();
                 param.Add("relentityid", entity.FirstOrDefault().RelEntityId);
-                var recName = conn.QueryFirst<dynamic>(sql_name, param);
-                if (recName == null)
-                    throw new Exception("客户名称字段不存在");
-                al.Add(recName.fieldid);
-                param = new DynamicParameters();
-                param.Add("entityid", fields.FirstOrDefault().entityid.ToString());
-                param.Add("viewtype", 0);
-                param.Add("fieldids", string.Join(",", al.ToArray()));
-                param.Add("userno", userNumber);
-                result = DataBaseHelper.QuerySingle<OperateResult>(conn, sql_viewcol, param);
+                var recName = conn.Query<dynamic>(sql_name, param).FirstOrDefault();
+                if (recName != null)
+                {
+                    al.Add(recName.fieldid);
+                    param = new DynamicParameters();
+                    param.Add("entityid", fields.FirstOrDefault().entityid.ToString());
+                    param.Add("viewtype", 0);
+                    param.Add("fieldids", string.Join(",", al.ToArray()));
+                    param.Add("userno", userNumber);
+                    result = DataBaseHelper.QuerySingle<OperateResult>(conn, sql_viewcol, param);
 
-                if (result.Flag == 0)
-                    throw new Exception("保存客户基础资料异常");
+                    if (result.Flag == 0)
+                        throw new Exception("保存配置异常");
+                }
                 transaction.Commit();
-                result.Msg = "保存基础资料字段成功";
+                result.Msg = "保存配置成功";
             }
             catch (Exception ex)
             {
                 //出现异常，事务Rollback
                 transaction.Rollback();
-                result.Msg = "保存基础资料字段失败";
+                result.Msg = "保存配置失败";
             }
             finally
             {
