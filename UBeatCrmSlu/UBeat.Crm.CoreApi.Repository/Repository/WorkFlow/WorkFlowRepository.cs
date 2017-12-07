@@ -1324,5 +1324,28 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             return false;
         }
 
+        public Guid getWorkflowRuleId(Guid flowId, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = string.Format("select ruleid  from crm_sys_workflow_rule_relation where flowid =  '{0}'", flowId.ToString());
+                Dictionary<string, object> item = ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
+                if (item != null) return (Guid)item["ruleid"];
+            }
+            catch (Exception ex) {
+            }
+            return Guid.Empty;
+        }
+
+        public void SaveWorkflowRuleRelation(string id, Guid workflowId, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string sql = string.Format(@"update crm_sys_workflow_rule_relation set ruleid='{0}' where flowid='{1}' ", id, workflowId);
+                ExecuteNonQuery(sql, new DbParameter[] { }, tran);
+            }
+            catch (Exception ex) {
+            }
+        }
     }
 }

@@ -10,6 +10,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
 {
     public class DbManageRepository : RepositoryBase, IDbManageRepository
     {
+        public bool checkHasPreProName(string proname, int userid, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = string.Format(@"select *from crm_sys_dbmgr_object where objtype =2 and objname ='{0}' ", proname.Replace("'","''"));
+                if (ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault() == null)
+                    return false;
+                return true;
+            }
+            catch (Exception ex) {
+            }
+            return false;
+        }
+
         public void deleteSQLObject(string id, int userid, DbTransaction tran)
         {
             try
@@ -103,13 +117,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
             }
         }
 
-        public Dictionary<string, object> getProcInfo(string procname, int userid, DbTransaction tran)
+        public Dictionary<string, object> getProcInfo(string procname,string param, int userid, DbTransaction tran)
         {
             try
             {
-                string strSQL = string.Format(@"select pg_get_functiondef(a.proname::regproc) textsql
+                string strSQL = "";
+                if (param == null || param == "")
+                {
+                    strSQL = string.Format(@"select pg_get_functiondef(a.oid::regproc) textsql
                                         from    pg_proc  a
-                                        where a.proname ='{0}' ", procname);
+                                        where a.proname ='{0}'  and proargnames is null ", procname);
+                }
+                else {
+                    strSQL = string.Format(@"select pg_get_functiondef(a.oid::regproc) textsql
+                                        from    pg_proc  a
+                                        where a.proname ='{0}'  and proargnames ='{1}' ", procname, param);
+                }
+                
                 return ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
             }
             catch (Exception ex)
@@ -176,6 +200,32 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                 return null;
             }
         }
+        public Dictionary<string, object> getTypeInfo(string typename, int userid, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = string.Format(@"SELECT
+	                                                relname AS tabname,
+	                                                CAST (
+		                                                obj_description (relfilenode, 'pg_class') AS VARCHAR
+	                                                ) AS COMMENT
+                                                FROM
+	                                                pg_class C
+                                                WHERE
+	                                                relkind = 'c'
+                                                AND relname NOT LIKE 'pg_%'
+                                                AND relname NOT LIKE 'sql_%'
+                                                and relname = '{0}'
+                                                ORDER BY
+	                                                relname", typename);
+                return ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
 
         public List<Dictionary<string, object>> getTriggers(string tablename, int userid, DbTransaction tran)
         {
@@ -209,6 +259,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                 if (isStruct != StructOrData.All) {
                     strSQL = strSQL + " And b.structordata=" + ((int)isStruct).ToString();
                 }
+
+                strSQL = strSQL + " order by a.recorder,a.objname ";
                 return ExecuteQuery<SQLTextModel>(strSQL, new DbParameter[] { }, tran);
 
             }
@@ -231,6 +283,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                 {
                     strSQL = strSQL + " And b.structordata=" + ((int)isStruct).ToString();
                 }
+
+                strSQL = strSQL + " order by a.recorder,a.objname ";
                 return ExecuteQuery<SQLTextModel>(strSQL, new DbParameter[] { }, tran);
 
             }
@@ -262,36 +316,55 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
             {
                 model.Id = Guid.NewGuid();
                 model.checkEmpty();
-                string strSQL = string.Format(@"insert into crm_sys_dbmgr_object (
-                            id,objtype,sqlpath,lastversion,objname,
-                            remark,relativeobj,name,recstatus,belongto)
-                            VALUES
-	                            (		'{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}',{8},{9});",
-                                model.Id, (int)model.ObjType, model.SqlPath.Replace("'", "''"),
-                                model.LastVersion.Replace("'", "''"),
-                                model.ObjName.Replace("'", "''"),
-                                model.Remark.Replace("'", "''"),
-                                model.RelativeObj.Replace("'", "''"),
-                                model.Name.Replace("'", "''"),
-                                model.RecStatus,
-                                (int)model.belongTo);
-                ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
+                string strSQL = string.Format(@"
+insert into crm_sys_dbmgr_object (
+    id,objtype,sqlpath,lastversion,objname,
+    remark,relativeobj,name,recstatus,belongto,
+    needinitsql,procparam,recorder)
+VALUES(
+    @id,@objtype,@sqlpath,@lastversion,@objname,
+    @remark,@relativeobj,@name,@recstatus,@belongto,
+    @needinitsql,@procparam,@recorder);");
+                DbParameter[] p = new DbParameter[] {
+                     new Npgsql.NpgsqlParameter("@id", model.Id),
+                     new Npgsql.NpgsqlParameter("@objtype",  (int)model.ObjType),
+                     new Npgsql.NpgsqlParameter("@sqlpath",  model.SqlPath),
+                     new Npgsql.NpgsqlParameter("@lastversion",  model.LastVersion),
+                     new Npgsql.NpgsqlParameter("@objname",  model.ObjName),
+                     new Npgsql.NpgsqlParameter("@remark",  model.Remark),
+                     new Npgsql.NpgsqlParameter("@relativeobj",  model.RelativeObj),
+                     new Npgsql.NpgsqlParameter("@name",  model.Name),
+                     new Npgsql.NpgsqlParameter("@recstatus",  model.RecStatus),
+                     new Npgsql.NpgsqlParameter("@belongto", (int)model.belongTo),
+                     new Npgsql.NpgsqlParameter("@needinitsql", model.NeedInitSQL),
+                     new Npgsql.NpgsqlParameter("@procparam", model.ProcParam),
+                     new Npgsql.NpgsqlParameter("@recorder", model.RecOrder)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
             }
             else
             {
                 model.checkEmpty();
-                string strSQL = string.Format(@"update crm_sys_dbmgr_object set objtype={1}," +
-                    "sqlpath='{2}' ,lastversion='{3}' , objname='{4}'," +
-                    "remark='{5}',relativeobj='{6}',name='{7}',recstatus={8},belongto={9} where id='{0}'", 
-                                model.Id, (int)model.ObjType, model.SqlPath.Replace("'", "''"),
-                                model.LastVersion.Replace("'", "''"),
-                                model.ObjName.Replace("'", "''"),
-                                model.Remark.Replace("'", "''"),
-                                model.RelativeObj.Replace("'", "''"),
-                                model.Name.Replace("'", "''"),
-                                model.RecStatus,
-                                (int)model.belongTo);
-                ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
+                string strSQL = string.Format(@"update crm_sys_dbmgr_object set objtype=@objtype," +
+                    "sqlpath=@sqlpath ,lastversion=@lastversion , objname=@objname," +
+                    "remark=@remark,relativeobj=@relativeobj,name=@name,recstatus=@recstatus," +
+                    "belongto=@belongto,needinitsql=@needinitsql,procparam=@procparam,recorder=@recorder where id=@id");
+                DbParameter[] p = new DbParameter[] {
+                     new Npgsql.NpgsqlParameter("@id", model.Id),
+                     new Npgsql.NpgsqlParameter("@objtype",  (int)model.ObjType),
+                     new Npgsql.NpgsqlParameter("@sqlpath",  model.SqlPath),
+                     new Npgsql.NpgsqlParameter("@lastversion",  model.LastVersion),
+                     new Npgsql.NpgsqlParameter("@objname",  model.ObjName),
+                     new Npgsql.NpgsqlParameter("@remark",  model.Remark),
+                     new Npgsql.NpgsqlParameter("@relativeobj",  model.RelativeObj),
+                     new Npgsql.NpgsqlParameter("@name",  model.Name),
+                     new Npgsql.NpgsqlParameter("@recstatus",  model.RecStatus),
+                     new Npgsql.NpgsqlParameter("@belongto", (int)model.belongTo),
+                     new Npgsql.NpgsqlParameter("@needinitsql", model.NeedInitSQL),
+                     new Npgsql.NpgsqlParameter("@procparam", model.ProcParam),
+                     new Npgsql.NpgsqlParameter("@recorder", model.RecOrder)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
             }
         }
 
@@ -306,26 +379,65 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
 	                                        sqlorjson,initorupdate,isrun,structordata
                                         )
                                         VALUES
-	                                        ('{0}','{1}', '{2}','{3}','{4}', '{5}','{6}',
-		                                        '{7}', '{8}');", model.Id,
-                                         model.SqlObjId, model.Version.Replace("'", "''"),
-                                         model.Remark.Replace("'", "''"),
-                                         model.SqlText.Replace("'", "''"),
-                                          (int)model.sqlOrJson, (int)model.initOrUpdate, model.isRun, (int)model.structOrData);
-                ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
+	                                        (@id,@sqlobjid,@version,@remark,@sqltext,
+	                                        @sqlorjson,@initorupdate,@isrun,@structordata);");
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@id", model.Id),
+                    new Npgsql.NpgsqlParameter("@sqlobjid", model.SqlObjId),
+                    new Npgsql.NpgsqlParameter("@version", model.Version),
+                    new Npgsql.NpgsqlParameter("@remark", model.Remark),
+                    new Npgsql.NpgsqlParameter("@sqltext", model.SqlText),
+                    new Npgsql.NpgsqlParameter("@sqlorjson",(int)model.sqlOrJson),
+                    new Npgsql.NpgsqlParameter("@initorupdate",(int)model.initOrUpdate),
+                    new Npgsql.NpgsqlParameter("@isrun", model.isRun),
+                    new Npgsql.NpgsqlParameter("@structordata",(int)model.structOrData)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
             }
             else
             {
                 model.checkEmpty();
-                string strSQL = string.Format(@"update crm_sys_dbmgr_sql set sqlobjid='{1}',
-                                        version='{2}',remark='{3}',sqltext='{4}',
-	                                        sqlorjson={5},initorupdate={6},isrun={7},structordata={8}
-                                        where id ='{0}'", model.Id,
-                                         model.SqlObjId, model.Version.Replace("'", "''"),
-                                         model.Remark.Replace("'", "''"),
-                                         model.SqlText.Replace("'", "''"),
-                                          (int)model.sqlOrJson, (int)model.initOrUpdate, model.isRun, (int)model.structOrData);
-                ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
+                string strSQL = string.Format(@"update crm_sys_dbmgr_sql set sqlobjid=@sqlobjid,
+                                        version=@version,remark=@remark,sqltext=@sqltext,
+	                                        sqlorjson=@sqlorjson,initorupdate=@initorupdate,isrun=@isrun,structordata=@structordata
+                                        where id =@id");
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@id", model.Id),
+                    new Npgsql.NpgsqlParameter("@sqlobjid", model.SqlObjId),
+                    new Npgsql.NpgsqlParameter("@version", model.Version),
+                    new Npgsql.NpgsqlParameter("@remark", model.Remark),
+                    new Npgsql.NpgsqlParameter("@sqltext", model.SqlText),
+                    new Npgsql.NpgsqlParameter("@sqlorjson",(int)model.sqlOrJson),
+                    new Npgsql.NpgsqlParameter("@initorupdate",(int)model.initOrUpdate),
+                    new Npgsql.NpgsqlParameter("@isrun", model.isRun),
+                    new Npgsql.NpgsqlParameter("@structordata",(int)model.structOrData)
+                };
+                ExecuteNonQuery(strSQL,p, tran);
+            }
+        }
+
+        public List<SQLTextModel> ListInitSQLForType(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = @"select b.*
+                                from crm_sys_dbmgr_object a inner join crm_sys_dbmgr_sql b on a.""id"" = b.sqlobjid 
+                                where b.initorupdate = 1 and   a.objtype =3 ";
+                if (exportSys != SQLObjectBelongSysEnum.All)
+                {
+                    strSQL = strSQL + " And a.belongto=" + ((int)exportSys).ToString();
+                }
+                if (isStruct != StructOrData.All)
+                {
+                    strSQL = strSQL + " And b.structordata=" + ((int)isStruct).ToString();
+                }
+                strSQL = strSQL + " order by a.recorder,a.objname ";
+                return ExecuteQuery<SQLTextModel>(strSQL, new DbParameter[] { }, tran);
+
+            }
+            catch (Exception ex)
+            {
+                return null;
             }
         }
     }
