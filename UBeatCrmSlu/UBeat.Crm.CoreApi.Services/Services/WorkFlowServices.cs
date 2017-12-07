@@ -61,6 +61,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
                     if (workflowInfo == null)
                         throw new Exception("流程配置不存在");
+                    var copyusers = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId);
+
 
                     result.CaseDetail = new WorkFlowCaseInfoExt()
                     {
@@ -80,7 +82,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Recstatus = caseInfo.Recstatus,
                         FlowName = workflowInfo.FlowName,
                         BackFlag = workflowInfo.BackFlag,
-                        RecCreator_Name = caseInfo.RecCreator_Name
+                        RecCreator_Name = caseInfo.RecCreator_Name,
+                        CopyUser = string.Join(",", copyusers)
                     };
                     #endregion
 
@@ -1265,18 +1268,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 tempcaseitems = caseitems;
                         }
                         approvers = tempcaseitems.Select(m => m.HandleUser).Distinct().ToList();
-                        foreach (var item in tempcaseitems)
-                        {
-                            if (!string.IsNullOrEmpty(item.CopyUser))
-                            {
-                                var copyUserArray = item.CopyUser.Split(',');
-                                foreach (var u in copyUserArray)
-                                {
-                                    copyusers.Add(int.Parse(u));
-                                }
-                            }
-                        }
-                        copyusers = copyusers.Distinct().ToList();
+                        //foreach (var item in tempcaseitems)
+                        //{
+                        //    if (!string.IsNullOrEmpty(item.CopyUser))
+                        //    {
+                        //        var copyUserArray = item.CopyUser.Split(',');
+                        //        foreach (var u in copyUserArray)
+                        //        {
+                        //            copyusers.Add(int.Parse(u));
+                        //        }
+                        //    }
+                        //}
+                        copyusers = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId);
                         #endregion
 
 

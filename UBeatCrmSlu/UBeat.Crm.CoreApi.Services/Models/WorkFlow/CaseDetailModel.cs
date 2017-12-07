@@ -97,6 +97,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
         public string RecCreator_Name { set; get; }
 
+        public string CopyUser { get; set; }
+
     }
 
     public class CaseItemAuditInfo
