@@ -1324,6 +1324,32 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
             return false;
         }
+        /// <summary>
+        /// 获取流程审批的抄送人
+        /// </summary>
+        /// <param name="caseid"></param>
+        /// <returns></returns>
+        public List<int> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null)
+        {
+            string sql = string.Format(@" SELECT ci.copyuser FROM crm_sys_workflow_case_item ci
+                                          WHERE ci.caseid=@caseid AND stepnum>= (SELECT MAX( stepnum) FROM crm_sys_workflow_case_item WHERE caseid=@caseid AND nodenum=0) 
+                                          ");
 
+            var sqlParameters = new List<DbParameter>();
+            sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
+
+            var result = ExecuteQuery(sql, sqlParameters.ToArray(), trans);
+            List<int> copyuserlist = new List<int>();
+            foreach ( var row in result)
+            {
+                int copyuser = 0;
+                if (row["copyuser"]!=null&&int.TryParse(row["copyuser"].ToString(),out copyuser))
+                {
+                    copyuserlist.Add(copyuser);
+                }
+            }
+
+            return copyuserlist.Distinct().ToList();
+        }
     }
 }
