@@ -397,7 +397,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var errors = ValidEmailAddressAuth(model, userNumber);
             if (errors.Count > 0)
             {
-                var mailInfoCol = errors.Select(t => t.DisplayName + "(" + t.EmailAddress + ")");
+                var mailInfoCol = errors.Select(t => t.DisplayName);
                 var errorObj = new
                 {
                     Flag = 0,

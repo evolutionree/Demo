@@ -937,7 +937,10 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         /// <returns></returns>
         public List<InnerUserMailMapper> GetUserMailList(int userId)
         {
-            var sql = @"SELECT userid,useremail FROM crm_sys_userinfo WHERE recstatus=1;";
+            var sql = @"SELECT userid,useremail FROM crm_sys_userinfo WHERE recstatus=1
+                               UNION 
+                               SELECT owner::int4,accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 "
+            ;
             return DataBaseHelper.Query<InnerUserMailMapper>(sql, CommandType.Text);
         }
         #endregion
