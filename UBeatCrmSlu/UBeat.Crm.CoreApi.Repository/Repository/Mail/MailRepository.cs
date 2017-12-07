@@ -372,7 +372,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                     FROM (
                                                         SELECT f.fieldid,f.fieldname FROM crm_sys_entity_fields AS f
                                                         WHERE f.entityid='349cba2f-42b0-44c2-89f5-207052f50a00' 
-                                                        AND controltype  NOT IN(20,1001,1002,1012,1003,1004,1005,1006,1007,1008) AND recstatus=1
+                                                        AND controltype  NOT IN(20,1001,1002,1003,1004,1005,1006,1007,1008) AND recstatus=1
                                                     ) AS t ) AS tmp, (select
                                                     crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('349cba2f-42b0-44c2-89f5-207052f50a00',@userid)) AS tmp1";
             var custSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0} FROM crm_sys_customer AS e WHERE recid IN (
