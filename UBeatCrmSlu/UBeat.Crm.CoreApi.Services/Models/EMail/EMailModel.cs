@@ -229,6 +229,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 
     public class MimeMessageResult
     {
+        public SendEMailMapper Entity { get; set; }
+        public UserMailInfo UserMailInfo { get; set; }
         public MimeMessage Msg { get; set; }
         public int ActionType { get; set; }
         public int Status { get; set; }
