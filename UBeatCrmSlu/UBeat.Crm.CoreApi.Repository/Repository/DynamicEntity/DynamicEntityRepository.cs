@@ -464,22 +464,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return result;
         }
 
-        public OperateResult Delete(Guid entityId, string recIds, int pageType, string pageCode, int userNumber)
+        public OperateResult Delete(DbTransaction trans, Guid entityId, string recIds, int pageType, string pageCode, int userNumber)
         {
             var sql = @"
                 SELECT * FROM crm_func_entity_protocol_data_delete(@entityId,@recId,@pagetype,@pageCode,@userNo)
             ";
+            
+         
+           var param = new DbParameter[]
+           {
+                new NpgsqlParameter("entityId",entityId),
+                new NpgsqlParameter("recId",recIds),
+                new NpgsqlParameter("pagetype", pageType),
+                new NpgsqlParameter("pageCode",pageCode),
+                new NpgsqlParameter("userNo",userNumber)
+           };
+           return ExecuteQuery<OperateResult>(sql, param, trans).FirstOrDefault();
 
-            var param = new
-            {
-                EntityId = entityId,
-                RecId = recIds,
-                PageType = pageType,
-                PageCode = pageCode,
-                UserNo = userNumber
-            };
-            var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
-            return result;
         }
         public OperateResult DeleteDataSrcRelation(DataSrcDeleteRelationMapper entityMapper, int userNumber)
         {
