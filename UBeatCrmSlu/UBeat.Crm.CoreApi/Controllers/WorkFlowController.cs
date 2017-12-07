@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.WorkFlow;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -211,12 +212,25 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _workFlowServices.AddMultipleCaseItem(caseModel, UserId);
         }
 
-
-        
-
-
-
-
+        /// <summary>
+        /// 保存工作流Rule
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("saverule")]
+        public OutputResult<object> SaveRule([FromBody]WorkFlowRuleSaveParamInfo paramInfo) {
+            if (paramInfo == null) return ResponseError<object>("参数异常");
+            return this._workFlowServices.SaveWorkflowRule(paramInfo, UserId);
+        }
+        [HttpPost]
+        [Route("getrule")]
+        public OutputResult<object> GetRule([FromBody] WorkFlowRuleQueryParamInfo paramInfo ) {
+            if (paramInfo == null || paramInfo.FlowId == null || paramInfo.FlowId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            return _workFlowServices.GetRules(paramInfo, UserId);
+        }
     }
 }
  

@@ -58,6 +58,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
             return result;
         }
+
+        public OperateResult SaveRuleWithoutRelation(string Id, string rule, string ruleItem, string ruleSet,int userId) {
+            OperateResult result = new OperateResult();
+            string sql = string.Empty;
+            var param = new DynamicParameters();
+            if (string.IsNullOrEmpty(Id))
+            {
+                //新建模式
+                sql = @"SELECT * FROM crm_func_rule_insert(@rule,@ruleitem,@ruleset,@userno)";
+            }
+            else {
+                //修改模式
+                sql = @"SELECT * FROM crm_func_rule_update(@rule,@ruleitem,@ruleset,@userno)";
+            }
+            param.Add("ruleitem", ruleItem);
+            param.Add("ruleset", ruleSet);
+            param.Add("userno", userId);
+            result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+
+            return result;
+        }
         public OperateResult SaveRule(string Id, int typeId, string rule, string ruleItem, string ruleSet, string ruleRelation, int userId)
         {
             OperateResult result = new OperateResult();

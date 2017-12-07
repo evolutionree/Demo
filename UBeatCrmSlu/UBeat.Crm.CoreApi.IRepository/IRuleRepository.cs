@@ -29,8 +29,17 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="recids"></param>
         /// <returns></returns>
         bool HasDataAccess(DbTransaction tran, string ruleSql, Guid entityid, List<Guid> recids, string recidFieldName = "recid");
+        /// <summary>
+        /// 单纯保存Rule信息，其他不保存
+        /// </summary>
+        /// <param name="Id"></param>
+        /// <param name="rule"></param>
+        /// <param name="ruleItem"></param>
+        /// <param name="ruleSet"></param>
+        /// <returns></returns>
+        OperateResult SaveRuleWithoutRelation(string Id, string rule, string ruleItem, string ruleSet, int userId);
 
-       
+
     }
 }
 

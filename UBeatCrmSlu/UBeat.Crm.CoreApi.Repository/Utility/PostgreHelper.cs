@@ -500,14 +500,15 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
         /// </summary>
         /// <remarks>参数的格式：冒号+参数名</remarks>
         private static void PrepareCommand(DbCommand cmd, DbConnection conn, DbTransaction trans, CommandType cmdType,
-            string cmdText, DbParameter[] cmdParms)
+            string cmdText, DbParameter[] cmdParms,bool isReplaceSpecChar=true)
         {
             if (conn.State != ConnectionState.Open)
                 conn.Open();
 
             cmd.Connection = conn;
             //cmd.CommandText = cmdText.Replace("@", ":").Replace("?", ":").Replace("[", "\"").Replace("]", "\"");
-            cmd.CommandText = cmdText.Replace("@", ":").Replace("?", ":");
+            if (isReplaceSpecChar)
+                cmd.CommandText = cmdText.Replace("@", ":").Replace("?", ":");
             if (CheckSqlInjection(cmd.CommandText))
                 throw new Exception("SQL语句不可包含系统关键字");
             if (trans != null)
@@ -549,7 +550,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
 
             if (string.IsNullOrEmpty(s)) return false;
             //s = s.Replace("'", "");
-            return s.Contains("--");
+            // return s.Contains("--");
+            return false;
         }
 
 

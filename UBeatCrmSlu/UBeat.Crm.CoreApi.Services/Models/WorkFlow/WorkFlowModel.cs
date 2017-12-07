@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.Services.Models.Rule;
+using UBeat.Crm.CoreApi.Services.Models.Vocation;
 
 namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 {
@@ -151,5 +153,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string CopyUser { get; set; }
         public string Remark { get; set; }
         public Dictionary<string, object> CaseData { get; set; }
+    }
+    public class WorkFlowRuleQueryParamInfo {
+        public Guid FlowId { get; set; }
+    }
+    public class WorkFlowRuleSaveParamInfo {
+        public Guid WorkflowId { get; set; }
+        public Guid EntityId { get; set; }
+
+        public RuleContent Rule { get; set; }
+        public ICollection<RuleItemModel> RuleItems { get; set; }
+        public RuleSetModel RuleSet { get; set; }
     }
 }

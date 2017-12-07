@@ -19,6 +19,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Models.Account;
+using UBeat.Crm.CoreApi.DomainModel.Rule;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -199,6 +200,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = AddCase(null, caseEntity, userNumber);
 
             return HandleResult(result);
+        }
+
+        public OutputResult<object> SaveWorkflowRule(WorkFlowRuleSaveParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            if (paramInfo.Rule == null) {
+                paramInfo.Rule = new Models.Vocation.RuleContent();
+            }
+            paramInfo.Rule.EntityId = paramInfo.EntityId;
+            string ruletext = Newtonsoft.Json.JsonConvert.SerializeObject(paramInfo.Rule);
+            string ruleitemtext = Newtonsoft.Json.JsonConvert.SerializeObject(paramInfo.RuleItems);
+            string ruleSetText = Newtonsoft.Json.JsonConvert.SerializeObject(paramInfo.RuleSet);
+            if ( paramInfo.Rule.RuleId == null || paramInfo.Rule.RuleId == Guid.Empty)
+            {
+                //走新增模式
+                OperateResult result = this._ruleRepository.SaveRuleWithoutRelation(null, ruletext, ruleitemtext, ruleSetText, userId);
+                if (result != null && result.Id != null && result.Id.Length > 0)
+                {
+                    this._workFlowRepository.SaveWorkflowRuleRelation(result.Id, paramInfo.WorkflowId, userId, tran);
+                }
+            }
+            else {
+                //走修改模式
+                this._ruleRepository.SaveRuleWithoutRelation(paramInfo.Rule.RuleId.ToString(), ruletext, ruleitemtext, ruleSetText, userId);
+            }
+            return new OutputResult<object>("ok");
+        }
+
+        public OutputResult<object> GetRules(WorkFlowRuleQueryParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            WorkFlowInfo workFlowInfo =  this._workFlowRepository.GetWorkFlowInfo(tran, paramInfo.FlowId);
+            if (workFlowInfo == null || workFlowInfo.Entityid == null || workFlowInfo.Entityid == Guid.Empty) {
+                return new OutputResult<object>(null, "无法配置", -1);
+            }
+            Guid ruleid = this._workFlowRepository.getWorkflowRuleId(paramInfo.FlowId, userId, tran);
+            List<RuleDataInfo> rules = null;
+            if (!(ruleid == null || ruleid == Guid.Empty))
+            {
+                rules = this._ruleRepository.GetRule(ruleid, userId, tran);
+            }
+            Dictionary<string, object> retData = new Dictionary<string, object>();
+            retData.Add("ruleid", ruleid);
+            retData.Add("flowinfo", workFlowInfo);
+            if (rules != null && rules.Count >0 ) {
+                retData.Add("rulename", rules[0].RuleName);
+                retData.Add("ruleitems", rules[0].RuleItems);
+                retData.Add("ruleset", rules[0].RuleSet);
+            }
+            List<Dictionary<string, object>> retList = new List<Dictionary<string, object>>();
+            retList.Add(retData);
+            return new OutputResult<object>(retList);
         }
 
         public OperateResult AddCase(DbTransaction tran, WorkFlowAddCaseMapper caseEntity, int userNumber)

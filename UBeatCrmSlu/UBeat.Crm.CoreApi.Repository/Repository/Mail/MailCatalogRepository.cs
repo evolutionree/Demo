@@ -435,7 +435,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                             inner join crm_sys_mail_mailbody c on c.recid=b.mailid where c.isread is null or c.isread = 0 group by viewuserid )
 		                            select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
 	                             inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where (b.isleader is null or b.isleader <> 1) and a.recstatus = 1 
-		                            and a.deptid in (SELECT deptid FROM crm_func_department_tree_power(@deptId,1,1,@userId)) order by b.username";
+		                            and a.deptid in (SELECT deptid FROM crm_func_department_tree_power(@deptId,1,1,@userId)) ";
                     getOrgTreeSql = string.Format(getOrgTreeSql + " and b.username like '%{0}%'  order by b.username ", keyword);
 
                 }
@@ -457,7 +457,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 		             SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recstatus=1  
             ),
             catalogrelation AS(
-		             SELECT a.catalogid,COUNT(mailid) AS unreadmail FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where(b.isread is null or b.isread = 0) GROUP BY a.catalogid
+				SELECT a.catalogid,COUNT(mailid) AS unreadmail,c.vpid FROM crm_sys_mail_catalog_relation a INNER JOIN crm_sys_mail_catalog c on c.recid=a.catalogid inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where (b.isread is null or b.isread = 0) GROUP BY a.catalogid,c.vpid
             ),
             catalogmailcount AS(
 		             SELECT a.catalogid,COUNT(mailid) AS mailcount FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid   GROUP BY a.catalogid
@@ -465,7 +465,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             SELECT usercatalog.*,
             COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userid ))
             WHEN usercatalog.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0 and viewuserid=@userid ))
-            WHEN usercatalog.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.vpid=usercatalog.recid)
             WHEN usercatalog.CType=4001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('4001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)
             WHEN usercatalog.CType=2002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2002' IN idpath) >0 and viewuserid=@userid ))
             WHEN usercatalog.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)

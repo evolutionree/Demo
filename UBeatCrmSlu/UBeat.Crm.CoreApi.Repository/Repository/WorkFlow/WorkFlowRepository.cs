@@ -1324,32 +1324,29 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
             return false;
         }
-        /// <summary>
-        /// 获取流程审批的抄送人
-        /// </summary>
-        /// <param name="caseid"></param>
-        /// <returns></returns>
-        public List<int> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null)
+
+        public Guid getWorkflowRuleId(Guid flowId, int userId, DbTransaction tran)
         {
-            string sql = string.Format(@" SELECT ci.copyuser FROM crm_sys_workflow_case_item ci
-                                          WHERE ci.caseid=@caseid AND stepnum>= (SELECT MAX( stepnum) FROM crm_sys_workflow_case_item WHERE caseid=@caseid AND nodenum=0) 
-                                          ");
-
-            var sqlParameters = new List<DbParameter>();
-            sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
-
-            var result = ExecuteQuery(sql, sqlParameters.ToArray(), trans);
-            List<int> copyuserlist = new List<int>();
-            foreach ( var row in result)
+            try
             {
-                int copyuser = 0;
-                if (row["copyuser"]!=null&&int.TryParse(row["copyuser"].ToString(),out copyuser))
-                {
-                    copyuserlist.Add(copyuser);
-                }
+                string strSQL = string.Format("select ruleid  from crm_sys_workflow_rule_relation where flowid =  '{0}'", flowId.ToString());
+                Dictionary<string, object> item = ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
+                if (item != null) return (Guid)item["ruleid"];
             }
+            catch (Exception ex) {
+            }
+            return Guid.Empty;
+        }
 
-            return copyuserlist.Distinct().ToList();
+        public void SaveWorkflowRuleRelation(string id, Guid workflowId, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string sql = string.Format(@"update crm_sys_workflow_rule_relation set ruleid='{0}' where flowid='{1}' ", id, workflowId);
+                ExecuteNonQuery(sql, new DbParameter[] { }, tran);
+            }
+            catch (Exception ex) {
+            }
         }
     }
 }

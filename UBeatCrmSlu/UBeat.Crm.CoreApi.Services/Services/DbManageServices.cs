@@ -20,12 +20,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="procname"></param>
         /// <param name="userid"></param>
         /// <returns></returns>
-        public string  GenerateProcSQL(string procname, int userid) {
+        public string  GenerateProcSQL(string procname, string param,int userid) {
             DbTransaction tran = null;
-            Dictionary<string, object> item = _dbManageRepository.getProcInfo(procname, userid, tran);
+            Dictionary<string, object> item = _dbManageRepository.getProcInfo(procname, param, userid, tran);
             if (item == null) return null;
-            string sql = (string)item["textsql"];
+            string sql = (string)item["textsql"]+";";
             return sql;
+        }
+        public string GenerateTypeCreateSQL(string typename, int userid) {
+            DbTransaction tran = null;
+            Dictionary<string, object> tableInfo = _dbManageRepository.getTypeInfo(typename, userid, tran);
+            if (tableInfo == null) return null;
+            #region 字段信息
+            List<Dictionary<string, object>> fieldsList = _dbManageRepository.getFieldList(typename, userid, tran);
+            Dictionary<string, Dictionary<string, object>> fieldMap = new Dictionary<string, Dictionary<string, object>>();
+            foreach (Dictionary<string, object> item in fieldsList)
+            {
+                int tmp = ((Int16)item["attnum"]);
+                fieldMap.Add(tmp.ToString(), item);
+            }
+            string fieldSQL = _generateFieldsSQL(fieldsList);
+            string createTableSQL = string.Format(@"
+create type  ""public"".""{0}"" as (
+{1});", typename, fieldSQL);
+            #endregion
+            
+            return createTableSQL + "\r\n" ;
         }
         /// <summary>
         /// 生成创建table的脚本
@@ -46,9 +66,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             string fieldSQL = _generateFieldsSQL(fieldsList);
             string createTableSQL = string.Format(@"
-                        create table ""public"".""{0}""(
-                        {1})
-                        WITH (OIDS=FALSE)", tablename, fieldSQL);
+create table ""public"".""{0}""(
+{1})
+WITH (OIDS=FALSE);", tablename, fieldSQL);
             #endregion
 
             #region 处理备注信息
@@ -66,16 +86,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             foreach (Dictionary<string, object> item in fieldsList) {
                 string src = (string)item["adsrc"];
                 if (src == null || src.Length == 0) continue;
+                int index = src.IndexOf("nextval");
+                if (index < 0) continue;
+                src = src.Substring(index);
                 if (src.StartsWith("nextval")) {
                     string seqname = src.Substring("nextval('".Length);
-                    seqname = seqname.Substring(0, seqname.Length - "'::regclass)".Length);
+                    index = seqname.IndexOf("'::regclass)");
+                    if (index < 0) continue;
+                    seqname = seqname.Substring(0, index);
+                   // seqname = seqname.Substring(0, seqname.Length - "'::regclass)".Length);
                     SeqSQL = SeqSQL + string.Format("CREATE SEQUENCE \"public\".\"{0}\";", seqname);
-                    SeqSQL = SeqSQL + string.Format("ALTER TABLE \"public\".\"{0}\" OWNER TO \"postgres\";", seqname);
+                    SeqSQL = SeqSQL + string.Format("ALTER SEQUENCE \"public\".\"{0}\" OWNER TO \"postgres\";", seqname);
                 }
             }
             #endregion 
 
-            #region 处理constraints
+            #region _
             string ConstraintSQL = "";
             List<Dictionary<string, object>> constraintList = _dbManageRepository.getConstraints(tablename, userid, tran);
             if(constraintList != null)
@@ -85,7 +111,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     string tmp = _generateConstraintSQL(item, tablename);
                     if (tmp != null && tmp.Length > 0)
                     {
-                        ConstraintSQL = ConstraintSQL + tmp + "\r\n";
+                        ConstraintSQL = ConstraintSQL + tmp + ";\r\n";
                     }
                 }
             }
@@ -106,19 +132,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
             #endregion
             #region triggers 
             string TriggerSQL = "";
+            Dictionary<string, string> needTriggerProc = new Dictionary<string, string>();
             List<Dictionary<string, object>> triggerList = _dbManageRepository.getTriggers(tablename, userid, tran);
             if (triggerList != null)
             {
                 foreach (Dictionary<string, object> item in triggerList)
                 {
                     TriggerSQL = TriggerSQL + (string)item["sqltext"] + ";\r\n";
+                    if (item["proname"] != null && ((string)item["proname"]).Length > 0) {
+                        string proname = (string)item["proname"];
+                        if (needTriggerProc.ContainsKey(proname) == false) {
+                            needTriggerProc.Add(proname, proname);
+                        }
+                    }
+                }
+                //检查触发器函数是否加在列表内
+                foreach (string proname in needTriggerProc.Keys) {
+                    if (this._dbManageRepository.checkHasPreProName(proname, userid, tran) == false) {
+                        throw (new Exception("函数[" + proname + "]必须在定义列表内，请更新定义"));
+                    }
                 }
             }
             
             #endregion
             #region rules 
             #endregion
-            return createTableSQL + "\r\n" + ConstraintSQL +"\r\n" + IndexSQL +"\r\n" + TriggerSQL  +"\r\n";
+            return SeqSQL+"\r\n"+createTableSQL + "\r\n" + ConstraintSQL +"\r\n" + IndexSQL +"\r\n" + TriggerSQL  +"\r\n";
         }
 
         public OutputResult<object> SaveUpgradeSQL(SQLTextModel paramInfo, int userId)
@@ -151,9 +190,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             try
             {
+                List<SQLTextModel> typeList = this._dbManageRepository.ListInitSQLForType(paramInfo.ExportSys, paramInfo.IsStruct, userId, null);
                 List<SQLTextModel> funcsList = this._dbManageRepository.ListInitSQLForFunc(paramInfo.ExportSys, paramInfo.IsStruct, userId, null);
                 List<SQLTextModel> tablesList = this._dbManageRepository.ListInitSQLForTable(paramInfo.ExportSys, paramInfo.IsStruct, userId, null);
                 StringBuilder sb = new StringBuilder();
+                foreach (SQLTextModel item in typeList)
+                {
+                    if (item.SqlText != null && item.SqlText.Length > 0)
+                    {
+                        sb.AppendLine(item.SqlText);
+                    }
+                }
                 foreach (SQLTextModel item in funcsList) {
                     if (item.SqlText != null && item.SqlText.Length >0 ) {
                         sb.AppendLine(item.SqlText);
@@ -174,6 +221,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> ReflectInitStructSQL(string[] recIds, int userId)
         {
             DbTransaction tran = null;
+            if (recIds == null || recIds.Length == 0) {
+                //获取所有
+                List<SQLObjectModel> allObject = this._dbManageRepository.getSQLObjects("", userId, tran);
+                List<string> l = new List<string>();
+                foreach (SQLObjectModel item in allObject) {
+                    if (item.NeedInitSQL == 1) {
+                        l.Add(item.Id.ToString());
+                    }
+                }
+                recIds = l.ToArray();
+            }
             foreach (string id in recIds) {
                 SQLObjectModel item = this._dbManageRepository.querySQLObject(id, userId, tran);
                 if (item == null) continue;
@@ -186,12 +244,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 else if (item.ObjType == SQLObjectTypeEnum.Func)
                 {
-                    sql = this.GenerateProcSQL(item.ObjName, userId);
+                    sql = this.GenerateProcSQL(item.ObjName, item.ProcParam, userId);
                 }
-                else {
+                else if (item.ObjType == SQLObjectTypeEnum.PGType) {
+                    sql = this.GenerateTypeCreateSQL(item.ObjName, userId);
+                }
+                else
+                {
                     continue;
                 }
-                if (sql == null || sql.Length == 0) continue;
+                if (sql == null || sql.Length == 0)
+                {
+                    continue;
+                }
                 newSQL.initOrUpdate = InitOrUpdate.Init;
                 newSQL.structOrData = StructOrData.Struct;
                 newSQL.sqlOrJson = SqlOrJsonEnum.SQL;
@@ -283,8 +348,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 fieldTypeString = " timestamp(8) ";
             }
-            else if (fieldtype == "uuid") {
-                fieldTypeString = "  uuid  "; 
+            else if (fieldtype == "uuid")
+            {
+                fieldTypeString = "  uuid  ";
+            }
+            else if (fieldtype == "-") {
+                return null;
             }
             else
             {
