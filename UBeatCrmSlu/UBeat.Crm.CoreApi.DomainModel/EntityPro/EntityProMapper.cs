@@ -551,7 +551,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
     {
         public Guid EntityId { get; set; }
 
-        public Guid CommEntityId { get { return Guid.Parse("ac051b46-7a20-4848-9072-3b108f1de9b0"); } set { } }
+        public Guid RelEntityId { get; set; }
 
         public Guid FieldId { get; set; }
 

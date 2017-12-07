@@ -350,10 +350,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var catalog = new CUMailCatalogMapper
                 {
                     CatalogId = paramInfo.recId,
-                    CatalogPId= paramInfo.newPid,
+                    CatalogPId = paramInfo.newPid,
                     CatalogName = paramInfo.recName
                 };
-                _mailCatalogRepository.EditCatalog(catalog,userId);
+                _mailCatalogRepository.EditCatalog(catalog, userId);
                 MailCatalogInfo currentParantInfo = _mailCatalogRepository.GetMailCataLogById(catalogInfo.PId, userId, tran);
 
                 MailCatalogInfo newParentInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.newPid, userId, tran);
@@ -367,7 +367,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
                 return new OutputResult<object>("保存成功");
             }
-            else {
+            else
+            {
                 throw (new Exception("只能移动个人目录"));
             }
 
@@ -376,32 +377,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         public OutputResult<object> ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
-        {
-            //校验白名单之类的验证
-            var errors = ValidEmailAddressAuth(model, userNumber);
-            if (errors.Count > 0)
-            {
-                var mailInfoCol = errors.Select(t => t.DisplayName + "(" + t.EmailAddress + ")");
-                var errorObj = new
-                {
-                    Flag = 0,
-                    TipMsg = string.Join(",", mailInfoCol) + "不是内部人员也不是自己负责客户的联系人，不允许发送，是否继续？",
-                    AddressTipData = errors
-                };
-                return new OutputResult<object>(errorObj);
-            }
-            else
-            {
-                var outPutResult = SendEMailAsync(model, header, userNumber);
-                var errorObj = new
-                {
-                    Flag = 1,
-                    TipMsg = string.Empty
-                };
-                return new OutputResult<object>(errorObj);
-            }
-        }
-        public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
             if (entity == null || !entity.IsValid())
@@ -429,13 +404,40 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
 
-            MimeMessageResult msgResult = new MimeMessageResult
+            //校验白名单之类的验证
+            var errors = ValidEmailAddressAuth(model, userNumber);
+            if (errors.Count > 0)
             {
-                Msg = emailMsg,
-                ActionType = (int)MailActionType.ExternalSend,
-                Status = (int)MailStatus.Sending,
-                AttachFileRecord = attachFileRecord,
-            };
+                var mailInfoCol = errors.Select(t => t.DisplayName + "(" + t.EmailAddress + ")");
+                var errorObj = new
+                {
+                    Flag = 0,
+                    TipMsg = string.Join(",", mailInfoCol) + "不是内部人员也不是自己负责客户的联系人，不允许发送，是否继续？",
+                    AddressTipData = errors
+                };
+                return new OutputResult<object>(errorObj);
+            }
+            else
+            {
+                MimeMessageResult msgResult = new MimeMessageResult
+                {
+                    Entity = entity,
+                    Msg = emailMsg,
+                    ActionType = (int)MailActionType.ExternalSend,
+                    Status = (int)MailStatus.Sending,
+                    AttachFileRecord = attachFileRecord,
+                };
+                var outPutResult = SendEMailAsync(msgResult, userNumber);
+                var errorObj = new
+                {
+                    Flag = 1,
+                    TipMsg = string.Empty
+                };
+                return new OutputResult<object>(errorObj);
+            }
+        }
+        public OutputResult<object> SendEMailAsync(MimeMessageResult msgResult, int userNumber)
+        {
             var repResult = SaveSendMailDataInDb(msgResult, userNumber);
             if (repResult.Flag == 0)
                 throw new Exception("邮件实体异常:" + repResult.Msg);
@@ -443,8 +445,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 try
                 {
-                    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
-                    _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
+                    bool enableSsl = msgResult.UserMailInfo.EnableSsl == 2 ? true : false;
+                    _email.SendMessage(msgResult.UserMailInfo.SmtpAddress, msgResult.UserMailInfo.SmtpPort, msgResult.UserMailInfo.AccountId, msgResult.UserMailInfo.EncryptPwd, msgResult.Msg, enableSsl);
                     repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
                     return HandleResult(repResult);
                 }
@@ -457,7 +459,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Message = "发送邮件失败"
                     };
                 }
-            }, entity, Guid.Parse(_entityId), userNumber);
+                finally
+                {
+                    // TO DO
+                }
+            }, msgResult.Entity, Guid.Parse(_entityId), userNumber);
             return res;
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
@@ -904,7 +910,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 };
                 return HandleResult(_mailCatalogRepository.InsertCatalog(catalog, userId));
             }
-            else {
+            else
+            {
                 return HandleResult(new OperateResult()
                 {
                     Flag = 0,

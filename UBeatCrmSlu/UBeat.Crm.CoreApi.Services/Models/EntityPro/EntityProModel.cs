@@ -348,6 +348,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public Guid FieldId { get; set; }
 
+        public Guid RelEntityId { get; set; }
+
         public string FieldName { get; set; }
     }
     public class EntityBaseDataFieldModel

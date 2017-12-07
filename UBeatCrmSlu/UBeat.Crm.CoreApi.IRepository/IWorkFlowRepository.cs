@@ -99,7 +99,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <summary>
         /// 退回流程节点
         /// </summary>
-        bool RebackWorkFlowCaseItem(Guid flowId, int vernum, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null);
+        bool RebackWorkFlowCaseItem(WorkFlowCaseInfo caseinfo, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null);
 
         /// <summary>
         /// 重新发起流程

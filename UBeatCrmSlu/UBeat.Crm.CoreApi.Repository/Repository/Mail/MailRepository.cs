@@ -33,9 +33,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers," +
                                         "body.title," +
                                         "body.mailbody," +
-                                        "body.senttime," +
-                                        "body.receivedtime," +
-                                        "COALESCE(body.receivedtime,body.senttime) orderbytime," +
+                                        "COALESCE(body.senttime,body.receivedtime)  senttime," +
+                                        "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
                                         "body.istag," +
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
@@ -78,7 +77,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 paramInfo.PageIndex = 1;
             }
 
-            orderbyfield = @" order by tmp.orderbytime desc ";
+            orderbyfield = @" order by tmp.receivedtime desc ";
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
             return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
         }
@@ -101,9 +100,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers," +
                                         "body.title," +
                                         "body.mailbody," +
-                                        "body.senttime," +
-                                        "body.receivedtime," +
-                                        "COALESCE(body.receivedtime,body.senttime) orderbytime," +
+                                        "COALESCE(body.senttime,body.receivedtime)  senttime," +
+                                        "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
                                         "body.istag," +
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
@@ -126,7 +124,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "select\n" +
                                         " mailid from crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userid) AND (ctype=2 OR ctype=3 OR ctype=4)) ) AS tmp1\n" +
                                         "ON tmp.mailid=tmp1.mailid" +
-                                        ") {0} )) AS tmp  ORDER BY tmp.orderbytime DESC";
+                                        ") {0} )) AS tmp  ORDER BY tmp.receivedtime DESC";
             var sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
@@ -349,8 +347,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.sender senderstr," +
                                         "body.title," +
                                         "body.mailbody," +
-                                        "body.senttime," +
-                                        "body.receivedtime," +
+                                        "COALESCE(body.senttime,body.receivedtime)  senttime," +
+                                        "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
                                         "body.istag," +
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid) attachcount," +
@@ -368,8 +366,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1)AND  recstatus=1;";
             var conCustSql = @"SELECT recname,phone,email,headicon FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
             var isCustExistsSql = @"Select count(1) From crm_sys_customer Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
-            var custSql = @"SELECT crm_func_entity_protocol_data_detail('f9db9d79-e94b-4678-a5cc-aa6e281c1246',
-(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid,0,@userid);";
+            var custConfigSql = @"  SELECT tmp.columnkey||tmp1.extracolumn FROM (  SELECT string_agg(fieldname,',') AS columnkey     
+                                                    FROM (
+                                                        SELECT f.fieldid,f.fieldname FROM crm_sys_entity_fields AS f
+                                                        WHERE f.entityid='349cba2f-42b0-44c2-89f5-207052f50a00' 
+                                                        AND controltype  NOT IN(20) AND recstatus=1
+                                                    ) AS t ) AS tmp, (select
+                                                    crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('349cba2f-42b0-44c2-89f5-207052f50a00',@userid)) AS tmp1";
+            var custSql = @"SELECT  {0} FROM crm_sys_customer AS e WHERE recid IN (
+                                        SELECT regexp_split_to_table(custids,',')::uuid custid FROM (
+                                        SELECT (belcust->>'id') AS custids FROM crm_sys_contact WHERE email=
+                                        (Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1) AS tmp ) AND recstatus=1";
 
             var contactsSql = @"SELECT  crm_func_entity_protocol_data_list('e450bfd7-ff17-4b29-a2db-7ddaf1e79342','75ce6617-2016-46f0-8cb4-8467b77ef468','and t.recid IN (
 Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_split_to_table(custid,'','')  FROM (SELECT (belcust->>''id'') as  custid FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=''" + entity.MailId.ToString() + "''  And ctype=1 LIMIT 1)  AND recstatus=1 LIMIT 1) AS tmp ))','',0,NULL,1,@maxpagesize,0,@userid)";
@@ -393,7 +400,10 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             var countRecord = DataBaseHelper.QuerySingle<int>(isCustExistsSql, param, CommandType.Text);
             List<dynamic> custResult = new List<dynamic>();
             if (countRecord > 0)
-                custResult = DataBaseHelper.QueryStoredProcCursor<dynamic>(custSql, param, CommandType.Text);
+            {
+                custSql = string.Format(custSql, DataBaseHelper.QuerySingle<string>(custConfigSql, param));
+                custResult = DataBaseHelper.Query<dynamic>(custSql, param, CommandType.Text);
+            }
             Dictionary<string, object> dicResult = new Dictionary<string, object>();
             dicResult.Add("maildetail", mailDetail);
             dicResult.Add("sender", senderResult);
@@ -612,9 +622,9 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
                                         (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers, 
                                         body.title, 
                                         body.mailbody as summary, 
-                                        body.senttime, 
-                                        COALESCE(body.senttime,body.receivedtime) AS orderbytime, 
-                                        body.receivedtime  FROM crm_sys_mail_mailbody body {0}";
+                                        COALESCE(body.senttime, body.receivedtime)  senttime,
+                                        COALESCE(body.receivedtime,body.senttime)  receivedtime
+                                        FROM crm_sys_mail_mailbody body {0}";
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
@@ -689,7 +699,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
 
             }
             sql = string.Format(sql, whereSql);
-            sql = string.Format(" SELECT * FROM ( {0} ) AS tmp  ORDER BY tmp.orderbytime desc ", sql);
+            sql = string.Format(" SELECT * FROM ( {0} ) AS tmp  ORDER BY tmp.receivedtime desc ", sql);
             return ExecuteQueryByPaging<MailBodyMapper>(sql, param, entity.PageSize, entity.PageIndex);
         }
 
@@ -697,7 +707,8 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
         public PageDataInfo<ToAndFroFileMapper> GetInnerToAndFroAttachment(ToAndFroMapper entity, int userId)
         {
 
-            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid,body.receivedtime,body.senttime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0}";
+            string sql = @" SELECT att.filename,att.filetype,att.filesize,att.mongoid,att.mailid, COALESCE(body.senttime, body.receivedtime)  senttime,
+                                        COALESCE(body.receivedtime,body.senttime)  receivedtime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0}";
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
@@ -773,7 +784,7 @@ Select recid From crm_sys_contact Where (belcust->>''id'') IN ( SELECT regexp_sp
             }
 
             sql = string.Format(sql, whereSql);
-            sql = string.Format(" SELECT * FROM ( {0} ) AS tmp  ORDER BY tmp.orderbytime desc ", sql);
+            sql = string.Format(" SELECT * FROM ( {0} ) AS tmp  ORDER BY tmp.receivedtime desc ", sql);
             return ExecuteQueryByPaging<ToAndFroFileMapper>(sql, param, entity.PageSize, entity.PageIndex);
         }
 

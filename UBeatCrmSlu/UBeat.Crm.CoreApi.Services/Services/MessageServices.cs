@@ -202,7 +202,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 if (msgSuccess == false)
                     throw new Exception("写入消息失败");
-                tran.Commit();
+                if (isLocalTransaction)
+                {
+                    tran.Commit();
+                }
             }
             catch (Exception ex)
             {

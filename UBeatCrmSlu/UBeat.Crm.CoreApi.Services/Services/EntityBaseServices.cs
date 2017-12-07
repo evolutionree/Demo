@@ -138,7 +138,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             outResult = ActionExtService.ExcutePreAction(tran, arg, userData, actionExtModel);
                             preActionResult = outResult.DataBody;
                             //如果配置了立即终止，则立刻返回，不执行后面逻辑
-                            if (actionExtModel.operatetype == 1)
+                            if ( actionExtModel.resulttype == 1)
                             {
                                 tran.Commit();
                                 return outResult;
