@@ -388,22 +388,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (userMailInfo == null)
                 throw new Exception("缺少发件人邮箱信息");
 
-            IList<MailboxAddress> fromAddressList;
-            IList<MailboxAddress> toAddressList;
-            IList<MailboxAddress> ccAddressList;
-            IList<MailboxAddress> bccAddressList;
-            BuilderEmailAddress(entity, out fromAddressList, out toAddressList, out ccAddressList, out bccAddressList);
-            List<ExpandoObject> attachFileRecord;//用来批量写db记录的
-            BuilderAttachmentFile(entity, out attachFileRecord);
-            BuilderMailBody(entity, userNumber);
-
-            string error = ValidMailSize(userMailInfo.Wgvhhx, entity.BodyContent, attachFileRecord);
+            string error = ValidMailSize(userMailInfo.Wgvhhx, model.BodyContent, GetAttachmentFileSize(model));
             if (!string.IsNullOrEmpty(error))
             {
                 return ShowError<object>(error);
             }
-            var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
-
             //校验白名单之类的验证
             var errors = ValidEmailAddressAuth(model, userNumber);
             if (errors.Count > 0)
@@ -419,25 +408,49 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
-                MimeMessageResult msgResult = new MimeMessageResult
+                var outPutResult = SendEMailAsync(model, header, userNumber);
+                dynamic errorObj;
+                if (outPutResult.Status == 0)
                 {
-                    Entity = entity,
-                    Msg = emailMsg,
-                    ActionType = (int)MailActionType.ExternalSend,
-                    Status = (int)MailStatus.Sending,
-                    AttachFileRecord = attachFileRecord,
-                };
-                var outPutResult = SendEMailAsync(msgResult, userNumber);
-                var errorObj = new
+                    errorObj = new
+                    {
+                        Flag = 1,
+                        TipMsg = string.Empty
+                    };
+                }
+                else
                 {
-                    Flag = 1,
-                    TipMsg = string.Empty
-                };
+                    errorObj = new
+                    {
+                        Flag = 0,
+                        TipMsg = outPutResult.Message
+                    };
+                }
                 return new OutputResult<object>(errorObj);
             }
         }
-        public OutputResult<object> SendEMailAsync(MimeMessageResult msgResult, int userNumber)
+        public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
+            var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
+            var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
+
+            IList<MailboxAddress> fromAddressList;
+            IList<MailboxAddress> toAddressList;
+            IList<MailboxAddress> ccAddressList;
+            IList<MailboxAddress> bccAddressList;
+            BuilderEmailAddress(entity, out fromAddressList, out toAddressList, out ccAddressList, out bccAddressList);
+            List<ExpandoObject> attachFileRecord;//用来批量写db记录的
+            BuilderAttachmentFile(entity, out attachFileRecord);
+            BuilderMailBody(entity, userNumber);
+            var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
+
+            MimeMessageResult msgResult = new MimeMessageResult
+            {
+                Msg = emailMsg,
+                ActionType = (int)MailActionType.ExternalSend,
+                Status = (int)MailStatus.Sending,
+                AttachFileRecord = attachFileRecord,
+            };
             var repResult = SaveSendMailDataInDb(msgResult, userNumber);
             if (repResult.Flag == 0)
                 throw new Exception("邮件实体异常:" + repResult.Msg);
@@ -445,8 +458,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 try
                 {
-                    bool enableSsl = msgResult.UserMailInfo.EnableSsl == 2 ? true : false;
-                    _email.SendMessage(msgResult.UserMailInfo.SmtpAddress, msgResult.UserMailInfo.SmtpPort, msgResult.UserMailInfo.AccountId, msgResult.UserMailInfo.EncryptPwd, msgResult.Msg, enableSsl);
+                    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                    _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
                     repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
                     return HandleResult(repResult);
                 }
@@ -459,11 +472,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Message = "发送邮件失败"
                     };
                 }
-                finally
-                {
-                    // TO DO
-                }
-            }, msgResult.Entity, Guid.Parse(_entityId), userNumber);
+            }, entity, Guid.Parse(_entityId), userNumber);
             return res;
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
@@ -695,6 +704,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 attachFileRecord.Add(expandObj);
             }
         }
+
+        private int GetAttachmentFileSize(SendEMailModel model)
+        {
+            var tmp = _fileServices.GetFileListData(string.Empty, model.AttachmentFile.Select(t => t.FileId).AsEnumerable());
+            int countSize = 0;
+            foreach (var t in tmp)
+            {
+                countSize += t.Data.Length;
+            }
+            return countSize;
+        }
         private async Task<IList<dynamic>> UploadAttachmentFiles(IEnumerable<MimeEntity> mimeEntities)
         {
             return await Task.Run(() =>
@@ -862,16 +882,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return errors;
         }
 
-        private string ValidMailSize(Int64 limitSize, string bodyContent, List<ExpandoObject> attFiles)
+        private string ValidMailSize(Int64 limitSize, string bodyContent, int fileSize)
         {
 
             long kbSize = limitSize * 1024 * 1024;
-            int countSize = CommonHelper.GetStringLength(bodyContent);
-            foreach (var tmp in attFiles)
-            {
-                dynamic dyn = (dynamic)tmp;
-                countSize += dyn.data.Length;
-            }
+            int countSize = CommonHelper.GetStringLength(bodyContent) + fileSize;
             if (kbSize < countSize)
             {
                 return "发送的邮件大小超出限制";
