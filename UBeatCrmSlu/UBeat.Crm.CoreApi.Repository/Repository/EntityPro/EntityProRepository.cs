@@ -1164,7 +1164,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             ";
 
             var sql_name = @"select
-                            fieldid  from crm_sys_entity_fields where controltype=1012  and entityid='ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid and recstatus=1 and fieldname='recname';";
+                            fieldid  from crm_sys_entity_fields where controltype=1012  and entityid=@relentityid and recstatus=1 and fieldname='recname';";
 
             var lst = entity.AsList();
             var conn = DataBaseHelper.GetDbConnect();
@@ -1174,13 +1174,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             }
             var param = new DynamicParameters();
             param.Add("entityid", entity.FirstOrDefault().EntityId);
-            param.Add("commentityid", entity.FirstOrDefault().CommEntityId);
+            param.Add("relentityid", entity.FirstOrDefault().RelEntityId);
             param.Add("fieldidnames", string.Join(",", entity.Select(t => t.FieldName).ToArray()));
 
             var fields = conn.Query<dynamic>(@"
                              Select 
                             fieldname, 
-                            'ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid entityid,
+                            @relentityid::uuid entityid,
                             fieldlabel,
                             displayname,
                             controltype,
@@ -1201,7 +1201,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
             var transaction = conn.BeginTransaction();
             param = new DynamicParameters();
-            param.Add("entityid", entity.FirstOrDefault().CommEntityId);
+            param.Add("entityid", entity.FirstOrDefault().RelEntityId);
             param.Add("fieldnames", string.Join(",", entity.Select(t => t.FieldName).ToArray()));
             conn.Execute("Update  crm_sys_entity_field_rules set recstatus=0 where fieldid in (SELECT fieldid From crm_sys_entity_fields Where controltype not in (20, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013) and entityid=@entityid::uuid);" +
                 " Update   crm_sys_entity_fields set recstatus=0 Where controltype not in (20, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013) and entityid=@entityid::uuid;", param);
@@ -1230,7 +1230,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     al.Add(result.Id);
                 }
                 param = new DynamicParameters();
-                param.Add("entityid", entity.FirstOrDefault().EntityId);
+                param.Add("relentityid", entity.FirstOrDefault().RelEntityId);
                 var recName = conn.QueryFirst<dynamic>(sql_name, param);
                 if (recName == null)
                     throw new Exception("客户名称字段不存在");
@@ -1385,7 +1385,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     };
                     var entrytypeResult = ExecuteScalar(entrytype_sql, entrytypeParms, tran);
                     int entrytype = -1;
-                    if (entrytypeResult != null )
+                    if (entrytypeResult != null)
                     {
                         int.TryParse(entrytypeResult.ToString(), out entrytype);
                     }
@@ -1411,7 +1411,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     foreach (var root in rootfuncs)
                     {
                         root.ParentId = root.DeviceType == 0 ? webRootfuncid : mobileRootfuncid;
-                    } 
+                    }
 
                     #endregion
 
@@ -1431,7 +1431,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                         {
                             entityids.Add(dynamicEntityId);
                         }
-                    } 
+                    }
                     #endregion
 
                     #region --清空旧数据--
@@ -1449,7 +1449,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                         if (m != null && m.ContainsKey("funcid") && m["funcid"] != null && Guid.TryParse(m["funcid"].ToString(), out funcid))
                         {
                             allDeleteFuncIds.Add(funcid);
-                            if(!funclist.Exists(a=>a.FuncId==funcid))//如果当前function不在保存列表中，则表示永久删除
+                            if (!funclist.Exists(a => a.FuncId == funcid))//如果当前function不在保存列表中，则表示永久删除
                             {
                                 deleteFuncIds.Add(funcid);
                             }
