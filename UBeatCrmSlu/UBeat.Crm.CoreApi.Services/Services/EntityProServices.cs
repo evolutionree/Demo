@@ -550,8 +550,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("参数不可为空");
             if (dynamicModel.EntityId == Guid.Empty)
                 throw new Exception("参数EntityId不可为空");
-            List<FunctionInfo> webfuncs = new List<FunctionInfo>();
-            List<FunctionInfo> mobilefuncs = new List<FunctionInfo>();
+            List<FunctionModel> webfuncs = new List<FunctionModel>();
+            List<FunctionModel> mobilefuncs = new List<FunctionModel>();
 
             var info = _entityProRepository.GetFunctionJsonInfo(dynamicModel.EntityId);
             if (info == null)
@@ -559,16 +559,104 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 info = new FunctionJsonInfo();
             }
             var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.EntityId);
-
-            webfuncs = info.WebFunctions;
-            mobilefuncs = info.MobileFunctions;
+            if(entityInfo==null)
+                throw new Exception("实体数据不存在");
+            
             if (info.WebFunctions == null || info.WebFunctions.Count == 0)
-                webfuncs = GetDefaultFunctions(entityInfo, 0);
+                info.WebFunctions = GetDefaultFunctions(entityInfo, 0);
             if (info.MobileFunctions == null || info.MobileFunctions.Count == 0)
-                mobilefuncs = GetDefaultFunctions(entityInfo, 1);
+                info.MobileFunctions = GetDefaultFunctions(entityInfo, 1);
+
+            webfuncs=FunctionModelMap(info.WebFunctions);
+            mobilefuncs = FunctionModelMap(info.MobileFunctions);
             var result = new { Web = webfuncs, Mobile = mobilefuncs };
             return new OutputResult<object>(result);
         }
+
+        private List<FunctionModel> FunctionModelMap(List<FunctionInfo> infos)
+        {
+            List<FunctionModel> funcs = new List<FunctionModel>();
+            foreach (var m in infos)
+            {
+                funcs.Add(new FunctionModel(m.FuncId, m.ParentId, m.FuncName, m.Funccode, m.EntityId, m.IsLastChild, m.RelationValue, m.RoutePath));
+            }
+            return funcs;
+        }
+        private List<FunctionInfo> FunctionInfoMap(List<FunctionModel> infos,int devicetype)
+        {
+            List<FunctionInfo> funcs = new List<FunctionInfo>();
+            foreach (var m in infos)
+            {
+                if(m!=null)
+                {
+                    FunctionType rectype= GetFunctionType(m.Funccode,  devicetype);
+                    funcs.Add(new FunctionInfo(m.FuncId, m.ParentId, m.FuncName, m.Funccode, m.EntityId, devicetype, rectype, m.IsLastChild, m.RelationValue, m.RoutePath));
+                }
+               
+            }
+            return funcs;
+        }
+
+        private FunctionType GetFunctionType(string funccode,  int devicetype)
+        {
+            FunctionType rectype = FunctionType.Function;
+            if (string.IsNullOrEmpty(funccode))
+            {
+                throw new Exception("Funccode不可为空");
+            }
+            switch (funccode)
+            {
+                case "Entity":
+                    rectype = FunctionType.Entity; break;
+                case "EntityMenu":
+                    rectype = FunctionType.EntityMenu; break;
+                case "EntityDataList":
+                    rectype = FunctionType.Function; break;
+                case "EntityFunc":
+                    rectype = FunctionType.EntityFunc; break;
+                case "EntityDataAdd":
+                    rectype = FunctionType.Function; break;
+                case "EntityDataEdit":
+                    rectype = FunctionType.Function; break;
+                case "EntityDataDelete":
+                    rectype = FunctionType.Function; break;
+                case "EntityDataTransfer":
+                    rectype = FunctionType.Function; break;
+                case "EntityDataExport":
+                    rectype = FunctionType.Function; break;
+                case "EntityDataImport":
+                    rectype = FunctionType.Function; break;
+                case "EntityTab":
+                    rectype = FunctionType.EntityTab; break;
+                case "EntityDataDocment":
+                    rectype = FunctionType.DocumentList; break;
+                case "EntityDataDocmentList":
+                    rectype = FunctionType.Function; break;
+                case "DocumentUpload":
+                    rectype = FunctionType.Function; break;
+                case "DocumentDelete":
+                    rectype = FunctionType.Function; break;
+                case "EntityDataDetail":
+                    rectype = FunctionType.Function; break;
+                case "EntityDataDynamicList":
+                    rectype = FunctionType.Function; break;
+                case "EntityDynamicTab":
+                    rectype = FunctionType.EntityDynamicTab; break;
+                case "EntityDynamic":
+                    rectype = FunctionType.Function; break;
+
+                case "EntityDataChat":
+                    rectype = FunctionType.Function; 
+                    break;
+                default:
+                    throw new Exception("未约定的funccode");
+            }
+
+            
+
+            return rectype;
+        }
+
 
         /// <summary>
         /// 保存实体功能列表
@@ -578,6 +666,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>
         public OutputResult<object> SaveFunctionList(SaveFuncsModel dynamicModel, int userNumber)
         {
+            
             if (dynamicModel == null)
                 throw new Exception("参数不可为空");
             if (dynamicModel.EntityId == Guid.Empty)
@@ -592,8 +681,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 info = new FunctionJsonInfo();
             }
-            info.WebFunctions = dynamicModel.WebFuncs;
-            info.MobileFunctions = dynamicModel.MobileFuncs;
+            var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.EntityId);
+            if (entityInfo == null)
+                throw new Exception("实体数据不存在");
+            if(entityInfo.ModelType!= EntityModelType.Independent&& entityInfo.ModelType!= EntityModelType.Simple)
+                throw new Exception("只有独立实体和简单实体可以配置function");
+
+            info.WebFunctions = FunctionInfoMap( dynamicModel.WebFuncs,  0);
+            info.MobileFunctions = FunctionInfoMap( dynamicModel.MobileFuncs, 1);
 
             if (_entityProRepository.SaveFunctionJson(dynamicModel.EntityId, info, userNumber))
                 return new OutputResult<object>("保存成功");

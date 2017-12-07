@@ -27,6 +27,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Int64 refreshinterval { get; set; }
         public int servertype { get; set; }
         public string smtpaddress { get; set; }
+        public string signature { get; set; }
     }
 
     public class OrgAndStaffTreeModel
@@ -57,7 +58,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
     /// <summary>
     /// 目录移动的入口参数
     /// </summary>
-    public class MoveCatalogModel {
+    public class MoveCatalogModel
+    {
         /// <summary>
         /// 要移动的目录的id
         /// </summary>
@@ -84,7 +86,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
     /// <summary>
     ///目录转移的入口参数
     /// </summary>
-    public class TransferCatalogModel {
+    public class TransferCatalogModel
+    {
         /// <summary>
         /// 目录id
         /// </summary>
@@ -123,7 +126,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
     /// <summary>
     /// web邮箱主页个性化布局
     /// </summary>
-    public class WebMailPersonelLayoutInfo {
+    public class WebMailPersonelLayoutInfo
+    {
         /// <summary>
         /// 用户id
         /// </summary>

@@ -464,22 +464,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return result;
         }
 
-        public OperateResult Delete(Guid entityId, string recIds, int pageType, string pageCode, int userNumber)
+        public OperateResult Delete(DbTransaction trans, Guid entityId, string recIds, int pageType, string pageCode, int userNumber)
         {
             var sql = @"
                 SELECT * FROM crm_func_entity_protocol_data_delete(@entityId,@recId,@pagetype,@pageCode,@userNo)
             ";
+            
+         
+           var param = new DbParameter[]
+           {
+                new NpgsqlParameter("entityId",entityId),
+                new NpgsqlParameter("recId",recIds),
+                new NpgsqlParameter("pagetype", pageType),
+                new NpgsqlParameter("pageCode",pageCode),
+                new NpgsqlParameter("userNo",userNumber)
+           };
+           return ExecuteQuery<OperateResult>(sql, param, trans).FirstOrDefault();
 
-            var param = new
-            {
-                EntityId = entityId,
-                RecId = recIds,
-                PageType = pageType,
-                PageCode = pageCode,
-                UserNo = userNumber
-            };
-            var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
-            return result;
         }
         public OperateResult DeleteDataSrcRelation(DataSrcDeleteRelationMapper entityMapper, int userNumber)
         {
@@ -1170,7 +1171,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             DbParameter[] param = null;
             if (paramNames != null || paramNames.Length > 0)
             {
-                strSQL = string.Format("select {0}({1})", functionname, paramNames);
+                strSQL = string.Format("select * from {0}({1})", functionname, paramNames);
                 param = new DbParameter[realParam.Keys.Count];
                 int i = 0;
                 foreach (string key in realParam.Keys)
@@ -1182,7 +1183,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
             else
             {
-                strSQL = string.Format("select {0}()", functionname);
+                strSQL = string.Format("select  * from  {0}()", functionname);
                 param = new DbParameter[] { };
             }
             if (funcInfo.ReturnType == EntityExtFunctionReturnType.NoReturn)

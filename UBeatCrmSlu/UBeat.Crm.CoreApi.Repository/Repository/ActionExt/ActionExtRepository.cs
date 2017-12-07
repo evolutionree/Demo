@@ -19,7 +19,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ActionExt
 
         public List<ActionExtModel> GetActionExtData()
         {
-            var sql = @"SELECT DISTINCT ON(routepath,implementtype) recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,entityid FROM crm_sys_actionext_config WHERE recstatus=1;
+            var sql = @"SELECT recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,entityid FROM crm_sys_actionext_config WHERE recstatus=1;
                        ";
             return DBHelper.ExecuteQuery<ActionExtModel>("", sql, null);
         }
@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ActionExt
 
         public dynamic ExcuteActionExt(DbTransaction transaction, string funcname, object basicParamData, object preActionResult, object actionResult, int usernumber)
         {
-            var sql = string.Format(@"SELECT {0}(@paramjson,@preresultjson,@actionresultjson,@userno);", funcname);
+            var sql = string.Format(@"SELECT * from {0}(@paramjson,@preresultjson,@actionresultjson,@userno);", funcname);
 
             var param = new DbParameter[]
                     {

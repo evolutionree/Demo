@@ -63,12 +63,19 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
             public SendEMailMapperValidator()
             {
-                RuleFor(d => d.FromAddress).NotEmpty().WithMessage("发件人地址不能为空");
-                RuleFor(d => d.FromAddress).Matches(EmailRegex).WithMessage("发件人地址格式不符合邮箱格式");
-                RuleFor(d => d.ToAddress).NotNull().Must(d => d.Count > 0).WithMessage("收件人不能为空");
+                //RuleFor(d => d.FromAddress).NotEmpty().WithMessage("发件人地址不能为空");
+                //RuleFor(d => d.FromAddress).Matches(EmailRegex).WithMessage("发件人地址格式不符合邮箱格式");
+                //RuleFor(d => d.ToAddress).NotNull().Must(d => d.Count > 0).WithMessage("收件人不能为空");
+                RuleFor(d => d).Must(ValidNotEmpty).WithMessage("收件人/抄送人/密送人不能都为空");
                 RuleFor(d => d.ToAddress).Must(ValidAddress).WithMessage("发件人信息异常");
                 RuleFor(d => d.CCAddress).Must(ValidAddress).WithMessage("抄送人信息异常");
                 RuleFor(d => d.BCCAddress).Must(ValidAddress).WithMessage("密送人信息异常");
+            }
+            bool ValidNotEmpty(SendEMailMapper mail)
+            {
+                if (mail.ToAddress.Count == 0 && mail.CCAddress.Count == 0 && mail.BCCAddress.Count == 0)
+                    return false;
+                return true;
             }
             bool ValidAddress(IList<MailAddressMapper> address)
             {
@@ -157,6 +164,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string CcersJson { get; set; }
         [JsonIgnore]
         public string BccersJson { get; set; }
+        public string CcersStr { get; set; }
+        public string BccersStr { get; set; }
+        public string ReceiversStr { get; set; }
+        public string SenderStr { get; set; }
+
+        public string FromMailAddress { get; set; }
 
         public JArray Receivers
         {
@@ -499,7 +512,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
     public class TransferRecordMapper
     {
-        public int UserId { get; set; }
+        public string WorkCode { get; set; }
         public string UserName { get; set; }
         public string FromUser { get; set; }
         public DateTime TransferTime { get; set; }
@@ -536,7 +549,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string MailAddress { get; set; }
     }
 
-    public class InnerToAndFroMailMapper:BaseEntity
+    public class InnerToAndFroMailMapper : BaseEntity
     {
         public string KeyWord { get; set; }
 

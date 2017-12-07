@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.EMail;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -18,7 +19,18 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             _emailServices = emailServices;
         }
-
+        /// <summary>
+        /// 发邮件
+        /// </summary>
+        /// <param name="emailServices"></param>
+        [HttpPost]
+        [Route("validsendmaildata")]
+        public dynamic ValidSendEMailData([FromBody]SendEMailModel model = null)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            var header = GetAnalyseHeader();
+            return _emailServices.ValidSendEMailData(model, header, UserId);
+        }
         /// <summary>
         /// 发邮件
         /// </summary>
@@ -41,7 +53,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("receiveemail")]
         public OutputResult<object> ReceiveEMailAsync([FromBody] ReceiveEMailModel model = null)
         {
-            if (model == null|| model.ConditionVal==null)
+            if (model == null || model.ConditionVal == null)
             {
                 model = new ReceiveEMailModel();
                 model.Conditon = SearchQueryEnum.None;
@@ -136,7 +148,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetInnerToAndFroMail([FromBody] ToAndFroModel model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
-
+            
             return _emailServices.GetInnerToAndFroMail(model, UserId);
         }
 

@@ -92,6 +92,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public int UnReadCount { get; set; }
 
         /// <summary>
+        /// 邮件数
+        /// </summary>
+        public int MailCount { get; set; }
+
+        /// <summary>
         /// 默认目录模板id
         /// </summary>
         public Guid DefaultId { get; set; }
@@ -201,5 +206,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string SmtpAddress { get; set; }
         public int SmtpPort { get; set; }
         public int EnableSsl { get; set; }
+        public Int64 Wgvhhx { get; set; }
     }
 }

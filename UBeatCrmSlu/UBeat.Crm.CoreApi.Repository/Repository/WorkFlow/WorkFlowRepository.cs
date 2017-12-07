@@ -498,10 +498,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         public WorkFlowCaseInfo GetWorkFlowCaseInfo(DbTransaction trans, Guid caseid)
         {
-            var executeSql = @" SELECT c.*,w.entityid, er.relentityid,er.relrecid 
+            var executeSql = @" SELECT c.*,w.entityid, er.relentityid,er.relrecid ,u.username AS RecCreator_Name
                                 FROM crm_sys_workflow_case AS c
                                 LEFT JOIN crm_sys_workflow_case_entity_relation AS er ON er.caseid = c.caseid
                                 LEFT JOIN crm_sys_workflow AS w ON w.flowid = c.flowid
+                                LEFT JOIN crm_sys_userinfo AS u ON u.userid = c.reccreator
                                 WHERE c.caseid = @caseid";
 
             var param = new DbParameter[]
@@ -1065,17 +1066,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// <summary>
         /// 退回流程节点
         /// </summary>
-        public bool RebackWorkFlowCaseItem(Guid flowId, int vernum, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
+        public bool RebackWorkFlowCaseItem(WorkFlowCaseInfo caseinfo, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
         {
             var nodeidSql = @"SELECT nodeid FROM crm_sys_workflow_node WHERE flowid=@flowid AND vernum=@vernum AND steptypeid=0";
             var entitySqlParameters = new List<DbParameter>();
-            entitySqlParameters.Add(new NpgsqlParameter("flowid", flowId));
-            entitySqlParameters.Add(new NpgsqlParameter("vernum", vernum));
+            entitySqlParameters.Add(new NpgsqlParameter("flowid", caseinfo.FlowId));
+            entitySqlParameters.Add(new NpgsqlParameter("vernum", caseinfo.VerNum));
             var nodeidResult = ExecuteScalar(nodeidSql, entitySqlParameters.ToArray(), trans);
             Guid nodeid = Guid.Empty;
             if (nodeidResult != null)
                 Guid.TryParse(nodeidResult.ToString(), out nodeid);
-            int handleuser = caseitem.RecCreator;
+            int handleuser = caseinfo.RecCreator;
             int stepnum = caseitem.StepNum + 1;
             string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum,nodeid) 
                                          VALUES (@caseid, 0 , 4,@handleuser,  0, @userno,@userno,@stepnum,@nodeid);

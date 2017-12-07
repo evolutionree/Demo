@@ -406,9 +406,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbTransaction tran = null;
             if (paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) throw (new Exception("参数异常"));
             #region 检查职能权限
-            if (GetUserData(userId, false).HasFunction(this.RoutePath, paramInfo.EntityId, this.DeviceClassic) == false) {
-                throw (new Exception("权限项未配置或者您没有权限执行此方法"));
-            }
+            //if (GetUserData(userId, false).HasFunction(this.RoutePath, paramInfo.EntityId, this.DeviceClassic) == false) {
+            //    throw (new Exception("权限项未配置或者您没有权限执行此方法"));
+            //}
             #endregion
             #region  暂不检查数据权限
             #endregion 
@@ -1988,14 +1988,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var details = _dynamicEntityRepository.DetailList(detailMapper, userNumber);
 
                 //删除数据
-                var result = _dynamicEntityRepository.Delete(dynamicModel.EntityId, dynamicModel.RecId, dynamicModel.PageType, dynamicModel.PageCode, userNumber);
+                var result = _dynamicEntityRepository.Delete(transaction,dynamicModel.EntityId, dynamicModel.RecId, dynamicModel.PageType, dynamicModel.PageCode, userNumber);
                 if (result.Flag == 1)
                 {
                     Task.Run(() =>
                     {
                         foreach (var detail in details)
                         {
-                            typeid = Guid.Parse(detail["rectype"].ToString());
+                            object rectype = detail.ContainsKey("rectype")? detail["rectype"]: entityId;
+                            typeid = Guid.Parse(rectype.ToString());
                             var entityInfotemp = _entityProRepository.GetEntityInfo(typeid);
                             //var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.EntityId, userNumber);
                             var newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);

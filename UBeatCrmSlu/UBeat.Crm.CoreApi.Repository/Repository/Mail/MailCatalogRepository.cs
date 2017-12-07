@@ -17,16 +17,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
     {
         public OperateResult InsertCatalog(CUMailCatalogMapper entity, int userId)
         {
-            var sql = "select (COALESCE(max(recorder),0)+1) recorder from crm_sys_mail_catalog where pid=@catalogpid LIMIT 1";
+            var sql = "select (COALESCE(max(recorder),0)+1) recorder from crm_sys_mail_catalog where vpid=@catalogpid LIMIT 1";
             var param = new
             {
-                CatalogPId = entity.CatalogPId
+                CatalogPId = entity.CatalogPId,
+                CatalogName = entity.CatalogName.Trim(),
             };
+
+            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recname=@catalogname ";
+            var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
+            if (existCount > 0) {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "文件夹名称已存在"
+                };
+            }
             var recOrder = DataBaseHelper.QuerySingle<int>(sql, param, CommandType.Text);
             sql = "INSERT INTO public.crm_sys_mail_catalog (recname, userid, viewuserid, ctype,CustCataLog,CustId, pid, vpid,recstatus,recorder,isdynamic) VALUES (@catalogname,@userid,@userid,@ctype,@CustCataLog,@CustId,@catalogpid,@catalogpid,1,@recorder,1)";
             var args = new
             {
-                CatalogName = entity.CatalogName,
+                CatalogName = entity.CatalogName.Trim(),
                 UserId = userId,
                 Ctype = entity.Ctype,
                 CustId=entity.CustId,
@@ -88,11 +99,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //        Msg = "该文件夹下包含邮件,不能删除"
             //    };
             //}
+            var param = new
+            {
+                CatalogPId = entity.CatalogPId,
+                CatalogName = entity.CatalogName.Trim(),
+            };
+
+            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recname=@catalogname ";
+            var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
+            if (existCount > 0)
+            {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "文件夹名称已存在"
+                };
+            }
             string sql = "UPDATE crm_sys_mail_catalog SET recname=@catalogname WHERE recid=@catalogid and viewuserid=@userid;";
             var args = new
             {
                 CatalogId = entity.CatalogId,
-                CatalogName = entity.CatalogName,
+                CatalogName = entity.CatalogName.Trim(),
                 UserId = userId
             };
 
@@ -118,22 +145,31 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public OperateResult DeleteCatalog(DeleteMailCatalogMapper entity, int userId)
         {
-            var sql = "select isdynamic from crm_sys_mail_catalog where  recid=@catalogid and viewuserid=@userid and recstatus=1 limit 1;";
-            var args = new
+            var sql = @"WITH tarcatalog as (
+                select * from crm_sys_mail_catalog 
+                where  recid=@catalogid and viewuserid=@userid and recstatus=1 LIMIT 1),
+                childcatalog as(
+                    select vpid,count(*) catalogCount from crm_sys_mail_catalog where vpid=@catalogid and viewuserid=@userid and recstatus=1 group by vpid
+                ),
+                childmail as(
+                    select catalogid,count(*) mailCount from crm_sys_mail_catalog_relation where catalogid=@catalogid  group by catalogid)
+                select COALESCE(tarcatalog.isdynamic,0) isdynamic,COALESCE(childcatalog.catalogCount,0)::int catalogCount,COALESCE(childmail.mailCount,0)::int mailCount from tarcatalog left join childcatalog on tarcatalog.recid=childcatalog.vpid left join childmail on childmail.catalogid=tarcatalog.recid";
+            var param = new DbParameter[]
             {
-                CatalogId = entity.CatalogId,
-                UserId = userId
+                                new NpgsqlParameter("catalogid", entity.CatalogId),
+                                new NpgsqlParameter("userid", userId)
             };
-            var isdynamic = DataBaseHelper.QuerySingle<int?>(sql, args, CommandType.Text);
-            if (!isdynamic.HasValue)
-            {
+            List<Dictionary<string, object>> catalogList = ExecuteQuery(sql, param);
+            Dictionary<string, object> catalogMap = new Dictionary<string, object>();
+            if (catalogList.Count > 0)
+                catalogMap = catalogList.FirstOrDefault();
+            else
                 return new OperateResult()
                 {
                     Flag = 0,
-                    Msg = "该文件夹不存在"
+                    Msg = "目录异常不能删除"
                 };
-            }
-            if (isdynamic == 0)
+            if ((int)catalogMap["isdynamic"]==0)
             {
                 return new OperateResult()
                 {
@@ -141,7 +177,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     Msg = "该文件夹是系统文件夹,不允许删除"
                 };
             }
+            if ((int)catalogMap["catalogcount"] >0|| (int)catalogMap["mailcount"] >0)
+            {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "有子文件夹或者邮件不允许删除"
+                };
+            }
             sql = "update  crm_sys_mail_catalog set recstatus=0 where   recid=@catalogid and viewuserid=@userid;";
+            var args = new
+            {
+                CatalogId = entity.CatalogId,
+                UserId = userId
+            };
             var result = DataBaseHelper.ExecuteNonQuery(sql, args, CommandType.Text);
             if (result == 1)
             {
@@ -188,7 +237,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             {
                 //目标目录
                 int tarIndex = index + 1;
-                if (catalogResult.Count >= tarIndex)
+                if (catalogResult.Count > tarIndex)
                 {
                     tarCatalog = catalogResult[tarIndex];
                 }
@@ -351,7 +400,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //判断是否领导用户
             string isLeaderSql = "select a.deptid from crm_sys_account_userinfo_relate a " +
                 "inner join crm_sys_userinfo b on a.userid = b.userid " +
-                "where b.isleader = 1 and b.recstatus = 1 and b.userid = @userid";
+                "where a.recstatus=1 and b.isleader = 1 and b.recstatus = 1 and b.userid = @userid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("UserId", userId),
@@ -360,12 +409,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             //该用户是领导岗，获取下属邮件逻辑
             if (result.Count > 0)
             {
-                string getOrgTreeSql = "select * from (select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a " +
-                    "where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t " +
-                    "UNION ALL" +
-                    " select * from(select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,0 unreadcount from crm_sys_account_userinfo_relate a " +
-                    "inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid  where(b.isleader is null or b.isleader <> 1) and a.recstatus = 1 " +
-                    "and a.deptid::text = @deptId order by b.username) t1 ) x where 1=1 ";
+                string getOrgTreeSql = @"select * from (select * from (select deptid::text treeid,deptname treename,''::text deptname,''::text userjob,0 nodetype,0 unreadcount from crm_sys_department a 
+	                where a.recstatus = 1 and a.pdeptid =@deptId order by recorder) t 
+                        UNION ALL
+                    select * from(
+                    WITH mails as(select viewuserid,count(1) unreadcount from crm_sys_mail_catalog a inner join crm_sys_mail_catalog_relation b on a.recid=b.catalogid
+                    inner join crm_sys_mail_mailbody c on c.recid=b.mailid where c.isread is null or c.isread = 0 group by viewuserid )
+                    select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
+                        inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where(b.isleader is null or b.isleader <> 1) and a.recstatus = 1 
+                            and a.deptid = @deptId  order by b.username) t1 ) x where 1=1";
                 string searchDept = result[0]["deptid"].ToString();
                 if (!string.IsNullOrEmpty(deptId))
                 {
@@ -373,12 +425,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 }
                 var paramTree = new DbParameter[]
                 {
-                    new NpgsqlParameter("deptId", searchDept),
+                    new NpgsqlParameter("deptId", new Guid(searchDept)),
+                    new NpgsqlParameter("UserId", userId)
                 };
                 //只返回人员
                 if (!string.IsNullOrEmpty(keyword))
                 {
-                    getOrgTreeSql = string.Format(getOrgTreeSql + " and x.nodetype=1 and x.treename like '%{0}%' ", keyword);
+                    getOrgTreeSql = @"WITH mails as(select viewuserid,count(1) unreadcount from crm_sys_mail_catalog a inner join crm_sys_mail_catalog_relation b on a.recid=b.catalogid
+                            inner join crm_sys_mail_mailbody c on c.recid=b.mailid where c.isread is null or c.isread = 0 group by viewuserid )
+		                            select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
+	                             inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where (b.isleader is null or b.isleader <> 1) and a.recstatus = 1 
+		                            and a.deptid in (SELECT deptid FROM crm_func_department_tree_power(@deptId,1,1,@userId)) order by b.username";
+                    getOrgTreeSql = string.Format(getOrgTreeSql + " and b.username like '%{0}%'  order by b.username ", keyword);
 
                 }
                 resultList = ExecuteQuery<OrgAndStaffTree>(getOrgTreeSql, paramTree);
@@ -388,26 +446,34 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public List<MailCatalogInfo> GetMailCataLog(string catalogType,string keyword, int userId)
         {
-            var sql = "WITH RECURSIVE cata as" +
-                    "(" +
-                    "			SELECT  a.recid,a.vpid,ARRAY[ctype]::text as idpath,a.ctype,a.viewuserid FROM crm_sys_mail_catalog a where vpid::text='00000000-0000-0000-0000-000000000000' " +
-                    "			UNION ALL" +
-                    "			SELECT b.recid,b.vpid,cata.idpath || b.ctype,b.ctype,b.viewuserid" +
-                    "      FROM crm_sys_mail_catalog b INNER JOIN cata  on cata.recid= b.vpid" +
-                    ")," +
-                    "usercatalog AS(" +
-                    "     SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recstatus=1  " +
-                    ")," +
-                    "catalogrelation AS(" +
-                    "     SELECT a.catalogid,COUNT(mailid) AS unreadmail FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where(b.isread is null or b.isread = 0) GROUP BY a.catalogid" +
-                    ")" +
-                    "SELECT usercatalog.*," +
-                    "COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0))" +
-                    "WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1002' IN idpath) >0))" +
-                    "WHEN usercatalog.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0))" +
-                    "ELSE catalogrelation.unreadmail END,0) unreadmail,cata.idpath " +
-                    "FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid " +
-                    "left join cata on cata.recid=usercatalog.recid where 1=1 {0} order by vpid,recorder";
+            var sql = @"WITH RECURSIVE cata as
+            (
+			            SELECT  a.recid,a.vpid,ARRAY[ctype]::text as idpath,a.ctype,a.viewuserid FROM crm_sys_mail_catalog a where vpid::text='00000000-0000-0000-0000-000000000000'  and recstatus=1  
+			            UNION ALL
+			            SELECT b.recid,b.vpid,cata.idpath || b.ctype,b.ctype,b.viewuserid
+			            FROM crm_sys_mail_catalog b INNER JOIN cata  on cata.recid= b.vpid where  recstatus=1  
+            ),
+            usercatalog AS(
+		             SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recstatus=1  
+            ),
+            catalogrelation AS(
+				SELECT a.catalogid,COUNT(mailid) AS unreadmail,c.vpid FROM crm_sys_mail_catalog_relation a INNER JOIN crm_sys_mail_catalog c on c.recid=a.catalogid inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where (b.isread is null or b.isread = 0) GROUP BY a.catalogid,c.vpid
+            ),
+            catalogmailcount AS(
+		             SELECT a.catalogid,COUNT(mailid) AS mailcount FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid   GROUP BY a.catalogid
+            )
+            SELECT usercatalog.*,
+            COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.vpid=usercatalog.recid)
+            WHEN usercatalog.CType=4001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('4001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)
+            WHEN usercatalog.CType=2002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2002' IN idpath) >0 and viewuserid=@userid ))
+            WHEN usercatalog.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)
+            WHEN usercatalog.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userid ))
+            ELSE catalogrelation.unreadmail END,0)::int unreadcount,COALESCE(catalogmailcount.mailcount,0)::int mailcount,cata.idpath 
+            FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid 
+            left join cata on cata.recid=usercatalog.recid left join catalogmailcount on catalogmailcount.catalogid=usercatalog.recid
+             where 1=1 {0} order by vpid,recorder";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
             {
@@ -481,7 +547,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
                 " FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0} " +
                 " UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid " +
-                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid ) " +
+                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid where b.recstatus=1 ) " +
                 " select * from cata where VIEWuserid = @userid";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
@@ -505,27 +571,36 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             };
             var searchList=ExecuteQuery<MailCatalogInfo>(sql, param);
             var wholeTree  =this.GetMailCataLogTreeByUserId(userid,catalogType);
+            List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in searchList)
             {
-                foreach (var item in wholeTree)
+                foreach (var itemTreeOne in wholeTree)
                 {
-                    if (item.VPId == catalog.RecId)
+                    if (catalog.RecId == itemTreeOne.RecId)
                     {
-                        if (catalog.SubCatalogs == null)
+                        resultList.Add(itemTreeOne);
+                    }
+                    foreach (var item in wholeTree)
+                    {
+                        if (item.VPId == itemTreeOne.RecId)
                         {
-                            catalog.SubCatalogs = new List<MailCatalogInfo>();
+                            if (itemTreeOne.SubCatalogs == null)
+                            {
+                                itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
+                            }
+                            itemTreeOne.SubCatalogs.Add(item);
                         }
-                        catalog.SubCatalogs.Add(item);
                     }
                 }
             }
-            return searchList;
+
+            return resultList;
         }
 
 
         public UserMailInfo GetUserMailInfo(string fromAddress, int userId)
         {
-            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox Where recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid Where box.owner=@userid ANd accountid=@fromaddress  ";
+            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl,mailserver.wgvhhx FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox Where recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid Where box.owner=@userid ANd accountid=@fromaddress  ";
             string condition = string.Empty;
             var param = new
             {
@@ -555,8 +630,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public bool checkHasMails(string recid, DbTransaction tran)
         {
-            string strSQL = string.Format("select count(*)  totalcount  from crm_sys_mail_catalog_relation where catalogid = '{0}'", recid);
-            object obj = ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault()["totalcouont"];
+            string strSQL = string.Format("select COALESCE(count(*),0)  totalcount  from crm_sys_mail_catalog_relation where catalogid = '{0}'", recid);
+            List<Dictionary<string,object>> list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
+            object obj = null;
+            if (list.Count > 0)
+                obj = list.FirstOrDefault()["totalcount"]; 
             if (obj == null) return false;
             int totalCount = 0;
             int.TryParse(obj.ToString(), out totalCount);
