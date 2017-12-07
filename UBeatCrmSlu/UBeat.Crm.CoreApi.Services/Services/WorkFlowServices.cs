@@ -19,6 +19,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Models.Account;
+using UBeat.Crm.CoreApi.DomainModel.Rule;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -79,7 +80,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Recstatus = caseInfo.Recstatus,
                         FlowName = workflowInfo.FlowName,
                         BackFlag = workflowInfo.BackFlag,
-                        RecCreator_Name = workflowInfo.RecCreator_name
+                        RecCreator_Name = caseInfo.RecCreator_Name
                     };
                     #endregion
 
@@ -196,6 +197,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = AddCase(null, caseEntity, userNumber);
 
             return HandleResult(result);
+        }
+
+        public OutputResult<object> SaveWorkflowRule(WorkFlowRuleSaveParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            if (paramInfo.Rule == null) {
+                paramInfo.Rule = new Models.Vocation.RuleContent();
+            }
+            paramInfo.Rule.EntityId = paramInfo.EntityId;
+            string ruletext = Newtonsoft.Json.JsonConvert.SerializeObject(paramInfo.Rule);
+            string ruleitemtext = Newtonsoft.Json.JsonConvert.SerializeObject(paramInfo.RuleItems);
+            string ruleSetText = Newtonsoft.Json.JsonConvert.SerializeObject(paramInfo.RuleSet);
+            if ( paramInfo.Rule.RuleId == null || paramInfo.Rule.RuleId == Guid.Empty)
+            {
+                //走新增模式
+                OperateResult result = this._ruleRepository.SaveRuleWithoutRelation(null, ruletext, ruleitemtext, ruleSetText, userId);
+                if (result != null && result.Id != null && result.Id.Length > 0)
+                {
+                    this._workFlowRepository.SaveWorkflowRuleRelation(result.Id, paramInfo.WorkflowId, userId, tran);
+                }
+            }
+            else {
+                //走修改模式
+                this._ruleRepository.SaveRuleWithoutRelation(paramInfo.Rule.RuleId.ToString(), ruletext, ruleitemtext, ruleSetText, userId);
+            }
+            return new OutputResult<object>("ok");
+        }
+
+        public OutputResult<object> GetRules(WorkFlowRuleQueryParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            WorkFlowInfo workFlowInfo =  this._workFlowRepository.GetWorkFlowInfo(tran, paramInfo.FlowId);
+            if (workFlowInfo == null || workFlowInfo.Entityid == null || workFlowInfo.Entityid == Guid.Empty) {
+                return new OutputResult<object>(null, "无法配置", -1);
+            }
+            Guid ruleid = this._workFlowRepository.getWorkflowRuleId(paramInfo.FlowId, userId, tran);
+            List<RuleDataInfo> rules = null;
+            if (!(ruleid == null || ruleid == Guid.Empty))
+            {
+                rules = this._ruleRepository.GetRule(ruleid, userId, tran);
+            }
+            Dictionary<string, object> retData = new Dictionary<string, object>();
+            retData.Add("ruleid", ruleid);
+            retData.Add("flowinfo", workFlowInfo);
+            if (rules != null && rules.Count >0 ) {
+                retData.Add("rulename", rules[0].RuleName);
+                retData.Add("ruleitems", rules[0].RuleItems);
+                retData.Add("ruleset", rules[0].RuleSet);
+            }
+            List<Dictionary<string, object>> retList = new List<Dictionary<string, object>>();
+            retList.Add(retData);
+            return new OutputResult<object>(retList);
         }
 
         public OperateResult AddCase(DbTransaction tran, WorkFlowAddCaseMapper caseEntity, int userNumber)
@@ -852,7 +905,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
             {
                 var nowcaseitem = caseitems.FirstOrDefault();
-                AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, hasNextNode);
+                canAddNextNode= AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, hasNextNode);
             }
             else  //会审
             {
@@ -905,7 +958,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     break;
                 case 2:       //2退回
-                    var rebackResult = _workFlowRepository.RebackWorkFlowCaseItem(caseInfo.FlowId, caseInfo.VerNum, nowcaseitem, userinfo.UserId, tran);
+                    var rebackResult = _workFlowRepository.RebackWorkFlowCaseItem(caseInfo, nowcaseitem, userinfo.UserId, tran);
                     casenodenum = 0;
                     break;
                 case 3:       //3中止,中止一般是由审批发起人主动终止
@@ -924,8 +977,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --固定普通流程审批--
-        private void AuditNormalFlow(UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, DbTransaction tran, WorkFlowCaseInfo caseInfo, WorkFlowCaseItemInfo nowcaseitem, bool hasNextNode)
+        private bool AuditNormalFlow(UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, DbTransaction tran, WorkFlowCaseInfo caseInfo, WorkFlowCaseItemInfo nowcaseitem, bool hasNextNode)
         {
+            bool canAddNextNodeItem = false;
 
             int casenodenum = caseInfo.NodeNum;
             AuditStatusType auditstatus = AuditStatusType.Approving;
@@ -942,6 +996,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (hasNextNode)
                         {
                             auditstatus = AuditStatusType.Approving;
+                            canAddNextNodeItem = true;
                         }
                         else
                         {
@@ -951,7 +1006,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     break;
                 case 2:       //2退回
-                    var rebackResult = _workFlowRepository.RebackWorkFlowCaseItem(caseInfo.FlowId, caseInfo.VerNum, nowcaseitem, userinfo.UserId, tran);
+                    var rebackResult = _workFlowRepository.RebackWorkFlowCaseItem(caseInfo, nowcaseitem, userinfo.UserId, tran);
                     casenodenum = 0;
                     break;
                 case 3:       //3中止,中止一般是由审批发起人主动终止
@@ -961,12 +1016,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case 4:       //4编辑
                     casenodenum = 0;
                     auditstatus = AuditStatusType.Begin;
+                    canAddNextNodeItem = true;
                     _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
                     break;
             }
             if (casefinish)
                 casenodenum = -1;
             var auditcase = _workFlowRepository.AuditWorkFlowCase(caseInfo.CaseId, auditstatus, casenodenum, userinfo.UserId, tran);
+
+            return canAddNextNodeItem;
         }
         #endregion
 
@@ -1028,7 +1086,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     canAddNextNodeItem = false;
                     if (caseitems.Exists(m => m.ChoiceStatus == ChoiceStatusType.Reback))//如果有人退回，则优先执行退回
                     {
-                        var rebackResult = _workFlowRepository.RebackWorkFlowCaseItem(caseInfo.FlowId, caseInfo.VerNum, nowcaseitem, userinfo.UserId, tran);
+                        var rebackResult = _workFlowRepository.RebackWorkFlowCaseItem(caseInfo, nowcaseitem, userinfo.UserId, tran);
                         casenodenum = 0;
                     }
                     else //否则执行拒绝逻辑
@@ -1303,7 +1361,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                         else MessageService.WriteMessage(tran, msg, userNumber);
                         #endregion
-
+                        tran.Commit();
                     }
                     catch (Exception ex)
                     {
@@ -1375,6 +1433,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (caseInfo.AuditStatus == AuditStatusType.Begin || caseInfo.AuditStatus == AuditStatusType.Approving)//编辑重新发起
                     {
                         funcCode = "WorkFlowLaunch";
+                        isAddNextStep = true;
                     }
                     break;
                 case ChoiceStatusType.Approval://普通审批通过

@@ -65,7 +65,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [HttpPost("reflect")]
         [AllowAnonymous]
         public OutputResult<object> reflect([FromBody] SQLReflectQueryModel paramInfo) {
-            if (paramInfo == null || paramInfo.RecIds == null || paramInfo.RecIds.Length == 0) {
+            if (paramInfo == null ) {
                 return new OutputResult<object>("参数异常", "参数异常", -1);
             }
             return this._dbManageServices.ReflectInitStructSQL(paramInfo.RecIds, 0);

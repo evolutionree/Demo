@@ -16,6 +16,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         public string Name { get; set; }
         public int RecStatus { get; set; }
         public SQLObjectBelongSysEnum belongTo { get; set; }
+        public int NeedInitSQL { get; set; }
+        public string ProcParam { get; set; }
+        public int RecOrder { get; set; }
         public void checkEmpty() {
             if (SqlPath == null) SqlPath = "";
             if (LastVersion == null) LastVersion = "";
@@ -68,7 +71,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
     public enum SQLObjectTypeEnum {
         All =0,
         Table=1,
-        Func=2
+        Func=2,
+        PGType=3
     }
     public enum SqlOrJsonEnum {
         All = 0,

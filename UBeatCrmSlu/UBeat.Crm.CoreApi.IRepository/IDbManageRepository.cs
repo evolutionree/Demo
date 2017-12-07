@@ -25,7 +25,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<Dictionary<string, object>> getConstraints(string tablename, int userid, DbTransaction tran);
         List<Dictionary<string, object>> getTriggers(string tablename, int userid, DbTransaction tran);
         List<Dictionary<string, object>> getIndexes(string tablename, int userid, DbTransaction tran);
-        Dictionary<string, object> getProcInfo(string procname, int userid, DbTransaction tran);
+        Dictionary<string, object> getProcInfo(string procname, string param, int userid, DbTransaction tran);
         List<SQLObjectModel> getSQLObjects(string searchKey, int userid, DbTransaction tran);
         SQLObjectModel querySQLObject(string id, int userid, DbTransaction tran);
         void deleteSQLObject(string id, int userid, DbTransaction tran);
@@ -36,5 +36,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         void deleteSQLText(string id, int userid, DbTransaction tran);
         List<SQLTextModel> ListInitSQLForFunc(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId,DbTransaction tran);
         List<SQLTextModel> ListInitSQLForTable(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId ,DbTransaction tran);
+        bool checkHasPreProName(string proname, int userid, DbTransaction tran);
+        List<SQLTextModel> ListInitSQLForType(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId, DbTransaction tran);
+        Dictionary<string, object> getTypeInfo(string typename, int userid, DbTransaction tran);
     }
 }

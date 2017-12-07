@@ -99,7 +99,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <summary>
         /// 退回流程节点
         /// </summary>
-        bool RebackWorkFlowCaseItem(Guid flowId, int vernum, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null);
+        bool RebackWorkFlowCaseItem(WorkFlowCaseInfo caseinfo, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null);
 
         /// <summary>
         /// 重新发起流程
@@ -140,6 +140,15 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <returns></returns>
         bool CanEditWorkFlowCase(WorkFlowInfo workflow, int userno, DbTransaction trans = null);
+        /// <summary>
+        /// 获取工作流对应的ruleid
+        /// </summary>
+        /// <param name="flowId"></param>
+        /// <param name="userId"></param>
+        /// <param name="tran"></param>
+        /// <returns></returns>
+        Guid getWorkflowRuleId(Guid flowId, int userId, DbTransaction tran);
+        void SaveWorkflowRuleRelation(string id, Guid workflowId, int userId, DbTransaction tran);
     }
 }
 
