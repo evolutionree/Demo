@@ -149,6 +149,13 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         Guid getWorkflowRuleId(Guid flowId, int userId, DbTransaction tran);
         void SaveWorkflowRuleRelation(string id, Guid workflowId, int userId, DbTransaction tran);
+
+        /// <summary>
+        /// 获取流程审批的抄送人
+        /// </summary>
+        /// <param name="caseid"></param>
+        /// <returns></returns>
+        List<int> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null);
     }
 }
 
