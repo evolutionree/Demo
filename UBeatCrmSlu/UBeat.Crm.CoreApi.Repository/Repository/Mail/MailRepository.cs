@@ -375,13 +375,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                         AND controltype  NOT IN(20,1001,1002,1003,1004,1005,1006,1007,1008) AND recstatus=1
                                                     ) AS t ) AS tmp, (select
                                                     crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('349cba2f-42b0-44c2-89f5-207052f50a00',@userid)) AS tmp1";
-            var custSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0} FROM crm_sys_customer AS e WHERE recid IN (
+            var custSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0} AS e WHERE recid IN (
                                         SELECT regexp_split_to_table(custids,',')::uuid custid FROM (
                                         SELECT (belcust->>'id') AS custids FROM crm_sys_contact WHERE email=
                                         (Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1) AS tmp ) AND recstatus=1";
 
             var contactConfigSql = @"select   crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('e450bfd7-ff17-4b29-a2db-7ddaf1e79342',@userid)";
-            
+
             var contactsSql = @" Select e.* {0} From crm_sys_contact as e Where (belcust->> 'id')   IN (SELECT regexp_split_to_table(custid, ',')  FROM(SELECT(belcust->> 'id') as custid FROM crm_sys_contact WHERE email = (Select mailaddress From  crm_sys_mail_senderreceivers Where mailid =@mailid  And ctype = 1 LIMIT 1)  AND recstatus = 1 LIMIT 1) AS tmp )";
             var param = new DynamicParameters();
             param.Add("mailid", entity.MailId);
@@ -632,7 +632,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
-            if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 0)
+            if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)
             {
                 whereSql = @"Where recstatus=1 and recid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -643,7 +643,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
                                         )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))";
             }
-            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
             {
                 whereSql = @" Where recstatus=1 and  recid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -654,7 +654,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
                                         )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype!=1)";
             }
-            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
             {
                 whereSql = @" Where recstatus=1 and  recid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -665,7 +665,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
                                         ))  AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype=1)";
             }
-            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
+            else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
             {
                 whereSql = @"  Where recstatus=1 and  recid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -677,7 +677,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox Where recstatus=1))";
 
             }
-            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
+            else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
             {
                 whereSql = @"  Where recstatus=1 and  recid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -690,7 +690,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             }
 
-            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
+            else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
             {
                 whereSql = @"  Where recstatus=1 and  recid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -715,8 +715,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         COALESCE(body.receivedtime,body.senttime)  receivedtime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid {0}";
             var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
             string whereSql = string.Empty;
-            //与自己往来+收到和发出的邮件
-            if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 0)
+
+            if (entity.relatedMySelf == 0)
+            {
+                whereSql = @"Where att.recstatus=1 and att.mailid=@mailid ";
+            }
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)            //与自己往来+收到和发出的邮件
             {
                 whereSql = @"Where att.recstatus=1 and att.mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -727,7 +731,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
                                         )) AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))";
             }
-            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
             {
                 whereSql = @" Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -738,7 +742,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
                                         )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype!=1)";
             }
-            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
+            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
             {
                 whereSql = @" Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -749,7 +753,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
                                         ))  AND mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype=1)";
             }
-            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
+            else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
             {
                 whereSql = @"  Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -761,7 +765,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         )) AND mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox Where recstatus=1))";
 
             }
-            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
+            else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
             {
                 whereSql = @"  Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
@@ -774,7 +778,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             }
 
-            else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
+            else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
             {
                 whereSql = @"  Where att.recstatus=1 and  mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
