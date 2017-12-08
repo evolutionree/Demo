@@ -41,7 +41,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (model == null) return ResponseError<object>("参数格式错误");
             var header = GetAnalyseHeader();
-            return _emailServices.SendEMailAsync(model, header, UserId);
+            //return _emailServices.SendEMailAsync(model, header, UserId);
+            return null;
         }
 
         /// <summary>

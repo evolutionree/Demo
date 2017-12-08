@@ -89,4 +89,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         Struct = 1,
         Data = 2
     }
+    public class DbListObjectsParamInfo {
+        public string FullPath { get; set; }
+        public string SearchKey { get; set; }
+
+        public SQLObjectTypeEnum ObjectType { get; set; }
+    }
 }

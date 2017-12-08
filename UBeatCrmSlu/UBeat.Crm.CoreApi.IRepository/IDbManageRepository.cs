@@ -39,5 +39,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         bool checkHasPreProName(string proname, int userid, DbTransaction tran);
         List<SQLTextModel> ListInitSQLForType(SQLObjectBelongSysEnum exportSys, StructOrData isStruct, int userId, DbTransaction tran);
         Dictionary<string, object> getTypeInfo(string typename, int userid, DbTransaction tran);
+        List<string> ListAllDirs(int userId,DbTransaction tran);
+        List<SQLObjectModel> SearchSQLObjects(DbListObjectsParamInfo paramInfo, int userId, DbTransaction tran);
     }
 }
