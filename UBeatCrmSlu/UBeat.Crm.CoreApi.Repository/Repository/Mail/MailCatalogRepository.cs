@@ -24,7 +24,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 CatalogName = entity.CatalogName.Trim(),
             };
 
-            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recname=@catalogname ";
+            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recstatus=1 and recname=@catalogname ";
             var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
             if (existCount > 0) {
                 return new OperateResult()
@@ -105,7 +105,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 CatalogName = entity.CatalogName.Trim(),
             };
 
-            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recname=@catalogname ";
+            var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recstatus=1 and recname=@catalogname ";
             var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
             if (existCount > 0)
             {
@@ -496,11 +496,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public MailCatalogInfo GetMailCataLogById(Guid catalog, int userNum, DbTransaction p)
         {
-            var sql = "select * from crm_sys_mail_catalog where recid=@catalog and userid=@userid";
+            var sql = "select * from crm_sys_mail_catalog where recid=@catalog ";
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("catalog",  catalog ),
-                new NpgsqlParameter("userid",  userNum )
+                new NpgsqlParameter("catalog",  catalog )
             };
             var result = ExecuteQuery<MailCatalogInfo>(sql, param, p, CommandType.Text);
             return result.FirstOrDefault();

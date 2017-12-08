@@ -96,6 +96,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// 持有用户的id
         /// </summary>
         public int newUserId { get; set; }
+        /// <summary>
+        /// 原用户的id
+        /// </summary>
+        public int ownUserId { get; set; }
     }
 
 
