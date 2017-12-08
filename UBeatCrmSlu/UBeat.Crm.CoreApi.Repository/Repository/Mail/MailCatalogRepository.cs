@@ -518,6 +518,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return result.FirstOrDefault();
         }
 
+        public MailCatalogInfo GetMailCataLogByCustId(Guid custId, int userid, DbTransaction p)
+        {
+            var sql = "select * from crm_sys_mail_catalog where ctype=4001 and recstatus=1 and custid=@custId and viewuserid=@userid";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("custId",  custId ),
+                new NpgsqlParameter("userid",  userid )
+            };
+            var result = ExecuteQuery<MailCatalogInfo>(sql, param, p, CommandType.Text);
+            return result.FirstOrDefault();
+        }
+
         public List<MailCatalogInfo> GetMailCataLogTreeByUserId(int userid, string catalogType)
         {
             var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
@@ -579,18 +591,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     if (catalog.RecId == itemTreeOne.RecId)
                     {
                         resultList.Add(itemTreeOne);
-                    }
-                    foreach (var item in wholeTree)
-                    {
-                        if (item.VPId == itemTreeOne.RecId)
+                        foreach (var item in wholeTree)
                         {
-                            if (itemTreeOne.SubCatalogs == null)
+                            if (item.VPId == itemTreeOne.RecId)
                             {
-                                itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
+                                if (itemTreeOne.SubCatalogs == null)
+                                {
+                                    itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
+                                }
+                                itemTreeOne.SubCatalogs.Add(item);
                             }
-                            itemTreeOne.SubCatalogs.Add(item);
                         }
-                    }
+                    }   
                 }
             }
 
@@ -706,6 +718,47 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             string strSQL = string.Format("update crm_sys_mail_catalog set vpid='{0}',viewuserid={1} where recid ='{2}'", newParentCatalogid, newUserId, recId.ToString());
             ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
+        }
+
+        /// <summary>
+        /// 转移邮件到新目录
+        /// </summary>
+        /// <param name="newCatalogid"></param>
+        /// <param name="oldCatalogid"></param>
+        public void TransferMailsToNewCatalog(Guid newCatalogid, Guid oldCatalogid, DbTransaction tran)
+        {
+            string strSQL = @"update crm_sys_mail_catalog_relation set catalogid=@newCatalogid where catalogid = @oldCatalogid";
+            var param = new DbParameter[]
+            {
+                            new NpgsqlParameter("newCatalogid", newCatalogid),
+                            new NpgsqlParameter("oldCatalogid", oldCatalogid)
+            };
+            ExecuteNonQuery(strSQL, param, tran);
+        }
+
+        /// <summary>
+        /// 根据父级目录批量转移邮件目录
+        /// </summary>
+        /// <param name="recId"></param>
+        /// <param name="newUserId"></param>
+        /// <param name="newParentCatalogid"></param>
+        /// <param name="tran"></param>
+        public void TransferBatcCatalog(int newUserId,int oldUserId, Guid newParentCatalogid, int ctype, DbTransaction tran)
+        {
+            string strSQL = @"update crm_sys_mail_catalog set viewuserid=@newUserId where recid in (
+                WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid 
+                               FROM crm_sys_mail_catalog A WHERE recstatus = 1 and ctype=@ctype
+                                 UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid 
+                                FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid where b.recstatus=1 ) 
+                               select recid from cata where VIEWuserid = @oldUserId and (vpid=@newParentCatalogid or recid=@newParentCatalogid ) )";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("newUserId", newUserId),
+                new NpgsqlParameter("oldUserId", oldUserId),
+                new NpgsqlParameter("newParentCatalogid", newParentCatalogid),
+                new NpgsqlParameter("ctype", ctype)
+            };
+            ExecuteNonQuery(strSQL, param, tran);
         }
 
         /// <summary>
