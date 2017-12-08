@@ -20,13 +20,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
     public enum MailActionType
     {
         InnerCheck = 1,
-        ExternalSend=2
+        ExternalSend = 2
     }
 
     public enum RelatedMySelf
     {
-        RelatedMySelf = 0,
-        RelatedAllUser = 1
+        RelatedCurrent = 0,
+        RelatedMySelf = 1,
+        RelatedAllUser = 2
     }
     public enum RelatedSendOrReceive
     {
