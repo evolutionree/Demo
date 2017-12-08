@@ -2,7 +2,6 @@
 using MimeKit;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UBeat.Crm.CoreApi.DomainModel.EMail;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.EMail;
@@ -12,8 +11,6 @@ using UBeat.Crm.MailService;
 using UBeat.Crm.MailService.Mail.Enum;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
-using UBeat.Crm.CoreApi.DomainModel.FileService;
-using UBeat.Crm.MailService.Mail;
 using MailKit.Search;
 using System.Threading;
 using UBeat.Crm.CoreApi.IRepository;
@@ -24,11 +21,8 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Dynamic;
 using System.Data.Common;
-using MailKit;
 using Microsoft.Extensions.Configuration;
-using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 using Microsoft.Extensions.Logging;
-using System.Runtime.InteropServices;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -290,46 +284,76 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> TransferCatalog(TransferCatalogModel paramInfo, int userId)
         {
             DbTransaction tran = null;
-            if (userId == paramInfo.newUserId) throw (new Exception("无需转移"));
+            if (userId == paramInfo.newUserId) throw (new Exception("目录属于本人,无需转移"));
             MailCatalogInfo catalog = _mailCatalogRepository.GetMailCataLogByViewUserId(paramInfo.recId, userId, tran);
             if (catalog == null) throw (new Exception("转移目录错误"));
-
-            if (catalog.CType != MailCatalogType.CustDyn) throw (new Exception("只能转移客户的目录"));
-            MailCatalogInfo parentCatalog = _mailCatalogRepository.GetMailCataLogByViewUserId(catalog.VPId, userId, tran);
-            if (parentCatalog == null || parentCatalog.CType != MailCatalogType.CustType) throw (new Exception("目录异常"));
-            if (parentCatalog.CustCatalog == null || parentCatalog.CustCatalog == Guid.Empty) { throw (new Exception("目录异常")); }
-            MailCatalogInfo newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
-            Guid newParentCatalogid;
-            if (newParentCatalog == null)
+            //收件箱所有目录都可以转移
+            if (catalog.CType == MailCatalogType.CustDyn)
             {
-                this.InitMailCatalog(paramInfo.newUserId);
-                //没有客户分类目录，创建客户分类目录
-                int custEum = (int)MailCatalogType.Cust;
-                MailCatalogInfo custCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, custEum.ToString());
-                CUMailCatalogMapper entity = new CUMailCatalogMapper
+                MailCatalogInfo parentCatalog = _mailCatalogRepository.GetMailCataLogByViewUserId(catalog.VPId, userId, tran);
+                if (parentCatalog == null) throw (new Exception("目录异常"));
+                MailCatalogInfo newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
+                Guid newParentCatalogid;
+                if (newParentCatalog == null)
                 {
-                    CatalogName = parentCatalog.RecName,
-                    Ctype = (int)MailCatalogType.CustType,
-                    CustId = parentCatalog.CustId,
-                    CustCataLog = parentCatalog.CustCatalog,
-                    CatalogPId = custCatalog.RecId
-                };
-                OperateResult optResult = _mailCatalogRepository.InsertCatalog(entity, paramInfo.newUserId);
-                if (optResult.Flag == 1)
-                {
-                    newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
-                    _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalog.RecId, tran);
+                    this.InitMailCatalog(paramInfo.newUserId);
+                    //没有客户分类目录，创建客户分类目录
+                    int custEum = (int)MailCatalogType.Cust;
+                    MailCatalogInfo custCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, custEum.ToString());
+                    CUMailCatalogMapper entity = new CUMailCatalogMapper
+                    {
+                        CatalogName = parentCatalog.RecName,
+                        Ctype = (int)MailCatalogType.CustType,
+                        CustId = parentCatalog.CustId,
+                        CustCataLog = parentCatalog.CustCatalog,
+                        CatalogPId = custCatalog.RecId
+                    };
+                    OperateResult optResult = _mailCatalogRepository.InsertCatalog(entity, paramInfo.newUserId);
+                    if (optResult.Flag == 1)
+                    {
+                        newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
+                        _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalog.RecId, tran);
+                    }
+                    else
+                    {
+                        return new OutputResult<object>("操作失败");
+                    }
                 }
                 else
                 {
-                    return new OutputResult<object>("操作失败");
+                    newParentCatalogid = newParentCatalog.RecId;
+                    //检查分类目录是否存在相同客户
+                    MailCatalogInfo parentCust=_mailCatalogRepository.GetMailCataLogByCustId(catalog.CustId, paramInfo.newUserId, tran);
+                    if (parentCust != null && parentCust.RecId != new Guid("00000000-0000-0000-0000-000000000000"))
+                    {
+                        //重复客户，转移邮件
+                        _mailCatalogRepository.TransferMailsToNewCatalog(parentCust.RecId, catalog.RecId, tran);
+                    }
+                    else {
+                        _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalogid, tran);
+                    }
                 }
             }
-            else
+            else if (catalog.CType == MailCatalogType.PersonalDyn)
             {
-                newParentCatalogid = newParentCatalog.RecId;
-                _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalogid, tran);
+                this.InitMailCatalog(paramInfo.newUserId);
+                //所有转移到转到新用户个人目录根目录
+                int personalEum = (int)MailCatalogType.Personal;
+                MailCatalogInfo personCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, personalEum.ToString());
+                _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, personCatalog.RecId, tran);
             }
+            else if (catalog.CType == MailCatalogType.UnSpec)
+            {
+                int unSpecEum = (int)MailCatalogType.UnSpec;
+                this.InitMailCatalog(paramInfo.newUserId);
+                MailCatalogInfo unSpecCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, unSpecEum.ToString());
+                _mailCatalogRepository.TransferMailsToNewCatalog(unSpecCatalog.RecId, catalog.RecId, tran);
+            }
+            else {
+                return new OutputResult<object>("操作失败");
+            }
+          
+
             return new OutputResult<object>("操作成功");
         }
 
@@ -350,10 +374,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var catalog = new CUMailCatalogMapper
                 {
                     CatalogId = paramInfo.recId,
-                    CatalogPId = paramInfo.newPid,
+                    CatalogPId= paramInfo.newPid,
                     CatalogName = paramInfo.recName
                 };
-                _mailCatalogRepository.EditCatalog(catalog, userId);
+                _mailCatalogRepository.EditCatalog(catalog,userId);
                 MailCatalogInfo currentParantInfo = _mailCatalogRepository.GetMailCataLogById(catalogInfo.PId, userId, tran);
 
                 MailCatalogInfo newParentInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.newPid, userId, tran);
@@ -367,8 +391,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
                 return new OutputResult<object>("保存成功");
             }
-            else
-            {
+            else {
                 throw (new Exception("只能移动个人目录"));
             }
 
@@ -378,21 +401,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
-            var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
-            if (entity == null || !entity.IsValid())
-            {
-                return HandleValid(entity);
-            }
-
-            var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
-            if (userMailInfo == null)
-                throw new Exception("缺少发件人邮箱信息");
-
-            string error = ValidMailSize(userMailInfo.Wgvhhx, model.BodyContent, GetAttachmentFileSize(model));
-            if (!string.IsNullOrEmpty(error))
-            {
-                return ShowError<object>(error);
-            }
             //校验白名单之类的验证
             var errors = ValidEmailAddressAuth(model, userNumber);
             if (errors.Count > 0)
@@ -423,13 +431,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     return outPutResult;
                 }
-
             }
         }
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
+            if (userMailInfo == null)
+                throw new Exception("缺少发件人邮箱信息");
 
             IList<MailboxAddress> fromAddressList;
             IList<MailboxAddress> toAddressList;
@@ -439,6 +453,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<ExpandoObject> attachFileRecord;//用来批量写db记录的
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
+
+            string error = ValidMailSize(userMailInfo.Wgvhhx, entity.BodyContent, attachFileRecord);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return ShowError<object>(error);
+            }
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
 
             MimeMessageResult msgResult = new MimeMessageResult
@@ -701,17 +721,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 attachFileRecord.Add(expandObj);
             }
         }
-
-        private int GetAttachmentFileSize(SendEMailModel model)
-        {
-            var tmp = _fileServices.GetFileListData(string.Empty, model.AttachmentFile.Select(t => t.FileId).AsEnumerable());
-            int countSize = 0;
-            foreach (var t in tmp)
-            {
-                countSize += t.Data.Length;
-            }
-            return countSize;
-        }
         private async Task<IList<dynamic>> UploadAttachmentFiles(IEnumerable<MimeEntity> mimeEntities)
         {
             return await Task.Run(() =>
@@ -879,11 +888,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return errors;
         }
 
-        private string ValidMailSize(Int64 limitSize, string bodyContent, int fileSize)
+        private string ValidMailSize(Int64 limitSize, string bodyContent, List<ExpandoObject> attFiles)
         {
 
             long kbSize = limitSize * 1024 * 1024;
-            int countSize = CommonHelper.GetStringLength(bodyContent) + fileSize;
+            int countSize = CommonHelper.GetStringLength(bodyContent);
+            foreach (var tmp in attFiles)
+            {
+                dynamic dyn = (dynamic)tmp;
+                countSize += dyn.data.Length;
+            }
             if (kbSize < countSize)
             {
                 return "发送的邮件大小超出限制";
@@ -922,8 +936,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 };
                 return HandleResult(_mailCatalogRepository.InsertCatalog(catalog, userId));
             }
-            else
-            {
+            else {
                 return HandleResult(new OperateResult()
                 {
                     Flag = 0,

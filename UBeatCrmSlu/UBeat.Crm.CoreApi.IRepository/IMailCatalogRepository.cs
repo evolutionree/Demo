@@ -42,7 +42,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         MailCatalogInfo GetMailCataLogById(Guid catalog, int userNum, DbTransaction p);
 
         MailCatalogInfo GetMailCataLogByViewUserId(Guid catalog, int userNum, DbTransaction p);
-
+        MailCatalogInfo GetMailCataLogByCustId(Guid custId, int userid, DbTransaction p);
         UserMailInfo GetUserMailInfo(string fromAddress, int userId);
 
         IList<UserMailInfo> GetAllUserMail(int deviceType,int userId);
@@ -51,5 +51,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         void MoveCatalog(string v1, string v2,string v3, DbTransaction tran);
         MailCatalogInfo GetCatalogForCustType(Guid custCatalog, int newUserId, DbTransaction tran);
         void TransferCatalog(Guid recId, int newUserId, Guid newParentCatalogid, DbTransaction tran);
+        void TransferMailsToNewCatalog(Guid newCatalogid, Guid oldCatalogid, DbTransaction tran);
+        void TransferBatcCatalog(int newUserId, int oldUserId, Guid newParentCatalogid, int ctype, DbTransaction tran);
     }
 }
