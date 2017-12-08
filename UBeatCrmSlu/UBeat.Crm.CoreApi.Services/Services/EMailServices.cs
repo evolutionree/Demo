@@ -291,13 +291,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> TransferCatalog(TransferCatalogModel paramInfo, int userId)
         {
             DbTransaction tran = null;
-            if (userId == paramInfo.newUserId) throw (new Exception("目录属于本人,无需转移"));
-            MailCatalogInfo catalog = _mailCatalogRepository.GetMailCataLogByViewUserId(paramInfo.recId, userId, tran);
+            if (paramInfo.ownUserId == paramInfo.newUserId) throw (new Exception("目录属于本人,无需转移"));
+            if (paramInfo.ownUserId == 0) throw (new Exception("请传入目录原归属用户id"));
+            MailCatalogInfo catalog = _mailCatalogRepository.GetMailCataLogByViewUserId(paramInfo.recId, paramInfo.ownUserId, tran);
             if (catalog == null) throw (new Exception("转移目录错误"));
             //收件箱所有目录都可以转移
             if (catalog.CType == MailCatalogType.CustDyn)
             {
-                MailCatalogInfo parentCatalog = _mailCatalogRepository.GetMailCataLogByViewUserId(catalog.VPId, userId, tran);
+                MailCatalogInfo parentCatalog = _mailCatalogRepository.GetMailCataLogByViewUserId(catalog.VPId, paramInfo.ownUserId, tran);
                 if (parentCatalog == null) throw (new Exception("目录异常"));
                 MailCatalogInfo newParentCatalog = _mailCatalogRepository.GetCatalogForCustType(parentCatalog.CustCatalog, paramInfo.newUserId, tran);
                 Guid newParentCatalogid;
@@ -389,10 +390,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 MailCatalogInfo newParentInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.newPid, userId, tran);
                 if (newParentInfo == null) throw (new Exception("目标目录不存在"));
-                if (newParentInfo.CType != MailCatalogType.Personal) throw (new Exception("新的父目录必须为个人目录"));
                 if (newParentInfo.UserId != userId) throw (new Exception("目标目录必须是用户自己的目录"));
                 //判断目录是否空目录，非空目录不能
-                if (_mailCatalogRepository.checkHasMails(newParentInfo.RecId.ToString(), tran)) throw (new Exception("目标目录不能拥有邮件"));
+                //if (_mailCatalogRepository.checkHasMails(newParentInfo.RecId.ToString(), tran)) throw (new Exception("目标目录不能拥有邮件"));
                 if (_mailCatalogRepository.checkCycleCatalog(newParentInfo.RecId.ToString(), catalogInfo.RecId.ToString(), tran)) throw (new Exception("造成循环目录，移动失败"));
                 //现在开始移动
                 _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
@@ -1339,7 +1339,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string treeId = "";
             if (dynamicModel != null)
                 treeId = dynamicModel.treeId;
-            return new OutputResult<object>(_mailRepository.GetInnerContact(treeId, userId));
+            List<OrgAndStaffMapper> list=_mailRepository.GetInnerContact(treeId, userId);
+            //分拆多个邮箱
+            List<OrgAndStaffMapper> resultList = new List<OrgAndStaffMapper>();
+            foreach (var userMail in list)
+            {
+                string[] mails = userMail.mail.Split(';');
+                if (mails.Length > 1)
+                {
+                    foreach (var mail in mails)
+                    {
+                        OrgAndStaffMapper newMail = new OrgAndStaffMapper();
+                        newMail.mail = mail;
+                        newMail.TreeId = userMail.TreeId;
+                        newMail.TreeName = userMail.TreeName;
+                        newMail.DeptName = userMail.DeptName;
+                        newMail.Icon = userMail.Icon;
+                        newMail.nodeType = userMail.nodeType;
+                        resultList.Add(newMail);
+                    };
+
+                }
+                else
+                {
+                    resultList.Add(userMail);
+                }
+            };
+            return new OutputResult<object>(resultList);
         }
 
         public OutputResult<object> GetInnerPersonContact(OrgAndStaffTreeModel dynamicModel, int userId)
@@ -1347,7 +1373,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int pageSize = 10;
             if (dynamicModel != null && dynamicModel.PageSize > 0)
                 pageSize = dynamicModel.PageSize;
-            return new OutputResult<object>(_mailRepository.GetInnerPersonContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize, userId));
+
+            PageDataInfo<OrgAndStaffMapper> pageInfo = _mailRepository.GetInnerPersonContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize, userId);
+            List<OrgAndStaffMapper> list = pageInfo.DataList;
+            //分拆多个邮箱
+            List<OrgAndStaffMapper> resultList = new List<OrgAndStaffMapper>();
+            foreach (var userMail in list)
+            {
+                string[] mails = userMail.mail.Split(';');
+                if (mails.Length > 1)
+                {
+                    foreach (var mail in mails)
+                    {
+                        OrgAndStaffMapper newMail = new OrgAndStaffMapper();
+                        newMail.mail = mail;
+                        newMail.TreeId = userMail.TreeId;
+                        newMail.TreeName = userMail.TreeName;
+                        newMail.DeptName = userMail.DeptName;
+                        newMail.Icon = userMail.Icon;
+                        newMail.nodeType = userMail.nodeType;
+                        resultList.Add(newMail);
+                    };
+
+                }
+                else
+                {
+                    resultList.Add(userMail);
+                }
+            };
+            pageInfo.DataList = resultList;
+            return new OutputResult<object>(pageInfo);
         }
         /// <summary>
         /// 获取客户联系人
