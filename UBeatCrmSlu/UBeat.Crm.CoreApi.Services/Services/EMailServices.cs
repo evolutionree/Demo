@@ -409,24 +409,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else
             {
                 var outPutResult = SendEMailAsync(model, header, userNumber);
-                dynamic errorObj;
+
                 if (outPutResult.Status == 0)
                 {
-                    errorObj = new
+                    dynamic errorObj = new
                     {
                         Flag = 1,
                         TipMsg = string.Empty
                     };
+                    return new OutputResult<object>(errorObj);
                 }
                 else
                 {
-                    errorObj = new
-                    {
-                        Flag = 0,
-                        TipMsg = outPutResult.Message
-                    };
+                    return outPutResult;
                 }
-                return new OutputResult<object>(errorObj);
+
             }
         }
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
