@@ -26,10 +26,12 @@ namespace UBeat.Crm.MailService.Mail.Helper
             , string subject, string bodyContent, IList<ExpandoObject> attachmentFile)
         {
             var message = new MimeMessage();
+
             SetEmailAddress(EmailAddrType.From, message, fromAddressList);
             SetEmailAddress(EmailAddrType.To, message, toAddressList);
             SetEmailAddress(EmailAddrType.CC, message, ccAddressList);
             SetEmailAddress(EmailAddrType.Bcc, message, bccAddressList);
+
 
             message.Subject = string.IsNullOrEmpty(subject) ? string.Empty : subject;
             var html = new TextPart("html")

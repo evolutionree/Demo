@@ -47,7 +47,7 @@ namespace UBeat.Crm.MailService.Mail.Helper
             MailValidatorHelper.ValideStrNullOrEmpty(password, "password");
 
             this.InitImapEmailConfig(host, port, enableSsl);
-
+            
             ImapClient.Authenticate(userName, password);
         }
 

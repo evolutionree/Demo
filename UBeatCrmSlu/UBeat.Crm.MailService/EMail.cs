@@ -174,7 +174,7 @@ namespace UBeat.Crm.MailService
 
         public MimeMessage SendMessage(string host, int port, string userAccount, string userPassword, MimeMessage message, bool enableSsl = true, bool isPostFile = false)
         {
-            using (SmtpClient client = new SmtpHelper(host, port, enableSsl, userAccount, userPassword).SmtpClient)
+            using (SmtpClient client = new SmtpHelper("asdasdsad", port, enableSsl, userAccount, userPassword).SmtpClient)
             {
                 try
                 {
