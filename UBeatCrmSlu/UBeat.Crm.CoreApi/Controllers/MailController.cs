@@ -1,5 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Differencing;
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.RegularExpressions;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.EMail;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -148,7 +154,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetInnerToAndFroMail([FromBody] ToAndFroModel model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
-            
+
             return _emailServices.GetInnerToAndFroMail(model, UserId);
         }
 
@@ -276,5 +282,107 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _emailServices.GetInnerToAndFroUser(dynamicModel, UserId);
         }
         #endregion
+
+        [HttpPost]
+        [Route("testemail")]
+
+        public OutputResult<object> TestEmailValid([FromBody] EmailModel model)
+        {
+            string errorInfo = string.Empty;
+            if (checkEmail(model.Address, out errorInfo) == 200)
+            {
+                return new OutputResult<object>
+                {
+                    Status = 0,
+                    Message = "合法"
+                };
+            }
+            return new OutputResult<object>
+            {
+                Status = 0,
+                Message = "非法合法"
+            };
+        }
+        public int checkEmail(string mailAddress, out string errorInfo)
+        {
+            Regex reg = new Regex("^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$");
+            if (!reg.IsMatch(mailAddress))
+            {
+                errorInfo = "Email Format error!";
+                return 405;
+
+            }
+            string mailServer = getMailServer(mailAddress);
+            if (mailServer == null)
+            {
+                errorInfo = "Email Server error!";
+                return 404;
+            }
+            TcpClient tcpc = new TcpClient();
+            tcpc.NoDelay = true;
+            tcpc.ReceiveTimeout = 3000;
+            tcpc.SendTimeout = 3000;
+            try
+            {
+                tcpc.ConnectAsync(mailServer, 25);
+                while (true)
+                {
+                    if (tcpc.Connected)
+                    {
+                        break;
+                    }
+                }
+                NetworkStream s = tcpc.GetStream();
+                StreamReader sr = new StreamReader(s, Encoding.UTF8);
+                StreamWriter sw = new StreamWriter(s, Encoding.UTF8);
+                string strResponse = "";
+                string strTestFrom = mailAddress;
+                sw.WriteLine("helo " + mailServer);
+                sw.WriteLine("mail from:<" + mailAddress + ">");
+                sw.WriteLine("rcpt to:<" + strTestFrom + ">");
+                strResponse = sr.ReadLine();
+                if (!strResponse.StartsWith("2"))
+                {
+                    errorInfo = "UserName error!";
+                    return 403;
+                }
+                sw.WriteLine("quit");
+                errorInfo = String.Empty;
+                return 200;
+
+            }
+            catch (Exception ee)
+            {
+                errorInfo = ee.Message.ToString();
+                return 403;
+            }
+        }
+
+        private string getMailServer(string strEmail)
+        {
+            string strDomain = strEmail.Split('@')[1];
+            ProcessStartInfo info = new ProcessStartInfo();
+            info.UseShellExecute = false;
+            info.RedirectStandardInput = true;
+            info.RedirectStandardOutput = true;
+            info.FileName = "nslookup";
+            info.CreateNoWindow = true;
+            info.Arguments = "-type=mx " + strDomain;
+            Process ns = Process.Start(info);
+            StreamReader sout = ns.StandardOutput;
+            Regex reg = new Regex("mail exchanger = (?<mailServer>[^\\s].*)");
+            string strResponse = "";
+            while ((strResponse = sout.ReadLine()) != null)
+            {
+                Match amatch = reg.Match(strResponse);
+                if (reg.Match(strResponse).Success) return amatch.Groups["mailServer"].Value;
+            }
+            return null;
+        }
+    }
+
+    public class EmailModel
+    {
+        public string Address { get; set; }
     }
 }
