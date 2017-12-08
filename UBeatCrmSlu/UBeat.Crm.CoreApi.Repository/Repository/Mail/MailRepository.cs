@@ -375,7 +375,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                         AND controltype  NOT IN(20,1001,1002,1003,1004,1005,1006,1007,1008) AND recstatus=1
                                                     ) AS t ) AS tmp, (select
                                                     crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('349cba2f-42b0-44c2-89f5-207052f50a00',@userid)) AS tmp1";
-            var custSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0} AS e WHERE recid IN (
+            var custSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0}   from crm_sys_customer e WHERE recid IN (
                                         SELECT regexp_split_to_table(custids,',')::uuid custid FROM (
                                         SELECT (belcust->>'id') AS custids FROM crm_sys_contact WHERE email=
                                         (Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1) AS tmp ) AND recstatus=1";
