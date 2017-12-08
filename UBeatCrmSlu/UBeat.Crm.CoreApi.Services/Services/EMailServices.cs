@@ -234,7 +234,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
             fieldData.Add("urgency", 1);//邮件优先级
 
-            fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
+            fieldData.Add("receivedtime", msg.Date);//邮件优先级
             var fileTask = UploadAttachmentFiles(msg.Attachments);
             fileTask.Wait();
             fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
@@ -323,13 +323,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     newParentCatalogid = newParentCatalog.RecId;
                     //检查分类目录是否存在相同客户
-                    MailCatalogInfo parentCust=_mailCatalogRepository.GetMailCataLogByCustId(catalog.CustId, paramInfo.newUserId, tran);
+                    MailCatalogInfo parentCust = _mailCatalogRepository.GetMailCataLogByCustId(catalog.CustId, paramInfo.newUserId, tran);
                     if (parentCust != null && parentCust.RecId != new Guid("00000000-0000-0000-0000-000000000000"))
                     {
                         //重复客户，转移邮件
                         _mailCatalogRepository.TransferMailsToNewCatalog(parentCust.RecId, catalog.RecId, tran);
                     }
-                    else {
+                    else
+                    {
                         _mailCatalogRepository.TransferCatalog(paramInfo.recId, paramInfo.newUserId, newParentCatalogid, tran);
                     }
                 }
@@ -349,10 +350,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 MailCatalogInfo unSpecCatalog = _mailCatalogRepository.GetMailCatalogByCode(paramInfo.newUserId, unSpecEum.ToString());
                 _mailCatalogRepository.TransferMailsToNewCatalog(unSpecCatalog.RecId, catalog.RecId, tran);
             }
-            else {
+            else
+            {
                 return new OutputResult<object>("操作失败");
             }
-          
+
 
             return new OutputResult<object>("操作成功");
         }
@@ -374,10 +376,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var catalog = new CUMailCatalogMapper
                 {
                     CatalogId = paramInfo.recId,
-                    CatalogPId= paramInfo.newPid,
+                    CatalogPId = paramInfo.newPid,
                     CatalogName = paramInfo.recName
                 };
-                _mailCatalogRepository.EditCatalog(catalog,userId);
+                _mailCatalogRepository.EditCatalog(catalog, userId);
                 MailCatalogInfo currentParantInfo = _mailCatalogRepository.GetMailCataLogById(catalogInfo.PId, userId, tran);
 
                 MailCatalogInfo newParentInfo = _mailCatalogRepository.GetMailCataLogById(paramInfo.newPid, userId, tran);
@@ -391,7 +393,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 _mailCatalogRepository.MoveCatalog(catalogInfo.RecId.ToString(), newParentInfo.RecId.ToString(), paramInfo.recName, tran);
                 return new OutputResult<object>("保存成功");
             }
-            else {
+            else
+            {
                 throw (new Exception("只能移动个人目录"));
             }
 
@@ -945,7 +948,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 };
                 return HandleResult(_mailCatalogRepository.InsertCatalog(catalog, userId));
             }
-            else {
+            else
+            {
                 return HandleResult(new OperateResult()
                 {
                     Flag = 0,
