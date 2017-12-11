@@ -578,7 +578,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
             if (!string.IsNullOrEmpty(catalogType))
             {
-                sql = string.Format(sql + " and ctype!={0} ", keyword);
+                sql = string.Format(sql + " and ctype!={0} ", catalogType);
             }
             var param = new DbParameter[]
             {
