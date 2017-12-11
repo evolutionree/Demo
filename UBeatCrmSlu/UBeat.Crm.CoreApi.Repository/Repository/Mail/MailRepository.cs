@@ -1013,13 +1013,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             var sql = @"select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
                  where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
                  UNION ALL 
-                select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
-                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
-                UNION all 
-                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
-                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
-                left join crm_sys_department d on d.deptid=ur.deptid
-                 where ur.recstatus = 1 and d.deptid::text=@deptId";
+                SELECT t2.mail,t2.treeid,t2.treename,t2.deptname,1 nodetype,t2.icon from 
+                                (select mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
+                                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
+                                UNION all 
+                                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
+                                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                                left join crm_sys_department d on d.deptid=ur.deptid
+                                 where ur.recstatus = 1 and d.deptid::text=@deptId ) t2
+                                group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("deptId", deptId)
