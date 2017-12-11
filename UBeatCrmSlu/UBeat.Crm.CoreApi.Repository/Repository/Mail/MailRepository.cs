@@ -618,18 +618,48 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         public PageDataInfo<MailBodyMapper> GetInnerToAndFroMail(ToAndFroMapper entity, int userId)
         {
 
-            string sql = @" Select                               
+            string sql = @" WITH T1 AS (
+                                        Select                               
                                         body.recid mailid, 
-                                        (SELECT row_to_json(t) FROM (SELECT mailaddress as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender, 
-                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers, 
-                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=3 AND mailid=body.recid ) t)::jsonb ccers, 
-                                        (SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress  as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=4 AND mailid=body.recid ) t)::jsonb bccers, 
+                                        (SELECT row_to_json(t) FROM (SELECT mailaddress as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender,
                                         body.title, 
                                         body.mailbody as summary, 
                                         COALESCE(body.senttime, body.receivedtime)  senttime,
-                                        COALESCE(body.receivedtime,body.senttime)  receivedtime
-                                        FROM crm_sys_mail_mailbody body {0}";
-            var param = new DbParameter[] { new NpgsqlParameter("mailid", entity.MailId), new NpgsqlParameter("userid", userId.ToString()) };
+                                        COALESCE(body.receivedtime,body.senttime)  receivedtime,
+										rl.mailserverid
+                                        FROM crm_sys_mail_mailbody body  LEFT JOIN crm_sys_mail_receivemailrelated rl ON body.recid=rl.mailid {0} 
+                                        ),
+                                        T2 AS (
+                                                SELECT * FROM crm_sys_mail_receivemailrelated WHERE mailserverid = (
+                                                SELECT mailserverid FROM crm_sys_mail_receivemailrelated WHERE mailid IN ( SELECT  mailid FROM T1 ) GROUP BY mailserverid HAVING (COUNT(mailserverid))>1 LIMIT 1
+                                                ) LIMIT 1
+                                        )
+                                        SELECT * FROM (SELECT * FROM (
+                                        SELECT * FROM T1 WHERE mailserverid NOT IN (SELECT mailserverid FROM T2)
+                                        UNION ALL
+                                        SELECT * FROM T1 WHERE mailid IN (SELECT mailid FROM T2) ) AS tmp ORDER BY tmp.receivedtime DESC) AS tmp1  LIMIT @pagesize OFFSET @pageindex
+                                        ";
+            string countSql = @" WITH T1 AS (
+                                        Select                               
+                                        body.recid mailid, 
+                                        (SELECT row_to_json(t) FROM (SELECT mailaddress as address,displayname FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender, 
+                                        body.title, 
+                                        body.mailbody as summary, 
+                                        COALESCE(body.senttime, body.receivedtime)  senttime,
+                                        COALESCE(body.receivedtime,body.senttime)  receivedtime,
+										rl.mailserverid
+                                        FROM crm_sys_mail_mailbody body LEFT JOIN crm_sys_mail_receivemailrelated rl ON body.recid=rl.mailid  {0} 
+                                        ),
+                                        T2 AS (
+                                                SELECT * FROM crm_sys_mail_receivemailrelated WHERE mailserverid = (
+                                                SELECT mailserverid FROM crm_sys_mail_receivemailrelated WHERE mailid IN ( SELECT  mailid FROM T1 ) GROUP BY mailserverid HAVING (COUNT(mailserverid))>1 LIMIT 1
+                                                ) LIMIT 1
+                                        )
+                                        SELECT Count(1) FROM (SELECT * FROM (
+                                        SELECT * FROM T1 WHERE mailserverid NOT IN (SELECT mailserverid FROM T2)
+                                        UNION ALL
+                                        SELECT * FROM T1 WHERE mailid IN (SELECT mailid FROM T2) ) AS tmp ORDER BY tmp.receivedtime DESC) AS tmp1 
+                                        ";
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
             if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)
@@ -641,7 +671,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))";
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))  ";
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
             {
@@ -652,7 +682,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype!=1)";
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND (ctype=2 or ctype=3 or ctype=4))";
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
             {
@@ -703,8 +733,30 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             }
             sql = string.Format(sql, whereSql);
-            sql = string.Format(" SELECT * FROM ( {0} ) AS tmp  ORDER BY tmp.receivedtime desc ", sql);
-            return ExecuteQueryByPaging<MailBodyMapper>(sql, param, entity.PageSize, entity.PageIndex);
+            countSql = string.Format(countSql, whereSql);
+            if (entity.PageSize <= 0)
+            {
+                entity.PageSize = 1000000;
+            }
+            if (entity.PageIndex <= 1)
+            {
+                entity.PageIndex = entity.PageIndex - 1;
+            }
+            var param = new
+            {
+                MailId = entity.MailId,
+                UserId = userId.ToString(),
+                PageSize = entity.PageSize,
+                PageIndex = entity.PageIndex
+            };
+            PageDataInfo<MailBodyMapper> pageData = new PageDataInfo<MailBodyMapper>();
+            pageData.DataList = DataBaseHelper.Query<MailBodyMapper>(sql, param);
+            pageData.PageInfo = new PageInfo
+            {
+                TotalCount = DataBaseHelper.QuerySingle<long>(countSql, param),
+                PageSize = entity.PageSize,
+            };
+            return pageData;
         }
 
 
@@ -981,14 +1033,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             else
             {
                 keyword = keyword.Replace("@", "_");
-                condition = string.Format( " and name like '%{0}%' or email like '%{1}%' ", keyword, keyword);
+                condition = string.Format(" and name like '%{0}%' or email like '%{1}%' ", keyword, keyword);
                 if (count == 0)
                 {
-                    sql = string.Format(sql+ " LIMIT 10", condition);
+                    sql = string.Format(sql + " LIMIT 10", condition);
                 }
                 else
                 {
-                    sql = string.Format(sql + " LIMIT {1} ", condition,count);
+                    sql = string.Format(sql + " LIMIT {1} ", condition, count);
                 }
             }
 
