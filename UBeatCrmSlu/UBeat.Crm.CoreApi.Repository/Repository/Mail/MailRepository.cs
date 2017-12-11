@@ -641,7 +641,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))";
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid)) AND recid NOT IN 
+                                        ( SELECT mailid FROM crm_sys_mail_receivemailrelated WHERE mailserverid IN   (SELECT mailserverid FROM crm_sys_mail_receivemailrelated WHERE mailid=@mailid)    AND  mailid!=@mailid) ";
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
             {
@@ -652,7 +653,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype!=1)";
+                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND (ctype=2 or ctype=3 or ctype=4))";
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
             {
@@ -953,12 +954,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         #region  模糊查询我的通讯人员
         public List<MailUserMapper> GetContactByKeyword(string keyword, int count, int userId)
         {
-            var sql = "select email EmailAddress,name from (SELECT email,recname as name FROM crm_sys_contact " +
-                " WHERE email is not null and email!=''  and (belcust->> 'id')::uuid IN (SELECT recid FROM crm_sys_customer " +
-                " WHERE recmanager = @userid) UNION ALL SELECT useremail as email,username as name " +
-                " FROM crm_sys_userinfo WHERE  useremail is not null and useremail!= '' and recstatus = 1 ) x where 1=1 ";
+            var sql = @"select email EmailAddress,name from (SELECT email,recname as name FROM crm_sys_contact 
+                     WHERE email is not null and email!=''  and (belcust->> 'id')::uuid IN (SELECT recid FROM crm_sys_customer 
+                     WHERE recmanager = @userid) 
+                UNION ALL 
+                select useremail mail,username as name from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= ''
+                UNION ALL
+                select a.accountid mail,b.username as name  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid 
+                where b.recstatus=1
+                ) x where 1=1 {0}
+                group by email,name ";
+
+            string condition = string.Empty;
             if (string.IsNullOrEmpty(keyword))
             {
+                sql = string.Format(sql, "");
                 if (count == 0)
                 {
                     sql = string.Format(sql + "  LIMIT 10 ");
@@ -967,17 +977,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 {
                     sql = string.Format(sql + "  LIMIT {0} ", count);
                 }
+
             }
             else
             {
                 keyword = keyword.Replace("@", "_");
+                condition = string.Format( " and name like '%{0}%' or email like '%{1}%' ", keyword, keyword);
                 if (count == 0)
                 {
-                    sql = string.Format(sql + " and name like '%{0}%' or email like '%{1}%'  LIMIT 10 ", keyword, keyword);
+                    sql = string.Format(sql+ " LIMIT 10", condition);
                 }
                 else
                 {
-                    sql = string.Format(sql + " and name like '%{0}%' or email like '%{1}%'  LIMIT {2} ", keyword, keyword, count);
+                    sql = string.Format(sql + " LIMIT {1} ", condition,count);
                 }
             }
 
@@ -1003,9 +1015,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                  where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
                  UNION ALL 
                 select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
-                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.useremail is not null  and a.useremail!= '' 
+                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
                 UNION all 
-                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid ) x
+                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
                 inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                 left join crm_sys_department d on d.deptid=ur.deptid
                  where ur.recstatus = 1 and d.deptid::text=@deptId";
@@ -1025,9 +1037,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         public PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
             string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
-                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.useremail is not null  and a.useremail!= '' 
+                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
                 UNION all 
-                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid ) x
+                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1  ) x
                 inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                 left join crm_sys_department d on d.deptid=ur.deptid
                  where ur.recstatus = 1 {0}
@@ -1035,7 +1047,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(keyword))
             {
-                condition = string.Format(" and x.username like '%{0}%'", keyword);
+                condition = string.Format(" and x.username like '%{0}%' or mail like '%{1}%' ", keyword, keyword);
 
             }
             string newSql = string.Format(sql, condition);
