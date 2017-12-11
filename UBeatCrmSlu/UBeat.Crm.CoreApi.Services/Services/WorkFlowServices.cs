@@ -883,7 +883,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 throw new Exception("您没有审批当前节点的权限");
                             AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
                         }
-
                     }
                     //判断是否有附加函数_event_func
                     var eventfuncname = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, 1, tran);
@@ -910,15 +909,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     conn.Close();
                     conn.Dispose();
                 }
-
-
             }
-
-
             return new OutputResult<object>(result);
-
-
-
         }
         #endregion
 
@@ -927,9 +919,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
 
             var result = new NextNodeDataModel();
-
             NextNodeDataInfo nodetemp = new NextNodeDataInfo();
-
             //获取流程数据信息
             var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseId);
             if (caseInfo == null)
@@ -949,7 +939,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.NodeNum = 1;
                 nodetemp.NodeState = 0;
                 //nodetemp.StepTypeId = NodeStepType.SelectByUser;
-
                 if (caseInfo.NodeNum == -1)//审批已经结束
                 {
                     nodetemp.NodeNum = -1;
@@ -965,7 +954,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             else //固定流程
             {
-
                 if (caseitems == null || caseitems.Count == 0)
                 {
                     throw new Exception("流程节点数据异常");
@@ -976,7 +964,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("不存在有效节点");
                 }
-
                 nodetemp.NodeId = flowNodeInfo.NodeId;
                 nodetemp.FlowType = WorkFlowType.FixedFlow;
                 nodetemp.NodeName = flowNodeInfo.NodeName;
@@ -1040,7 +1027,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeInfo = nodetemp,
                         Approvers = users
                     };
-
                 }
                 else
                 {
