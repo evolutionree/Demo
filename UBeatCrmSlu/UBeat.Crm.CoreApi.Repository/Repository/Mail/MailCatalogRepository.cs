@@ -576,6 +576,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 sql = string.Format(sql + " and recname like '%{0}%' ", keyword);
 
             }
+            if (!string.IsNullOrEmpty(catalogType))
+            {
+                sql = string.Format(sql + " and ctype!={0} ", keyword);
+            }
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid",  userid )
@@ -590,18 +594,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     if (catalog.RecId == itemTreeOne.RecId)
                     {
                         resultList.Add(itemTreeOne);
-                        foreach (var item in wholeTree)
+                    }
+                    foreach (var item in wholeTree)
+                    {
+                        if (item.VPId == itemTreeOne.RecId)
                         {
-                            if (item.VPId == itemTreeOne.RecId)
+                            if (itemTreeOne.SubCatalogs == null)
                             {
-                                if (itemTreeOne.SubCatalogs == null)
-                                {
-                                    itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
-                                }
-                                itemTreeOne.SubCatalogs.Add(item);
+                                itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
                             }
+                            itemTreeOne.SubCatalogs.Add(item);
                         }
-                    }   
+                    }
                 }
             }
 
