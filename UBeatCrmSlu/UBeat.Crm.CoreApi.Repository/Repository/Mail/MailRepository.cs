@@ -1165,12 +1165,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         }
 
         /// <summary>
-        /// 获取内部分发内部通讯录
+        /// 获取内部分发内部通讯录_人员列表
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="keyword"></param>
         /// <returns></returns>       
-        public PageDataInfo<OrgAndStaffMapper> TransferInnerContact(string keyword, int pageIndex, int pageSize, int userId)
+        public PageDataInfo<OrgAndStaffMapper> TransferInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
             string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
                 select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1  ) x
@@ -1187,6 +1187,36 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string newSql = string.Format(sql, condition);
 
             return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageSize, pageIndex);
+        }
+
+        /// <summary>
+        /// 获取内部分发通讯录
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>       
+        public List<OrgAndStaffMapper> TransferInnerContact(string deptId, int userId)
+        {
+            if (string.IsNullOrEmpty(deptId))
+            {
+                string rootsql = "select deptid::text from crm_sys_department where pdeptid::text = '00000000-0000-0000-0000-000000000000' and recstatus=1 ";
+                deptId = (string)ExecuteScalar(rootsql, new DbParameter[] { });
+            }
+            var sql = @"select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
+                 where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
+                 UNION ALL 
+                SELECT t2.mail,t2.treeid,t2.treename,t2.deptname,1 nodetype,t2.icon from 
+                                (select mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
+                                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
+                                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                                left join crm_sys_department d on d.deptid=ur.deptid
+                                 where ur.recstatus = 1 and d.deptid::text=@deptId ) t2
+                                group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("deptId", deptId)
+            };
+            return ExecuteQuery<OrgAndStaffMapper>(sql, param);
         }
 
         /// <summary>
