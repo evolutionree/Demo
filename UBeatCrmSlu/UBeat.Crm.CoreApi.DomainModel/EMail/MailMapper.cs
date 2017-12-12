@@ -580,7 +580,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// </summary>
         public string MailAddress { get; set; }
         /// <summary>
-        /// -1 查询所有邮件 1 发出 2 收到 
+        /// 0 查询所有邮件 1 发出 2 收到 
         /// </summary>
         public int Ctype { get; set; }
 
@@ -591,9 +591,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         /// </summary>
         public int DateRange { get; set; }
 
-        public DateTime StartDate { get; set; }
+        public DateTime? StartDate { get; set; }
 
-        public DateTime EndDate { get; set; }
+        public DateTime? EndDate { get; set; }
 
         public int PageIndex { get; set; }
 

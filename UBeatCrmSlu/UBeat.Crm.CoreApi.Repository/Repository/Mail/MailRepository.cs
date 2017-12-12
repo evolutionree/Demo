@@ -1344,10 +1344,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string strSQL = @" SELECT  * FROM (SELECT " +
                               "body.recid mailid," +
                               "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
-                              "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers" +
+                              "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
                               "body.title," +
-                              "COALESCE(body.receivedtime,body.senttime) mailtime" +
-                              " FROM crm_sys_mail_mailbody body Where  body.recstatus=2 ) AS tmp  {0} ";
+                               "COALESCE(body.senttime,body.receivedtime)  senttime," +
+                               "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
+                              "COALESCE(body.receivedtime,body.senttime) mailtime,body.recstatus" +
+                              " FROM crm_sys_mail_mailbody body ) AS tmp  Where   tmp.recstatus=2  {0} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
@@ -1366,8 +1368,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 {
                     sqlCondition = sqlCondition.Replace("#mailaddress#", string.Empty);
                 }
-                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
-                if (entity.Ctype == -1)
+                if (entity.Ctype == 0)
                 {
                     sqlCondition = sqlCondition.Replace("#ctype#", " AND ctype!=@ctype");
                 }
@@ -1395,19 +1396,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
             else if (entity.DateRange == -1)
             {
-                sqlCondition = "  tmp.mailtime>=@startdate AND tmp.mailtime<=@enddate ";
+                if (entity.StartDate.HasValue && entity.EndDate.HasValue)
+                    sqlCondition = "  tmp.mailtime>=@startdate AND tmp.mailtime<=@enddate ";
+                else if(entity.StartDate.HasValue)
+                    sqlCondition = "  tmp.mailtime>=@startdate  ";
+                else if (entity.StartDate.HasValue)
+                    sqlCondition = "  tmp.mailtime<=@enddate  ";
             }
             sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
-            strSQL = string.Format(strSQL, sqlWhere);
+            sqlCondition = sqlWhere.Count() == 0 ? string.Empty : " AND " + string.Join(" AND ", sqlWhere);
+            strSQL = string.Format(strSQL, sqlCondition);
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("keyword",entity.KeyWord),
                 new NpgsqlParameter("startdate",entity.StartDate),
                 new NpgsqlParameter("enddate",entity.EndDate),
                 new NpgsqlParameter("queryuserid",entity.UserId.Value),
-                new NpgsqlParameter("keyword",entity.KeyWord),
-                new NpgsqlParameter("keyword",entity.KeyWord),
-                new NpgsqlParameter("keyword",entity.KeyWord),
+                new NpgsqlParameter("ctype",entity.Ctype)
             };
             return ExecuteQueryByPaging<MailBodyMapper>(strSQL, param, entity.PageSize, entity.PageIndex);
         }
