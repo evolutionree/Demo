@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.WorkFlow;
 
 namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
@@ -97,7 +98,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
         public string RecCreator_Name { set; get; }
 
-        public string CopyUser { get; set; }
+        public List<UserInfo> CopyUser { get; set; }
 
     }
 

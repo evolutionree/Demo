@@ -61,8 +61,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
                     if (workflowInfo == null)
                         throw new Exception("流程配置不存在");
-                    var copyusers = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId);
-
+                    var copyusersInfo = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId);
 
                     result.CaseDetail = new WorkFlowCaseInfoExt()
                     {
@@ -83,7 +82,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         FlowName = workflowInfo.FlowName,
                         BackFlag = workflowInfo.BackFlag,
                         RecCreator_Name = caseInfo.RecCreator_Name,
-                        CopyUser = string.Join(",", copyusers.Select(m => m.UserName))
+                        CopyUser = copyusersInfo
                     };
                     #endregion
 
@@ -1099,8 +1098,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     else //固定流程
                     {
                         nodeid = caseitems.FirstOrDefault().NodeId;
-                       
-                        isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems,out nextnode,out canAddNextNode);
+
+                        isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, out nextnode, out canAddNextNode);
                     }
                     //判断是否有附加函数_event_func
                     var eventfuncname = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, 1, tran);
@@ -1112,7 +1111,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //流程审批过程修改实体字段时，更新关联实体的字段数据
                     _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
                     //完成了以上审批操作，如果是分支流程，需要验证下一步审批人是否符合规则
-                    if (isbranchFlow&& nextnode!=null)
+                    if (isbranchFlow && nextnode != null)
                     {
                         //验证规则是否符合
                         if (!ValidateNextNodeRule(caseInfo, nextnode, userinfo, tran))
@@ -1154,7 +1153,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         #region --审批固定流程--
-        private bool AuditFixedFlow(Guid nodeid, UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish,  DbTransaction tran, WorkFlowCaseInfo caseInfo, List<WorkFlowCaseItemInfo> caseitems,out WorkFlowNodeInfo nextnode, out bool canAddNextNode)
+        private bool AuditFixedFlow(Guid nodeid, UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, DbTransaction tran, WorkFlowCaseInfo caseInfo, List<WorkFlowCaseItemInfo> caseitems, out WorkFlowNodeInfo nextnode, out bool canAddNextNode)
         {
             bool isbranchflow = false;
             bool hasNextNode = true;
@@ -1185,7 +1184,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             isbranchflow = flowNextNodeInfos != null && flowNextNodeInfos.Count > 1;//如果配置节点有多个，属于分支流程
 
-            nextnode=flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
+            nextnode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
             return isbranchflow;
 
 
