@@ -576,6 +576,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 sql = string.Format(sql + " and recname like '%{0}%' ", keyword);
 
             }
+            if (!string.IsNullOrEmpty(catalogType))
+            {
+                sql = string.Format(sql + " and ctype!={0} ", catalogType);
+            }
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid",  userid )
@@ -585,23 +589,33 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in searchList)
             {
-                foreach (var itemTreeOne in wholeTree)
+                List<MailCatalogInfo> tempList = new List<MailCatalogInfo>();
+                foreach (var tempItem in wholeTree) {
+                    MailCatalogInfo info = new MailCatalogInfo();
+                    info.RecName = tempItem.RecName;
+                    info.RecId = tempItem.RecId;
+                    info.VPId = tempItem.VPId;
+                    info.CType = tempItem.CType;
+                    info.ViewUserId = tempItem.ViewUserId;
+                    tempList.Add(info);
+                }
+                foreach (var itemTreeOne in tempList)
                 {
                     if (catalog.RecId == itemTreeOne.RecId)
                     {
                         resultList.Add(itemTreeOne);
-                        foreach (var item in wholeTree)
+                    }
+                    foreach (var item in tempList)
+                    {
+                        if (item.VPId == itemTreeOne.RecId)
                         {
-                            if (item.VPId == itemTreeOne.RecId)
+                            if (itemTreeOne.SubCatalogs == null)
                             {
-                                if (itemTreeOne.SubCatalogs == null)
-                                {
-                                    itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
-                                }
-                                itemTreeOne.SubCatalogs.Add(item);
+                                itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
                             }
+                            itemTreeOne.SubCatalogs.Add(item);
                         }
-                    }   
+                    }
                 }
             }
 

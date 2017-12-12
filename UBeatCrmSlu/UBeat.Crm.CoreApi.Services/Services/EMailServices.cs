@@ -910,7 +910,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             long kbSize = limitSize * 1024 * 1024;
             int countSize = CommonHelper.GetStringLength(bodyContent) + fileSize;
-            if (kbSize < countSize)
+            if (kbSize > 0 && kbSize < countSize)
             {
                 return "发送的邮件大小超出限制";
             }
@@ -1353,7 +1353,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string treeId = "";
             if (dynamicModel != null)
                 treeId = dynamicModel.treeId;
-            List<OrgAndStaffMapper> list=_mailRepository.GetInnerContact(treeId, userId);
+            List<OrgAndStaffMapper> list = _mailRepository.GetInnerContact(treeId, userId);
             //分拆多个邮箱
             List<OrgAndStaffMapper> resultList = new List<OrgAndStaffMapper>();
             foreach (var userMail in list)

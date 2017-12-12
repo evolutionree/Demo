@@ -1354,8 +1354,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// </summary>
         /// <param name="caseid"></param>
         /// <returns></returns>
-        public List<int> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null)
+        public List<DomainModel.Account.UserInfo> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null)
         {
+           
             string sql = string.Format(@" SELECT ci.copyuser FROM crm_sys_workflow_case_item ci
                                           WHERE ci.caseid=@caseid AND stepnum>= (SELECT MAX( stepnum) FROM crm_sys_workflow_case_item WHERE caseid=@caseid AND nodenum=0) 
                                           ");
@@ -1374,7 +1375,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 }
             }
 
-            return copyuserlist.Distinct().ToList();
+            var usersql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo WHERE userid =ANY(@userids)";
+
+            var param = new DbParameter[]
+                    {
+                        new NpgsqlParameter("userids", copyuserlist.Distinct().ToArray()),
+                    };
+            return ExecuteQuery<DomainModel.Account.UserInfo>(usersql, param);
+            
         }
     }
 }

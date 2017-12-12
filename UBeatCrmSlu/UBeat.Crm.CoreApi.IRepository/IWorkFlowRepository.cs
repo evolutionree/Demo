@@ -155,7 +155,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <param name="caseid"></param>
         /// <returns></returns>
-        List<int> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null);
+        List<DomainModel.Account.UserInfo> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null);
     }
 }
 
