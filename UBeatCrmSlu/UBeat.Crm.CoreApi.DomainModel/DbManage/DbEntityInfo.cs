@@ -68,6 +68,30 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         /// 字段信息
         /// </summary>
         public List<DbEntityFieldInfo> Fields { get; set; }
+        /// <summary>
+        /// 实体分类属性
+        /// </summary>
+        public List<DbEntityCatelogInfo> Catelogs { get; set; }
+    }
+    /// <summary>
+    /// 实体分类信息
+    /// </summary>
+    public class DbEntityCatelogInfo {
+        public Guid CatelogId { get; set; }
+        public string CatelogName { get; set; }
+        public Guid? RelCatelogId { get; set; }
+        public List<DbEntityFieldRuleInfo> FieldRules { get; set; }
+    }
+    public class DbEntityFieldRuleInfo {
+        public Guid FieldRulesId { get; set; }
+        public Guid TypeId { get; set; }
+        public Guid FieldId  { get; set; }
+        public int OperateType { get; set; }
+        public int IsRequire { get; set; }
+        public int IsVisible { get; set; }
+        public int IsReadOnly { get; set; }
+        public Dictionary<string, object> ViewRules { get; set; }
+        public Dictionary<string, object> ValidRules { get; set; }
 
     }
     /// <summary>

@@ -160,12 +160,25 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
             return SeqSQL+"\r\n"+createTableSQL + "\r\n" + ConstraintSQL +"\r\n" + IndexSQL +"\r\n" + TriggerSQL  +"\r\n";
         }
 
+
+
         public OutputResult<object> ListObjects(DbListObjectsParamInfo paramInfo, int userId)
         {
             DbTransaction tran = null;
             try
             {
                 List<SQLObjectModel> list = this._dbManageRepository.SearchSQLObjects(paramInfo, userId, tran);
+                foreach (SQLObjectModel item in list) {
+                    if (item.ProcParam != null) {
+                        item.ProcParam = item.ProcParam.Replace("{", "(").Replace("}", ")");
+                        
+                    }
+                    if (item.ObjType == SQLObjectTypeEnum.Func) item.ObjType_Name = "函数";
+                    else if (item.ObjType == SQLObjectTypeEnum.PGType) item.ObjType_Name = "类型";
+                    else if (item.ObjType == SQLObjectTypeEnum.Table) item.ObjType_Name = "表格";
+                    else item.ObjType_Name = "未设置";
+                    if (item.NeedInitSQL == 1) item.NeedInitSQL_Name = "是"; else item.NeedInitSQL_Name = "";
+                }
                 return new OutputResult<object>(list);
             }
             catch (Exception ex) {

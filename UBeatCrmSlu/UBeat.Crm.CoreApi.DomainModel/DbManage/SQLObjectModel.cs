@@ -8,6 +8,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
     {
         public Guid Id { get; set; }
         public SQLObjectTypeEnum ObjType { get; set; }
+        public string ObjType_Name { get; set; }
         public string SqlPath { get; set; }
         public string LastVersion { get; set; }
         public string ObjName { get; set; }
@@ -17,6 +18,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         public int RecStatus { get; set; }
         public SQLObjectBelongSysEnum belongTo { get; set; }
         public int NeedInitSQL { get; set; }
+        public string NeedInitSQL_Name { get; set; }
         public string ProcParam { get; set; }
         public int RecOrder { get; set; }
         public void checkEmpty() {

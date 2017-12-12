@@ -464,7 +464,7 @@ VALUES(
             try
             {
                 string strSQL = "";
-                strSQL = "Select * from  crm_sys_dbmgr_object where 1=1  sqlpath = @sqlpath and (objname like @objname or name like @objname) ";
+                strSQL = "Select * from  crm_sys_dbmgr_object where 1=1 and  sqlpath = @sqlpath and (objname like @objname or name like @objname) ";
                 if (paramInfo.ObjectType != SQLObjectTypeEnum.All) {
                     strSQL = strSQL + " And objtype=" + ((int)paramInfo.ObjectType).ToString();
                 }
