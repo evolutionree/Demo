@@ -225,7 +225,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             if (entity.IsTruncate)
                 sql = "Update  crm_sys_mail_mailbody set recstatus=2 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                   "Update  crm_sys_mail_attach set recstatus=2  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);"+
+                   "Update  crm_sys_mail_attach set recstatus=2  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                    "Delete From  crm_sys_mail_reconvert  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                    "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid) SELECT mailid,catalogid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             else
@@ -1337,6 +1337,85 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 return false;
         }
         #endregion
+
+
+        public PageDataInfo<MailBodyMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId)
+        {
+            string strSQL = @" SELECT  * FROM (SELECT " +
+                              "body.recid mailid," +
+                              "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
+                              "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
+                              "body.title," +
+                               "COALESCE(body.senttime,body.receivedtime)  senttime," +
+                               "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
+                              "COALESCE(body.receivedtime,body.senttime) mailtime,body.recstatus" +
+                              " FROM crm_sys_mail_mailbody body ) AS tmp  Where   tmp.recstatus=2  {0} ";
+            object[] sqlWhere = new object[] { };
+            string sqlCondition = string.Empty;
+            if (!string.IsNullOrEmpty(entity.KeyWord))
+            {
+                sqlCondition = "  ((tmp.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
+                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+            }
+            if (entity.UserId.HasValue)
+            {
+                sqlCondition = "  tmp.mailid IN (SELECT mailid FROM crm_sys_mail_senderreceivers WHERE   mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner::INT4=@queryuserid #mailaddress#) #ctype#) ";
+                if (!string.IsNullOrEmpty(entity.MailAddress))
+                {
+                    sqlCondition = sqlCondition.Replace("#mailaddress#", "AND accountid=@mailaddres");
+                }
+                else
+                {
+                    sqlCondition = sqlCondition.Replace("#mailaddress#", string.Empty);
+                }
+                if (entity.Ctype == 0)
+                {
+                    sqlCondition = sqlCondition.Replace("#ctype#", " AND ctype!=@ctype");
+                }
+                else
+                {
+                    sqlCondition = sqlCondition.Replace("#ctype#", " AND ctype=@ctype");
+                }
+                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+            }
+            if (entity.DateRange == 0)
+            {
+                sqlCondition = "  tmp.mailtime>=(now()-interval '2 week') AND tmp.mailtime<=now()  ";
+            }
+            else if (entity.DateRange == 1)
+            {
+                sqlCondition = "  tmp.mailtime>=(now()-interval '3 month') AND tmp.mailtime<=now()  ";
+            }
+            else if (entity.DateRange == 2)
+            {
+                sqlCondition = "  tmp.mailtime>=(now()-interval '6 month') AND tmp.mailtime<=now()  ";
+            }
+            else if (entity.DateRange == 3)
+            {
+                sqlCondition = "  tmp.mailtime>=(now()-interval '1 y') AND tmp.mailtime<=now()  ";
+            }
+            else if (entity.DateRange == -1)
+            {
+                if (entity.StartDate.HasValue && entity.EndDate.HasValue)
+                    sqlCondition = "  tmp.mailtime>=@startdate AND tmp.mailtime<=@enddate ";
+                else if(entity.StartDate.HasValue)
+                    sqlCondition = "  tmp.mailtime>=@startdate  ";
+                else if (entity.StartDate.HasValue)
+                    sqlCondition = "  tmp.mailtime<=@enddate  ";
+            }
+            sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+            sqlCondition = sqlWhere.Count() == 0 ? string.Empty : " AND " + string.Join(" AND ", sqlWhere);
+            strSQL = string.Format(strSQL, sqlCondition);
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("keyword",entity.KeyWord),
+                new NpgsqlParameter("startdate",entity.StartDate),
+                new NpgsqlParameter("enddate",entity.EndDate),
+                new NpgsqlParameter("queryuserid",entity.UserId.Value),
+                new NpgsqlParameter("ctype",entity.Ctype)
+            };
+            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, param, entity.PageSize, entity.PageIndex);
+        }
 
     }
 }

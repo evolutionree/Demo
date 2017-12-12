@@ -235,7 +235,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _emailServices.TransferInnerContact(dynamicModel, UserId);
         }
 
-
+ 
+        [HttpPost]
+        [Route("getreconvertmaillst")]
+        public OutputResult<object> TransferInnerPersonContact([FromBody] ReconvertMailModel model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return new OutputResult<object>(_emailServices.GetReconvertMailList(model, UserId));
+        }
         #endregion
 
         #region 通讯录
