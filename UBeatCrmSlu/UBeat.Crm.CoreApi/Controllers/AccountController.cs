@@ -265,9 +265,12 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [HttpPost]
         [Route("userinfo")]
-        public OutputResult<object> UserInfo()
+        public OutputResult<object> UserInfo([FromBody]UserInfoModel queryModel = null)
         {
-            return _accountServices.GetUserInfo(UserId);
+            int userid = UserId;
+            if (queryModel != null && queryModel.UserId > 0)
+                userid = queryModel.UserId;
+            return _accountServices.GetUserInfo(userid);
         }
 
         [HttpPost]

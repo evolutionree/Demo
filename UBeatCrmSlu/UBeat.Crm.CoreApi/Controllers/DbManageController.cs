@@ -16,8 +16,11 @@ namespace UBeat.Crm.CoreApi.Controllers
     public class DbManageController : BaseController
     {
         private readonly DbManageServices _dbManageServices;
-        public DbManageController(DbManageServices dbManageServices) : base(dbManageServices) {
+        private readonly DbEntityManageServices _dbEntityManageServices;
+        public DbManageController(DbManageServices dbManageServices,
+                    DbEntityManageServices dbEntityManageServices) : base(dbManageServices, dbEntityManageServices) {
             this._dbManageServices = dbManageServices;
+            this._dbEntityManageServices =  dbEntityManageServices;
         }
         [HttpPost("test")]
         [AllowAnonymous]
@@ -35,9 +38,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpGet("export")]
         [AllowAnonymous]
-        public async Task<IActionResult> ExportSQL([FromQuery]  int belongto,[FromQuery] int isstruct) {
+        public async Task<IActionResult> ExportSQL([FromQuery]  int belongto, [FromQuery] int isstruct) {
             SQLExportParamInfo paramInfo = new SQLExportParamInfo();
-            paramInfo.ExportSys =(SQLObjectBelongSysEnum) belongto;
+            paramInfo.ExportSys = (SQLObjectBelongSysEnum)belongto;
             paramInfo.IsStruct = (StructOrData)isstruct;
             return await Task.Run<IActionResult>(() =>
             {
@@ -65,7 +68,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [HttpPost("reflect")]
         [AllowAnonymous]
         public OutputResult<object> reflect([FromBody] SQLReflectQueryModel paramInfo) {
-            if (paramInfo == null ) {
+            if (paramInfo == null) {
                 return new OutputResult<object>("参数异常", "参数异常", -1);
             }
             return this._dbManageServices.ReflectInitStructSQL(paramInfo.RecIds, 0);
@@ -84,6 +87,29 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (paramInfo == null)
                 return new OutputResult<object>("参数异常", "参数异常", -1);
             return this._dbManageServices.SaveUpgradeSQL(paramInfo, UserId);
+        }
+        [HttpPost("listdir")]
+        [AllowAnonymous]
+        public OutputResult<object> ListDirs()
+        {
+            return this._dbManageServices.ListDir(UserId);
+        }
+        [HttpPost("listobjects")]
+        [AllowAnonymous]
+        public OutputResult<object> ListObjects([FromBody] DbListObjectsParamInfo paramInfo) {
+            if (paramInfo == null)
+                return new OutputResult<object>("参数异常", "参数异常", -1);
+            return this._dbManageServices.ListObjects(paramInfo, UserId);
+        }
+        [HttpPost("exportentity")]
+        [AllowAnonymous]
+        public OutputResult<object> ExportEntity([FromBody]EntityExportParamInfo paramInfo) {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty)
+                return new OutputResult<object>("参数异常", "参数异常", -1);
+            DbEntityReflectParamInfo reflectParamInfo = new DbEntityReflectParamInfo();
+            reflectParamInfo.EntityId = paramInfo.EntityId.ToString();
+            DbEntityInfo info = this._dbEntityManageServices.ReflectEntity(reflectParamInfo, UserId);
+            return new OutputResult<object>(Newtonsoft.Json.JsonConvert.SerializeObject(info));
         }
     }
 }

@@ -1011,7 +1011,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 checkstatus = true;
                             }
                         }
-                        if (checkstatus)
+                        if (!checkstatus)
                         {
                             throw new Exception("没有符分支流程规则的下一步审批人");
                         }
@@ -1153,13 +1153,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("流程配置不存在");
             //获取下一步节点，
             var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-
             if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
             {
                 canAddNextNode = false;
                 hasNextNode = false;
             }
-
 
             //执行审批逻辑
             if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
@@ -1174,6 +1172,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("您没有审批当前节点的权限");
                 canAddNextNode = AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
             }
+           
+
+            
+
             //如果配置节点有多个，属于分支流程
             if (canAddNextNode && flowNextNodeInfos != null && flowNextNodeInfos.Count > 1)//分支流程,如果是分支流程，需要验证下一步审批人是否符合规则
             {
@@ -1183,6 +1185,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (!ValidateNextNodeRule(caseInfo, nextNode, userinfo, tran))
                     throw new Exception("下一步审批人不符分支流程规则");
             }
+
+
             return nodeid;
         }
         #endregion
