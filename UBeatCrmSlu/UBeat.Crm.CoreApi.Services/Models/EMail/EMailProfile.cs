@@ -33,6 +33,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 
             CreateMap<TransferRecordParamModel, TransferRecordParamMapper>();
             CreateMap<InnerToAndFroMailModel, InnerToAndFroMailMapper>();
+
+            CreateMap<ReconvertMailModel, ReconvertMailMapper>();
         }
     }
 }
