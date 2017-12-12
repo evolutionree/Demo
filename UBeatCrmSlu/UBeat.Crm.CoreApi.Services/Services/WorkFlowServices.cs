@@ -1013,7 +1013,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         if (!checkstatus)
                         {
-                            throw new Exception("没有符分支流程规则的下一步审批人");
+                            throw new Exception("没有符合分支流程规则的下一步审批人");
                         }
                     }
 
@@ -1057,6 +1057,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int stepnum = 0;
             Guid nodeid = Guid.Empty;
             bool canAddNextNode = true;
+            bool isbranchFlow = false;
+            WorkFlowNodeInfo nextnode = null;
             using (var conn = GetDbConnect())
             {
                 conn.Open();
@@ -1096,7 +1098,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     else //固定流程
                     {
-                        nodeid = AuditFixedFlow(userinfo, caseItemEntity, ref casefinish, ref canAddNextNode, tran, caseInfo, caseitems);
+                        nodeid = caseitems.FirstOrDefault().NodeId;
+                       
+                        isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems,out nextnode,out canAddNextNode);
                     }
                     //判断是否有附加函数_event_func
                     var eventfuncname = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, 1, tran);
@@ -1107,15 +1111,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     //流程审批过程修改实体字段时，更新关联实体的字段数据
                     _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
+                    //完成了以上审批操作，如果是分支流程，需要验证下一步审批人是否符合规则
+                    if (isbranchFlow&& nextnode!=null)
+                    {
+                        //验证规则是否符合
+                        if (!ValidateNextNodeRule(caseInfo, nextnode, userinfo, tran))
+                            throw new Exception("下一步审批人不符合分支流程规则");
+                    }
 
                     if (casefinish)//审批已经到达了最后一步
                     {
                         _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, stepnum + 1, userinfo.UserId, tran);
                     }
-                    else
+                    else if (canAddNextNode) //添加下一步骤审批节点
                     {
-                        if (canAddNextNode && (caseItemEntity.ChoiceStatus == 1 || caseItemEntity.ChoiceStatus == 4)) //如果是审批通过或者编辑重新发起操作，则需要添加下一步骤审批节点
-                            AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
+                        AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
                     }
                     tran.Commit();
                     //写审批消息
@@ -1139,15 +1149,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
             return new OutputResult<object>(null);
-        } 
+        }
         #endregion
 
 
         #region --审批固定流程--
-        private Guid AuditFixedFlow(UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, ref bool canAddNextNode, DbTransaction tran, WorkFlowCaseInfo caseInfo, List<WorkFlowCaseItemInfo> caseitems)
+        private bool AuditFixedFlow(Guid nodeid, UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish,  DbTransaction tran, WorkFlowCaseInfo caseInfo, List<WorkFlowCaseItemInfo> caseitems,out WorkFlowNodeInfo nextnode, out bool canAddNextNode)
         {
+            bool isbranchflow = false;
             bool hasNextNode = true;
-            Guid nodeid = caseitems.FirstOrDefault().NodeId;
+
             var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
             if (flowNodeInfo == null)
                 throw new Exception("流程配置不存在");
@@ -1172,22 +1183,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("您没有审批当前节点的权限");
                 canAddNextNode = AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
             }
-           
+            isbranchflow = flowNextNodeInfos != null && flowNextNodeInfos.Count > 1;//如果配置节点有多个，属于分支流程
 
-            
-
-            //如果配置节点有多个，属于分支流程
-            if (canAddNextNode && flowNextNodeInfos != null && flowNextNodeInfos.Count > 1)//分支流程,如果是分支流程，需要验证下一步审批人是否符合规则
-            {
-                //获取选中的分支
-                var nextNode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
-                //验证规则是否符合
-                if (!ValidateNextNodeRule(caseInfo, nextNode, userinfo, tran))
-                    throw new Exception("下一步审批人不符分支流程规则");
-            }
+            nextnode=flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
+            return isbranchflow;
 
 
-            return nodeid;
+
+
         }
         #endregion
 
