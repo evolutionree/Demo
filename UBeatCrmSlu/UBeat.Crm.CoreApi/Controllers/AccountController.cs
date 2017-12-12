@@ -265,12 +265,16 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [HttpPost]
         [Route("userinfo")]
-        public OutputResult<object> UserInfo([FromBody]UserInfoModel queryModel = null)
+        public OutputResult<object> UserInfo()
         {
-            int userid = UserId;
-            if (queryModel != null && queryModel.UserId > 0)
-                userid = queryModel.UserId;
-            return _accountServices.GetUserInfo(userid);
+            return _accountServices.GetUserInfo(UserId);
+        }
+        [HttpPost]
+        [Route("getuserinfo")]
+        public OutputResult<object> GetUserInfo([FromBody]UserInfoModel queryModel = null)
+        {
+            if (queryModel == null) return ResponseError<object>("参数格式错误");
+            return _accountServices.GetUserInfo(queryModel.UserId);
         }
 
         [HttpPost]
