@@ -212,6 +212,18 @@ namespace UBeat.Crm.CoreApi.Controllers
 
 
         /// <summary>
+        /// 获取内部分发列表_人员
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("transferinnerpersoncontact")]
+        public OutputResult<object> TransferInnerPersonContact([FromBody] OrgAndStaffTreeModel dynamicModel, int userId)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.TransferInnerPersonContact(dynamicModel, UserId);
+        }
+
+        /// <summary>
         /// 获取内部分发列表
         /// </summary>
         /// <returns></returns>

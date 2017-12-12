@@ -225,7 +225,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             if (entity.IsTruncate)
                 sql = "Update  crm_sys_mail_mailbody set recstatus=2 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                   "Update  crm_sys_mail_attach set recstatus=2  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
+                   "Update  crm_sys_mail_attach set recstatus=2  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);"+
+                   "Delete From  crm_sys_mail_reconvert  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
+                   "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid) SELECT mailid,catalogid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             else
                 sql = "update crm_sys_mail_mailbody set recstatus=0 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                     "update crm_sys_mail_catalog_relation set catalogid=(SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND ctype = 1006 LIMIT 1) where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
@@ -353,7 +355,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid) attachcount," +
                                         "(SELECT  mailaddress FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) frommailaddress," +
-                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT filename,mongoid AS fileid FROM crm_sys_mail_attach WHERE  mailid=body.recid ) t)::jsonb attachinfojson" +
+                                        "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT filename,mongoid AS fileid,filesize FROM crm_sys_mail_attach WHERE  mailid=body.recid ) t)::jsonb attachinfojson" +
                                         " FROM crm_sys_mail_mailbody body Where body.recid=@mailid ";
             var isConExistsSql = @"Select count(1) From crm_sys_contact Where (belcust->>'id') IN (
                                                 SELECT regexp_split_to_table(custid,'id') 
@@ -808,72 +810,72 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             // 与自己往来+收到和发出的邮件
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)
             {
-                whereSql = @"Where recstatus=1 and recid IN (
+                whereSql = @"Where  att.recstatus=1 and att.mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))  ";
+                                        )) AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid))  ";
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 1)            //与自己往来+收到的邮件
             {
-                whereSql = @" Where recstatus=1 and  recid IN (
+                whereSql = @" Where  att.recstatus=1 and  att.mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND (ctype=2 or ctype=3 or ctype=4))";
+                                        )) AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND (ctype=2 or ctype=3 or ctype=4))";
             }
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 2)         //与自己往来+发出的邮件
             {
-                whereSql = @" Where recstatus=1 and  recid IN (
+                whereSql = @" Where att.recstatus=1 and  att.mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        ))  AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype=1)";
+                                        ))  AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1 AND owner=@userid) AND ctype=1)";
             }
             else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 0)       //与所有用户往来+收到和发出的邮件
             {
-                whereSql = @"  Where recstatus=1 and  recid IN (
+                whereSql = @"  Where  att.recstatus=1 and  att.mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox Where recstatus=1))";
+                                        )) AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox Where recstatus=1))";
 
             }
             else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 1)//与所有用户往来+收出的邮件
             {
-                whereSql = @"  Where recstatus=1 and  recid IN (
+                whereSql = @"  Where  att.recstatus=1 and  att.mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE  recstatus=1) AND (ctype=2 or ctype=3 or ctype=4))";
+                                        )) AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE  recstatus=1) AND (ctype=2 or ctype=3 or ctype=4))";
 
             }
 
             else if (entity.relatedMySelf == 2 && entity.relatedSendOrReceive == 2)//与所有用户往来+发出的邮件
             {
-                whereSql = @"  Where recstatus=1 and  recid IN (
+                whereSql = @"  Where  att.recstatus=1 and  att.mailid IN (
                                         SELECT mailid FROM crm_sys_mail_senderreceivers WHERE mailaddress IN (
                                         SELECT tmp.email FROM (
                                         SELECT regexp_split_to_table((belcust->>'id'),',') AS custid,email FROM crm_sys_contact WHERE recstatus=1 ) AS tmp 
                                         WHERE tmp.custid IN (
                                         SELECT regexp_split_to_table((belcust->>'id'),',')  AS custid FROM crm_sys_contact WHERE email IN(
                                         SELECT mailaddress FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid AND ctype=1 ))  
-                                        )) AND recid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
+                                        )) AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
 
             }
             sql = string.Format(sql, whereSql);
@@ -973,7 +975,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             try
             {
                 var sql = @" update crm_sys_mail_sendrecord set status=@mailstatus where mailid=@mailid;";
-                var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=1004";
+                var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=@ctype";
                 var mailCatalogChangeSql = @" update crm_sys_mail_catalog_relation set catalogid=@catalogid where mailid=@mailid;";
                 var param = new DbParameter[]
                 {
@@ -984,13 +986,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 int count = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
                 if (count > 0)
                 {
-                    var arg = new
+                    var arg = new DynamicParameters();
+                    arg.Add("userid", userId);
+                    if (mailStatus != 6)
                     {
-                        UserId = userId
-                    };
+                        arg.Add("ctype", 1003);
+                    }
+                    else
+                    {
+                        arg.Add("ctype", 1004);
+                    }
                     var catalogId = DataBaseHelper.QuerySingle<Guid>(mailCatalogSql, arg);
                     if (catalogId == Guid.Empty)
-                        throw new Exception("该用户没有已发送目录");
+                        throw new Exception("该用户没有发送或已发送目录");
                     param = new DbParameter[]
                     {
                     new NpgsqlParameter("catalogid",catalogId),
@@ -1165,12 +1173,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         }
 
         /// <summary>
-        /// 获取内部分发内部通讯录
+        /// 获取内部分发内部通讯录_人员列表
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="keyword"></param>
         /// <returns></returns>       
-        public PageDataInfo<OrgAndStaffMapper> TransferInnerContact(string keyword, int pageIndex, int pageSize, int userId)
+        public PageDataInfo<OrgAndStaffMapper> TransferInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
             string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
                 select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1  ) x
@@ -1187,6 +1195,36 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string newSql = string.Format(sql, condition);
 
             return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageSize, pageIndex);
+        }
+
+        /// <summary>
+        /// 获取内部分发通讯录
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>       
+        public List<OrgAndStaffMapper> TransferInnerContact(string deptId, int userId)
+        {
+            if (string.IsNullOrEmpty(deptId))
+            {
+                string rootsql = "select deptid::text from crm_sys_department where pdeptid::text = '00000000-0000-0000-0000-000000000000' and recstatus=1 ";
+                deptId = (string)ExecuteScalar(rootsql, new DbParameter[] { });
+            }
+            var sql = @"select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
+                 where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
+                 UNION ALL 
+                SELECT t2.mail,t2.treeid,t2.treename,t2.deptname,1 nodetype,t2.icon from 
+                                (select mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
+                                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
+                                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                                left join crm_sys_department d on d.deptid=ur.deptid
+                                 where ur.recstatus = 1 and d.deptid::text=@deptId ) t2
+                                group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("deptId", deptId)
+            };
+            return ExecuteQuery<OrgAndStaffMapper>(sql, param);
         }
 
         /// <summary>
