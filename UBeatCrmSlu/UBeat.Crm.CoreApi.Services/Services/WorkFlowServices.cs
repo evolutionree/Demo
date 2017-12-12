@@ -1011,7 +1011,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 checkstatus = true;
                             }
                         }
-                        if (checkstatus)
+                        if (!checkstatus)
                         {
                             throw new Exception("没有符分支流程规则的下一步审批人");
                         }
