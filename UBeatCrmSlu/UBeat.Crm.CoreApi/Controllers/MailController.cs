@@ -47,7 +47,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (model == null) return ResponseError<object>("参数格式错误");
             var header = GetAnalyseHeader();
-            return _emailServices.SendEMailAsync(model, header, UserId);
+            //return _emailServices.SendEMailAsync(model, header, UserId);
+            return null;
         }
 
         /// <summary>
@@ -207,6 +208,19 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (model == null) return ResponseError<object>("参数格式错误");
             return _emailServices.GetInnerTransferRecord(model, UserId);
+        }
+
+
+        /// <summary>
+        /// 获取内部分发列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("transferinnercontact")]
+        public OutputResult<object> TransferInnerContact([FromBody] OrgAndStaffTreeModel dynamicModel, int userId)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.TransferInnerContact(dynamicModel, UserId);
         }
 
 

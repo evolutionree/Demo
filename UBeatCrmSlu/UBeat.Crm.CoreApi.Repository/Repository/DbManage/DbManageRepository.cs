@@ -5,6 +5,7 @@ using System.Text;
 using UBeat.Crm.CoreApi.IRepository;
 using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.DbManage;
+using Npgsql;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
 {
@@ -439,6 +440,43 @@ VALUES(
             {
                 return null;
             }
+        }
+
+        public List<string> ListAllDirs(int userId, DbTransaction tran)
+        {
+            try
+            {
+                string sql = "Select distinct  sqlpath from crm_sys_dbmgr_object order by sqlpath";
+                List<Dictionary<string, object>> l = ExecuteQuery(sql, new DbParameter[] { }, tran);
+                List<string> ret = new List<string>();
+                foreach (Dictionary<string, object> item in l) {
+                    ret.Add((string)item["sqlpath"]);
+                }
+                return ret;
+            }
+            catch (Exception ex) {
+
+            }return null;
+        }
+
+        public List<SQLObjectModel> SearchSQLObjects(DbListObjectsParamInfo paramInfo, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = "";
+                strSQL = "Select * from  crm_sys_dbmgr_object where 1=1 and  sqlpath = @sqlpath and (objname like @objname or name like @objname) ";
+                if (paramInfo.ObjectType != SQLObjectTypeEnum.All) {
+                    strSQL = strSQL + " And objtype=" + ((int)paramInfo.ObjectType).ToString();
+                }
+                DbParameter [] p = new DbParameter[] {
+                    new NpgsqlParameter("@sqlpath",paramInfo.FullPath),
+                    new NpgsqlParameter("@objname","%"+paramInfo.SearchKey+"%")
+                };
+                return ExecuteQuery<SQLObjectModel>(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+            }
+            return null;
         }
     }
 }

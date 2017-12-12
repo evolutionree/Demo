@@ -57,6 +57,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId);
 
+        PageDataInfo<OrgAndStaffMapper> TransferInnerContact(string keyword, int pageIndex, int pageSize, int userId);
+
         PageDataInfo<MailUserMapper> GetCustomerContact(string keyword,int pageIndex, int pageSize, int userId);
 
         PageDataInfo<MailBodyMapper> GetInnerToAndFroMail(ToAndFroMapper entity, int userId);

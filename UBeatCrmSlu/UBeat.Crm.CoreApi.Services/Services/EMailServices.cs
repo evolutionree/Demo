@@ -1437,6 +1437,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             pageInfo.DataList = resultList;
             return new OutputResult<object>(pageInfo);
         }
+
+        public OutputResult<object> TransferInnerContact(OrgAndStaffTreeModel dynamicModel, int userId)
+        {
+            int pageSize = 10;
+            if (dynamicModel != null && dynamicModel.PageSize > 0)
+                pageSize = dynamicModel.PageSize;
+
+            PageDataInfo<OrgAndStaffMapper> pageInfo = _mailRepository.TransferInnerContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize, userId);
+            return new OutputResult<object>(pageInfo);
+        }
         /// <summary>
         /// 获取客户联系人
         /// </summary>

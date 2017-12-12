@@ -1152,9 +1152,35 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>       
         public PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
-            string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
+            string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (select t.mail,t.userid,t.username,t.icon from (
                 select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
                 UNION all 
+                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1  ) t 
+                    group by t.mail,t.userid,t.username,t.icon ) x
+                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                left join crm_sys_department d on d.deptid=ur.deptid
+                 where ur.recstatus = 1 {0}
+                order by x.username";
+            string condition = string.Empty;
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                condition = string.Format(" and x.username like '%{0}%' or mail like '%{1}%' ", keyword, keyword);
+
+            }
+            string newSql = string.Format(sql, condition);
+
+            return ExecuteQueryByPaging<OrgAndStaffMapper>(newSql, new DbParameter[] { }, pageSize, pageIndex);
+        }
+
+        /// <summary>
+        /// 获取内部分发内部通讯录
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>       
+        public PageDataInfo<OrgAndStaffMapper> TransferInnerContact(string keyword, int pageIndex, int pageSize, int userId)
+        {
+            string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (
                 select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1  ) x
                 inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                 left join crm_sys_department d on d.deptid=ur.deptid

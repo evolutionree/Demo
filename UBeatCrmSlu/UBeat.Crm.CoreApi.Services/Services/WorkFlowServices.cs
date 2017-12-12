@@ -883,7 +883,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 throw new Exception("您没有审批当前节点的权限");
                             AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
                         }
-
                     }
                     //判断是否有附加函数_event_func
                     var eventfuncname = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, 1, tran);
@@ -910,15 +909,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     conn.Close();
                     conn.Dispose();
                 }
-
-
             }
-
-
             return new OutputResult<object>(result);
-
-
-
         }
         #endregion
 
@@ -927,9 +919,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
 
             var result = new NextNodeDataModel();
-
             NextNodeDataInfo nodetemp = new NextNodeDataInfo();
-
             //获取流程数据信息
             var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseId);
             if (caseInfo == null)
@@ -949,7 +939,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.NodeNum = 1;
                 nodetemp.NodeState = 0;
                 //nodetemp.StepTypeId = NodeStepType.SelectByUser;
-
                 if (caseInfo.NodeNum == -1)//审批已经结束
                 {
                     nodetemp.NodeNum = -1;
@@ -965,7 +954,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             else //固定流程
             {
-
                 if (caseitems == null || caseitems.Count == 0)
                 {
                     throw new Exception("流程节点数据异常");
@@ -976,7 +964,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("不存在有效节点");
                 }
-
                 nodetemp.NodeId = flowNodeInfo.NodeId;
                 nodetemp.FlowType = WorkFlowType.FixedFlow;
                 nodetemp.NodeName = flowNodeInfo.NodeName;
@@ -1024,7 +1011,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 checkstatus = true;
                             }
                         }
-                        if (checkstatus)
+                        if (!checkstatus)
                         {
                             throw new Exception("没有符分支流程规则的下一步审批人");
                         }
@@ -1040,7 +1027,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeInfo = nodetemp,
                         Approvers = users
                     };
-
                 }
                 else
                 {
@@ -1167,13 +1153,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("流程配置不存在");
             //获取下一步节点，
             var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-
             if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
             {
                 canAddNextNode = false;
                 hasNextNode = false;
             }
-
 
             //执行审批逻辑
             if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
@@ -1188,6 +1172,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("您没有审批当前节点的权限");
                 canAddNextNode = AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
             }
+           
+
+            
+
             //如果配置节点有多个，属于分支流程
             if (canAddNextNode && flowNextNodeInfos != null && flowNextNodeInfos.Count > 1)//分支流程,如果是分支流程，需要验证下一步审批人是否符合规则
             {
@@ -1197,6 +1185,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (!ValidateNextNodeRule(caseInfo, nextNode, userinfo, tran))
                     throw new Exception("下一步审批人不符分支流程规则");
             }
+
+
             return nodeid;
         }
         #endregion

@@ -269,6 +269,13 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return _accountServices.GetUserInfo(UserId);
         }
+        [HttpPost]
+        [Route("getuserinfo")]
+        public OutputResult<object> GetUserInfo([FromBody]UserInfoModel queryModel = null)
+        {
+            if (queryModel == null) return ResponseError<object>("参数格式错误");
+            return _accountServices.GetUserInfo(queryModel.UserId);
+        }
 
         [HttpPost]
         [Route("modifyphoto")]

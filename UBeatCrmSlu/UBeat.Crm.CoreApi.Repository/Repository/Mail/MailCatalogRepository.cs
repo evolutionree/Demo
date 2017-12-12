@@ -457,10 +457,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 		             SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recstatus=1  
             ),
             catalogrelation AS(
-				SELECT a.catalogid,COUNT(mailid) AS unreadmail,c.vpid FROM crm_sys_mail_catalog_relation a INNER JOIN crm_sys_mail_catalog c on c.recid=a.catalogid inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where (b.isread is null or b.isread = 0) GROUP BY a.catalogid,c.vpid
+				SELECT a.catalogid,COUNT(mailid) AS unreadmail,c.vpid FROM crm_sys_mail_catalog_relation a INNER JOIN crm_sys_mail_catalog c on c.recid=a.catalogid inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where b.recstatus=1 and (b.isread is null or b.isread = 0) GROUP BY a.catalogid,c.vpid
             ),
             catalogmailcount AS(
-		             SELECT a.catalogid,COUNT(mailid) AS mailcount FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid   GROUP BY a.catalogid
+		             SELECT a.catalogid,COUNT(mailid) AS mailcount FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where b.recstatus!=2  GROUP BY a.catalogid
             )
             SELECT usercatalog.*,
             COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userid ))
@@ -576,6 +576,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 sql = string.Format(sql + " and recname like '%{0}%' ", keyword);
 
             }
+            if (!string.IsNullOrEmpty(catalogType))
+            {
+                sql = string.Format(sql + " and ctype!={0} ", catalogType);
+            }
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid",  userid )
@@ -585,23 +589,33 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in searchList)
             {
-                foreach (var itemTreeOne in wholeTree)
+                List<MailCatalogInfo> tempList = new List<MailCatalogInfo>();
+                foreach (var tempItem in wholeTree) {
+                    MailCatalogInfo info = new MailCatalogInfo();
+                    info.RecName = tempItem.RecName;
+                    info.RecId = tempItem.RecId;
+                    info.VPId = tempItem.VPId;
+                    info.CType = tempItem.CType;
+                    info.ViewUserId = tempItem.ViewUserId;
+                    tempList.Add(info);
+                }
+                foreach (var itemTreeOne in tempList)
                 {
                     if (catalog.RecId == itemTreeOne.RecId)
                     {
                         resultList.Add(itemTreeOne);
-                        foreach (var item in wholeTree)
+                    }
+                    foreach (var item in tempList)
+                    {
+                        if (item.VPId == itemTreeOne.RecId)
                         {
-                            if (item.VPId == itemTreeOne.RecId)
+                            if (itemTreeOne.SubCatalogs == null)
                             {
-                                if (itemTreeOne.SubCatalogs == null)
-                                {
-                                    itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
-                                }
-                                itemTreeOne.SubCatalogs.Add(item);
+                                itemTreeOne.SubCatalogs = new List<MailCatalogInfo>();
                             }
+                            itemTreeOne.SubCatalogs.Add(item);
                         }
-                    }   
+                    }
                 }
             }
 

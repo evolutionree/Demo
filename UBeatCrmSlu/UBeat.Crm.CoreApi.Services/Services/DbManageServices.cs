@@ -160,6 +160,77 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
             return SeqSQL+"\r\n"+createTableSQL + "\r\n" + ConstraintSQL +"\r\n" + IndexSQL +"\r\n" + TriggerSQL  +"\r\n";
         }
 
+
+
+        public OutputResult<object> ListObjects(DbListObjectsParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            try
+            {
+                List<SQLObjectModel> list = this._dbManageRepository.SearchSQLObjects(paramInfo, userId, tran);
+                foreach (SQLObjectModel item in list) {
+                    if (item.ProcParam != null) {
+                        item.ProcParam = item.ProcParam.Replace("{", "(").Replace("}", ")");
+                        
+                    }
+                    if (item.ObjType == SQLObjectTypeEnum.Func) item.ObjType_Name = "函数";
+                    else if (item.ObjType == SQLObjectTypeEnum.PGType) item.ObjType_Name = "类型";
+                    else if (item.ObjType == SQLObjectTypeEnum.Table) item.ObjType_Name = "表格";
+                    else item.ObjType_Name = "未设置";
+                    if (item.NeedInitSQL == 1) item.NeedInitSQL_Name = "是"; else item.NeedInitSQL_Name = "";
+                }
+                return new OutputResult<object>(list);
+            }
+            catch (Exception ex) {
+                return new OutputResult<object>(null, ex.Message, -1);
+            }
+            
+        }
+
+        public OutputResult<object> ListDir(int userId)
+        {
+            DbTransaction tran = null;
+            List<string> paths = this._dbManageRepository.ListAllDirs(userId,tran);
+            if (paths == null) return new OutputResult<object>(null, "没有找到数据", -1);
+            Dictionary<string, Dictionary<string, object>> allItems = new Dictionary<string, Dictionary<string, object>>();
+            Dictionary<string, object> rootItem = new Dictionary<string, object>();
+            rootItem.Add("name", "/");
+            rootItem.Add("fullpath", "/");
+            rootItem.Add("subitems", new List<Dictionary<string, object>>());
+            allItems.Add("/", rootItem);
+            foreach (string s in paths) {
+                if (allItems.ContainsKey(s)) continue;
+                string[] ss = s.Split('/');
+                Dictionary<string, object> tmp = rootItem;
+                string fullpath = "";
+                foreach (string i in ss) {
+                    if (i == null || i.Length == 0) continue;
+                    fullpath = fullpath + "/" + i;
+                    bool isFound = false;
+                    foreach (Dictionary<string, object> subItem in (List<Dictionary<string, object>>)tmp["subitems"]) {
+                        string name = (string)subItem["name"];
+                        if (name.Equals(i)) {
+                            isFound = true;
+                            tmp = subItem;
+                            break;
+                        }
+                    }
+                    if (isFound == false) {
+                        Dictionary<string, object> subItem = new Dictionary<string, object>();
+                        subItem.Add("fullpath", fullpath);
+                        subItem.Add("name", i);
+                        subItem.Add("subitems", new List<Dictionary<string, object>>());
+                        allItems.Add(fullpath, subItem);
+                        ((List<Dictionary<string, object>>)tmp["subitems"]).Add(subItem);
+                    }
+                }
+            }
+            List<object> retList = new List<object>();
+            retList.Add(rootItem);
+            return new OutputResult<object>(retList);
+
+        }
+
         public OutputResult<object> SaveUpgradeSQL(SQLTextModel paramInfo, int userId)
         {
             try
