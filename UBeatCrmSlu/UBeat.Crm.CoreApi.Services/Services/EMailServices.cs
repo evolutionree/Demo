@@ -191,28 +191,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
             ThreadPoolManager thrManager = new ThreadPoolManager(SaveRecMailDataInDb, _logger);
             thrManager.CreateThreadPool(_receiveThreads, userNumber);
             thrManager.StartTask(userNumber);
-            foreach (var userMailInfo in userMailInfoLst)
+            try
             {
-                if (userMailInfo.EncryptPwd == null)
-                    continue;
-                SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
-                bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
-                var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
-                thrManager.EnqueueTask(taskResult);
+                foreach (var userMailInfo in userMailInfoLst)
+                {
+                    if (userMailInfo.EncryptPwd == null)
+                        continue;
+                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
+                    bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
+                    var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+                    thrManager.EnqueueTask(taskResult);
+                }
+                return new OutputResult<object>
+                {
+                    Status = 0
+                };
             }
-            return new OutputResult<object>
+            catch (Exception ex)
             {
-                Status = 0
-            };
+                return new OutputResult<object>
+                {
+                    Status = 1,
+                    Message = ex.Message
+                };
+            }
 
         }
         void SaveRecMailDataInDb(MimeMessage msg, int userNumber)
         {
             var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
             var mailBoxLst = _mailRepository.GetMailBoxList(1, int.MaxValue, userNumber);
-            var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
-            if (obj != null)
-                return;
+            if (msg.MessageId != null)
+            {
+                var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                if (obj != null)
+                    return;
+            }
             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
             string key = String.Empty;
             foreach (var header in msg.Headers)
@@ -425,7 +439,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var errors = ValidEmailAddressAuth(model, userNumber);
             if (errors.Count > 0)
             {
-                var mailInfoCol = errors.Select(t => t.DisplayName);
+                var mailInfoCol = errors.Select(t => string.IsNullOrEmpty(t.DisplayName) ? t.EmailAddress : t.DisplayName);
                 var errorObj = new
                 {
                     Flag = 0,
@@ -468,11 +482,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
 
+            var errors = ValidEmailAddressAuth(model, userNumber);
+
             IList<MailboxAddress> fromAddressList;
             IList<MailboxAddress> toAddressList;
             IList<MailboxAddress> ccAddressList;
             IList<MailboxAddress> bccAddressList;
-            BuilderEmailAddress(entity, out fromAddressList, out toAddressList, out ccAddressList, out bccAddressList);
+            BuilderEmailAddress(entity, errors, out fromAddressList, out toAddressList, out ccAddressList, out bccAddressList);
             List<ExpandoObject> attachFileRecord;//用来批量写db记录的
             BuilderAttachmentFile(entity, out attachFileRecord);
             BuilderMailBody(entity, userNumber);
@@ -793,7 +809,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return string.Join(";", addressCol);
         }
-        private void BuilderEmailAddress(SendEMailMapper entity, out IList<MailboxAddress> fromAddressList, out IList<MailboxAddress> toAddressList, out IList<MailboxAddress> ccAddressList, out IList<MailboxAddress> bccAddressList)
+        private void BuilderEmailAddress(SendEMailMapper entity, IList<MailError> errors, out IList<MailboxAddress> fromAddressList, out IList<MailboxAddress> toAddressList, out IList<MailboxAddress> ccAddressList, out IList<MailboxAddress> bccAddressList)
         {
             fromAddressList = new List<MailboxAddress>();
             fromAddressList.Add(new MailboxAddress(entity.FromName, entity.FromAddress));
@@ -801,17 +817,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             toAddressList = new List<MailboxAddress>();
             foreach (var to in entity.ToAddress)
             {
-                toAddressList.Add(new MailboxAddress(to.DisplayName, to.Address));
+                if (!errors.Select(t => t.EmailAddress).Contains(to.Address))
+                    toAddressList.Add(new MailboxAddress(to.DisplayName, to.Address));
             }
             ccAddressList = new List<MailboxAddress>();
             foreach (var cc in entity.CCAddress)
             {
-                ccAddressList.Add(new MailboxAddress(cc.DisplayName, cc.Address));
+                if (!errors.Select(t => t.EmailAddress).Contains(cc.Address))
+                    ccAddressList.Add(new MailboxAddress(cc.DisplayName, cc.Address));
             }
             bccAddressList = new List<MailboxAddress>();
             foreach (var bcc in entity.BCCAddress)
             {
-                bccAddressList.Add(new MailboxAddress(bcc.DisplayName, bcc.Address));
+                if (!errors.Select(t => t.EmailAddress).Contains(bcc.Address))
+                    bccAddressList.Add(new MailboxAddress(bcc.DisplayName, bcc.Address));
             }
         }
         private IList<MailSenderReceiversMapper> BuilderSenderReceivers(MimeMessage msg)
