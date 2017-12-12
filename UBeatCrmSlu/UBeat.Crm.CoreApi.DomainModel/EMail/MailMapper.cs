@@ -571,4 +571,33 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
             }
         }
     }
+
+    public class ReconvertMailMapper
+    {
+        public int? UserId { get; set; }
+        /// <summary>
+        /// 空查询全部 
+        /// </summary>
+        public string MailAddress { get; set; }
+        /// <summary>
+        /// -1 查询所有邮件 1 发出 2 收到 
+        /// </summary>
+        public int Ctype { get; set; }
+
+        public string KeyWord { get; set; }
+
+        /// <summary>
+        /// -1 不用时间范围筛选  0 两周内 1 三个月内 2 半年内 3 一年内 
+        /// </summary>
+        public int DateRange { get; set; }
+
+        public DateTime StartDate { get; set; }
+
+        public DateTime EndDate { get; set; }
+
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+    }
+
 }

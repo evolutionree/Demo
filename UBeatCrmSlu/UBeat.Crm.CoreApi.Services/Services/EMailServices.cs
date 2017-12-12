@@ -1335,6 +1335,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(_mailCatalogRepository.ToOrderCatalog(dynamicModel.recId, dynamicModel.doType));
         }
 
+        public PageDataInfo<MailBodyMapper> GetReconvertMailList(ReconvertMailModel model, int userNum)
+        {
+            var entity = _mapper.Map<ReconvertMailModel, ReconvertMailMapper>(model);
+ 
+            return _mailRepository.GetReconvertMailList(entity, userNum);
+        }
+
 
 
         #region  模糊查询我的通讯人员限制10个
