@@ -1162,18 +1162,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 string rootsql = "select deptid::text from crm_sys_department where pdeptid::text = '00000000-0000-0000-0000-000000000000' and recstatus=1 ";
                 deptId = (string)ExecuteScalar(rootsql, new DbParameter[] { });
             }
-            var sql = @"select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
-                 where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
-                 UNION ALL 
-                SELECT t2.mail,t2.treeid,t2.treename,t2.deptname,1 nodetype,t2.icon from 
-                                (select mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
-                                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
-                                UNION all 
-                                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
-                                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
-                                left join crm_sys_department d on d.deptid=ur.deptid
-                                 where ur.recstatus = 1 and d.deptid::text=@deptId ) t2
-                                group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon";
+        var sql = @"                   
+                select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
+                            where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
+                            UNION ALL 
+                    select * from (
+                    SELECT t2.mail,t2.treeid,t2.treename,t2.deptname,1 nodetype,t2.icon from 
+                                    (select regexp_split_to_table(mail,';') mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
+                                    select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
+                                    UNION all 
+                                    select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
+                                    inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                                    left join crm_sys_department d on d.deptid=ur.deptid
+                                        where ur.recstatus = 1 and d.deptid::text=@deptId ) t2 where t2.mail is not null
+                                    group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon  order by  t2.treename ) t3 ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("deptId", deptId)
@@ -1189,15 +1191,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>       
         public PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
-            string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (select t.mail,t.userid,t.username,t.icon from (
+            string sql = @"select t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon, 1 nodetype from (select regexp_split_to_table(mail,';') mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (select t.mail,t.userid,t.username,t.icon from (
                 select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
                 UNION all 
                 select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1  ) t 
                     group by t.mail,t.userid,t.username,t.icon ) x
                 inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                 left join crm_sys_department d on d.deptid=ur.deptid
-                 where ur.recstatus = 1 {0}
-                order by x.username";
+                 where ur.recstatus = 1 {0} ) t2 where t2.mail is not null 
+								group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon
+                order by t2.treename";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(keyword))
             {
@@ -1299,6 +1302,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 executeSql = string.Format(executeSql + " and a.recname like '%{0}%'", keyword);
 
             }
+            executeSql = string.Format(executeSql + " order by b.recname");
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userId", userId)
