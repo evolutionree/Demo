@@ -81,6 +81,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public int AuditSucc { get; set; }
 
         public string NodeEvent { set; get; }
+        /// <summary>
+        /// 节点配置数据，如位置坐标
+        /// </summary>
+        public object NodeConfig { set; get; }
     }
 
     public class WorkFlowLineModel
@@ -90,6 +94,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid FromNodeId { get; set; }
         public Guid ToNodeId { get; set; }
         public Guid? RuleId { get; set; }
+
+        /// <summary>
+        /// 节点连线配置数据，如位置坐标
+        /// </summary>
+        public object LineConfig { set; get; }
     }
 
     public class WorkFlowListModel
