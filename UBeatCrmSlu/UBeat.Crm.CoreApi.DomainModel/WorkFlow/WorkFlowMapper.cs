@@ -158,6 +158,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
         public string NodeEvent { set; get; }
 
+        /// <summary>
+        /// 节点配置数据，如位置坐标
+        /// </summary>
+        public object NodeConfig { set; get; }
+
         protected override IValidator GetValidator()
         {
             return new WorkFlowNodeMapperValidator();
@@ -187,6 +192,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public Guid ToNodeId { get; set; }
 
         public Guid? RuleId { get; set; }
+
+        /// <summary>
+        /// 节点连线配置数据，如位置坐标
+        /// </summary>
+        public object LineConfig { set; get; }
+
         protected override IValidator GetValidator()
         {
             return new WorkFlowLineMapperValidator();
