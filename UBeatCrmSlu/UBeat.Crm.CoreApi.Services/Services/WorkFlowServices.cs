@@ -888,7 +888,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         bool hasNextNode = true;
                         //获取下一步节点，
                         var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-                        if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
+                        if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count==1&&flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
                         {
                             hasNextNode = false;
                         }
