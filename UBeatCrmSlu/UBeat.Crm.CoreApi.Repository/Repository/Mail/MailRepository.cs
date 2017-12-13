@@ -265,22 +265,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public OperateResult ReConverMails(ReConverMailMapper entity, int userId, DbTransaction dbTrans = null)
         {
-            string validCatalogSql = @"SELECT count(1) FROM crm_sys_mail_reconvert re INNER JOIN crm_sys_mail_catalog cata ON  re.srccatalogid=cata.recid WHERE re.mailid=@mailid AND cata.recstatus=1;";//判断目录是否存在
+            string validCatalogSql = @"SELECT cata.* FROM crm_sys_mail_reconvert re INNER JOIN crm_sys_mail_catalog cata ON  re.srccatalogid=cata.recid WHERE re.mailid=@mailid AND cata.recstatus=1;";//判断目录是否存在
             string validCatalogRelationSql = @"SELECT re.*,cata.catalogid FROM crm_sys_mail_reconvert re LEFT JOIN crm_sys_mail_catalog_relation cata ON re.mailid=cata.mailid AND re.srccatalogid=cata.catalogid WHERE re.mailid=@mailid;";//判断邮件和目录的关系是否存在
             string cataSql = @"SELECT recid,recname FROM crm_sys_mail_catalog WHERE viewuserid=(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1) AND ctype=2002 LIMIT 1";//个人目录
             string createCatalogSql = @"INSERT INTO public.crm_sys_mail_catalog (recname, userid, viewuserid, ctype, custcatalog, custid, recstatus, pid, vpid, recorder, isdynamic, defaultid) VALUES ('恢复已删除',(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1),(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1),3002,null,null,1,@catalogid,@catalogid,(SELECT COUNT(COALESCE(recorder,1))+1 FROM crm_sys_mail_catalog WHERE viewuserid=(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1) AND ctype=3002 AND vpid=@catalogid),1,null) returning recid;";
             string catalogRelationSql = @"INSERT INTO public.crm_sys_mail_catalog_relation (mailid, catalogid, relativetype) VALUES (@mailid,@catalogid,1);";
-            string sql = "update crm_sys_mail_mailbody set recstatus=@recstatus where recid=@mailid;";
+            string sql = "update crm_sys_mail_mailbody set recstatus=@recstatus where recid=@mailid;Delete From crm_sys_mail_reconvert Where mailid=@mailid;";
 
             try
             {
                 dynamic catalog;
                 DbParameter[] param;
+                string tipMsg = string.Empty;
                 foreach (var tmp in entity.MailIds.Split(','))
                 {
                     Guid mailId = Guid.Parse(tmp);
-                    var catalogExist = DataBaseHelper.QuerySingle<int>(validCatalogSql, new { MailId = mailId });//先判断目录是否存在
-                    if (catalogExist == 0)
+                    var catalogExist = DataBaseHelper.QuerySingle<dynamic>(validCatalogSql, new { MailId = mailId });//先判断目录是否存在
+                    if (catalogExist == null)
                     {
                         catalog = DataBaseHelper.QuerySingle<dynamic>(cataSql, new { MailId = mailId });
 
@@ -298,6 +299,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                     new NpgsqlParameter("catalogid",resultUUID),
                             };
                             DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
+                            tipMsg = "邮件已经恢复到恢复已删除文件夹中";
                         }
                         else
                         {
@@ -316,6 +318,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                            };
                             DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
                         }
+                        tipMsg = "邮件已经恢复到" + catalogExist.recname + "文件夹中";
                     }
                     param = new DbParameter[]
                     {
@@ -324,11 +327,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     };
                     var result = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
                 }
-                return new OperateResult
+                if (entity.MailIds.Split(',').Count() == 1)
                 {
-                    Flag = 1,
-                    Msg = "恢复邮件成功"
-                }; ;
+                    return new OperateResult
+                    {
+                        Flag = 1,
+                        Msg = tipMsg
+                    };
+                }
+                else
+                {
+                    return new OperateResult
+                    {
+                        Flag = 1,
+                        Msg = "恢复邮件成功"
+                    };
+                }
             }
             catch (Exception ex)
             {
