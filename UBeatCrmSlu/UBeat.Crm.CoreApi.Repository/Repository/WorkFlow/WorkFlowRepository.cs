@@ -223,7 +223,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("steptypeid", node.StepTypeId),
                             new NpgsqlParameter("ruleconfig", JsonConvert.SerializeObject(node.RuleConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                             new NpgsqlParameter("columnconfig", JsonConvert.SerializeObject(node.ColumnConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
-                            new NpgsqlParameter("vernum", versionObj),
+                            new NpgsqlParameter("vernum", versionValue),
                             new NpgsqlParameter("auditsucc", node.AuditSucc),
                         });
 
@@ -262,7 +262,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("fromnodeid", line.FromNodeId),
                             new NpgsqlParameter("tonodeid",line.ToNodeId),
                             new NpgsqlParameter("ruleid", line.RuleId.GetValueOrDefault()),
-                            new NpgsqlParameter("vernum", versionObj)
+                            new NpgsqlParameter("vernum", versionValue)
                         });
                     }
                     ExecuteNonQueryMultiple(node_line_sql, node_line_params, tran);
@@ -275,7 +275,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     var workflow_params = new DbParameter[]
                         {
                             new NpgsqlParameter("flowid", nodeLineConfig.FlowId),
-                            new NpgsqlParameter("vernum", versionObj)
+                            new NpgsqlParameter("vernum", versionValue)
                         };
                     ExecuteNonQuery(workflow_sql, workflow_params, tran);
                     #endregion
@@ -936,13 +936,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// <param name="endnode"></param>
         /// <param name="vernum"></param>
         /// <returns></returns>
-        public Guid GetNextNodeRuleId(Guid flowid, Guid tonodeid, int vernum, DbTransaction trans = null)
+        public Guid GetNextNodeRuleId(Guid flowid, Guid fromnodeid, Guid tonodeid, int vernum, DbTransaction trans = null)
         {
-            var executeSql = @" SELECT ruleid FROM crm_sys_workflow_node_line WHERE flowid=@flowid AND tonodeid=@tonodeid AND vernum=@vernum LIMIT 1;";
+            var executeSql = @" SELECT ruleid FROM crm_sys_workflow_node_line WHERE flowid=@flowid AND fromnodeid=@fromnodeid AND tonodeid=@tonodeid AND vernum=@vernum LIMIT 1;";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("flowid", flowid),
+                new NpgsqlParameter("fromnodeid", fromnodeid),
                 new NpgsqlParameter("tonodeid", tonodeid),
                 new NpgsqlParameter("vernum", vernum),
             };
