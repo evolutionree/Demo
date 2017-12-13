@@ -226,12 +226,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             if (entity.IsTruncate)
                 sql = "Update  crm_sys_mail_mailbody set recstatus=2 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                    "Update  crm_sys_mail_attach set recstatus=2  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                   "Delete From  crm_sys_mail_reconvert  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                   "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid) SELECT mailid,catalogid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
+                   "Delete From  crm_sys_mail_reconvert  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             else
                 sql = "update crm_sys_mail_mailbody set recstatus=0 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                     "update crm_sys_mail_catalog_relation set catalogid=(SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND ctype = 1006 LIMIT 1) where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
-
+            sql += sql + "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid) SELECT mailid,catalogid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             try
             {
                 var param = new
@@ -264,31 +263,69 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
         }
 
-        public OperateResult ReConverMails(ReConverMailMapper entity, int userId)
+        public OperateResult ReConverMails(ReConverMailMapper entity, int userId, DbTransaction dbTrans = null)
         {
-            string sql = "update crm_sys_mail_mailbody set recstatus=@recstatus where recid IN (select regexp_split_to_table(@mailids,',')::uuid);";
+            string validCatalogSql = @"SELECT count(1) FROM crm_sys_mail_reconvert re INNER JOIN crm_sys_mail_catalog cata ON  re.srccatalogid=cata.recid WHERE re.mailid=@mailid;";//判断目录是否存在
+            string validCatalogRelationSql = @"SELECT re.* FROM crm_sys_mail_reconvert re INNER JOIN crm_sys_mail_catalog_relation cata ON re.mailid=cata.mailid AND re.srccatalogid=cata.catalogid WHERE re.mailid=@mailid;";//判断邮件和目录的关系是否存在
+            string cataSql = @"SELECT recid,recname FROM crm_sys_mail_catalog WHERE viewuserid=(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1) AND ctype=2002 LIMIT 1";//个人目录
+            string catalogRelationSql = @"INSERT INTO public.crm_sys_mail_catalog_relation (mailid, catalogid, relativetype) VALUES (@mailid,@catalogid,1);";
+            string sql = "update crm_sys_mail_mailbody set recstatus=@recstatus where recid=@mailid::uuid;";
 
             try
             {
-                var param = new
+                dynamic catalog;
+                foreach (var tmp in entity.MailIds.Split(','))
                 {
-                    MailIds = entity.MailIds,
-                    RecStatus = entity.RecStatus
-                };
-                var result = DataBaseHelper.ExecuteNonQuery(sql, param, CommandType.Text);
-                if (result > 0)
-                {
-                    return new OperateResult
+                    Guid mailId = Guid.Parse(tmp);
+                    var catalogExist = DataBaseHelper.QuerySingle<int>(validCatalogSql, new { MailId = mailId });//先判断目录是否存在
+                    if (catalogExist == 0)
                     {
-                        Flag = 1,
-                        Msg = "恢复邮件成功"
-                    };
+                        catalog = DataBaseHelper.QuerySingle<dynamic>(cataSql, new { MailId = mailId });
+                        var param = new DbParameter[]
+                        {
+                             new NpgsqlParameter("mailid",Guid.Parse(tmp)),
+                             new NpgsqlParameter("catalogid",catalog.recid),
+                        };
+                        DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
+                        param = new DbParameter[]
+                       {
+                                new NpgsqlParameter("mailid",Guid.Parse(tmp))
+                       };
+                        DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
+                    }
+                    else
+                    {
+                        var catalogRelationExist = DataBaseHelper.QuerySingle<MailReconvert>(validCatalogRelationSql, new { MailId = mailId });//先判断目录关系是否存在
+                        if (catalogRelationExist == null)
+                        {
+                            var param = new DbParameter[]
+                            {
+                                new NpgsqlParameter("mailid",mailId),
+                                new NpgsqlParameter("catalogid",catalogRelationExist.SrcCatalogId),
+                            };
+                            DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
+                            param = new DbParameter[]
+                           {
+                                new NpgsqlParameter("mailid",mailId)
+                           };
+                            DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
+                        }
+                        else
+                        {
+                            var param = new DbParameter[]
+                           {
+                                 new NpgsqlParameter("recstatus",1),
+                                new NpgsqlParameter("mailid",mailId)
+                           };
+                            var result = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
+                        }
+                    }
                 }
                 return new OperateResult
                 {
-                    Flag = 0,
-                    Msg = "恢复邮件失败"
-                };
+                    Flag = 1,
+                    Msg = "恢复邮件成功"
+                }; ;
             }
             catch (Exception ex)
             {
@@ -1125,18 +1162,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 string rootsql = "select deptid::text from crm_sys_department where pdeptid::text = '00000000-0000-0000-0000-000000000000' and recstatus=1 ";
                 deptId = (string)ExecuteScalar(rootsql, new DbParameter[] { });
             }
-            var sql = @"select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
-                 where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
-                 UNION ALL 
-                SELECT t2.mail,t2.treeid,t2.treename,t2.deptname,1 nodetype,t2.icon from 
-                                (select mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
-                                select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
-                                UNION all 
-                                select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
-                                inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
-                                left join crm_sys_department d on d.deptid=ur.deptid
-                                 where ur.recstatus = 1 and d.deptid::text=@deptId ) t2
-                                group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon";
+        var sql = @"                   
+                select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
+                            where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
+                            UNION ALL 
+                    select * from (
+                    SELECT t2.mail,t2.treeid,t2.treename,t2.deptname,1 nodetype,t2.icon from 
+                                    (select regexp_split_to_table(mail,';') mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
+                                    select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
+                                    UNION all 
+                                    select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
+                                    inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
+                                    left join crm_sys_department d on d.deptid=ur.deptid
+                                        where ur.recstatus = 1 and d.deptid::text=@deptId ) t2 where t2.mail is not null
+                                    group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon  order by  t2.treename ) t3 ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("deptId", deptId)
@@ -1152,15 +1191,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>       
         public PageDataInfo<OrgAndStaffMapper> GetInnerPersonContact(string keyword, int pageIndex, int pageSize, int userId)
         {
-            string sql = @"select mail,x.userid::text treeid,x.username treename,d.deptname,1 nodetype,x.icon from (select t.mail,t.userid,t.username,t.icon from (
+            string sql = @"select t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon, 1 nodetype from (select regexp_split_to_table(mail,';') mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (select t.mail,t.userid,t.username,t.icon from (
                 select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
                 UNION all 
                 select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1  ) t 
                     group by t.mail,t.userid,t.username,t.icon ) x
                 inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                 left join crm_sys_department d on d.deptid=ur.deptid
-                 where ur.recstatus = 1 {0}
-                order by x.username";
+                 where ur.recstatus = 1 {0} ) t2 where t2.mail is not null 
+								group by t2.mail,t2.treeid,t2.treename,t2.deptname,t2.icon
+                order by t2.treename";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(keyword))
             {
@@ -1262,6 +1302,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 executeSql = string.Format(executeSql + " and a.recname like '%{0}%'", keyword);
 
             }
+            executeSql = string.Format(executeSql + " order by b.recname");
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userId", userId)
@@ -1339,9 +1380,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         #endregion
 
 
-        public PageDataInfo<MailBodyMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId)
+        public PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId)
         {
-            string strSQL = @" SELECT  * FROM (SELECT " +
+            string strSQL = @" SELECT  tmp.*,re.srcuserid,ur.username FROM (SELECT " +
                               "body.recid mailid," +
                               "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                               "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
@@ -1349,7 +1390,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                "COALESCE(body.senttime,body.receivedtime)  senttime," +
                                "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
                               "COALESCE(body.receivedtime,body.senttime) mailtime,body.recstatus" +
-                              " FROM crm_sys_mail_mailbody body ) AS tmp  Where   tmp.recstatus=2  {0} ";
+                              " FROM crm_sys_mail_mailbody body ) AS tmp INNER JOIN crm_sys_mail_reconvert re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
@@ -1398,7 +1439,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             {
                 if (entity.StartDate.HasValue && entity.EndDate.HasValue)
                     sqlCondition = "  tmp.mailtime>=@startdate AND tmp.mailtime<=@enddate ";
-                else if(entity.StartDate.HasValue)
+                else if (entity.StartDate.HasValue)
                     sqlCondition = "  tmp.mailtime>=@startdate  ";
                 else if (entity.StartDate.HasValue)
                     sqlCondition = "  tmp.mailtime<=@enddate  ";
@@ -1414,7 +1455,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 new NpgsqlParameter("queryuserid",entity.UserId.Value),
                 new NpgsqlParameter("ctype",entity.Ctype)
             };
-            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, param, entity.PageSize, entity.PageIndex);
+            return ExecuteQueryByPaging<MailTruncateLstMapper>(strSQL, param, entity.PageSize, entity.PageIndex);
         }
 
     }

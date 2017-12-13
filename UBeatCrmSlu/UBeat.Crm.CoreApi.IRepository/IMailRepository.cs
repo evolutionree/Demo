@@ -40,7 +40,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult DeleteMails(DeleteMailMapper entity, int userId);
 
-        OperateResult ReConverMails(ReConverMailMapper entity, int userId);
+        OperateResult ReConverMails(ReConverMailMapper entity, int userId, DbTransaction dbTrans = null);
 
         OperateResult ReadMail(ReadOrUnReadMailMapper entity, int userId);
 
@@ -83,6 +83,6 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null);
 
-        PageDataInfo<MailBodyMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId);
+        PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId);
     }
 }

@@ -1184,7 +1184,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            return HandleResult(_mailRepository.ReConverMails(entity, userNum));
+            return ExcuteInsertAction((dbTrans, arg, userData) =>
+             {
+                 return HandleResult(_mailRepository.ReConverMails(entity, userNum, dbTrans)); ;
+             }, entity, Guid.Parse(_entityId), userNum);
         }
         public OutputResult<object> ReadMail(ReadOrUnReadMailModel model, int userNum)
         {
@@ -1335,10 +1338,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(_mailCatalogRepository.ToOrderCatalog(dynamicModel.recId, dynamicModel.doType));
         }
 
-        public PageDataInfo<MailBodyMapper> GetReconvertMailList(ReconvertMailModel model, int userNum)
+        public PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailModel model, int userNum)
         {
             var entity = _mapper.Map<ReconvertMailModel, ReconvertMailMapper>(model);
- 
+
             return _mailRepository.GetReconvertMailList(entity, userNum);
         }
 
@@ -1381,31 +1384,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 treeId = dynamicModel.treeId;
             List<OrgAndStaffMapper> list = _mailRepository.GetInnerContact(treeId, userId);
             //分拆多个邮箱
-            List<OrgAndStaffMapper> resultList = new List<OrgAndStaffMapper>();
-            foreach (var userMail in list)
-            {
-                string[] mails = userMail.mail.Split(';');
-                if (mails.Length > 1)
-                {
-                    foreach (var mail in mails)
-                    {
-                        OrgAndStaffMapper newMail = new OrgAndStaffMapper();
-                        newMail.mail = mail;
-                        newMail.TreeId = userMail.TreeId;
-                        newMail.TreeName = userMail.TreeName;
-                        newMail.DeptName = userMail.DeptName;
-                        newMail.Icon = userMail.Icon;
-                        newMail.nodeType = userMail.nodeType;
-                        resultList.Add(newMail);
-                    };
-
-                }
-                else
-                {
-                    resultList.Add(userMail);
-                }
-            };
-            return new OutputResult<object>(resultList);
+            return new OutputResult<object>(list);
         }
 
         public OutputResult<object> GetInnerPersonContact(OrgAndStaffTreeModel dynamicModel, int userId)
@@ -1415,33 +1394,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 pageSize = dynamicModel.PageSize;
 
             PageDataInfo<OrgAndStaffMapper> pageInfo = _mailRepository.GetInnerPersonContact(dynamicModel.keyword, dynamicModel.PageIndex, pageSize, userId);
-            List<OrgAndStaffMapper> list = pageInfo.DataList;
-            //分拆多个邮箱
-            List<OrgAndStaffMapper> resultList = new List<OrgAndStaffMapper>();
-            foreach (var userMail in list)
-            {
-                string[] mails = userMail.mail.Split(';');
-                if (mails.Length > 1)
-                {
-                    foreach (var mail in mails)
-                    {
-                        OrgAndStaffMapper newMail = new OrgAndStaffMapper();
-                        newMail.mail = mail;
-                        newMail.TreeId = userMail.TreeId;
-                        newMail.TreeName = userMail.TreeName;
-                        newMail.DeptName = userMail.DeptName;
-                        newMail.Icon = userMail.Icon;
-                        newMail.nodeType = userMail.nodeType;
-                        resultList.Add(newMail);
-                    };
-
-                }
-                else
-                {
-                    resultList.Add(userMail);
-                }
-            };
-            pageInfo.DataList = resultList;
             return new OutputResult<object>(pageInfo);
         }
 
@@ -1462,7 +1414,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (dynamicModel != null)
                 treeId = dynamicModel.treeId;
             List<OrgAndStaffMapper> list = _mailRepository.TransferInnerContact(treeId, userId);
-           
+
             return new OutputResult<object>(list);
         }
         /// <summary>
@@ -1474,7 +1426,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int pageSize = 10;
             if (dynamicModel != null && dynamicModel.PageSize > 0)
                 pageSize = dynamicModel.PageSize;
-            return new OutputResult<object>(_mailRepository.GetCustomerContact(dynamicModel.SearchKey, dynamicModel.PageIndex, pageSize, userId));
+            PageDataInfo<MailUserMapper> pageInfo = _mailRepository.GetCustomerContact(dynamicModel.SearchKey, dynamicModel.PageIndex, pageSize, userId);
+            List<MailUserMapper> list = pageInfo.DataList;
+            //分拆多个邮箱
+            List<MailUserMapper> resultList = new List<MailUserMapper>();
+            foreach (var userMail in list)
+            {
+                string[] mails = userMail.EmailAddress.Split(';');
+                if (mails.Length > 1)
+                {
+                    foreach (var mail in mails)
+                    {
+                        MailUserMapper newMail = new MailUserMapper();
+                        newMail.EmailAddress = mail;
+                        newMail.customer = userMail.customer;
+                        newMail.Name = userMail.Name;
+                        newMail.icon = userMail.icon;
+                        resultList.Add(newMail);
+                    };
+
+                }
+                else
+                {
+                    resultList.Add(userMail);
+                }
+            };
+            pageInfo.DataList = resultList;
+            return new OutputResult<object>(pageInfo);
         }
         /// <summary>
         /// 获取内部往来人员列表
