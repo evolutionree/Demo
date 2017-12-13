@@ -31,8 +31,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IEntityProRepository _entityProRepository;
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
+       
 
-        public WorkFlowServices(IMapper mapper, IWorkFlowRepository workFlowRepository, IRuleRepository ruleRepository, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository)
+
+        public WorkFlowServices(IMapper mapper, IWorkFlowRepository workFlowRepository, IRuleRepository ruleRepository, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository )
         {
             _workFlowRepository = workFlowRepository;
             _entityProRepository = entityProRepository;
@@ -45,7 +47,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> CaseDetail(CaseDetailModel detailModel, int userNumber)
         {
             var result = new CaseDetailDataModel();
-
+            
             using (var conn = GetDbConnect())
             {
                 conn.Open();
@@ -163,6 +165,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     #endregion
 
+                    var dynamicEntityServices = dynamicCreateService("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices", false) as DynamicEntityServices;
+                   
                     #region --获取 entitydetail--
                     //获取 entitydetail
                     var detailMapper = new DynamicEntityDetailtMapper()
@@ -171,7 +175,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         RecId = caseInfo.RecId,
                         NeedPower = 0
                     };
-                    result.EntityDetail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
+                    var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
+                    result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber).FirstOrDefault();
                     #endregion
 
                     #region --获取 relatedetail--
@@ -184,7 +189,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             RecId = caseInfo.RelRecId,
                             NeedPower = 0
                         };
-                        result.RelateDetail = _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
+                        var detailtemp= _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
+                        result.RelateDetail =dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp } , reldetailMapper.EntityId, userNumber).FirstOrDefault();
                     }
                     #endregion
 
