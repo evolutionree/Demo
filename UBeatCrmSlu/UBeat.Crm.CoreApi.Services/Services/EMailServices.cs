@@ -1325,6 +1325,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return null;
         }
 
+        public OutputResult<object> MailServerEnable(List<Guid> Mails)
+        {
+            _mailCatalogRepository.MailServerEnable(Mails);
+            return null;
+        }
+
+        public OutputResult<object> MailServerUnEnable(List<Guid> Mails)
+        {
+            _mailCatalogRepository.MailServerUnEnable(Mails);
+            return null;
+        }
+
         public OutputResult<object> GetMailBoxList(MailListActionParamInfo dynamicModel, int userId)
         {
             int pageSize = 10;

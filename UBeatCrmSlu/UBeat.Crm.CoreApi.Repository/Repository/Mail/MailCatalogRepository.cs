@@ -817,5 +817,37 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             ExecuteNonQueryMultiple(strSQL, paramList);
         }
+
+        public void MailServerEnable(List<Guid> MailServers)
+        {
+            string strSQL = "update crm_sys_mail_server set recstatus=1 where recid=@recid";
+            List<DbParameter[]> paramList = new List<DbParameter[]>();
+            foreach (var recid in MailServers)
+            {
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("recid", recid)
+                };
+                paramList.Add(param);
+            }
+
+            ExecuteNonQueryMultiple(strSQL, paramList);
+        }
+
+        public void MailServerUnEnable(List<Guid> MailServers)
+        {
+            string strSQL = "update crm_sys_mail_server set recstatus=0 where recid=@recid";
+            List<DbParameter[]> paramList = new List<DbParameter[]>();
+            foreach (var recid in MailServers)
+            {
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("recid", recid)
+                };
+                paramList.Add(param);
+            }
+
+            ExecuteNonQueryMultiple(strSQL, paramList);
+        }
     }
 }
