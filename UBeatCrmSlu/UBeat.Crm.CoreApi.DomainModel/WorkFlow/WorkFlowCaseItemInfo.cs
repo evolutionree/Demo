@@ -66,6 +66,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public int HandleUser { set; get; }
 
         /// <summary>
+        /// 当前步骤处理人
+        /// </summary>
+        public string HandleUserName { set; get; }
+
+        /// <summary>
         /// 当前步骤抄送人字符串
         /// </summary>
         public string CopyUser { set; get; }

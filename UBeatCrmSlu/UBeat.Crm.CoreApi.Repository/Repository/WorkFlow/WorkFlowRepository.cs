@@ -519,15 +519,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             string executeSql = string.Empty;
             if (stepnum <= 0)
             {
-                executeSql = @" SELECT  wci.* 
+                executeSql = @" SELECT  wci.* ,u.username AS HandleUserName
                                 FROM crm_sys_workflow_case_item AS wci
+                                LEFT JOIN crm_sys_userinfo AS u ON u.userid = wci.handleuser
                                 WHERE wci.recstatus=1 AND wci.nodenum=@nodenum AND wci.caseid=@caseid 
                                 AND wci.stepnum=(SELECT MAX(stepnum) FROM crm_sys_workflow_case_item WHERE recstatus=1 AND nodenum=@nodenum AND caseid=@caseid )";
             }
             else
             {
-                executeSql = @" SELECT  wci.* 
+                executeSql = @" SELECT  wci.* ,u.username AS HandleUserName
                                 FROM crm_sys_workflow_case_item AS wci
+                                LEFT JOIN crm_sys_userinfo AS u ON u.userid = wci.handleuser
                                 WHERE wci.recstatus=1 AND wci.nodenum=@nodenum AND wci.caseid=@caseid  AND wci.stepnum=@stepnum";
             }
 
