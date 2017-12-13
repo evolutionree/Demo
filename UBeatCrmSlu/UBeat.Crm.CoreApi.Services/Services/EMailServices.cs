@@ -1184,7 +1184,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            return HandleResult(_mailRepository.ReConverMails(entity, userNum));
+            return ExcuteInsertAction((dbTrans, arg, userData) =>
+             {
+                 return HandleResult(_mailRepository.ReConverMails(entity, userNum, dbTrans)); ;
+             }, entity, Guid.Parse(_entityId), userNum);
         }
         public OutputResult<object> ReadMail(ReadOrUnReadMailModel model, int userNum)
         {
@@ -1335,10 +1338,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(_mailCatalogRepository.ToOrderCatalog(dynamicModel.recId, dynamicModel.doType));
         }
 
-        public PageDataInfo<MailBodyMapper> GetReconvertMailList(ReconvertMailModel model, int userNum)
+        public PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailModel model, int userNum)
         {
             var entity = _mapper.Map<ReconvertMailModel, ReconvertMailMapper>(model);
- 
+
             return _mailRepository.GetReconvertMailList(entity, userNum);
         }
 
@@ -1462,7 +1465,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (dynamicModel != null)
                 treeId = dynamicModel.treeId;
             List<OrgAndStaffMapper> list = _mailRepository.TransferInnerContact(treeId, userId);
-           
+
             return new OutputResult<object>(list);
         }
         /// <summary>

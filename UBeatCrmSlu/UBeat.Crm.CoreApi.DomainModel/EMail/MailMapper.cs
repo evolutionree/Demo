@@ -269,6 +269,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public int RecStatus { get; set; }
         public string MailIds { get; set; }
 
+        public int UserId { get; set; }
+
         protected override IValidator GetValidator()
         {
             return new ReConverMailMapperValidator();
@@ -280,6 +282,16 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
                 RuleFor(d => d.MailIds).NotEmpty().WithMessage("邮件Id不能为空");
             }
         }
+    }
+
+    public class MailReconvert
+    {
+
+        public Guid MailId { get; set; }
+
+        public Guid SrcCatalogId { get; set; }
+
+        public int ScrUserId { get; set; }
     }
 
     public class ReadOrUnReadMailMapper : BaseEntity
@@ -598,6 +610,24 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public int PageIndex { get; set; }
 
         public int PageSize { get; set; }
+    }
+
+    public class MailTruncateLstMapper
+    {
+        public Guid MailId { get; set; }
+
+        public string Sender { get; set; }
+
+        public JArray Receivers { get; set; }
+
+        public string Title { get; set; }
+
+        public DateTime ReceivedTime { get; set; }
+
+        public DateTime SentTime { get; set; }
+
+        public int SrcUserId { get; set; }
+        public string UserName { get; set; }
     }
 
 }

@@ -187,6 +187,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
     {
         public int RecStatus { get; set; }
         public string MailIds { get; set; }
+
+        public int UserId { get; set; }
     }
 
     public class ReadOrUnReadMailModel
