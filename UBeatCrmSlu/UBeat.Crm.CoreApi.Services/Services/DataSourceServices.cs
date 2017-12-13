@@ -164,10 +164,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<DynamicEntityFieldSearch> searchFields = dynamicEntityRepository.GetEntityFields(dataSourceInfo.entityid, userNumber);
             Dictionary<string, object> dic = new Dictionary<string, object>();
             Dictionary<string, object> dicExtraData = new Dictionary<string, object>();
-            searchFields.ForEach(t =>
+            entity.QueryData.ForEach(a =>
             {
                 int i = 0;
-                entity.QueryData.ForEach(a =>
+                searchFields.ForEach(t =>
                 {
                     if (a.ContainsKey(t.FieldName))
                     {
@@ -185,24 +185,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!dic.Keys.Contains(t.FieldName))
                             dic.Add(t.FieldName, a[t.FieldName]);
                     }
+
+                });
+                string key = a.Keys.ElementAt(i);
+                object value = a.Values.ElementAt(i);
+                if (a["islike"] != null)
+                {
+                    if (a["islike"].ToString() == "0")
+                    {
+                        if (!dicExtraData.Keys.Contains(key) && !dic.Keys.Contains(key))
+                            dicExtraData.Add(key, key + " = '" + value + "'");
+                    }
                     else
                     {
-                        if (a["islike"] != null)
-                        {
-                            if (a["islike"].ToString() == "0")
-                            {
-                                if (!dicExtraData.Keys.Contains(i.ToString()))
-                                    dicExtraData.Add(i.ToString(), a.Keys.ElementAt(i) + " = '" + a.Values.ElementAt(i) + "'");
-                            }
-                            else
-                            {
-                                if (!dicExtraData.Keys.Contains(i.ToString()))
-                                    dicExtraData.Add(i.ToString(), a.Keys.ElementAt(i) + " ilike '%" + a.Values.ElementAt(i) + "%'");
-                            }
-                        }
+                        if (!dicExtraData.Keys.Contains(key) && !dic.Keys.Contains(key))
+                            dicExtraData.Add(key, key + " ilike '%" + value + "%'");
                     }
-                    i++;
-                });
+                }
+                i++;
             });
             var validResults = DynamicProtocolHelper.AdvanceQuery(searchFields, dic);
             var validTips = new List<string>();
