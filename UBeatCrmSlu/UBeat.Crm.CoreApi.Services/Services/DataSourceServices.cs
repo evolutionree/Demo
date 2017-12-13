@@ -163,8 +163,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var dataSourceInfo = dataSourceRepository.GetDataSourceInfo(Guid.Parse(entity.SourceId), userNumber);
             List<DynamicEntityFieldSearch> searchFields = dynamicEntityRepository.GetEntityFields(dataSourceInfo.entityid, userNumber);
             Dictionary<string, object> dic = new Dictionary<string, object>();
+            Dictionary<string, object> dicExtraData = new Dictionary<string, object>();
             searchFields.ForEach(t =>
             {
+                int i = 0;
                 entity.QueryData.ForEach(a =>
                 {
                     if (a.ContainsKey(t.FieldName))
@@ -183,6 +185,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!dic.Keys.Contains(t.FieldName))
                             dic.Add(t.FieldName, a[t.FieldName]);
                     }
+                    else
+                    {
+                        if (a["islike"] != null)
+                        {
+                            if (a["islike"].ToString() == "0")
+                            {
+                                if (!dicExtraData.Keys.Contains(i.ToString()))
+                                    dicExtraData.Add(i.ToString(), a.Keys.ElementAt(i) + " = '" + a.Values.ElementAt(i) + "'");
+                            }
+                            else
+                            {
+                                if (!dicExtraData.Keys.Contains(i.ToString()))
+                                    dicExtraData.Add(i.ToString(), a.Keys.ElementAt(i) + " ilike '%" + a.Values.ElementAt(i) + "%'");
+                            }
+                        }
+                    }
+                    i++;
                 });
             });
             var validResults = DynamicProtocolHelper.AdvanceQuery(searchFields, dic);
@@ -206,9 +225,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>(string.Join(";", validTips));
             }
 
+
             if (data.Count > 0)
             {
                 entity.SqlWhere = " AND " + string.Join(" AND ", data.Values.ToArray());
+            }
+            if (dicExtraData.Count > 0)
+            {
+                entity.SqlWhere += " AND " + string.Join(" AND ", dicExtraData.Values.ToArray());
             }
             return new OutputResult<object>(dataSourceRepository.DynamicDataSrcQuery(entity, userNumber));
         }
