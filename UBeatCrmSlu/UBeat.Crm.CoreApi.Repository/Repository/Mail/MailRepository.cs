@@ -230,7 +230,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             else
                 sql = "update crm_sys_mail_mailbody set recstatus=0 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                     "update crm_sys_mail_catalog_relation set catalogid=(SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND ctype = 1006 LIMIT 1) where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
-            sql += sql + "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid) SELECT mailid,catalogid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
+            sql += sql + "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid,srcuserid) SELECT mailid,catalogid,@userid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             try
             {
                 var param = new
@@ -265,15 +265,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public OperateResult ReConverMails(ReConverMailMapper entity, int userId, DbTransaction dbTrans = null)
         {
-            string validCatalogSql = @"SELECT count(1) FROM crm_sys_mail_reconvert re INNER JOIN crm_sys_mail_catalog cata ON  re.srccatalogid=cata.recid WHERE re.mailid=@mailid;";//判断目录是否存在
-            string validCatalogRelationSql = @"SELECT re.* FROM crm_sys_mail_reconvert re INNER JOIN crm_sys_mail_catalog_relation cata ON re.mailid=cata.mailid AND re.srccatalogid=cata.catalogid WHERE re.mailid=@mailid;";//判断邮件和目录的关系是否存在
+            string validCatalogSql = @"SELECT count(1) FROM crm_sys_mail_reconvert re INNER JOIN crm_sys_mail_catalog cata ON  re.srccatalogid=cata.recid WHERE re.mailid=@mailid AND cata.recstatus=1;";//判断目录是否存在
+            string validCatalogRelationSql = @"SELECT re.*,cata.catalogid FROM crm_sys_mail_reconvert re LEFT JOIN crm_sys_mail_catalog_relation cata ON re.mailid=cata.mailid AND re.srccatalogid=cata.catalogid WHERE re.mailid=@mailid;";//判断邮件和目录的关系是否存在
             string cataSql = @"SELECT recid,recname FROM crm_sys_mail_catalog WHERE viewuserid=(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1) AND ctype=2002 LIMIT 1";//个人目录
+            string createCatalogSql = @"INSERT INTO public.crm_sys_mail_catalog (recname, userid, viewuserid, ctype, custcatalog, custid, recstatus, pid, vpid, recorder, isdynamic, defaultid) VALUES ('恢复已删除',(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1),(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1),3002,null,null,1,@catalogid,@catalogid,(SELECT COUNT(COALESCE(recorder,1))+1 FROM crm_sys_mail_catalog WHERE viewuserid=(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1) AND ctype=3002 AND vpid=@catalogid),1,null) returning recid;";
             string catalogRelationSql = @"INSERT INTO public.crm_sys_mail_catalog_relation (mailid, catalogid, relativetype) VALUES (@mailid,@catalogid,1);";
-            string sql = "update crm_sys_mail_mailbody set recstatus=@recstatus where recid=@mailid::uuid;";
+            string sql = "update crm_sys_mail_mailbody set recstatus=@recstatus where recid=@mailid;";
 
             try
             {
                 dynamic catalog;
+                DbParameter[] param;
                 foreach (var tmp in entity.MailIds.Split(','))
                 {
                     Guid mailId = Guid.Parse(tmp);
@@ -281,45 +283,46 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     if (catalogExist == 0)
                     {
                         catalog = DataBaseHelper.QuerySingle<dynamic>(cataSql, new { MailId = mailId });
-                        var param = new DbParameter[]
+
+                        if (catalog != null)
                         {
-                             new NpgsqlParameter("mailid",Guid.Parse(tmp)),
-                             new NpgsqlParameter("catalogid",catalog.recid),
-                        };
-                        DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
-                        param = new DbParameter[]
-                       {
-                                new NpgsqlParameter("mailid",Guid.Parse(tmp))
-                       };
-                        DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
+                            param = new DbParameter[]
+                            {
+                                    new NpgsqlParameter("mailid",mailId),
+                                    new NpgsqlParameter("catalogid",catalog.recid),
+                            };
+                            var resultUUID = DBHelper.ExecuteScalar(dbTrans, createCatalogSql, param, CommandType.Text);
+                            param = new DbParameter[]
+                            {
+                                    new NpgsqlParameter("mailid",mailId),
+                                    new NpgsqlParameter("catalogid",resultUUID),
+                            };
+                            DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
+                        }
+                        else
+                        {
+                            throw new Exception("缺少个人文件夹");
+                        }
                     }
                     else
                     {
                         var catalogRelationExist = DataBaseHelper.QuerySingle<MailReconvert>(validCatalogRelationSql, new { MailId = mailId });//先判断目录关系是否存在
-                        if (catalogRelationExist == null)
+                        if (catalogRelationExist.CatalogId == Guid.Empty)
                         {
-                            var param = new DbParameter[]
-                            {
-                                new NpgsqlParameter("mailid",mailId),
-                                new NpgsqlParameter("catalogid",catalogRelationExist.SrcCatalogId),
-                            };
-                            DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
                             param = new DbParameter[]
                            {
-                                new NpgsqlParameter("mailid",mailId)
+                                new NpgsqlParameter("mailid",mailId),
+                                new NpgsqlParameter("catalogid",catalogRelationExist.SrcCatalogId),
                            };
-                            DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
-                        }
-                        else
-                        {
-                            var param = new DbParameter[]
-                           {
-                                 new NpgsqlParameter("recstatus",1),
-                                new NpgsqlParameter("mailid",mailId)
-                           };
-                            var result = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
+                            DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
                         }
                     }
+                    param = new DbParameter[]
+                    {
+                        new NpgsqlParameter("recstatus",1),
+                        new NpgsqlParameter("mailid",mailId)
+                    };
+                    var result = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
                 }
                 return new OperateResult
                 {
@@ -1162,7 +1165,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 string rootsql = "select deptid::text from crm_sys_department where pdeptid::text = '00000000-0000-0000-0000-000000000000' and recstatus=1 ";
                 deptId = (string)ExecuteScalar(rootsql, new DbParameter[] { });
             }
-        var sql = @"                   
+            var sql = @"                   
                 select * from (select ''::text mail,deptid::text treeid,deptname treename,''::text deptname,0 nodetype,'00000000-0000-0000-0000-000000000000'::uuid icon from crm_sys_department a 
                             where a.recstatus = 1 and a.pdeptid::text =@deptId order by recorder) t 
                             UNION ALL 

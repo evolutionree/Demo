@@ -289,9 +289,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
         public Guid MailId { get; set; }
 
-        public Guid SrcCatalogId { get; set; }
+        public Guid SrcCatalogId { get; set; }//被删除的邮件之前所在的目录
 
-        public int ScrUserId { get; set; }
+        public int SrcUserId { get; set; }
+
+        public Guid CatalogId { get; set; }// 被删除邮件的邮件所在的目录是否存在 
     }
 
     public class ReadOrUnReadMailMapper : BaseEntity
