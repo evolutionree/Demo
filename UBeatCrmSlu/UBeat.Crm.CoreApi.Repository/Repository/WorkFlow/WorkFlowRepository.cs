@@ -157,8 +157,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 int.TryParse(vernumResult.ToString(), out vernum);
 
 
-            var executeSql = @" SELECT nodeid,nodename,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,auditsucc FROM crm_sys_workflow_node WHERE flowid = @flowid AND vernum = @vernum ;
-                                SELECT lineid,fromnodeid,tonodeid,ruleid from crm_sys_workflow_node_line WHERE flowid = @flowid AND vernum = @vernum;
+            var executeSql = @" SELECT nodeid,nodename,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,auditsucc,nodeconfig FROM crm_sys_workflow_node WHERE flowid = @flowid AND vernum = @vernum ;
+                                SELECT lineid,fromnodeid,tonodeid,ruleid,lineconfig from crm_sys_workflow_node_line WHERE flowid = @flowid AND vernum = @vernum;
                                 SELECT w.entityid,
                                     (select entityname from crm_sys_entity e where e.entityid = w.entityid limit 1) as entityname,
                                     (select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) as relentityid, 
@@ -207,8 +207,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     int.TryParse(versionObj.ToString(), out versionValue);
 
                     #region --插入node节点--
-                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,vernum,auditsucc)
-                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc)";
+                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,vernum,auditsucc,nodeconfig)
+                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc,@nodeconfig)";
                     List<DbParameter[]> workflow_node_params = new List<DbParameter[]>();
                     List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
                     foreach (var node in nodeLineConfig.Nodes)
@@ -225,6 +225,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("columnconfig", JsonConvert.SerializeObject(node.ColumnConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                             new NpgsqlParameter("vernum", versionValue),
                             new NpgsqlParameter("auditsucc", node.AuditSucc),
+                            new NpgsqlParameter("nodeconfig", JsonConvert.SerializeObject(node.NodeConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                         });
 
                         if (!string.IsNullOrEmpty(node.NodeEvent))
@@ -251,8 +252,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
                     #region --插入nodeline--
                     //crm_sys_workflow_node_line
-                    var node_line_sql = @"INSERT INTO crm_sys_workflow_node_line(flowid,fromnodeid,tonodeid,ruleid,vernum)
-                                          VALUES(@flowid,@fromnodeid,@tonodeid,@ruleid,@vernum)";
+                    var node_line_sql = @"INSERT INTO crm_sys_workflow_node_line(flowid,fromnodeid,tonodeid,ruleid,vernum,lineconfig)
+                                          VALUES(@flowid,@fromnodeid,@tonodeid,@ruleid,@vernum,@lineconfig)";
                     List<DbParameter[]> node_line_params = new List<DbParameter[]>();
                     foreach (var line in nodeLineConfig.Lines)
                     {
@@ -262,7 +263,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("fromnodeid", line.FromNodeId),
                             new NpgsqlParameter("tonodeid",line.ToNodeId),
                             new NpgsqlParameter("ruleid", line.RuleId.GetValueOrDefault()),
-                            new NpgsqlParameter("vernum", versionValue)
+                            new NpgsqlParameter("vernum", versionValue),
+                            new NpgsqlParameter("lineconfig", JsonConvert.SerializeObject(line.LineConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                         });
                     }
                     ExecuteNonQueryMultiple(node_line_sql, node_line_params, tran);
