@@ -1432,12 +1432,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var caseitemlist = _workFlowRepository.GetWorkFlowCaseItemInfo(trans, caseInfo.CaseId, caseInfo.NodeNum);
                     if (caseitemlist == null || caseitemlist.Count == 0)
                         throw new Exception("流程节点异常");
-                    caseitemlist = caseitemlist.OrderByDescending(m => m.StepNum).ToList();
+                    //caseitemlist = caseitemlist.OrderByDescending(m => m.StepNum).ToList();
 
                     //获取还有人未处理审批
-                    var aproval_notdeal_count = caseitemlist.Where(m => m.CaseStatus == CaseStatusType.WaitApproval || m.CaseStatus == CaseStatusType.Readed).Count();
-                    if (aproval_notdeal_count > 0)
-                        throw new Exception("该节点其他人还在审批，不能进入下一步");
+                    //var aproval_notdeal_count = caseitemlist.Where(m => m.CaseStatus == CaseStatusType.WaitApproval || m.CaseStatus == CaseStatusType.Readed).Count();
+                    //if (aproval_notdeal_count > 0)
+                    //    throw new Exception("该节点其他人还在审批，不能进入下一步");
                 }
             }
 
