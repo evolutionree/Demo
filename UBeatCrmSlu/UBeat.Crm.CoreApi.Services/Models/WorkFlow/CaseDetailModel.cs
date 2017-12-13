@@ -107,6 +107,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid NodeId { set; get; }
 
         public string NodeName { set; get; }
+        /// <summary>
+        /// 最新审批状态描述
+        /// </summary>
+        public string AuditStatus { set; get; }
+        /// <summary>
+        /// 当前审批步骤描述
+        /// </summary>
+        public string AuditStep { set; get; }
 
         public object ColumnConfig { set; get; }
 

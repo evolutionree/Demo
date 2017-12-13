@@ -95,6 +95,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                     result.CaseItem = new CaseItemAuditInfo();
+                    var lastCaseItem = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber).LastOrDefault();
+                    if (lastCaseItem != null)
+                    {
+                        var username = lastCaseItem.ContainsKey("username") ? lastCaseItem["username"] : "";
+                        var casestatus = lastCaseItem.ContainsKey("casestatus") ? lastCaseItem["casestatus"] : "";
+                        result.CaseItem.AuditStatus = string.Format("{0}{1}", username, casestatus);
+                    }
+                    var notfinishitems = caseitems.Where(m => m.CaseStatus == CaseStatusType.Readed || m.CaseStatus == CaseStatusType.WaitApproval);
+                    if (notfinishitems.Count() > 0)
+                    {
+                        string temptext = notfinishitems.Count() > 2 ? string.Join(",", notfinishitems.Select(m => m.HandleUserName),0,2)+"等" : string.Join(",", notfinishitems.Select(m => m.HandleUserName));
+                        result.CaseItem.AuditStep = string.Format("等待{0}处理审批", temptext);
+                    }
+                       
 
                     var nowcaseitem = caseitems.Find(m => m.HandleUser == userNumber);
                     if (nowcaseitem != null && (nowcaseitem.ChoiceStatus == ChoiceStatusType.Edit || nowcaseitem.ChoiceStatus == ChoiceStatusType.AddNode))
@@ -102,10 +116,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (caseInfo.NodeNum == -1 || caseInfo.AuditStatus == AuditStatusType.Finished || caseInfo.AuditStatus == AuditStatusType.NotAllowed)
                         {
                             result.CaseItem.NodeName = "已完成审批";
+                            if(caseInfo.AuditStatus == AuditStatusType.Finished)
+                                result.CaseItem.AuditStep = "审批通过";
+                            else if (caseInfo.AuditStatus == AuditStatusType.NotAllowed)
+                                result.CaseItem.AuditStep = "审批不通过";
                         }
                         else
                         {
-
+                            
                             string nodeName = string.Empty;
                             if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
                             {
