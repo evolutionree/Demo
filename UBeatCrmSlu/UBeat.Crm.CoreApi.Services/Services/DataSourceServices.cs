@@ -163,9 +163,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var dataSourceInfo = dataSourceRepository.GetDataSourceInfo(Guid.Parse(entity.SourceId), userNumber);
             List<DynamicEntityFieldSearch> searchFields = dynamicEntityRepository.GetEntityFields(dataSourceInfo.entityid, userNumber);
             Dictionary<string, object> dic = new Dictionary<string, object>();
-            searchFields.ForEach(t =>
+            Dictionary<string, object> dicExtraData = new Dictionary<string, object>();
+            entity.QueryData.ForEach(a =>
             {
-                entity.QueryData.ForEach(a =>
+                int i = 0;
+                searchFields.ForEach(t =>
                 {
                     if (a.ContainsKey(t.FieldName))
                     {
@@ -183,7 +185,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!dic.Keys.Contains(t.FieldName))
                             dic.Add(t.FieldName, a[t.FieldName]);
                     }
+
                 });
+                string key = a.Keys.ElementAt(i);
+                object value = a.Values.ElementAt(i);
+                if (a["islike"] != null)
+                {
+                    if (a["islike"].ToString() == "0")
+                    {
+                        if (!dicExtraData.Keys.Contains(key) && !dic.Keys.Contains(key))
+                            dicExtraData.Add(key, key + " = '" + value + "'");
+                    }
+                    else
+                    {
+                        if (!dicExtraData.Keys.Contains(key) && !dic.Keys.Contains(key))
+                            dicExtraData.Add(key, key + " ilike '%" + value + "%'");
+                    }
+                }
+                i++;
             });
             var validResults = DynamicProtocolHelper.AdvanceQuery(searchFields, dic);
             var validTips = new List<string>();
@@ -206,9 +225,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>(string.Join(";", validTips));
             }
 
+
             if (data.Count > 0)
             {
                 entity.SqlWhere = " AND " + string.Join(" AND ", data.Values.ToArray());
+            }
+            if (dicExtraData.Count > 0)
+            {
+                entity.SqlWhere += " AND " + string.Join(" AND ", dicExtraData.Values.ToArray());
             }
             return new OutputResult<object>(dataSourceRepository.DynamicDataSrcQuery(entity, userNumber));
         }
