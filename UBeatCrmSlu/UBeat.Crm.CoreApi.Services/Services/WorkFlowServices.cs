@@ -146,13 +146,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                             if (caseInfo.NodeNum == 0)//如果处于第一个节点
                             {
+                                var stepNum = caseitems.FirstOrDefault().StepNum;
+                                result.CaseItem.IsCanLunch = 1;
                                 //如果审批关联的实体为简单实体且简单实体无关联的独立实体时，则允许编辑审批信息重新提交或者中止审批
                                 //如果审批关联的实体为独立实体或关联的简单实体有关联的独立实体时，则不允许编辑审批信息，只能中止审批
-                                result.CaseItem.IsCanTerminate = 1;
                                 if (caseInfo.RecCreator == userNumber)
                                 {
+                                    result.CaseItem.IsCanTerminate = 1;
                                     result.CaseItem.IsCanEdit = _workFlowRepository.CanEditWorkFlowCase(workflowInfo, userNumber, tran) ? 1 : 0;
+                                    if (stepNum > 1)
+                                    {
+                                        result.CaseItem.IsCanLunch = result.CaseItem.IsCanEdit;
+                                    }
                                 }
+                                
                             }
                             else
                             {
