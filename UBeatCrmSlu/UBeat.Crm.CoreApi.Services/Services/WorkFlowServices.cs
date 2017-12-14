@@ -1206,6 +1206,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
             {
                 var nowcaseitem = caseitems.FirstOrDefault();
+
                 canAddNextNode = AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, hasNextNode);
             }
             else  //会审
