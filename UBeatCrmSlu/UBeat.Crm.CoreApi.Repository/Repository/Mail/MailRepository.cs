@@ -1422,7 +1422,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 sqlCondition = "  tmp.mailid IN (SELECT mailid FROM crm_sys_mail_senderreceivers WHERE   mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE owner::INT4=@queryuserid #mailaddress#) #ctype#) ";
                 if (!string.IsNullOrEmpty(entity.MailAddress))
                 {
-                    sqlCondition = sqlCondition.Replace("#mailaddress#", "AND accountid=@mailaddres");
+                    sqlCondition = sqlCondition.Replace("#mailaddress#", "AND accountid=@mailaddress");
                 }
                 else
                 {
@@ -1469,6 +1469,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("keyword",entity.KeyWord),
+                new NpgsqlParameter("mailaddress",entity.MailAddress),
                 new NpgsqlParameter("startdate",entity.StartDate),
                 new NpgsqlParameter("enddate",entity.EndDate),
                 new NpgsqlParameter("queryuserid",entity.UserId.Value),
