@@ -1373,11 +1373,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             List<int> copyuserlist = new List<int>();
             foreach (var row in result)
             {
-                int copyuser = 0;
-                if (row["copyuser"] != null && int.TryParse(row["copyuser"].ToString(), out copyuser))
+                string copyusertext = row["copyuser"] != null ? row["copyuser"].ToString() : null;
+               
+                if(!string.IsNullOrEmpty(copyusertext))
                 {
-                    copyuserlist.Add(copyuser);
+                    var temps = copyusertext.Split(',');
+                    
+                    foreach (var tem in temps)
+                    {
+                        int copyuser = 0;
+                        if (int.TryParse(tem, out copyuser))
+                        {
+                            copyuserlist.Add(copyuser);
+                        }
+                    }
                 }
+                
             }
 
             var usersql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo WHERE userid =ANY(@userids)";
