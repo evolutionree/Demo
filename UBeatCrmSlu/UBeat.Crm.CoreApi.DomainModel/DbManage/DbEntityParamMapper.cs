@@ -21,6 +21,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
 
 
     public class DbEntityImportParamInfo {
+
+        public Guid EntityId { get; set; }
         public DbEntityImportEntityUpdatePolicyEnum EntityUpdatePolicy { get; set; }
         public DbEntityImportFieldUpdatePolicyEnum FieldUpdatePolicy { get; set; }
         public DbEntityImportFieldNameUpdatePolicyEnum FieldNameUpdatePolicy { get; set; }

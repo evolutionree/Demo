@@ -10,7 +10,10 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
         DbEntityInfo getEntityInfo(string entityid, int userId, DbTransaction tran);
         List<DbEntityFieldInfo> getEntityFields(string entityid, DbEntityReflectConfigParam configParam, int userId, DbTransaction tran);
-        void addEntityInfo(DbEntityInfo entityInfo, int userId, DbTransaction tran);
+        string addEntityInfo(DbEntityInfo entityInfo, int userId, DbTransaction tran);
         void updateEntityInfo(DbEntityInfo entityInfo, int userId, DbTransaction tran);
+
+        string createEmptyTableForEntity(string tablename, int userId, DbTransaction tran);
+
     }
 }
