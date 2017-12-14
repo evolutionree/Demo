@@ -195,7 +195,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 foreach (var userMailInfo in userMailInfoLst)
                 {
-                    if (userMailInfo.EncryptPwd == null)
+                    if (userMailInfo.EncryptPwd == null || string.IsNullOrEmpty(userMailInfo.ImapAddress) || userMailInfo.ImapPort <= 0)
                         continue;
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
