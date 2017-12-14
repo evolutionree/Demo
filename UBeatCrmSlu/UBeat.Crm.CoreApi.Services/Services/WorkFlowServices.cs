@@ -999,6 +999,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 else if (flowNodeInfo.NodeType == NodeType.Joint)//会审
                 {
+                    caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
                     //会审审批通过的节点数
                     var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
                     nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
