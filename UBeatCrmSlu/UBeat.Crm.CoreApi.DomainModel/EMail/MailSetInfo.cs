@@ -40,7 +40,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
     }
 
-        public class MailCatalogInfo
+    public class MailCatalogInfo
     {
         /// <summary>
         /// 目录的id
@@ -119,7 +119,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         Cust = 2001,//客户目录
         CustDyn = 4001,//客户自定义目录
         Personal = 2002,//个人目录
-        PersonalDyn = 3002//个人自定义目录
+        PersonalDyn = 3002,//个人自定义目录
+        InnerTransfer = 2004//内部分发目录
     }
 
 

@@ -1186,7 +1186,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return ExcuteInsertAction((dbTrans, arg, userData) =>
              {
-                 return HandleResult(_mailRepository.ReConverMails(entity, userNum, dbTrans)); ;
+                 var result = _mailRepository.ReConverMails(entity, userNum, dbTrans);
+                 return new OutputResult<object>(new
+                 {
+                     TipMsg = result.Msg
+                 }, string.Empty, result.Flag == 0 ? 1 : 0);
              }, entity, Guid.Parse(_entityId), userNum);
         }
         public OutputResult<object> ReadMail(ReadOrUnReadMailModel model, int userNum)
