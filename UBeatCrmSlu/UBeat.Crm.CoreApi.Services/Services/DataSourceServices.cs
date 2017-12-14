@@ -187,6 +187,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                 });
+                if (a.Keys.Count == 0)
+                    return;
                 string key = a.Keys.ElementAt(i);
                 object value = a.Values.ElementAt(i);
                 if (a["islike"] != null)
