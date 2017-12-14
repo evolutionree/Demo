@@ -195,7 +195,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 foreach (var userMailInfo in userMailInfoLst)
                 {
-                    if (userMailInfo.EncryptPwd == null)
+                    if (userMailInfo.EncryptPwd == null || string.IsNullOrEmpty(userMailInfo.ImapAddress) || userMailInfo.ImapPort <= 0)
                         continue;
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
@@ -1186,7 +1186,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return ExcuteInsertAction((dbTrans, arg, userData) =>
              {
-                 return HandleResult(_mailRepository.ReConverMails(entity, userNum, dbTrans)); ;
+                 var result = _mailRepository.ReConverMails(entity, userNum, dbTrans);
+                 return new OutputResult<object>(new
+                 {
+                     TipMsg = result.Msg
+                 }, string.Empty, result.Flag == 0 ? 1 : 0);
              }, entity, Guid.Parse(_entityId), userNum);
         }
         public OutputResult<object> ReadMail(ReadOrUnReadMailModel model, int userNum)
