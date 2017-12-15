@@ -1346,18 +1346,37 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>       
         public List<OrgAndStaffTree> GetInnerToAndFroUser(string keyword, int userId)
         {
-            var executeSql = "select 1 nodetype,t.userid::text treeid,t.username treename,(count(1)-sum(t.isread))::int unreadcount  " +
-                " from (select d.userid,d.username,COALESCE(c.isread, 0) isread " +
-                " from(select b.recid from crm_sys_mail_senderreceivers a " +
-                " inner join crm_sys_mail_mailbody b on a.mailid= b.recid " +
-                " where 1 = 1 and (ctype = 2 or  ctype = 3 or ctype = 4) and relativetouser = @userid) x " +
-                " inner join crm_sys_mail_mailbody c on c.recid = x.recid " +
-                " inner join crm_sys_userinfo d on d.userid = c.recmanager ) t " +
-                "  {0} group by t.userid,t.username";
+            var executeSql = @"SELECT 1 nodetype,u.userid::text treeid,u.username treename,(count(1)-sum(tmp.isread))::int unreadcount  FROM ( SELECT 
+			    body.recid mailid,
+			    body.isread
+			     FROM crm_sys_mail_mailbody body Where body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN(SELECT recid FROM crm_sys_mail_catalog WHERE recstatus = 1 
+                    AND viewuserid = @userId AND ctype != 1003) AND body.recstatus=1 AND body.recid IN (
+			    SELECT DISTINCT tmp.mailid FROM (SELECT * FROM crm_sys_mail_senderreceivers where mailid in(
+			    SELECT
+			     mailid FROM crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userId) AND ctype=1) ) AS tmp
+			    INNER JOIN
+			    (SELECT * FROM crm_sys_mail_senderreceivers where mailid in(
+			    select
+			     mailid from crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox ) AND (ctype=2 OR ctype=3 OR ctype=4)) ) AS tmp1
+			    ON tmp.mailid=tmp1.mailid
+			    UNION
+			    SELECT DISTINCT tmp.mailid FROM (SELECT * FROM crm_sys_mail_senderreceivers where mailid in(
+			    SELECT
+			     mailid FROM crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  ) AND ctype=1) ) AS tmp
+			    INNER JOIN
+			    (SELECT * FROM crm_sys_mail_senderreceivers where mailid in(
+			    select
+			     mailid from crm_sys_mail_senderreceivers where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox  WHERE owner::int4 = @userId ) AND (ctype=2 OR ctype=3 OR ctype=4)) ) AS tmp1
+			    ON tmp.mailid=tmp1.mailid
+			    )  )) AS tmp inner join crm_sys_mail_senderreceivers t on t.mailid=tmp.mailid
+           inner join crm_sys_mail_mailbox t2 on t2.accountid=t.mailaddress
+           inner join crm_sys_userinfo u on u.userid=t2.owner::INT4
+           where 1=1 {0}
+           group by u.userid, u.username";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(keyword))
             {
-                condition = string.Format(" where t.username like '%{0}%'", keyword);
+                condition = string.Format(" where u.username like '%{0}%'", keyword);
 
             }
             string newSql = string.Format(executeSql, condition);
