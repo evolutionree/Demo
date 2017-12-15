@@ -1408,19 +1408,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             
         }
 
-        public void SetWorkFlowCaseItemReaded(DbTransaction trans, Guid caseid, int nodenum, int stepnum = -1)
+        public void SetWorkFlowCaseItemReaded(DbTransaction trans, Guid caseid, int nodenum, int userNumber, int stepnum = -1)
         {
             try
             {
                 string executeSql = string.Empty;
                 if (stepnum <= 0)
                 {
-                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum  
+                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and  handleuser=@handleuser
                                 and stepnum=(SELECT MAX(stepnum) FROM crm_sys_workflow_case_item WHERE recstatus=1 AND nodenum=@nodenum AND caseid=@caseid )";
                 }
                 else
                 {
-                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and stepnum=@stepnum ";
+                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and stepnum=@stepnum and  handleuser=@handleuser ";
                 }
 
                 ExecuteNonQuery(executeSql, new DbParameter[] 
@@ -1428,6 +1428,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     new NpgsqlParameter("caseid", caseid),
                     new NpgsqlParameter("nodenum", nodenum),
                     new NpgsqlParameter("stepnum", stepnum),
+                    new NpgsqlParameter("handleuser", userNumber),
                 }, trans);
             }
             catch (Exception ex)

@@ -157,7 +157,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         List<DomainModel.Account.UserInfo> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null);
 
-        void SetWorkFlowCaseItemReaded(DbTransaction trans, Guid caseid, int nodenum, int stepnum = -1);
+        void SetWorkFlowCaseItemReaded(DbTransaction trans, Guid caseid, int nodenum, int userNumber, int stepnum = -1);
     }
 }
 

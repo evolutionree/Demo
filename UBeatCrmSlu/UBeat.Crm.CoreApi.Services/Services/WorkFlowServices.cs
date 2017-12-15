@@ -168,8 +168,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 result.CaseItem.IsCanReback = workflowInfo.BackFlag;
                             }
                         }
+                        
                     }
-
+                    
                     #endregion
 
 
@@ -203,7 +204,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     #endregion
 
-                    _workFlowRepository.SetWorkFlowCaseItemReaded(tran, caseInfo.CaseId, caseInfo.NodeNum);
+                    _workFlowRepository.SetWorkFlowCaseItemReaded(tran, caseInfo.CaseId, caseInfo.NodeNum, userNumber);
 
                     tran.Commit();
                 }
