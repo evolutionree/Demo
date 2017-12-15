@@ -163,7 +163,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 int.TryParse(vernumResult.ToString(), out vernum);
 
 
-            var executeSql = @" SELECT nodeid,nodename,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,auditsucc,nodeconfig FROM crm_sys_workflow_node WHERE flowid = @flowid AND vernum = @vernum ;
+            var executeSql = @" SELECT n.nodeid,n.nodename,n.auditnum,n.nodetype,n.steptypeid,n.ruleconfig,n.columnconfig,n.auditsucc,n.nodeconfig ,e.funcname
+                                FROM crm_sys_workflow_node AS n
+                                LEFT JOIN crm_sys_workflow_func_event AS e ON e.flowid=n.flowid AND e.nodeid=n.nodeid
+                                WHERE n.flowid = @flowid AND n.vernum = @vernum ;
                                 SELECT lineid,fromnodeid,tonodeid,ruleid,lineconfig from crm_sys_workflow_node_line WHERE flowid = @flowid AND vernum = @vernum;
                                 SELECT w.entityid,
                                     (select entityname from crm_sys_entity e where e.entityid = w.entityid limit 1) as entityname,
@@ -1415,12 +1418,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 string executeSql = string.Empty;
                 if (stepnum <= 0)
                 {
-                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and  handleuser=@handleuser
+                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and  handleuser=@handleuser and casestatus=0
                                 and stepnum=(SELECT MAX(stepnum) FROM crm_sys_workflow_case_item WHERE recstatus=1 AND nodenum=@nodenum AND caseid=@caseid )";
                 }
                 else
                 {
-                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and stepnum=@stepnum and  handleuser=@handleuser ";
+                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and stepnum=@stepnum and  handleuser=@handleuser and casestatus=0";
                 }
 
                 ExecuteNonQuery(executeSql, new DbParameter[] 
