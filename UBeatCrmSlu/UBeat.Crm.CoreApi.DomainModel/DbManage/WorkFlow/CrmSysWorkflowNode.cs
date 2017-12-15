@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.WorkFlow
 
         public object RuleConfig { set; get; }
 
-        public object columnconfig { set; get; }
+        public object ColumnConfig { set; get; }
 
     }
 }

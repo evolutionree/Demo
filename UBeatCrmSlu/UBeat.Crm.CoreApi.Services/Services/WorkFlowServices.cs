@@ -988,7 +988,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("流程节点数据异常");
                 }
-                
+                var mycaseitems = caseitems.Find(m => m.HandleUser == userinfo.UserId);
                 var nodeid = caseitems.FirstOrDefault().NodeId;
 
                 if (flowNodeInfo == null)
@@ -1006,7 +1006,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodetemp.NodeState = 2;
                 }
-                else if (newcaseInfo.NodeNum == 0&& caseitems.FirstOrDefault().StepNum>0)//预审批审批回到第一节点，表明被退回
+                else if (newcaseInfo.NodeNum == 0&& mycaseitems.ChoiceStatus== ChoiceStatusType.Reback)//预审批审批回到第一节点，表明被退回
                 {
                     nodetemp.NodeState = 3;
                 }
