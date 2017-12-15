@@ -419,10 +419,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                    crm_sys_mail_senderreceivers Where
                                                     mailid=@mailid And ctype=1)  AND 
                                                    recstatus=1 LIMIT 1) AS tmp )";
-            var senderSql = @" SELECT username,usertel,useremail,usericon FROM crm_sys_userinfo WHERE
+            var senderSql = @" SELECT username as recname,usertel as phone,useremail as email,usericon as headicon FROM crm_sys_userinfo WHERE
                userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1)AND  recstatus=1;";
 
-            var conCustSql = @"SELECT recname as username,phone as usertel,email as useremail,headicon as usericon FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
+            var conCustSql = @"SELECT recname ,phone ,email ,headicon  FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
 
             var isCustExistsSql = @"Select count(1) From crm_sys_customer Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
             var custConfigSql = @"  SELECT tmp.columnkey||tmp1.extracolumn FROM (  SELECT string_agg(fieldname,',') AS columnkey     
