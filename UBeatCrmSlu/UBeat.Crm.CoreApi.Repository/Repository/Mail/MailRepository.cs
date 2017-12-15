@@ -409,7 +409,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.istag," +
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid) attachcount," +
-                                        "(SELECT  mailaddress FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) frommailaddress," +
+                                        "(SELECT mailaddress FROM crm_sys_mail_receivemailrelated WHERE mailid=body.recid LIMIT 1) frommailaddress," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT filename,mongoid AS fileid,filesize FROM crm_sys_mail_attach WHERE  mailid=body.recid ) t)::jsonb attachinfojson" +
                                         " FROM crm_sys_mail_mailbody body Where body.recid=@mailid ";
             var isConExistsSql = @"Select count(1) From crm_sys_contact Where (belcust->>'id') IN (
