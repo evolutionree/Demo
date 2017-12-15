@@ -1158,20 +1158,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     //流程审批过程修改实体字段时，更新关联实体的字段数据
                     _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
-                    //完成了以上审批操作，如果是分支流程，需要验证下一步审批人是否符合规则
-                    if (isbranchFlow && nextnode != null)
-                    {
-                        //验证规则是否符合
-                        if (!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo, tran))
-                            throw new Exception("下一步审批人不符合分支流程规则");
-                    }
-
+                    
                     if (casefinish)//审批已经到达了最后一步
                     {
                         _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
                     }
                     else if (canAddNextNode) //添加下一步骤审批节点
                     {
+                        //完成了以上审批操作，如果是分支流程，需要验证下一步审批人是否符合规则
+                        if (isbranchFlow && nextnode != null)
+                        {
+                            //验证规则是否符合
+                            if (!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo, tran))
+                                throw new Exception("下一步审批人不符合分支流程规则");
+                        }
                         AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
                     }
                     tran.Commit();
