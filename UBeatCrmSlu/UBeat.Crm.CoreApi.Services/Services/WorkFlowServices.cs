@@ -826,6 +826,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         #region --审批预处理--
+        //自由流程，uuid值为0作为流程起点，值为1作为流程终点'，值为2作为流程过程节点';
+        Guid freeFlowBeginNodeId = new Guid("00000000-0000-0000-0000-000000000000");
+        Guid freeFlowEndNodeId = new Guid("00000000-0000-0000-0000-000000000001");
+        Guid freeFlowNodeId = new Guid("00000000-0000-0000-0000-000000000002");
 
         #region --提交审批预处理--
         /// <summary>
@@ -881,8 +885,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems);
                         if (casefinish)
                         {
-                            //自由流程，uuid值为0作为流程起点，值为1作为流程终点';
-                            nodeid = new Guid("00000000-0000-0000-0000-000000000001");
+                            //自由流程，uuid值为0作为流程起点，值为1作为流程终点'，值为2作为流程过程节点';
+                            nodeid = freeFlowEndNodeId;
+                        }
+                        else
+                        {
+                            nodeid = freeFlowNodeId;
                         }
                     }
                     else //固定流程
@@ -1068,6 +1076,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         #region --提交审批--
+
+
         public OutputResult<object> SubmitWorkFlowAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo)
         {
 
@@ -1080,6 +1090,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             bool casefinish = false;
             int stepnum = 0;
             Guid nodeid = Guid.Empty;
+            Guid lastNodeId = Guid.Empty;
             bool canAddNextNode = true;
             bool isbranchFlow = false;
             WorkFlowNodeInfo nextnode = null;
@@ -1116,8 +1127,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (casefinish)
                         {
                             //自由流程，uuid值为0作为流程起点，值为1作为流程终点';
-                            nodeid = new Guid("00000000-0000-0000-0000-000000000001");
+                            nodeid = freeFlowEndNodeId;
+                            lastNodeId = freeFlowEndNodeId;
                             canAddNextNode = false;
+                        }
+                        else
+                        {
+                            nodeid = freeFlowNodeId;
                         }
                     }
                     else //固定流程
@@ -1125,6 +1141,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nodeid = caseitems.FirstOrDefault().NodeId;
 
                         isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, out nextnode, out canAddNextNode);
+                        if (casefinish)
+                            lastNodeId = nextnode.NodeId;
                     }
                     //判断是否有附加函数_event_func
                     var eventfuncname = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, 1, tran);
@@ -1145,7 +1163,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     if (casefinish)//审批已经到达了最后一步
                     {
-                        _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, stepnum + 1, userinfo.UserId, tran);
+                        _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
                     }
                     else if (canAddNextNode) //添加下一步骤审批节点
                     {
