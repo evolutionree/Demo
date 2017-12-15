@@ -1420,10 +1420,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                                 //目前这个没有使用
                         break;
                     case EntityFieldControlType.DataSourceSingle://18数据源单选
-                        string tmpDataSourceId = fieldNameMapDataSource[fieldInfo.FieldName];
-                        string tablename = dataSources[tmpDataSourceId];
-                        fromClause = string.Format(@"{0} left outer join {1} as {2}_t on jsonb_extract_path_text(e.{2},'id') = {2}_t.recid::text ", fromClause, tablename, fieldInfo.FieldName);
-                        selectClause = string.Format(@"{0},{1}_t.recname as {1}_name", selectClause, fieldInfo.FieldName);
+                        if (fieldInfo.FieldConfig == null)
+                        {
+                            string tmpDataSourceId = fieldNameMapDataSource[fieldInfo.FieldName];
+                            string tablename = dataSources[tmpDataSourceId];
+                            fromClause = string.Format(@"{0} left outer join {1} as {2}_t on jsonb_extract_path_text(e.{2},'id') = {2}_t.recid::text ", fromClause, tablename, fieldInfo.FieldName);
+                            selectClause = string.Format(@"{0},{1}_t.recname as {1}_name", selectClause, fieldInfo.FieldName);
+                        }
+                        else {
+                            Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo.FieldConfig);
+                            bool SaveNamed = false;
+                            if (fieldConfigDict.ContainsKey("dataSource")
+                                && fieldConfigDict["dataSource"] != null) {
+                                Dictionary<string, object> datasourceInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                                Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfigDict["dataSource"]));
+                                if (datasourceInfo != null && datasourceInfo.ContainsKey("namefrom") && datasourceInfo["namefrom"] != null) {
+                                    string namefrom = datasourceInfo["namefrom"].ToString();
+                                    if (namefrom.Equals("1")) {
+                                        SaveNamed = true;
+                                    }
+                                }
+                            }
+                            if (SaveNamed)
+                            {
+                                selectClause = string.Format(@"{0},jsonb_extract_path_text(e.{1},'name') as {1}_name", selectClause, fieldInfo.FieldName);
+                            }
+                            else {
+                                string tmpDataSourceId = fieldNameMapDataSource[fieldInfo.FieldName];
+                                string tablename = dataSources[tmpDataSourceId];
+                                fromClause = string.Format(@"{0} left outer join {1} as {2}_t on jsonb_extract_path_text(e.{2},'id') = {2}_t.recid::text ", fromClause, tablename, fieldInfo.FieldName);
+                                selectClause = string.Format(@"{0},{1}_t.recname as {1}_name", selectClause, fieldInfo.FieldName);
+                            }
+                        }
                         break;
                     case EntityFieldControlType.RecType://1009记录类型
                         fromClause = string.Format(@"{0} left outer join crm_sys_entity_category  as {1}_t on e.{1} = {1}_t.categoryid ", fromClause, fieldInfo.FieldName);

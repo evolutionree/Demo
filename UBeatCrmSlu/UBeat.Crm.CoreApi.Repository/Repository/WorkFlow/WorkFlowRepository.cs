@@ -111,12 +111,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             //var result = DataBaseHelper.QueryStoredProcCursor(procName, param, CommandType.Text);
             //return result;
 
-            var executeSql = @"SELECT i.nodenum,i.stepnum::TEXT AS itemcode,n.nodename,crm_func_entity_protocol_format_workflow_casestatus(i.casestatus,i.choicestatus) AS casestatus,i.suggest,i.handleuser,i.recupdated,u.username,u.usericon,n.nodetype,n.auditnum,n.auditsucc,
-                              (CASE WHEN n.nodetype = 1 THEN format('当前步骤为会审,需要%s人同意才能通过',n.auditsucc) ELSE NULL END) AS tipsmsg
+            var executeSql = @" SELECT i.nodenum,i.stepnum::TEXT AS itemcode, 
+                                (CASE WHEN  i.nodeid = '00000000-0000-0000-0000-000000000000' THEN '发起审批'
+	                                  WHEN  i.nodeid = '00000000-0000-0000-0000-000000000001' THEN '结束审批'
+	                                  WHEN  i.nodeid = '00000000-0000-0000-0000-000000000002' THEN '自选审批'
+                                      ELSE n.nodename END) nodename,
+                                crm_func_entity_protocol_format_workflow_casestatus(i.casestatus,i.choicestatus) AS casestatus,
+                                i.suggest,i.handleuser,i.recupdated,u.username,u.usericon,n.nodetype,n.auditnum,n.auditsucc,
+                                (CASE WHEN n.nodetype = 1 THEN format('当前步骤为会审,需要%s人同意才能通过',n.auditsucc) ELSE NULL END) AS tipsmsg
 			                        FROM crm_sys_workflow_case_item AS i
 			                        LEFT JOIN crm_sys_workflow_case AS c ON i.caseid = c.caseid
 			                        LEFT JOIN crm_sys_workflow_node AS n ON i.nodeid = n.nodeid 
-			                        LEFT JOIN crm_sys_userinfo AS u ON u.userid = i.handleuser
+			                        LEFT JOIN crm_sys_userinfo AS u ON u.userid = i.handleuser 
 			                        WHERE i.caseid = @caseid
 			                        ORDER BY i.stepnum ASC";
 
@@ -1164,14 +1170,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// <summary>
         /// 审批已经到达了最后一步,添加最后节点
         /// </summary>
-        public bool EndWorkFlowCaseItem(Guid caseid, int stepnum, int userNumber, DbTransaction trans = null)
+        public bool EndWorkFlowCaseItem(Guid caseid, Guid nodeid, int stepnum, int userNumber, DbTransaction trans = null)
         {
-            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser,suggest, casestatus, reccreator, recupdator,stepnum) 
-                                         VALUES (@caseid, -1, 5,@userno, '', 2, @userno,@userno,@stepnum);");
+            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid,nodeid, nodenum,choicestatus,handleuser,suggest, casestatus, reccreator, recupdator,stepnum) 
+                                         VALUES (@caseid,@nodeid, -1, 5,@userno, '', 2, @userno,@userno,@stepnum);");
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("stepnum", stepnum));
             sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
+            sqlParameters.Add(new NpgsqlParameter("nodeid", nodeid));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
 
 

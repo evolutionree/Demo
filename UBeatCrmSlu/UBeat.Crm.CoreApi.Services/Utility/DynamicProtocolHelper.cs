@@ -286,11 +286,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
                 //周报的reportdate控件比较特殊
                 var columnKey = field.FieldName;
-                if (checkType != field.NewType && field.NewType != 0)
-                {
-                    columnKey = columnKey + "_name";
-                    isNameField = true;
-                }
+                #region 已经没有意义了
+                //if (checkType != field.NewType && field.NewType != 0)
+                //{
+                //    columnKey = columnKey + "_name";
+                //    isNameField = true;
+                //}
+                #endregion 
 
                 if (field.NewType == 0)
                 {

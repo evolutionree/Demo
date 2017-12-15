@@ -110,7 +110,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <summary>
         /// 审批已经到达了最后一步,添加最后节点
         /// </summary>
-        bool EndWorkFlowCaseItem(Guid caseid, int stepnum, int userNumber, DbTransaction trans = null);
+        bool EndWorkFlowCaseItem(Guid caseid, Guid nodeid, int stepnum, int userNumber, DbTransaction trans = null);
 
         /// <summary>
         /// 获取流程event函数

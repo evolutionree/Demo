@@ -72,6 +72,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         /// 实体分类属性
         /// </summary>
         public List<DbEntityCatelogInfo> Catelogs { get; set; }
+        public Dictionary<string,object> FunctionButtons { get; set; }
+        public Dictionary<string, object> ServiceJson { get; set; }
     }
     /// <summary>
     /// 实体分类信息

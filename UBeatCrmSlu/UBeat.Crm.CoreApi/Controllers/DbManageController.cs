@@ -9,6 +9,8 @@ using UBeat.Crm.CoreApi.DomainModel.DbManage;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
 using System.Text.Encodings.Web;
+using System.Reflection;
+using System.IO;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -109,7 +111,45 @@ namespace UBeat.Crm.CoreApi.Controllers
             DbEntityReflectParamInfo reflectParamInfo = new DbEntityReflectParamInfo();
             reflectParamInfo.EntityId = paramInfo.EntityId.ToString();
             DbEntityInfo info = this._dbEntityManageServices.ReflectEntity(reflectParamInfo, UserId);
+            #region 保存到文件
+            string tmp = System.IO.Directory.GetCurrentDirectory();
+            DirectoryInfo path = new System.IO.DirectoryInfo(tmp);
+            DirectoryInfo subPath = path.CreateSubdirectory("entityjson");
+            string filename = subPath.FullName + Path.DirectorySeparatorChar + info.EntityId + ".json";
+            System.IO.FileStream f = new FileStream(filename, FileMode.OpenOrCreate);
+            string outStr = Newtonsoft.Json.JsonConvert.SerializeObject(info);
+            byte[] buf = System.Text.UTF8Encoding.UTF8.GetBytes(outStr);
+            f.Write(buf, 0, buf.Length);
+            f.Flush(); 
+            #endregion
             return new OutputResult<object>(Newtonsoft.Json.JsonConvert.SerializeObject(info));
         }
+        [HttpPost("importentity")]
+        [AllowAnonymous]
+        public OutputResult<object> ImportEntity([FromBody] DbEntityImportParamInfo paramInfo) {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) return ResponseError<object>("参数异常");
+            #region 检查当前目录是否有json文件
+            string tmp = System.IO.Directory.GetCurrentDirectory();
+            DirectoryInfo path = new System.IO.DirectoryInfo(tmp);
+            DirectoryInfo subPath = path.CreateSubdirectory("entityjson");
+            string filename = subPath.FullName + Path.DirectorySeparatorChar + paramInfo.EntityId.ToString() + ".json";
+            if (System.IO.File.Exists(filename) == false) {
+                return ResponseError<object>("文件不存在");
+            }
+            int buflen = 1024 * 1024 * 20;
+            byte[] buf = new byte[buflen];
+            FileStream fin = new FileStream(filename, FileMode.Open);
+            int index = 0;
+            int readLen = 0;
+            while ((readLen = fin.Read(buf,index,buflen - index)) > 0){
+                index += readLen;
+            }
+            string tmpjson = System.Text.UTF8Encoding.UTF8.GetString(buf, 0, index);
+            DbEntityInfo entityInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<DbEntityInfo>(tmpjson);
+            this._dbEntityManageServices.ImportEntity(entityInfo, paramInfo, UserId);
+            #endregion
+            return null;
+        }
+        
     }
 }
