@@ -168,9 +168,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 result.CaseItem.IsCanReback = workflowInfo.BackFlag;
                             }
                         }
+                        
                     }
-
+                    
                     #endregion
+
+
 
                     var dynamicEntityServices = dynamicCreateService("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices", false) as DynamicEntityServices;
 
@@ -200,6 +203,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
                     }
                     #endregion
+
+                    _workFlowRepository.SetWorkFlowCaseItemReaded(tran, caseInfo.CaseId, caseInfo.NodeNum, userNumber);
 
                     tran.Commit();
                 }
@@ -988,7 +993,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("流程节点数据异常");
                 }
-                
+                var mycaseitems = caseitems.Find(m => m.HandleUser == userinfo.UserId);
                 var nodeid = caseitems.FirstOrDefault().NodeId;
 
                 if (flowNodeInfo == null)
@@ -1006,7 +1011,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodetemp.NodeState = 2;
                 }
-                else if (newcaseInfo.NodeNum == 0&& caseitems.FirstOrDefault().StepNum>0)//预审批审批回到第一节点，表明被退回
+                else if (newcaseInfo.NodeNum == 0&& mycaseitems.ChoiceStatus== ChoiceStatusType.Reback)//预审批审批回到第一节点，表明被退回
                 {
                     nodetemp.NodeState = 3;
                 }
