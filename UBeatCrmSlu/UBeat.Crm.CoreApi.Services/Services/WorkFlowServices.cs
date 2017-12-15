@@ -31,10 +31,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IEntityProRepository _entityProRepository;
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
-       
 
 
-        public WorkFlowServices(IMapper mapper, IWorkFlowRepository workFlowRepository, IRuleRepository ruleRepository, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository )
+
+        public WorkFlowServices(IMapper mapper, IWorkFlowRepository workFlowRepository, IRuleRepository ruleRepository, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository)
         {
             _workFlowRepository = workFlowRepository;
             _entityProRepository = entityProRepository;
@@ -47,7 +47,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> CaseDetail(CaseDetailModel detailModel, int userNumber)
         {
             var result = new CaseDetailDataModel();
-            
+
             using (var conn = GetDbConnect())
             {
                 conn.Open();
@@ -159,7 +159,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         result.CaseItem.IsCanLunch = result.CaseItem.IsCanEdit;
                                     }
                                 }
-                                
+
                             }
                             else
                             {
@@ -173,7 +173,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     #endregion
 
                     var dynamicEntityServices = dynamicCreateService("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices", false) as DynamicEntityServices;
-                   
+
                     #region --获取 entitydetail--
                     //获取 entitydetail
                     var detailMapper = new DynamicEntityDetailtMapper()
@@ -196,8 +196,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             RecId = caseInfo.RelRecId,
                             NeedPower = 0
                         };
-                        var detailtemp= _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
-                        result.RelateDetail =dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp } , reldetailMapper.EntityId, userNumber).FirstOrDefault();
+                        var detailtemp = _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
+                        result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
                     }
                     #endregion
 
@@ -881,7 +881,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //若是分支流程，则通过预处理数据获取下一步分支节点，并返回下一步处理人数据
                     if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
                     {
-
                         AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems);
                         if (casefinish)
                         {
@@ -903,7 +902,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         bool hasNextNode = true;
                         //获取下一步节点，
                         var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-                        if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count==1&&flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
+                        if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count == 1 && flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
                         {
                             hasNextNode = false;
                         }
@@ -932,7 +931,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
 
                     //走完审批所有操作，获取下一步数据
-                    result = GetNextNodeData(tran, caseInfo,workflowInfo, caseitems, flowNodeInfo, userinfo);
+                    result = GetNextNodeData(tran, caseInfo, workflowInfo, caseitems, flowNodeInfo, userinfo);
                     //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
                     tran.Rollback();
                 }
@@ -963,18 +962,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //自由流程
             if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
             {
-                nodetemp.NodeId = null;
+                nodetemp.NodeId = freeFlowNodeId;
                 nodetemp.FlowType = WorkFlowType.FreeFlow;
                 nodetemp.NodeName = "自由选择审批人";
                 nodetemp.NodeType = NodeType.Normal;
-                nodetemp.NodeNum = caseInfo.NodeNum == -1?-1: 1;
+                nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1 : 1;
                 nodetemp.NodeState = 0;
                 //nodetemp.StepTypeId = NodeStepType.SelectByUser;
                 if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
                     nodetemp.NodeState = 2;
                 }
-               
                 var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, workflowInfo.FlowType, tran);
                 result = new NextNodeDataModel()
                 {
@@ -999,25 +997,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.FlowType = WorkFlowType.FixedFlow;
                 nodetemp.NodeName = flowNodeInfo.NodeName;
                 nodetemp.NodeType = flowNodeInfo.NodeType;
-                nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1:caseInfo.NodeNum;
+                nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1 : caseInfo.NodeNum;
                 nodetemp.NodeState = 0;
                 //nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
                 if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
                     nodetemp.NodeState = 2;
                 }
-                if (flowNodeInfo.NodeType == NodeType.Joint)//会审
+                else if (newcaseInfo.NodeNum == 0)//预审批审批回到第一节点，表明被退回
+                {
+                    nodetemp.NodeState = 3;
+                }
+                else
                 {
                     caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
-                    //会审审批通过的节点数
-                    var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
-                    nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
-                    if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
+                    if (flowNodeInfo.NodeType == NodeType.Joint)//会审
                     {
-                        nodetemp.NodeState = 1;
+                        
+                        //会审审批通过的节点数
+                        var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
+                        nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
+                        if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
+                        {
+                            nodetemp.NodeState = 1;
+                        }
                     }
                 }
-
                 //检查下一点，获取下一节点信息
                 if (nodetemp.NodeState == 0)
                 {
@@ -1157,7 +1162,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (isbranchFlow && nextnode != null)
                     {
                         //验证规则是否符合
-                        if(!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo, tran))
+                        if (!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo, tran))
                             throw new Exception("下一步审批人不符合分支流程规则");
                     }
 
@@ -1215,6 +1220,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 hasNextNode = false;
             }
             nextnode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
+            if (nextnode == null)
+                nextnode = flowNextNodeInfos.FirstOrDefault();
             if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
             {
                 canAddNextNode = false;
@@ -1844,7 +1851,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --验证分支流程节点是否符合分支条件--
         private bool ValidateNextNodeRule(WorkFlowCaseInfo caseinfo, Guid flowid, Guid fromnodeid, Guid tonodeid, int vernum, UserInfo userinfo, DbTransaction trans = null)
         {
-            var ruleid = _workFlowRepository.GetNextNodeRuleId(flowid, fromnodeid,tonodeid, vernum, trans);
+            var ruleid = _workFlowRepository.GetNextNodeRuleId(flowid, fromnodeid, tonodeid, vernum, trans);
             var ruleInfoList = _ruleRepository.GetRule(ruleid, userinfo.UserId);
             if (ruleInfoList != null && ruleInfoList.Count > 0)//如果存在合法的rulesql，则进行数据校验
             {
