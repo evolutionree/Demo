@@ -19,7 +19,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (paramInfo == null) paramInfo = new DbEntityReflectParamInfo();
             if (paramInfo.FieldConfigInfo == null) paramInfo.FieldConfigInfo = new DbEntityReflectConfigParam();
             paramInfo.FieldConfigInfo.IsReflectDeleted = true;
-              DbEntityInfo entityInfo = this._dbEntityManageRepository.getEntityInfo(paramInfo.EntityId, userId, tran);
+            DbEntityInfo entityInfo = this._dbEntityManageRepository.getEntityInfo(paramInfo.EntityId, userId, tran);
             List<DbEntityFieldInfo> fields = this._dbEntityManageRepository.getEntityFields(paramInfo.EntityId, paramInfo.FieldConfigInfo, userId, tran);
             entityInfo.Fields = fields;
             return entityInfo;
