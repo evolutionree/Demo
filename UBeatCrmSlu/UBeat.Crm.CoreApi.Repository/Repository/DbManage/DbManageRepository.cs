@@ -495,10 +495,11 @@ VALUES(
         {
             try
             {
+
                 string strSQL = string.Format(@"select * 
                                         from crm_sys_dbmgr_object 
-                                        where id = @id");
-                return ExecuteQuery<SQLObjectModel>(strSQL, new DbParameter[] { new Npgsql.NpgsqlParameter("@id",recid)}, tran).FirstOrDefault();
+                                        where id='{0}'", recid);
+                return ExecuteQuery<SQLObjectModel>(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
             }
             catch (Exception ex)
             {
