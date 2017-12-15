@@ -600,7 +600,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId)
         {
-            var sql = @"SELECT u1.workcode,u1.username,u.username as fromuser ,transfer.reccreated as transfertime FROM  crm_sys_mail_intransferrecord transfer
+            var sql = @"SELECT COALESCE(u1.workcode,'') as workcode,u1.username,u.username as fromuser ,transfer.reccreated as transfertime FROM  crm_sys_mail_intransferrecord transfer
                                 LEFT JOIN crm_sys_userinfo u ON transfer.fromuser=u.userid
                                 LEFT JOIN crm_sys_userinfo u1 ON transfer.transferuserid=u1.userid WHERE mailid=@mailid";
 

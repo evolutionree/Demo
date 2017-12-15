@@ -823,19 +823,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
             foreach (var to in entity.ToAddress)
             {
                 if (!errors.Select(t => t.EmailAddress).Contains(to.Address))
-                    toAddressList.Add(new MailboxAddress(to.DisplayName, to.Address));
+                {
+                    if (!toAddressList.Select(t => t.Address).Contains(to.Address))
+                        toAddressList.Add(new MailboxAddress(to.DisplayName, to.Address));
+                }
             }
             ccAddressList = new List<MailboxAddress>();
             foreach (var cc in entity.CCAddress)
             {
                 if (!errors.Select(t => t.EmailAddress).Contains(cc.Address))
-                    ccAddressList.Add(new MailboxAddress(cc.DisplayName, cc.Address));
+                {
+                    if (!ccAddressList.Select(t => t.Address).Contains(cc.Address))
+                        ccAddressList.Add(new MailboxAddress(cc.DisplayName, cc.Address));
+                }
             }
             bccAddressList = new List<MailboxAddress>();
             foreach (var bcc in entity.BCCAddress)
             {
                 if (!errors.Select(t => t.EmailAddress).Contains(bcc.Address))
-                    bccAddressList.Add(new MailboxAddress(bcc.DisplayName, bcc.Address));
+                {
+                    if (!bccAddressList.Select(t => t.Address).Contains(bcc.Address))
+                        bccAddressList.Add(new MailboxAddress(bcc.DisplayName, bcc.Address));
+                }
             }
         }
         private IList<MailSenderReceiversMapper> BuilderSenderReceivers(MimeMessage msg)
