@@ -1376,7 +1376,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(keyword))
             {
-                condition = string.Format(" where u.username like '%{0}%'", keyword);
+                condition = string.Format(" and  u.username like '%{0}%'", keyword);
 
             }
             string newSql = string.Format(executeSql, condition);
