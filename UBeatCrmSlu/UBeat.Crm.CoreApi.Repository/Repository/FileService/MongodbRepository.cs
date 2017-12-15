@@ -36,7 +36,6 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.FileService
             var mongoUrl = new MongoUrl(connectString);
             var client = new MongoClient(mongoUrl);
             return client.GetDatabase(databaseName);
-
         }
 
         private GridFSBucket GetGridFSBucket()

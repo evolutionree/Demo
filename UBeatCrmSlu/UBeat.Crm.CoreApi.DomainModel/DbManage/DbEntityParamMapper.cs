@@ -89,5 +89,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
     public class EntityExportParamInfo {
         public Guid EntityId { get; set; }
     }
+    /// <summary>
+    /// 数据存储大小统计
+    /// </summary>
+    public class DbSizeStatInfo {
+        public string DbName { get; set; }
+        public long PgSize { get; set; }
+        public string PgSizeName { get; set; }
+        public long MongoDbSize { get; set; }
+        public string MongoDbSizeName { get; set; }
+    }
 
 }
