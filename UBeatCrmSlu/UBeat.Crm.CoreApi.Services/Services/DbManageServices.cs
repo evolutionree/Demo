@@ -283,6 +283,9 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
                     if (oldObj == null) {
                         throw (new Exception("无法找到原对象，无法更新"));
                     }
+                    oldObj.SqlPath = paramInfo.SqlPath;
+                    oldObj.NeedInitSQL = paramInfo.NeedInitSQL;
+                    oldObj.Name = paramInfo.Name;
                 }
                 else
                 {
