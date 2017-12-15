@@ -91,6 +91,21 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return new OutputResult<object>("参数异常", "参数异常", -1);
             return this._dbManageServices.SaveObject(paramInfo, UserId,1);
         }
+        /// <summary>
+        /// 获取脚本信息
+        /// </summary>
+        /// <returns></returns>
+        public OutputResult<object> GetObjectSQL(  ) {
+            return null;
+        }
+        /// <summary>
+        /// 保存脚本
+        /// </summary>
+        /// <returns></returns>
+        public OutputResult<object> SaveObjectSQL()
+        {
+            return null;
+        }
         [HttpPost("saveupgradesql")]
         [AllowAnonymous]
         public OutputResult<object> saveUpgrade([FromBody] SQLTextModel paramInfo) {

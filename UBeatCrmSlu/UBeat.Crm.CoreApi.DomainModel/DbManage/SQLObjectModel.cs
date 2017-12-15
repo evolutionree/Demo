@@ -97,4 +97,29 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
 
         public SQLObjectTypeEnum ObjectType { get; set; }
     }
+    /// <summary>
+    /// 保存脚本的参数
+    /// 
+    /// </summary>
+    public class DbSaveSQLParam {
+        /// <summary>
+        /// 表示是结构脚本还是数据脚本
+        /// </summary>
+        public StructOrData StructOrData { get; set; }
+        /// <summary>
+        /// 对象ID
+        /// </summary>
+        public Guid ObjId { get; set; }
+        /// <summary>
+        /// 更新后的脚本信息
+        /// </summary>
+        public string SQLText { get; set; }
+    }
+    /// <summary>
+    /// 获取数据
+    /// </summary>
+    public class DbGetSQLParamInfo {
+        public Guid ObjId { get; set; }
+        public StructOrData StructOrData { get; set; }
+    }
 }
