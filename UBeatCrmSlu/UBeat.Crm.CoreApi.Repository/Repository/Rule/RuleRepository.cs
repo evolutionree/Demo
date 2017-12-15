@@ -197,7 +197,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
             string entityTableName = entitytableResult.ToString();
 
             string whereSql = string.Format("{0} AND {1} = ANY(@recids)",( string.IsNullOrEmpty(ruleSql) ? "1=1" : ruleSql), recidFieldName);
-            string sql = string.Format("SELECT COUNT(1) FROM {0} AS e WHERE recstatus = 1 AND {1}", entityTableName, whereSql);
+            string sql = string.Format("SELECT COUNT(1) FROM {0} AS e WHERE  {1}", entityTableName, whereSql);
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("recids", recids.ToArray()));

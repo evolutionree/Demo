@@ -23,7 +23,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
         public int NodeNum { set; get; }
         /// <summary>
-        /// 节点状态：-1=流程已结束，0=可进入下一步，1=等待其他人会审,2=到达最后审批节点,3=其他不可进入下一步的情况
+        /// 节点状态：-1=流程已结束，0=可进入下一步，1=等待其他人会审,2=到达最后审批节点,3=退回回到第一个节点
         /// </summary>
         public int NodeState { set; get; }
 

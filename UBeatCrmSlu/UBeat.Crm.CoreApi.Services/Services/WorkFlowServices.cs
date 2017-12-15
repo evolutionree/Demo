@@ -931,7 +931,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
 
                     //走完审批所有操作，获取下一步数据
-                    result = GetNextNodeData(tran, caseInfo, workflowInfo, caseitems, flowNodeInfo, userinfo);
+                    result = GetNextNodeData(tran, caseInfo, workflowInfo,  flowNodeInfo, userinfo);
                     //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
                     tran.Rollback();
                 }
@@ -951,7 +951,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --获取预处理后下一步审批人数据--
-        public NextNodeDataModel GetNextNodeData(DbTransaction tran, WorkFlowCaseInfo caseInfo, WorkFlowInfo workflowInfo, List<WorkFlowCaseItemInfo> caseitems, WorkFlowNodeInfo flowNodeInfo, UserInfo userinfo)
+        public NextNodeDataModel GetNextNodeData(DbTransaction tran, WorkFlowCaseInfo caseInfo, WorkFlowInfo workflowInfo, WorkFlowNodeInfo flowNodeInfo, UserInfo userinfo)
         {
 
             var result = new NextNodeDataModel();
@@ -983,10 +983,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             else //固定流程
             {
+               var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
                 if (caseitems == null || caseitems.Count == 0)
                 {
                     throw new Exception("流程节点数据异常");
                 }
+                
                 var nodeid = caseitems.FirstOrDefault().NodeId;
 
                 if (flowNodeInfo == null)
@@ -1004,13 +1006,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodetemp.NodeState = 2;
                 }
-                else if (newcaseInfo.NodeNum == 0)//预审批审批回到第一节点，表明被退回
+                else if (newcaseInfo.NodeNum == 0&& caseitems.FirstOrDefault().StepNum>1)//预审批审批回到第一节点，表明被退回
                 {
                     nodetemp.NodeState = 3;
                 }
                 else
                 {
-                    caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
+                    
                     if (flowNodeInfo.NodeType == NodeType.Joint)//会审
                     {
                         
