@@ -967,14 +967,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.FlowType = WorkFlowType.FreeFlow;
                 nodetemp.NodeName = "自由选择审批人";
                 nodetemp.NodeType = NodeType.Normal;
-                nodetemp.NodeNum = 1;
+                nodetemp.NodeNum = caseInfo.NodeNum == -1?-1: 1;
                 nodetemp.NodeState = 0;
                 //nodetemp.StepTypeId = NodeStepType.SelectByUser;
-                if (caseInfo.NodeNum == -1)//审批已经结束
+                if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
-                    nodetemp.NodeNum = -1;
-                    nodetemp.NodeState = -1;
+                    nodetemp.NodeState = 2;
                 }
+               
                 var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, workflowInfo.FlowType, tran);
                 result = new NextNodeDataModel()
                 {
@@ -999,14 +999,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.FlowType = WorkFlowType.FixedFlow;
                 nodetemp.NodeName = flowNodeInfo.NodeName;
                 nodetemp.NodeType = flowNodeInfo.NodeType;
-                nodetemp.NodeNum = caseInfo.NodeNum;
+                nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1:caseInfo.NodeNum;
                 nodetemp.NodeState = 0;
                 //nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
-                if (caseInfo.NodeNum == -1)//审批已经结束
+                if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
-                    nodetemp.NodeState = -1;
+                    nodetemp.NodeState = 2;
                 }
-                else if (flowNodeInfo.NodeType == NodeType.Joint)//会审
+                if (flowNodeInfo.NodeType == NodeType.Joint)//会审
                 {
                     caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
                     //会审审批通过的节点数
