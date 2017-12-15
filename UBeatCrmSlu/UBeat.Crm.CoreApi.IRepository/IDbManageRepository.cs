@@ -27,6 +27,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<Dictionary<string, object>> getIndexes(string tablename, int userid, DbTransaction tran);
         Dictionary<string, object> getProcInfo(string procname, string param, int userid, DbTransaction tran);
         List<SQLObjectModel> getSQLObjects(string searchKey, int userid, DbTransaction tran);
+        SQLObjectModel getSQLObjectInfo(string recid, int userid, DbTransaction tran);
         SQLObjectModel querySQLObject(string id, int userid, DbTransaction tran);
         void deleteSQLObject(string id, int userid, DbTransaction tran);
         void saveSQLObject(SQLObjectModel model, int userid, DbTransaction tran);
@@ -41,5 +42,12 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, object> getTypeInfo(string typename, int userid, DbTransaction tran);
         List<string> ListAllDirs(int userId,DbTransaction tran);
         List<SQLObjectModel> SearchSQLObjects(DbListObjectsParamInfo paramInfo, int userId, DbTransaction tran);
+        /// <summary>
+        /// 统计pg的信息
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="tran"></param>
+        /// <returns></returns>
+        Dictionary<string, object> getPostgreStatInfo(int userId, DbTransaction tran);
     }
 }
