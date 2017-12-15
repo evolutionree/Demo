@@ -116,7 +116,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 			                        FROM crm_sys_workflow_case_item AS i
 			                        LEFT JOIN crm_sys_workflow_case AS c ON i.caseid = c.caseid
 			                        LEFT JOIN crm_sys_workflow_node AS n ON i.nodeid = n.nodeid 
-			                        LEFT JOIN crm_sys_userinfo AS u ON u.userid = i.handleuser
+			                        LEFT JOIN crm_sys_userinfo AS u ON u.userid = i.handleuser 
 			                        WHERE i.caseid = @caseid
 			                        ORDER BY i.stepnum ASC";
 

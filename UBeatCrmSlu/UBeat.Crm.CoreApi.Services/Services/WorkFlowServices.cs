@@ -924,7 +924,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
 
                     //走完审批所有操作，获取下一步数据
-                    result = GetNextNodeData(tran, caseInfo.CaseId, caseitems, flowNodeInfo, userinfo);
+                    result = GetNextNodeData(tran, caseInfo,workflowInfo, caseitems, flowNodeInfo, userinfo);
                     //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
                     tran.Rollback();
                 }
@@ -944,19 +944,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --获取预处理后下一步审批人数据--
-        public NextNodeDataModel GetNextNodeData(DbTransaction tran, Guid caseId, List<WorkFlowCaseItemInfo> caseitems, WorkFlowNodeInfo flowNodeInfo, UserInfo userinfo)
+        public NextNodeDataModel GetNextNodeData(DbTransaction tran, WorkFlowCaseInfo caseInfo, WorkFlowInfo workflowInfo, List<WorkFlowCaseItemInfo> caseitems, WorkFlowNodeInfo flowNodeInfo, UserInfo userinfo)
         {
 
             var result = new NextNodeDataModel();
             NextNodeDataInfo nodetemp = new NextNodeDataInfo();
             //获取流程数据信息
-            var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseId);
-            if (caseInfo == null)
-                throw new Exception("流程数据不存在");
-            //获取流程配置信息
-            var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
-            if (workflowInfo == null)
-                throw new Exception("流程配置不存在");
+            var newcaseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseInfo.CaseId);
 
             //自由流程
             if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
@@ -1035,7 +1029,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             //ValidateNextNodeRule(caseinfo, node.FlowId, node.NodeId, node.VerNum, userinfo, trans);
                             //验证规则是否符合
-                            if (ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, m.NodeId.GetValueOrDefault(), caseInfo.VerNum, userinfo, tran))
+                            if (ValidateNextNodeRule(newcaseInfo, workflowInfo.FlowId, nodeid, m.NodeId.GetValueOrDefault(), caseInfo.VerNum, userinfo, tran))
                             {
                                 nodetemp = m;
                                 checkstatus = true;
