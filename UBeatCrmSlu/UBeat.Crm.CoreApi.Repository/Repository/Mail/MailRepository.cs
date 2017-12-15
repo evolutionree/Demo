@@ -419,10 +419,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                    crm_sys_mail_senderreceivers Where
                                                     mailid=@mailid And ctype=1)  AND 
                                                    recstatus=1 LIMIT 1) AS tmp )";
-            var senderSql = @" SELECT username,usertel,useremail,usericon FROM crm_sys_userinfo WHERE
+            var senderSql = @" SELECT username as recname,usertel as phone,useremail as email,usericon as headicon FROM crm_sys_userinfo WHERE
                userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1)AND  recstatus=1;";
 
-            var conCustSql = @"SELECT recname as username,phone as usertel,email as useremail,headicon as usericon FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
+            var conCustSql = @"SELECT recname ,phone ,email ,headicon  FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
 
             var isCustExistsSql = @"Select count(1) From crm_sys_customer Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
             var custConfigSql = @"  SELECT tmp.columnkey||tmp1.extracolumn FROM (  SELECT string_agg(fieldname,',') AS columnkey     
@@ -600,7 +600,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId)
         {
-            var sql = @"SELECT u1.workcode,u1.username,u.username as fromuser ,transfer.reccreated as transfertime FROM  crm_sys_mail_intransferrecord transfer
+            var sql = @"SELECT COALESCE(u1.workcode,'') as workcode,u1.username,u.username as fromuser ,transfer.reccreated as transfertime FROM  crm_sys_mail_intransferrecord transfer
                                 LEFT JOIN crm_sys_userinfo u ON transfer.fromuser=u.userid
                                 LEFT JOIN crm_sys_userinfo u1 ON transfer.transferuserid=u1.userid WHERE mailid=@mailid";
 
@@ -858,9 +858,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         ";
             string whereSql = string.Empty;
 
-            if (entity.relatedMySelf == 0)
+            if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 0)
             {
                 whereSql = @"Where att.recstatus=1 and att.mailid=@mailid ";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 1)
+            {
+                whereSql = @"Where att.recstatus=1 and att.mailid=@mailid  AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE  recstatus=1) AND (ctype=2 or ctype=3 or ctype=4))";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive ==2)
+            {
+                whereSql = @"Where att.recstatus=1 and att.mailid=@mailid  AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
             }
             // 与自己往来+收到和发出的邮件
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)

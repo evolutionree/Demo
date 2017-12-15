@@ -478,5 +478,33 @@ VALUES(
             }
             return null;
         }
+
+        public Dictionary<string,object>  getPostgreStatInfo(int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = "select current_database() databasename ,pg_database_size(current_database()) dbsize ";
+                return ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
+            }
+            catch (Exception ex) {
+            }
+            return null;
+        }
+
+        public SQLObjectModel getSQLObjectInfo(string recid, int userid, DbTransaction tran)
+        {
+            try
+            {
+
+                string strSQL = string.Format(@"select * 
+                                        from crm_sys_dbmgr_object 
+                                        where id='{0}'", recid);
+                return ExecuteQuery<SQLObjectModel>(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
     }
 }

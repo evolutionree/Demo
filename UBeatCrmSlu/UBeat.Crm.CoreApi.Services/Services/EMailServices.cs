@@ -200,6 +200,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+                    taskResult.ForEach(t =>
+                    {
+                        var mailAddr = new MailboxAddress(userMailInfo.NickName, userMailInfo.AccountId);
+                        t.Bcc.Add(mailAddr);
+                    });
                     thrManager.EnqueueTask(taskResult);
                 }
                 return new OutputResult<object>
@@ -818,19 +823,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
             foreach (var to in entity.ToAddress)
             {
                 if (!errors.Select(t => t.EmailAddress).Contains(to.Address))
-                    toAddressList.Add(new MailboxAddress(to.DisplayName, to.Address));
+                {
+                    if (!toAddressList.Select(t => t.Address).Contains(to.Address))
+                        toAddressList.Add(new MailboxAddress(to.DisplayName, to.Address));
+                }
             }
             ccAddressList = new List<MailboxAddress>();
             foreach (var cc in entity.CCAddress)
             {
                 if (!errors.Select(t => t.EmailAddress).Contains(cc.Address))
-                    ccAddressList.Add(new MailboxAddress(cc.DisplayName, cc.Address));
+                {
+                    if (!ccAddressList.Select(t => t.Address).Contains(cc.Address))
+                        ccAddressList.Add(new MailboxAddress(cc.DisplayName, cc.Address));
+                }
             }
             bccAddressList = new List<MailboxAddress>();
             foreach (var bcc in entity.BCCAddress)
             {
                 if (!errors.Select(t => t.EmailAddress).Contains(bcc.Address))
-                    bccAddressList.Add(new MailboxAddress(bcc.DisplayName, bcc.Address));
+                {
+                    if (!bccAddressList.Select(t => t.Address).Contains(bcc.Address))
+                        bccAddressList.Add(new MailboxAddress(bcc.DisplayName, bcc.Address));
+                }
             }
         }
         private IList<MailSenderReceiversMapper> BuilderSenderReceivers(MimeMessage msg)
@@ -1185,13 +1199,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(entity);
             }
             return ExcuteInsertAction((dbTrans, arg, userData) =>
-             {
-                 var result = _mailRepository.ReConverMails(entity, userNum, dbTrans);
-                 return new OutputResult<object>(new
-                 {
-                     TipMsg = result.Msg
-                 }, string.Empty, result.Flag == 0 ? 1 : 0);
-             }, entity, Guid.Parse(_entityId), userNum);
+            {
+                var result = _mailRepository.ReConverMails(entity, userNum, dbTrans);
+                return new OutputResult<object>(new
+                {
+                    TipMsg = result.Msg
+                }, string.Empty, result.Flag == 0 ? 1 : 0);
+            }, entity, Guid.Parse(_entityId), userNum);
         }
         public OutputResult<object> ReadMail(ReadOrUnReadMailModel model, int userNum)
         {
