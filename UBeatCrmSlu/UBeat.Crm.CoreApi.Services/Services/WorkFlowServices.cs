@@ -172,6 +172,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     #endregion
 
+
+
                     var dynamicEntityServices = dynamicCreateService("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices", false) as DynamicEntityServices;
 
                     #region --获取 entitydetail--
@@ -200,6 +202,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
                     }
                     #endregion
+
+                    _workFlowRepository.SetWorkFlowCaseItemReaded(tran, caseInfo.CaseId, caseInfo.NodeNum);
 
                     tran.Commit();
                 }
