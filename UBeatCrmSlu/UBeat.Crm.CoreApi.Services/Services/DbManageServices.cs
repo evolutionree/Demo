@@ -186,6 +186,33 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
             }
             
         }
+        /// <summary>
+        /// 获取数据库的大小信息，包括pg和mongo
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public DbSizeStatInfo StatDbSize(int userId)
+        {
+            DbTransaction tran = null;
+            DbSizeStatInfo ret = new DbSizeStatInfo();
+            Dictionary<string, object> pgState = this._dbManageRepository.getPostgreStatInfo(userId,tran);
+            if (pgState != null) {
+                ret.DbName = (string)pgState["databasename"];
+                long tmp = 0;
+                long.TryParse(pgState["dbsize"].ToString(), out tmp);
+                ret.PgSize = tmp;
+                ret.PgSizeName = ChangeSizeToHuman(tmp);
+            }
+            return ret; 
+        }
+        private string ChangeSizeToHuman(long size) {
+            if (size <= 1000) return size.ToString() + "B";
+            else if (size < 1024 * 1024) return (size * 1.0 / 1024.0).ToString("N") + "KB";
+            else if (size < 1024 * 1024 * 1024) return (size * 1.0 / 1024.0 / 1024.0).ToString("N") + "MB";
+            else if (size < (long)1024*(long)1024*(long)1024*(long)1024) return (size * 1.0 / 1024.0 / 1024.0/1024.0).ToString("N") + "GB";
+            else return  (size * 1.0 / 1024.0 / 1024.0 / 1024.0/1024.0).ToString("N") + "TB";
+
+        }
 
         public OutputResult<object> ListDir(int userId)
         {
@@ -244,11 +271,23 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
 
         }
 
-        public OutputResult<object> SaveObject(SQLObjectModel paramInfo, int userId)
+        public OutputResult<object> SaveObject(SQLObjectModel paramInfo, int userId,int isForBase)
         {
             DbTransaction tran = null;
             try
             {
+                SQLObjectModel oldObj = null;
+                if (isForBase == 1)
+                {
+                    oldObj = this._dbManageRepository.getSQLObjectInfo(paramInfo.Id.ToString(), userId, tran);
+                    if (oldObj == null) {
+                        throw (new Exception("无法找到原对象，无法更新"));
+                    }
+                }
+                else
+                {
+                    oldObj = paramInfo;
+                }
                 this._dbManageRepository.saveSQLObject(paramInfo, userId, tran);
                 return new OutputResult<object>("ok");
             }

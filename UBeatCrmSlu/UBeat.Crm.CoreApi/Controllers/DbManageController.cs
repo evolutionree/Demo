@@ -81,7 +81,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> SaveObject([FromBody] SQLObjectModel paramInfo) {
             if (paramInfo == null)
                 return new OutputResult<object>("参数异常", "参数异常", -1);
-            return this._dbManageServices.SaveObject(paramInfo, UserId);
+            return this._dbManageServices.SaveObject(paramInfo, UserId,0);
+        }
+        [HttpPost("saveobjectforbase")]
+        [AllowAnonymous]
+        public OutputResult<object> SaveObjectForBase([FromBody] SQLObjectModel paramInfo)
+        {
+            if (paramInfo == null)
+                return new OutputResult<object>("参数异常", "参数异常", -1);
+            return this._dbManageServices.SaveObject(paramInfo, UserId,1);
         }
         [HttpPost("saveupgradesql")]
         [AllowAnonymous]
@@ -150,6 +158,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             #endregion
             return null;
         }
-        
+
+
+        [HttpPost("dbsizestat")]
+        [AllowAnonymous]
+        public OutputResult<object> StatDbSize() {
+            DbSizeStatInfo statInfo = this._dbManageServices.StatDbSize(UserId);
+            return new OutputResult<object>(statInfo);
+        }
     }
 }
