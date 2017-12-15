@@ -208,5 +208,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public int SmtpPort { get; set; }
         public int EnableSsl { get; set; }
         public Int64 Wgvhhx { get; set; }
+
+        public string NickName { get; set; }
     }
 }
