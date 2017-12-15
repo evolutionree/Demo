@@ -76,7 +76,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="endnode"></param>
         /// <param name="vernum"></param>
         /// <returns></returns>
-        Guid GetNextNodeRuleId(Guid flowid, Guid tonodeid, int vernum, DbTransaction trans = null);
+        Guid GetNextNodeRuleId(Guid flowid, Guid fromnodeid, Guid tonodeid, int vernum, DbTransaction trans = null);
         
         /// <summary>
         /// 获取流程当前节点id

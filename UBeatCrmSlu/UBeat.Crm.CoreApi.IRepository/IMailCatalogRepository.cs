@@ -23,6 +23,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         int NeedInitCatalog(int userId);
         void SaveMailOwner(List<Guid> MailBoxs, int newUserId);
         void SaveWhiteList(List<Guid> MailBoxs, string enable);
+        void MailServerEnable(List<Guid> MailServers);
+        void MailServerUnEnable(List<Guid> MailServers);
+
         OperateResult ToOrderCatalog(Guid recId, int doType);
 
         OperateResult InsertCatalog(CUMailCatalogMapper entity, int userId);

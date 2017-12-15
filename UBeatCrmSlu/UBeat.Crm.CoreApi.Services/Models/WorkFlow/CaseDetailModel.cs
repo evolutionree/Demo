@@ -140,6 +140,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         /// </summary>
         public int IsCanEdit { set; get; }
 
+        /// <summary>
+        /// 是否允许发起
+        /// </summary>
+        public int IsCanLunch { set; get; }
+
 
     }
 }

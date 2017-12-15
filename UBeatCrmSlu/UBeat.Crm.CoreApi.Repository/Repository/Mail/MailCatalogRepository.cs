@@ -636,7 +636,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         }
         public IList<UserMailInfo> GetAllUserMail(int deviceType, int userId)
         {
-            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox  Where  recstatus=1) AS box  LEFT JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid {0}";
+            var sql = " SELECT box.*,mailserver.imapaddress,mailserver.imapport,mailserver.smtpaddress,mailserver.smtpport,mailserver.enablessl FROM( SELECT accountid, encryptpwd, (mailserver->> 'id')::uuid serverid,mailserver->> 'name' servername,owner FROM crm_sys_mail_mailbox  Where  recstatus=1) AS box  INNER JOIN crm_sys_mail_server mailserver ON box.serverid = mailserver.recid AND mailserver.recstatus=1  {0}";
             string condition = string.Empty;
             var param = new DynamicParameters();
             if (deviceType != 3)
@@ -810,6 +810,38 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 var param = new DbParameter[]
                 {
                     new NpgsqlParameter("enable", enable),
+                    new NpgsqlParameter("recid", recid)
+                };
+                paramList.Add(param);
+            }
+
+            ExecuteNonQueryMultiple(strSQL, paramList);
+        }
+
+        public void MailServerEnable(List<Guid> MailServers)
+        {
+            string strSQL = "update crm_sys_mail_server set recstatus=1 where recid=@recid";
+            List<DbParameter[]> paramList = new List<DbParameter[]>();
+            foreach (var recid in MailServers)
+            {
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("recid", recid)
+                };
+                paramList.Add(param);
+            }
+
+            ExecuteNonQueryMultiple(strSQL, paramList);
+        }
+
+        public void MailServerUnEnable(List<Guid> MailServers)
+        {
+            string strSQL = "update crm_sys_mail_server set recstatus=0 where recid=@recid";
+            List<DbParameter[]> paramList = new List<DbParameter[]>();
+            foreach (var recid in MailServers)
+            {
+                var param = new DbParameter[]
+                {
                     new NpgsqlParameter("recid", recid)
                 };
                 paramList.Add(param);

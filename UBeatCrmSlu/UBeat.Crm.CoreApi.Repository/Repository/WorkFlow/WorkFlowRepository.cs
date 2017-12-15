@@ -157,8 +157,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 int.TryParse(vernumResult.ToString(), out vernum);
 
 
-            var executeSql = @" SELECT nodeid,nodename,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,auditsucc FROM crm_sys_workflow_node WHERE flowid = @flowid AND vernum = @vernum ;
-                                SELECT lineid,fromnodeid,tonodeid,ruleid from crm_sys_workflow_node_line WHERE flowid = @flowid AND vernum = @vernum;
+            var executeSql = @" SELECT nodeid,nodename,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,auditsucc,nodeconfig FROM crm_sys_workflow_node WHERE flowid = @flowid AND vernum = @vernum ;
+                                SELECT lineid,fromnodeid,tonodeid,ruleid,lineconfig from crm_sys_workflow_node_line WHERE flowid = @flowid AND vernum = @vernum;
                                 SELECT w.entityid,
                                     (select entityname from crm_sys_entity e where e.entityid = w.entityid limit 1) as entityname,
                                     (select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) as relentityid, 
@@ -207,8 +207,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     int.TryParse(versionObj.ToString(), out versionValue);
 
                     #region --插入node节点--
-                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,vernum,auditsucc)
-                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc)";
+                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,vernum,auditsucc,nodeconfig)
+                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc,@nodeconfig)";
                     List<DbParameter[]> workflow_node_params = new List<DbParameter[]>();
                     List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
                     foreach (var node in nodeLineConfig.Nodes)
@@ -223,8 +223,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("steptypeid", node.StepTypeId),
                             new NpgsqlParameter("ruleconfig", JsonConvert.SerializeObject(node.RuleConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                             new NpgsqlParameter("columnconfig", JsonConvert.SerializeObject(node.ColumnConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
-                            new NpgsqlParameter("vernum", versionObj),
+                            new NpgsqlParameter("vernum", versionValue),
                             new NpgsqlParameter("auditsucc", node.AuditSucc),
+                            new NpgsqlParameter("nodeconfig", JsonConvert.SerializeObject(node.NodeConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                         });
 
                         if (!string.IsNullOrEmpty(node.NodeEvent))
@@ -251,8 +252,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
                     #region --插入nodeline--
                     //crm_sys_workflow_node_line
-                    var node_line_sql = @"INSERT INTO crm_sys_workflow_node_line(flowid,fromnodeid,tonodeid,ruleid,vernum)
-                                          VALUES(@flowid,@fromnodeid,@tonodeid,@ruleid,@vernum)";
+                    var node_line_sql = @"INSERT INTO crm_sys_workflow_node_line(flowid,fromnodeid,tonodeid,ruleid,vernum,lineconfig)
+                                          VALUES(@flowid,@fromnodeid,@tonodeid,@ruleid,@vernum,@lineconfig)";
                     List<DbParameter[]> node_line_params = new List<DbParameter[]>();
                     foreach (var line in nodeLineConfig.Lines)
                     {
@@ -262,7 +263,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("fromnodeid", line.FromNodeId),
                             new NpgsqlParameter("tonodeid",line.ToNodeId),
                             new NpgsqlParameter("ruleid", line.RuleId.GetValueOrDefault()),
-                            new NpgsqlParameter("vernum", versionObj)
+                            new NpgsqlParameter("vernum", versionValue),
+                            new NpgsqlParameter("lineconfig", JsonConvert.SerializeObject(line.LineConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                         });
                     }
                     ExecuteNonQueryMultiple(node_line_sql, node_line_params, tran);
@@ -275,7 +277,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     var workflow_params = new DbParameter[]
                         {
                             new NpgsqlParameter("flowid", nodeLineConfig.FlowId),
-                            new NpgsqlParameter("vernum", versionObj)
+                            new NpgsqlParameter("vernum", versionValue)
                         };
                     ExecuteNonQuery(workflow_sql, workflow_params, tran);
                     #endregion
@@ -936,13 +938,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// <param name="endnode"></param>
         /// <param name="vernum"></param>
         /// <returns></returns>
-        public Guid GetNextNodeRuleId(Guid flowid, Guid tonodeid, int vernum, DbTransaction trans = null)
+        public Guid GetNextNodeRuleId(Guid flowid, Guid fromnodeid, Guid tonodeid, int vernum, DbTransaction trans = null)
         {
-            var executeSql = @" SELECT ruleid FROM crm_sys_workflow_node_line WHERE flowid=@flowid AND tonodeid=@tonodeid AND vernum=@vernum LIMIT 1;";
+            var executeSql = @" SELECT ruleid FROM crm_sys_workflow_node_line WHERE flowid=@flowid AND fromnodeid=@fromnodeid AND tonodeid=@tonodeid AND vernum=@vernum LIMIT 1;";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("flowid", flowid),
+                new NpgsqlParameter("fromnodeid", fromnodeid),
                 new NpgsqlParameter("tonodeid", tonodeid),
                 new NpgsqlParameter("vernum", vernum),
             };
@@ -1370,11 +1373,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             List<int> copyuserlist = new List<int>();
             foreach (var row in result)
             {
-                int copyuser = 0;
-                if (row["copyuser"] != null && int.TryParse(row["copyuser"].ToString(), out copyuser))
+                string copyusertext = row["copyuser"] != null ? row["copyuser"].ToString() : null;
+               
+                if(!string.IsNullOrEmpty(copyusertext))
                 {
-                    copyuserlist.Add(copyuser);
+                    var temps = copyusertext.Split(',');
+                    
+                    foreach (var tem in temps)
+                    {
+                        int copyuser = 0;
+                        if (int.TryParse(tem, out copyuser))
+                        {
+                            copyuserlist.Add(copyuser);
+                        }
+                    }
                 }
+                
             }
 
             var usersql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo WHERE userid =ANY(@userids)";

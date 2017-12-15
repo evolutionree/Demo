@@ -259,6 +259,38 @@ namespace UBeat.Crm.CoreApi.Controllers
             result.Message = "设置成功";
             return result;
         }
+        /// <summary>
+        /// 启用邮箱服务器
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("mailserverenable")]
+        public OutputResult<object> MailServerEnable([FromBody] WhiteListModel dynamicModel = null)
+        {
+            if (dynamicModel == null || dynamicModel.RecIds == null)
+                return ResponseError<object>("参数格式错误");
+            WriteOperateLog("设置邮箱启用", dynamicModel);
+            OutputResult<object> result = new OutputResult<object>();
+            _eMailServices.MailServerEnable(dynamicModel.RecIds);
+            result.Message = "启用成功";
+            return result;
+        }
+        /// <summary>
+        /// 禁用邮箱服务器
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("mailserverunenable")]
+        public OutputResult<object> MailServerUnEnable([FromBody] WhiteListModel dynamicModel = null)
+        {
+            if (dynamicModel == null || dynamicModel.RecIds == null)
+                return ResponseError<object>("参数格式错误");
+            WriteOperateLog("设置邮箱禁用", dynamicModel);
+            OutputResult<object> result = new OutputResult<object>();
+            _eMailServices.MailServerUnEnable(dynamicModel.RecIds);
+            result.Message = "禁用成功";
+            return result;
+        }
         #endregion
     }
 

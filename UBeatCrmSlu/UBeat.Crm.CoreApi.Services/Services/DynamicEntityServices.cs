@@ -1678,6 +1678,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(dynamicEntity);
             }
+            var result = Detail(dynamicEntity, userNumber);
+
+            if (result.Count == 1)
+            {
+                var singleResult = new Dictionary<string, object>();
+                singleResult.Add(result.Keys.First(), result.Values.First().FirstOrDefault());
+                return new OutputResult<object>(singleResult);
+            }
+            else return new OutputResult<object>(result);
+        }
+
+        public Dictionary<string, List<IDictionary<string, object>>> Detail(DynamicEntityDetailtMapper dynamicEntity, int userNumber)
+        {
+           
+            if (dynamicEntity == null || !dynamicEntity.IsValid())
+            {
+                var errorTips = dynamicEntity.ValidationState.Errors.First();
+                throw new Exception(errorTips);
+            }
 
             var result = _dynamicEntityRepository.DetailMulti(dynamicEntity, userNumber);
             // IEnumerable<DynamicEntityFieldSearch> linkTableFields = new List<DynamicEntityFieldSearch>();
@@ -1685,7 +1704,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Guid entityid = dynamicEntity.EntityId;
             if (dynamicEntity.EntityId == new Guid("00000000-0000-0000-0000-000000000001"))
             {
-                var workflowcaseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, dynamicModel.RecId);
+                var workflowcaseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, dynamicEntity.RecId);
                 if (workflowcaseInfo != null)
                 {
                     var workflowInfo = _workFlowRepository.GetWorkFlowInfo(null, workflowcaseInfo.FlowId);
@@ -1704,26 +1723,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
-                if (result.ContainsKey("Detail") == false
-                    || result["Detail"] == null
-                    || result["Detail"].Count == 0)
+                if (result.ContainsKey("Detail") == false || result["Detail"] == null || result["Detail"].Count == 0)
                 {
-                    return new OutputResult<object>(null, "权限不足或者数据已经被删除", -1);
+                    throw new Exception("权限不足或者数据已经被删除");
                 }
 
                 result["Detail"] = DealLinkTableFields(result["Detail"], entityid, userNumber);
             }
 
-            if (result.Count == 1)
-            {
-                var singleResult = new Dictionary<string, object>();
-                singleResult.Add(result.Keys.First(), result.Values.First().FirstOrDefault());
-                return new OutputResult<object>(singleResult);
-            }
-            else return new OutputResult<object>(result);
+            return result;
         }
 
-        private List<IDictionary<string, object>> DealLinkTableFields(List<IDictionary<string, object>> data, Guid entityid, int userNumber)
+
+        public List<IDictionary<string, object>> DealLinkTableFields(List<IDictionary<string, object>> data, Guid entityid, int userNumber)
         {
             var searchFields = GetEntityFields(entityid, userNumber);
             var linkTableFields = searchFields.Where(m => (DynamicProtocolControlType)m.ControlType == DynamicProtocolControlType.LinkeTable).ToList();
