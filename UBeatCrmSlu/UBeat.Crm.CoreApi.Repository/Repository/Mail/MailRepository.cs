@@ -858,9 +858,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         ";
             string whereSql = string.Empty;
 
-            if (entity.relatedMySelf == 0)
+            if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 0)
             {
                 whereSql = @"Where att.recstatus=1 and att.mailid=@mailid ";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 1)
+            {
+                whereSql = @"Where att.recstatus=1 and att.mailid=@mailid  AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE  recstatus=1) AND (ctype=2 or ctype=3 or ctype=4))";
+            }
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive ==2)
+            {
+                whereSql = @"Where att.recstatus=1 and att.mailid=@mailid  AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
             }
             // 与自己往来+收到和发出的邮件
             else if (entity.relatedMySelf == 1 && entity.relatedSendOrReceive == 0)
