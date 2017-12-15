@@ -602,13 +602,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             var sql = @"SELECT COALESCE(u1.workcode,'') as workcode,u1.username,u.username as fromuser ,transfer.reccreated as transfertime FROM  crm_sys_mail_intransferrecord transfer
                                 LEFT JOIN crm_sys_userinfo u ON transfer.fromuser=u.userid
-                                LEFT JOIN crm_sys_userinfo u1 ON transfer.transferuserid=u1.userid WHERE mailid=@mailid";
+                                LEFT JOIN crm_sys_userinfo u1 ON transfer.transferuserid=u1.userid WHERE mailid=@mailid or newmailid=@mailid::uuid";
 
             var param = new DbParameter[]
             {
                    new NpgsqlParameter("mailid",entity.MailId.ToString())
             };
-            return ExecuteQueryByPaging<TransferRecordMapper>(sql, param, entity.PageSize, (entity.PageIndex - 1) * entity.PageIndex);
+            return ExecuteQueryByPaging<TransferRecordMapper>(sql, param, entity.PageSize, entity.PageIndex);
         }
 
         public OperateResult MoveMail(MoveMailMapper entity, int userId, DbTransaction tran = null)
@@ -866,7 +866,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             {
                 whereSql = @"Where att.recstatus=1 and att.mailid=@mailid  AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE  recstatus=1) AND (ctype=2 or ctype=3 or ctype=4))";
             }
-            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive ==2)
+            else if (entity.relatedMySelf == 0 && entity.relatedSendOrReceive == 2)
             {
                 whereSql = @"Where att.recstatus=1 and att.mailid=@mailid  AND att.mailid IN (Select mailid From crm_sys_mail_senderreceivers Where mailaddress IN (SELECT accountid FROM crm_sys_mail_mailbox WHERE recstatus=1) AND ctype=1)";
             }
