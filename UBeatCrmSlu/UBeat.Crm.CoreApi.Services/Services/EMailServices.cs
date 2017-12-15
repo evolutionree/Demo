@@ -53,8 +53,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         class DataWrapper
         {
-            public ReceiveEMailMapper Entity { get; set; }
-            public IList<UserMailInfo> UserMailInfoLst { get; set; }
+            public string CurrentMailAddress { get; set; }
+            public int UserId { get; set; }
         }
         private static int _receiveThreads;
         private static int _writeThreads;
@@ -67,14 +67,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region 定时接收邮件
         class ThreadPoolManager
         {
-            Action<MimeMessage, Int32> _callBack;
+            Action<MimeMessage, DataWrapper> _callBack;
 
             ILogger<EMailServices> _logger;
-            public ThreadPoolManager(Action<MimeMessage, Int32> callBack, ILogger<EMailServices> logger)
+            public ThreadPoolManager(ILogger<EMailServices> logger)
             {
                 _tasks = _tasks = new Queue<MimeMessage>();
                 _wh = new AutoResetEvent(false);
-                _callBack = callBack;
                 _logger = logger;
             }
             // 任务队列
@@ -85,7 +84,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             private readonly static object _locker = new object();
             // 通过 _wh 给工作线程发信号
             private EventWaitHandle _wh;
-            public void CreateThreadPool(int i, int userId)
+            public void CreateThreadPool(int i, DataWrapper dataWrapper, Action<MimeMessage, DataWrapper> callBack)
             {
                 _wordThreads = new Queue<Task>();
                 for (int j = 0; j < i; j++)
@@ -93,11 +92,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Task task = new Task((state) =>
                     {
                         DequeueWork(state);
-                    }, userId);
+                    }, dataWrapper);
                     _wordThreads.Enqueue(task);
                 }
+                _callBack = callBack;
             }
-            public void StartTask(int userId)
+            public void StartTask()
             {
                 if (_wordThreads == null || _wordThreads.Count == 0) return;
                 foreach (var thr in _wordThreads)
@@ -129,7 +129,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 try
                 {
-                    int userId = (int)state;
+                    DataWrapper dataWrapper = (DataWrapper)state;
                     while (true)
                     {
                         MimeMessage work = null;
@@ -157,7 +157,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
 
                         if (work != null)
-                            _callBack.Invoke(work, userId);  // 任务不为null时，处理并保存数据
+                            _callBack.Invoke(work, dataWrapper);  // 任务不为null时，处理并保存数据
                         else
                         {
                             if (!_isQuit)
@@ -188,9 +188,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             IList<UserMailInfo> userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
-            ThreadPoolManager thrManager = new ThreadPoolManager(SaveRecMailDataInDb, _logger);
-            thrManager.CreateThreadPool(_receiveThreads, userNumber);
-            thrManager.StartTask(userNumber);
+            ThreadPoolManager thrManager = new ThreadPoolManager(_logger);
+            bool isAlreadyStart = false;
             try
             {
                 foreach (var userMailInfo in userMailInfoLst)
@@ -200,6 +199,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
+                    if (!isAlreadyStart)
+                    {
+                        var dataWrapper = new DataWrapper
+                        {
+                            CurrentMailAddress = userMailInfo.AccountId,
+                            UserId = userNumber
+                        };
+                        thrManager.CreateThreadPool(_receiveThreads, dataWrapper, SaveRecMailDataInDb);
+                        isAlreadyStart = true;
+                        thrManager.StartTask();
+                    }
                     thrManager.EnqueueTask(taskResult);
                 }
                 return new OutputResult<object>
@@ -217,13 +227,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
         }
-        void SaveRecMailDataInDb(MimeMessage msg, int userNumber)
+        void SaveRecMailDataInDb(MimeMessage msg, DataWrapper dataWrapper)
         {
-            var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
-            var mailBoxLst = _mailRepository.GetMailBoxList(1, int.MaxValue, userNumber);
+            var mailRelatedLst = _mailRepository.GetReceiveMailRelated(dataWrapper.UserId);
+            var mailBoxLst = _mailRepository.GetMailBoxList(1, int.MaxValue, dataWrapper.UserId);
             if (msg.MessageId != null)
             {
-                var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == dataWrapper.UserId);//过滤同一封邮件收多次的情况
                 if (obj != null)
                     return;
             }
@@ -256,25 +266,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
             extraData.Add("attachfile", fileTask.Result);
             extraData.Add("issendoreceive", 1);
-            string mailAddress = string.Empty;
-            foreach (var tmp in msg.To.Concat(msg.Cc).Concat(msg.Bcc))
-            {
-                var mailBoxAddress = tmp as MailboxAddress;
-                if (mailBoxAddress != null)
-                {
-                    var entity = mailBoxLst.DataList.FirstOrDefault(t => t.accountid == mailBoxAddress.Address);
-                    if (entity != null)
-                    {
-                        mailAddress = entity.accountid;
-                        break;
-                    }
-                }
-            }
             extraData.Add("receivetimerecord", new
             {
                 ReceiveTime = msg.Date,
                 ServerId = msg.MessageId,
-                MailAddress = mailAddress
+                MailAddress = dataWrapper.CurrentMailAddress
             });
             DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
             {
@@ -283,7 +279,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ExtraData = extraData
             };
             _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
-            _dynamicEntityRepository.DynamicAdd(null, Guid.Parse(_entityId), fieldData, extraData, userNumber);
+            _dynamicEntityRepository.DynamicAdd(null, Guid.Parse(_entityId), fieldData, extraData, dataWrapper.UserId);
         }
 
 
