@@ -963,7 +963,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             NextNodeDataInfo nodetemp = new NextNodeDataInfo();
             //获取流程数据信息
             var newcaseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseInfo.CaseId);
-
+            var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
+            if (caseitems == null || caseitems.Count == 0)
+            {
+                throw new Exception("流程节点数据异常");
+            }
+            var mycaseitems = caseitems.Find(m => m.HandleUser == userinfo.UserId);
             //自由流程
             if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
             {
@@ -978,6 +983,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodetemp.NodeState = 2;
                 }
+                else if (newcaseInfo.NodeNum == 0 && mycaseitems.ChoiceStatus == ChoiceStatusType.Reback)//预审批审批回到第一节点，表明被退回
+                {
+                    nodetemp.NodeState = 3;
+                }
                 var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, workflowInfo.FlowType, tran);
                 result = new NextNodeDataModel()
                 {
@@ -988,12 +997,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             else //固定流程
             {
-               var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
-                if (caseitems == null || caseitems.Count == 0)
-                {
-                    throw new Exception("流程节点数据异常");
-                }
-                var mycaseitems = caseitems.Find(m => m.HandleUser == userinfo.UserId);
+               
                 var nodeid = caseitems.FirstOrDefault().NodeId;
 
                 if (flowNodeInfo == null)
