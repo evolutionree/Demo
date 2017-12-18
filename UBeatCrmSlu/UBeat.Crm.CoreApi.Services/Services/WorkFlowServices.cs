@@ -1009,7 +1009,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.NodeName = flowNodeInfo.NodeName;
                 nodetemp.NodeType = flowNodeInfo.NodeType;
                 nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1 : caseInfo.NodeNum;
-                nodetemp.NodeState = 0;
+                nodetemp.NodeState = caseInfo.NodeNum == -1 ? -1 : 0;
                 //nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
                 if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
