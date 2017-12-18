@@ -168,7 +168,7 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
             {
                 //新增模式
                 SQLTextModel model = new SQLTextModel();
-                model.Id = Guid.NewGuid();
+                model.Id = Guid.Empty;
                 model.initOrUpdate = InitOrUpdate.Init;
                 model.isRun = 1;
                 model.SqlObjId = paramInfo.ObjId;
