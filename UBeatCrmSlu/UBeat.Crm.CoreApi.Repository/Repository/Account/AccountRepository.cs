@@ -23,7 +23,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             _passwordSalt = config.GetSection("Securitys").GetValue<string>("PwdSalt");
         }
 
-        public AccountUserMapper GetUserInfo(string accountName, string accountPwd)
+        public AccountUserMapper GetUserInfo(string accountName)
         {
             var sql = @"
                 SELECT u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus FROM crm_sys_account AS a
