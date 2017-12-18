@@ -977,8 +977,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.NodeName = "自由选择审批人";
                 nodetemp.NodeType = NodeType.Normal;
                 nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1 : 1;
-                nodetemp.NodeState = 0;
-                //nodetemp.StepTypeId = NodeStepType.SelectByUser;
+                nodetemp.NodeState = caseInfo.NodeNum == -1 ? -1 : 0;
+                nodetemp.StepTypeId = NodeStepType.SelectByUser;
                 if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
                     nodetemp.NodeState = 2;
@@ -1009,8 +1009,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.NodeName = flowNodeInfo.NodeName;
                 nodetemp.NodeType = flowNodeInfo.NodeType;
                 nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1 : caseInfo.NodeNum;
-                nodetemp.NodeState = 0;
-                //nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
+                nodetemp.NodeState = caseInfo.NodeNum == -1 ? -1 : 0;
+                nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
                 if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
                     nodetemp.NodeState = 2;
