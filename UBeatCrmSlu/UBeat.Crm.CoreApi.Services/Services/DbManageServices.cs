@@ -183,6 +183,7 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
                 model.SqlText = paramInfo.SqlText;
                 this._dbManageRepository.saveSQLText(model, userId, tran);
             }
+            return new OutputResult<object>("ok");
         }
 
         public string getObjectSQL(DbGetSQLParamInfo paramInfo, int userId)
