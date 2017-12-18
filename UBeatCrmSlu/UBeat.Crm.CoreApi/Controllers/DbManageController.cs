@@ -95,16 +95,30 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// 获取脚本信息
         /// </summary>
         /// <returns></returns>
-        public OutputResult<object> GetObjectSQL(  ) {
-            return null;
+
+        [AllowAnonymous]
+        [Route("getobjectsql")]
+        public OutputResult<object> GetObjectSQL([FromBody] DbGetSQLParamInfo paramInfo) {
+            if (paramInfo == null || paramInfo.ObjId == null || paramInfo.ObjId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            string tmp = this._dbManageServices.getObjectSQL(paramInfo, UserId);
+            if (tmp == null) tmp = "";
+            return new OutputResult<object>(tmp);
         }
         /// <summary>
         /// 保存脚本
         /// </summary>
         /// <returns></returns>
-        public OutputResult<object> SaveObjectSQL()
-        {
-            return null;
+        [AllowAnonymous]
+        [Route("saveobjectsql")]
+        public OutputResult<object> SaveObjectSQL([FromBody] DbSaveSQLParamInfo paramInfo) {
+            if (paramInfo == null || paramInfo.ObjId == null || paramInfo.ObjId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            if (paramInfo.SqlText == null) paramInfo.SqlText = "";
+            return this._dbManageServices.SaveObjectSQL(paramInfo, UserId);
+
         }
         [HttpPost("saveupgradesql")]
         [AllowAnonymous]
