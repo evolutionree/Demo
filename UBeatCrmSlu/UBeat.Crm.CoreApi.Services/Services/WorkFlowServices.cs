@@ -977,7 +977,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.NodeName = "自由选择审批人";
                 nodetemp.NodeType = NodeType.Normal;
                 nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1 : 1;
-                nodetemp.NodeState = 0;
+                nodetemp.NodeState = caseInfo.NodeNum == -1 ? -1 : 0;
                 //nodetemp.StepTypeId = NodeStepType.SelectByUser;
                 if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
