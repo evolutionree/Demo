@@ -60,12 +60,13 @@ namespace UBeat.Crm.MailService.Mail.Helper
         private void InitSmtpEmailConfig(string host, int port, bool enableSsl)
         {
             SmtpClient = new SmtpClient();
-            SmtpClient.Timeout = 3000;
             if (!SmtpClient.IsConnected)
+            {
+                SmtpClient.Timeout = 3000;
                 SmtpClient.Connect(host, port, enableSsl);
+            }
             SmtpClient.AuthenticationMechanisms.Remove("XOAUTH2");
             SmtpClient.ServerCertificateValidationCallback = (s, c, h, e) => true;
-            SmtpClient.Timeout = 1000;
         }
 
         #endregion

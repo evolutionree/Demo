@@ -66,8 +66,10 @@ namespace UBeat.Crm.MailService.Mail.Helper
         {
             ImapClient = new ImapClient();
             if (!ImapClient.IsConnected)
+            {
+                ImapClient.Timeout = 3000;
                 ImapClient.Connect(host, port, enableSsl);
-            ImapClient.Timeout = 3000;
+            }
             ImapClient.ServerCertificateValidationCallback = (s, c, h, e) => true;
             ImapClient.AuthenticationMechanisms.Remove("XOAUTH2");
         }
