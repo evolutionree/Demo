@@ -217,7 +217,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>
                 {
                     Status = 1,
-                    Message = ex.Message
+                    Message = ExceptionTipMsgSwitch.ExceptionTipMsg(ex)
                 };
             }
 
@@ -525,7 +525,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return new OutputResult<object>()
                     {
                         Status = 1,
-                        Message = "发送邮件失败"
+                        Message = ExceptionTipMsgSwitch.ExceptionTipMsg(ex)
                     };
                 }
             }, entity, Guid.Parse(_entityId), userNumber);
