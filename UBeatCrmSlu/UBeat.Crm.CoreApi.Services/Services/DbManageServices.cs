@@ -160,7 +160,39 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
             return SeqSQL+"\r\n"+createTableSQL + "\r\n" + ConstraintSQL +"\r\n" + IndexSQL +"\r\n" + TriggerSQL  +"\r\n";
         }
 
+        public OutputResult<object> SaveObjectSQL(DbSaveSQLParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            List<SQLTextModel> models = this._dbManageRepository.getSQLTextList(paramInfo.ObjId.ToString(), InitOrUpdate.Init, paramInfo.StructOrData, userId, tran);
+            if (models == null || models.Count == 0)
+            {
+                //新增模式
+                SQLTextModel model = new SQLTextModel();
+                model.Id = Guid.Empty;
+                model.initOrUpdate = InitOrUpdate.Init;
+                model.isRun = 1;
+                model.SqlObjId = paramInfo.ObjId;
+                model.sqlOrJson = SqlOrJsonEnum.SQL;
+                model.SqlText = paramInfo.SqlText;
+                model.structOrData = paramInfo.StructOrData;
+                this._dbManageRepository.saveSQLText(model, userId, tran);
+            }
+            else {
+                //修改模式
+                SQLTextModel model = models[0];
+                model.SqlText = paramInfo.SqlText;
+                this._dbManageRepository.saveSQLText(model, userId, tran);
+            }
+            return new OutputResult<object>("ok");
+        }
 
+        public string getObjectSQL(DbGetSQLParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            List<SQLTextModel> models  = this._dbManageRepository.getSQLTextList(paramInfo.ObjId.ToString(), InitOrUpdate.Init, paramInfo.StructOrData, userId, tran);
+            if (models == null || models.Count == 0) return null;
+            return models[0].SqlText;
+        }
 
         public OutputResult<object> ListObjects(DbListObjectsParamInfo paramInfo, int userId)
         {

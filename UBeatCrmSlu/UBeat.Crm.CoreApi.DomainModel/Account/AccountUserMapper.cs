@@ -38,7 +38,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
     public class AccountUserRegistMapper : BaseEntity
     {
         public string AccountName { get; set; }
+        /// <summary>
+        /// 密码文本，若不加密则为明文，若加密，则使用“时间戳_密码”的格式
+        /// </summary>
         public string AccountPwd { get; set; }
+
+        /// <summary>
+        /// 加密方式，0=不加密，1=RSA方式加密
+        /// </summary>
+        public int EncryptType { set; get; }
         public string UserName { get; set; }
         public string AccessType { get; set; }
         public string UserIcon { get; set; }
@@ -119,7 +127,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
     {
         public int AccountId { get; set; }
         public int UserId { get; set; }
+        /// <summary>
+        /// 密码文本，若不加密则为明文，若加密，则使用“时间戳_密码”的格式
+        /// </summary>
         public string AccountPwd { get; set; }
+
+        /// <summary>
+        /// 加密方式，0=不加密，1=RSA方式加密
+        /// </summary>
+        public int EncryptType { set; get; }
         public string OrginPwd { get; set; }
 
         protected override IValidator GetValidator()
@@ -142,7 +158,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
     public class AccountMapper:BaseEntity
     {
         public string UserId { get; set; }
+        /// <summary>
+        /// 密码文本，若不加密则为明文，若加密，则使用“时间戳_密码”的格式
+        /// </summary>
         public string Pwd { get; set; }
+
+        /// <summary>
+        /// 加密方式，0=不加密，1=RSA方式加密
+        /// </summary>
+        public int EncryptType { set; get; }
 
         protected override IValidator GetValidator()
         {

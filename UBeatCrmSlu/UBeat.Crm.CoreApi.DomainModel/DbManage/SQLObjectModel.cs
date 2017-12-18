@@ -104,7 +104,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
     public class DbSaveSQLParam {
         /// <summary>
         /// 表示是结构脚本还是数据脚本
-        /// </summary>
+        /// </summary>  
         public StructOrData StructOrData { get; set; }
         /// <summary>
         /// 对象ID
@@ -121,5 +121,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
     public class DbGetSQLParamInfo {
         public Guid ObjId { get; set; }
         public StructOrData StructOrData { get; set; }
+    }
+    public class DbSaveSQLParamInfo {
+        public Guid ObjId { get; set; }
+        public StructOrData StructOrData { get; set; }
+        public string SqlText { get; set; }
     }
 }

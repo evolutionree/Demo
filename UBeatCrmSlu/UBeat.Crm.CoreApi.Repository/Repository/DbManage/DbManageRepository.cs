@@ -167,7 +167,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                                         where sqlobjid='{0}'
 	                                        and (initorupdate = {1} or {1}=0)
                                         and (structordata ={2} or {2} = 0 )
-                                ", objid,initorupdate,structordata);
+                                ", objid,(int)initorupdate,(int)structordata);
                 return ExecuteQuery<SQLTextModel>(strSQL, new DbParameter[] { }, tran);
             }
             catch (Exception ex)

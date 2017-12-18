@@ -11,7 +11,7 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
          int GetUserCount();
 
-        AccountUserMapper GetUserInfo(string accountName, string accountPwd);
+        AccountUserMapper GetUserInfo(string accountName);
 
         OperateResult RegistUser(AccountUserRegistMapper registEntity, int userNumber);
 
