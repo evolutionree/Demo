@@ -30,7 +30,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// <summary>
         /// 当前节点审批人类型
         /// </summary>
-        [JsonIgnore]
         public NodeStepType StepTypeId { set; get; }
 
         /// <summary>
