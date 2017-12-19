@@ -16,11 +16,17 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.WorkFlow
 
         public int NodeType { set; get; }
 
-        public int SteptypeId { set; get; }
+        public int StepTypeId { set; get; }
 
         public object RuleConfig { set; get; }
 
         public object ColumnConfig { set; get; }
+
+        public int VerNum { set; get; }
+
+        public int AuditSucc { set; get; }
+        
+        public object NodeConfig { set; get; }
 
     }
 }

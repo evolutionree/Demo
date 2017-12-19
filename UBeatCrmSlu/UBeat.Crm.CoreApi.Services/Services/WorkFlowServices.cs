@@ -183,7 +183,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         EntityId = caseInfo.EntityId,
                         RecId = caseInfo.RecId,
-                        NeedPower = 0
+                        NeedPower = 1
                     };
                     var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
                     result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber).FirstOrDefault();
@@ -197,7 +197,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             EntityId = caseInfo.RelEntityId,
                             RecId = caseInfo.RelRecId,
-                            NeedPower = 0
+                            NeedPower = 1
                         };
                         var detailtemp = _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
                         result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
@@ -521,7 +521,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(result);
         }
-
 
         #region 旧代码
         public OutputResult<object> AddCaseItem(WorkFlowAddCaseItemModel caseItemModel, int userNumber)
