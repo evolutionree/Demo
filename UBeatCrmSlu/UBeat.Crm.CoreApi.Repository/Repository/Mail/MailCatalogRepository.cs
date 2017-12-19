@@ -349,7 +349,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         public List<Dictionary<string, object>> GetDefaultCatalog(int userId)
         {
             string sql = "select a.*,x.defaultid,x.recid existid from crm_sys_mail_default_catalog a left join (select * from crm_sys_mail_catalog b where b.userid=@userId) x " +
-                "on a.recid = x.defaultid where a.recstatus = 1";
+                "on a.recid = x.defaultid where a.recstatus = 1 order by a.ctype";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userId", userId)

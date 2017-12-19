@@ -236,8 +236,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (pwdModel.EncryptType == 1)//RSA加密方式
             {
                 long timeStamp = 0;
-                pwdModel.AccountPwd = DecryptAccountPwd(pwdModel.AccountPwd, out timeStamp);
-                pwdModel.OrginPwd = DecryptAccountPwd(pwdModel.OrginPwd, out timeStamp);
+                pwdEntity.AccountPwd = DecryptAccountPwd(pwdModel.AccountPwd, out timeStamp);
+                pwdEntity.OrginPwd = DecryptAccountPwd(pwdModel.OrginPwd, out timeStamp);
             }
 
             return ExcuteAction((transaction, arg, userData) =>
