@@ -84,5 +84,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null);
 
         PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId);
+
+        UserMailInfo GetEnablePassword(Guid mailBoxId, int userId);
     }
 }
