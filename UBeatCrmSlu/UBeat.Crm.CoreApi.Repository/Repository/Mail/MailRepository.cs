@@ -61,11 +61,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1002:
-                    sqlCondition = "  body.isread=0 ";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid )) AND  body.isread=0 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1008:
-                    sqlCondition = "  body.istage=1 ";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid )) AND  body.istag=1 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1005:
@@ -89,7 +89,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             orderbyfield = @" order by tmp.receivedtime desc ";
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
-            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
+            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("userid", userId), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
         }
 
         /// <summary>
