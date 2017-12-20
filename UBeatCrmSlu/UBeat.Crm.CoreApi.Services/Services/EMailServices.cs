@@ -23,6 +23,7 @@ using System.Dynamic;
 using System.Data.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using UBeat.Crm.LicenseCore;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -287,7 +288,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ExtraData = extraData
             };
             _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
-            _dynamicEntityRepository.DynamicAdd(null, Guid.Parse(_entityId), fieldData, extraData, userNumber);
+            var result = _dynamicEntityRepository.DynamicAdd(null, Guid.Parse(_entityId), fieldData, extraData, userNumber);
+            if (result.Flag == 0) //错误才打印日志
+                _logger.LogTrace(result.Msg + " " + result.Stacks);
         }
 
 
@@ -791,7 +794,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     else
                     {
-                        throw new Exception("获取邮件附件异常");
+                        byte[] buffer;
+                        using (MemoryStream ms = new MemoryStream())
+                        {
+                            tmp.WriteTo(ms);
+                            ms.Flush();
+                            ms.Position = 0;
+                            buffer = new byte[ms.Length];
+                            ms.Seek(0, SeekOrigin.Begin);
+                            ms.Write(buffer, 0, buffer.Length);
+                        }
+                        string fileId = _fileServices.UploadFile(string.Empty, Guid.NewGuid().ToString(), tmp.ContentType.Name, buffer);
+                        attachFileRecord.Add(new
+                        {
+                            mongoid = fileId,
+                            data = buffer,
+                            filename = tmp.ContentType.Name,
+                            filesize = buffer.Length,
+                            filetype = tmp.ContentType.Name.Substring(tmp.ContentType.Name.LastIndexOf("."))
+                        });
                     }
                 }
                 if (mimeEntities.Count() != attachFileRecord.Count)
@@ -1200,10 +1221,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ExcuteInsertAction((dbTrans, arg, userData) =>
             {
                 var result = _mailRepository.ReConverMails(entity, userNum, dbTrans);
-                return new OutputResult<object>(new
-                {
-                    TipMsg = result.Msg
-                }, string.Empty, result.Flag == 0 ? 1 : 0);
+                if (result.Flag == 0)
+                    return new OutputResult<object>(null, result.Msg, 1);
+                else
+                    return new OutputResult<object>(new { TipMsg = result.Msg }, string.Empty, 0);
+
+
             }, entity, Guid.Parse(_entityId), userNum);
         }
         public OutputResult<object> ReadMail(ReadOrUnReadMailModel model, int userNum)
@@ -1374,7 +1397,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return _mailRepository.GetReconvertMailList(entity, userNum);
         }
 
+        public OutputResult<object> GetEnablePassword(Guid mailBoxId, int userNum)
+        {
+            if (mailBoxId == Guid.Empty) return new OutputResult<object>(null, "邮箱信息Id不能为空", 1);
 
+            var result = _mailRepository.GetEnablePassword(mailBoxId, userNum);
+            return new OutputResult<object>(new
+            {
+                Password = RSAEncrypt.RSADecryptStr(result.EncryptPwd)
+            });
+        }
 
         #region  模糊查询我的通讯人员限制10个
         public OutputResult<object> GetContactByKeyword(ContactSearchInfo paramInfo, int userId)

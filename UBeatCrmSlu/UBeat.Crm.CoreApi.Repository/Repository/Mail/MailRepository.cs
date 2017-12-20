@@ -1516,5 +1516,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return ExecuteQueryByPaging<MailTruncateLstMapper>(strSQL, param, entity.PageSize, entity.PageIndex);
         }
 
+
+        public UserMailInfo GetEnablePassword(Guid mailBoxId, int userId)
+        {
+            string strSQL = @"SELECT * FROM crm_sys_mail_mailbox WHERE recstatus=1 AND recid=@mailboxid";
+            var param = new
+            {
+                mailboxid = mailBoxId
+            };
+            return DataBaseHelper.QuerySingle<UserMailInfo>(strSQL, param);
+        }
     }
 }
