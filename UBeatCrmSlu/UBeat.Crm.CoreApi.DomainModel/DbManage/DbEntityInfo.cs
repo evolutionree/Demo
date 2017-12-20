@@ -74,6 +74,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         public List<DbEntityCatelogInfo> Catelogs { get; set; }
         public Dictionary<string,object> FunctionButtons { get; set; }
         public Dictionary<string, object> ServiceJson { get; set; }
+        /// <summary>
+        /// 手机按钮列表
+        /// </summary>
+        public List<DbEntityComponentConfigInfo> Components { get; set; }
+        public List<DbEntityWebFieldInfo> WebFields { get; set; }
+        /// <summary>
+        /// 移动端列表显示配置
+        /// </summary>
+        public DbEntityMobileListConfigInfo MobileColumnConfig { get; set; }
     }
     /// <summary>
     /// 实体分类信息
@@ -84,13 +93,37 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         public Guid? RelCatelogId { get; set; }
         public List<DbEntityFieldRuleInfo> FieldRules { get; set; }
     }
+    /// <summary>
+    /// 字段信息定义
+    /// </summary>
     public class DbEntityFieldRuleInfo {
+        /// <summary>
+        /// FieldRuleId
+        /// </summary>
         public Guid FieldRulesId { get; set; }
+        /// <summary>
+        /// 对应的Catalogid
+        /// </summary>
         public Guid TypeId { get; set; }
+        /// <summary>
+        /// 字段ID
+        /// </summary>
         public Guid FieldId  { get; set; }
+        /// <summary>
+        /// 操作模式 
+        /// </summary>
         public int OperateType { get; set; }
+        /// <summary>
+        /// 是否必填
+        /// </summary>
         public int IsRequire { get; set; }
+        /// <summary>
+        /// 是否可见
+        /// </summary>
         public int IsVisible { get; set; }
+        /// <summary>
+        /// 是否只读
+        /// </summary>
         public int IsReadOnly { get; set; }
         public Dictionary<string, object> ViewRules { get; set; }
         public Dictionary<string, object> ValidRules { get; set; }
@@ -166,5 +199,67 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
         /// 虚拟字段
         /// </summary>
         VirtualField = 3
+    }
+    /// <summary>
+    /// 实体按钮配置（用于移动端)
+    /// </summary>
+    public class DbEntityComponentConfigInfo {
+        /// <summary>
+        /// 按钮ID
+        /// </summary>
+        public Guid ComptId { get; set; }
+        /// <summary>
+        /// 归属实体ID
+        /// </summary>
+        public Guid EntityId { get; set; }
+        /// <summary>
+        /// 控件名称
+        /// </summary>
+        public string ComptName { get; set; }
+        /// <summary>
+        /// 控件功能定义
+        /// </summary>
+        public string ComptAction { get; set; }
+        /// <summary>
+        /// 按钮显示的图标
+        /// </summary>
+        public string Icon { get; set; }
+        /// <summary>
+        /// 按钮顺序
+        /// </summary>
+        public int RecOrder { get; set; }
+    }
+    /// <summary>
+    /// WEB列显示配置
+    /// </summary>
+    public class DbEntityWebFieldInfo {
+        public Guid ViewColumnId { get; set; }
+        public Guid EntityId { get; set; }
+        public Guid FieldId { get; set; }
+        public int ViewType { get; set; }
+        public int RecOrder { get; set; }
+
+    }
+    /// <summary>
+    ///  手机端显示配置
+    /// </summary>
+    public class DbEntityMobileListConfigInfo {
+        public Guid ViewConfId { get; set; }
+        public Guid EntityId { get; set; }
+        public int ViewStyleId { get; set; }
+        public string FieldKeys { get; set; }
+        public string Fonts { get; set;  }
+        public string Colors { get; set;  }
+        public int RecOrder { get; set; }
+        public List<DbEntityMobileListColumnInfo> Columns { get; set; } 
+    }
+    /// <summary>
+    /// 用于记录手机显示配置的字段信息
+    /// </summary>
+    public class DbEntityMobileListColumnInfo {
+        public Guid ViewColumnId { get; set; }
+        public Guid EntityId { get; set; }
+        public Guid FieldId { get; set; }
+        public int ViewType { get; set; }
     }
 }

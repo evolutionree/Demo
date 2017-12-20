@@ -183,7 +183,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         EntityId = caseInfo.EntityId,
                         RecId = caseInfo.RecId,
-                        NeedPower = 1
+                        NeedPower = 0
                     };
                     var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
                     result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber).FirstOrDefault();
@@ -197,7 +197,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             EntityId = caseInfo.RelEntityId,
                             RecId = caseInfo.RelRecId,
-                            NeedPower = 1
+                            NeedPower = 0
                         };
                         var detailtemp = _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
                         result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();

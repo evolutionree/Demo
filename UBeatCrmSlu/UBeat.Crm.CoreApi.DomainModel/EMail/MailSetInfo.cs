@@ -109,12 +109,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
     public enum MailCatalogType
     {
         InBox = 1001,//收件箱
+        UnReadBox = 1002,//未读邮件
         UnSpec = 2003,//未归类邮件目录
         SendBox = 1003,//发件箱
         OutBox = 1004,//已发送
         DrafBox = 1005,//草稿箱
         PersonalRecycle = 1006,//个人回收箱
         GlobalRecycle = 1007,//集团回收箱
+        FlagStar=1008,//标星邮件
         CustType = 3001,//客户分类目录
         Cust = 2001,//客户目录
         CustDyn = 4001,//客户自定义目录

@@ -22,6 +22,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbEntityInfo entityInfo = this._dbEntityManageRepository.getEntityInfo(paramInfo.EntityId, userId, tran);
             List<DbEntityFieldInfo> fields = this._dbEntityManageRepository.getEntityFields(paramInfo.EntityId, paramInfo.FieldConfigInfo, userId, tran);
             entityInfo.Fields = fields;
+            #region 处理字段显示规则，仅考虑是实体分类
+            if (entityInfo.ModelType == DbEntityModelTypeEnum.NestEntity || entityInfo.ModelType == DbEntityModelTypeEnum.StandAloneEntity)
+            {
+                List<DbEntityCatelogInfo> Catelogs = this._dbEntityManageRepository.getCatelogs(paramInfo.EntityId, paramInfo.ExportCatelogIds, userId, tran);
+                entityInfo.Catelogs = Catelogs;
+            }
+            #endregion
+            #region 处理手机端按钮信息（列表）
+            List<DbEntityComponentConfigInfo> Components = this._dbEntityManageRepository.getComponentConfigList(paramInfo.EntityId, userId, tran);
+            entityInfo.Components = Components;
+            #endregion
+
+            #region 处理WEB列显示
+            List<DbEntityWebFieldInfo> WebFields = this._dbEntityManageRepository.getWebFieldList(paramInfo.EntityId, userId, tran);
+            entityInfo.WebFields = WebFields;
+            #endregion
+            #region 处理移动端列表显示
+            entityInfo.MobileColumnConfig = this._dbEntityManageRepository.getMobileColumnConfig(paramInfo.EntityId, userId, tran);
+            #endregion 
             return entityInfo;
         }
         /// <summary>

@@ -12,6 +12,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage
     public class DbEntityReflectParamInfo {
         public string EntityId { get; set; }
         public DbEntityReflectConfigParam FieldConfigInfo { get; set; }
+        /// <summary>
+        /// 导出哪些分类（仅限独立实体）
+        /// 嵌套实体仅仅会导出与EntityID一样的分类，其他分类不导出
+        /// 
+        /// </summary>
+        public string[] ExportCatelogIds { get; set; }
 
 
     }

@@ -14,6 +14,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         void updateEntityInfo(DbEntityInfo entityInfo, int userId, DbTransaction tran);
 
         string createEmptyTableForEntity(string tablename, int userId, DbTransaction tran);
-
+        List<DbEntityCatelogInfo> getCatelogs(string entityId, string[] exportCatelogIds, int userId, DbTransaction tran);
+        List<DbEntityComponentConfigInfo> getComponentConfigList(string entityId, int userId, DbTransaction tran);
+        List<DbEntityWebFieldInfo> getWebFieldList(string entityId, int userId, DbTransaction tran);
+        DbEntityMobileListConfigInfo getMobileColumnConfig(string entityId, int userId, DbTransaction tran);
     }
 }
