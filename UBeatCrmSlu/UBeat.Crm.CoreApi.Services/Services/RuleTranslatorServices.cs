@@ -497,26 +497,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                 }
             }
-            else if ((int)DynamicProtocolControlType.RecCreator == controlType || (int)DynamicProtocolControlType.RecUpdator == controlType || (int)DynamicProtocolControlType.RecManager == controlType)
-            {
-                dataValue = data["dataVal"].ToString();
-                StringBuilder sb = new StringBuilder();
-                switch (operate)
-                {
-                    case "in":
-                        strSql = string.Format(@"({0} {1} ({2})) ", fieldName, Condition.In.GetSqlOperate(), dataValue);
-                        break;
-                    case "not in":
-                        strSql = string.Format(@"({0} {1} ({2})) ", fieldName, Condition.NotIn.GetSqlOperate(), dataValue);
-                        break;
-                    case "=":
-                        strSql = string.Format(@"({0} {1} {2})", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
-                        break;
-                    case "!=":
-                        strSql = string.Format(@"({0} {1} {2})", fieldName, Condition.NotEqual.GetSqlOperate(), dataValue);
-                        break;
-                }
-            }
+            #region 合并到选人控件的逻辑中
+            //else if ((int)DynamicProtocolControlType.RecCreator == controlType || (int)DynamicProtocolControlType.RecUpdator == controlType || (int)DynamicProtocolControlType.RecManager == controlType)
+            //{
+            //    dataValue = data["dataVal"].ToString();
+            //    StringBuilder sb = new StringBuilder();
+            //    switch (operate)
+            //    {
+            //        case "in":
+            //            strSql = string.Format(@"({0} {1} ({2})) ", fieldName, Condition.In.GetSqlOperate(), dataValue);
+            //            break;
+            //        case "not in":
+            //            strSql = string.Format(@"({0} {1} ({2})) ", fieldName, Condition.NotIn.GetSqlOperate(), dataValue);
+            //            break;
+            //        case "=":
+            //            strSql = string.Format(@"({0} {1} {2})", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
+            //            break;
+            //        case "!=":
+            //            strSql = string.Format(@"({0} {1} {2})", fieldName, Condition.NotEqual.GetSqlOperate(), dataValue);
+            //            break;
+            //    }
+            //} 
+            #endregion
             else if ((int)DynamicProtocolControlType.TimeDate == controlType || (int)DynamicProtocolControlType.TimeStamp == controlType || (int)DynamicProtocolControlType.RecUpdated == controlType || (int)DynamicProtocolControlType.RecCreated == controlType || (int)DynamicProtocolControlType.RecOnlive == controlType)
             {
                 string date = string.Empty;
@@ -673,7 +675,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
 
-            else if ((int)DynamicProtocolControlType.PersonSelectMulti == controlType || (int)DynamicProtocolControlType.PersonSelectSingle == controlType)
+            else if (((int)DynamicProtocolControlType.PersonSelectMulti == controlType || (int)DynamicProtocolControlType.PersonSelectSingle == controlType)
+                || ((int)DynamicProtocolControlType.RecCreator == controlType || (int)DynamicProtocolControlType.RecUpdator == controlType || (int)DynamicProtocolControlType.RecManager == controlType))
             {
                 dataValue = data["dataVal"].ToString();
                 string userIds = string.Empty;
@@ -695,7 +698,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         sb.Append("(");
                         if (!string.IsNullOrEmpty(dataValue) && dataValue != "{}")
                         {
-                            strSql = string.Format(@" (EXISTS( SELECT * FROM (select regexp_split_to_table({0},',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), dataValue);
+                            strSql = string.Format(@" (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), dataValue);
                             sb.Append(strSql);
                         }
                         else
@@ -705,7 +708,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         if (!string.IsNullOrEmpty(userIds))
                         {
-                            strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0},',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), userIds);
+                            strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), userIds);
                             sb.Append(strSql);
                         }
                         if (!string.IsNullOrEmpty(deptIds))
@@ -717,7 +720,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 ar.Add(string.Format(departmentSql, depid));
                             }
                             departmentSql = " ( " + string.Join(" UNION ALL ", ar.ToArray()) + " ) ";
-                            strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0},',')::int4 AS sel ) AS t WHERE t.sel {1} ({2})))", fieldName, Condition.In.GetSqlOperate(), departmentSql);
+                            strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2})))", fieldName, Condition.In.GetSqlOperate(), departmentSql);
                             sb.Append(strSql);
                         }
                         sb.Append(")");
@@ -729,11 +732,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             if (dataValue == "{currentUser}")
                             {
-                                strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1},',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
+                                strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
                             }
                             else if (dataValue == "{currentDepartment}" || dataValue == "{subDepartment}")
                             {
-                                strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM ({0}) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1},',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
+                                strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM ({0}) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
                             }
                             sb.Append(strSql);
                         }
@@ -744,7 +747,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         if (!string.IsNullOrEmpty(userIds))
                         {
-                            strSql = string.Format(@" AND (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1},',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", userIds, fieldName);
+                            strSql = string.Format(@" AND (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", userIds, fieldName);
                             sb.Append(strSql);
                         }
                         if (!string.IsNullOrEmpty(deptIds))
@@ -756,7 +759,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 ar.Add(string.Format(departmentSql, depid));
                             }
                             departmentSql = " ( " + string.Join(" UNION ALL ", ar.ToArray()) + " ) ";
-                            strSql = string.Format(@" AND  ( NOT EXISTS(SELECT * FROM ({0} ) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1},',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", departmentSql, fieldName);
+                            strSql = string.Format(@" AND  ( NOT EXISTS(SELECT * FROM ({0} ) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", departmentSql, fieldName);
                             sb.Append(strSql);
                         }
                         sb.Append(")");
