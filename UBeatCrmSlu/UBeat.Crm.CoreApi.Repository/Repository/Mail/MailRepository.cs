@@ -39,7 +39,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
-                                        " FROM crm_sys_mail_mailbody body Where  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  {0}  ) AS tmp  {1} ";
+                                        " FROM crm_sys_mail_mailbody body Where 1=1  {0}  ) AS tmp  {1} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
@@ -47,22 +47,32 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
                 sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
-            var validDeleteCatalogSql = @"SELECT count(1) FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid AND ctype = 1006 LIMIT 1; ";
+            var catalogSql = @"SELECT ctype FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid LIMIT 1; ";
             var param = new
             {
                 UserId = userId,
                 CatalogId = paramInfo.Catalog
             };
-            int isDeleteCatalog = DataBaseHelper.QuerySingle<int>(validDeleteCatalogSql, param);
-            if (isDeleteCatalog > 0)
+            int ctype = DataBaseHelper.QuerySingle<int>(catalogSql, param);
+            switch (ctype)
             {
-                sqlCondition = "  body.recstatus=0 ";
-                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
-            }
-            else
-            {
-                sqlCondition = "  body.recstatus=1 ";
-                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                case 1006://
+                    sqlCondition = " body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  AND  body.recstatus=0 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    break;
+                case 1002:
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid )) AND  body.isread=0 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    break;
+                case 1008:
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid )) AND  body.istag=1 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    break;
+                case 1005:
+                default:
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  AND body.recstatus=1 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    break;
             }
 
             sqlCondition = sqlWhere.Count() == 0 ? string.Empty : " AND " + string.Join(" AND ", sqlWhere);
@@ -79,7 +89,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             orderbyfield = @" order by tmp.receivedtime desc ";
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
-            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
+            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("userid", userId), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
         }
 
         /// <summary>
