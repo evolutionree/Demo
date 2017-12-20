@@ -107,7 +107,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var notfinishitems = caseitems.Where(m => m.CaseStatus == CaseStatusType.Readed || m.CaseStatus == CaseStatusType.WaitApproval);
                     if (notfinishitems.Count() > 0)
                     {
-                        string temptext = notfinishitems.Count() > 2 ? string.Join(",", notfinishitems.Select(m => m.HandleUserName), 0, 2) + "等" : string.Join(",", notfinishitems.Select(m => m.HandleUserName));
+                        string temptext = notfinishitems.Count() > 2 ? string.Join(",", notfinishitems.Select(m => m.HandleUserName).ToArray(), 0, 2) + "等" : string.Join(",", notfinishitems.Select(m => m.HandleUserName).ToArray());
                         result.CaseItem.AuditStep = string.Format("等待{0}处理审批", temptext);
                     }
 
@@ -1054,21 +1054,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     else //分支流程则获取符合条件的下一步节点
                     {
-                        bool checkstatus = false;
+                        
+                        List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
+                        List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
                         foreach (var m in nextnodes)
                         {
-                            //ValidateNextNodeRule(caseinfo, node.FlowId, node.NodeId, node.VerNum, userinfo, trans);
+                            bool isDefaultNode = false;
                             //验证规则是否符合
-                            if (ValidateNextNodeRule(newcaseInfo, workflowInfo.FlowId, nodeid, m.NodeId.GetValueOrDefault(), caseInfo.VerNum, userinfo, tran))
+                            if (ValidateNextNodeRule(newcaseInfo, workflowInfo.FlowId, nodeid, m.NodeId.GetValueOrDefault(), caseInfo.VerNum, userinfo,out isDefaultNode, tran))
                             {
-                                nodetemp = m;
-                                checkstatus = true;
+                                if(isDefaultNode)
+                                {
+                                    defaultConditionNodes.Add(m);
+                                }
+                                else metConditionNodes.Add(m);
+                                
+                               
                             }
                         }
-                        if (!checkstatus)
+                        if(defaultConditionNodes.Count>1)
+                            throw new Exception("每个流程只允许配置一条无过滤条件的分支");
+                        else if (metConditionNodes.Count==0&& defaultConditionNodes.Count==0)
                         {
                             throw new Exception("没有符合分支流程规则的下一步审批人");
                         }
+                        else 
+                        {
+                            if (metConditionNodes.Count > 1)
+                                throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
+                            else if (metConditionNodes.Count == 1)
+                                nodetemp = metConditionNodes.FirstOrDefault();
+                            else nodetemp = defaultConditionNodes.FirstOrDefault();
+                        }
+                       
                     }
 
                     nodetemp.NodeState = nodetemp.StepTypeId == NodeStepType.End ? 2 : 0; //如果下一节点为结束审批节点，说明当前审批节点到达审批的最后节点
@@ -1076,6 +1094,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     nodetemp.NeedSuccAuditCount = 1;
                     nodetemp.FlowType = WorkFlowType.FixedFlow;
                     var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nodetemp.NodeId.GetValueOrDefault(), userinfo.UserId, workflowInfo.FlowType, tran);
+                    if(users==null||users.Count==0&& nodetemp.NodeState==0)//没有满足下一步审批人条件的选人列表
+                    {
+                        nodetemp.NodeState = 4;
+                    }
                     result = new NextNodeDataModel()
                     {
                         NodeInfo = nodetemp,
@@ -1191,8 +1213,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         //完成了以上审批操作，如果是分支流程，需要验证下一步审批人是否符合规则
                         if (isbranchFlow && nextnode != null)
                         {
+                            bool isDefaultNode = false;
                             //验证规则是否符合
-                            if (!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo, tran))
+                            if (!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo,out isDefaultNode, tran))
                                 throw new Exception("下一步审批人不符合分支流程规则");
                         }
                         AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
@@ -1866,9 +1889,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --验证分支流程节点是否符合分支条件--
-        private bool ValidateNextNodeRule(WorkFlowCaseInfo caseinfo, Guid flowid, Guid fromnodeid, Guid tonodeid, int vernum, UserInfo userinfo, DbTransaction trans = null)
+        private bool ValidateNextNodeRule(WorkFlowCaseInfo caseinfo, Guid flowid, Guid fromnodeid, Guid tonodeid, int vernum, UserInfo userinfo, out bool isDefaultNode, DbTransaction trans = null)
         {
+            
             var ruleid = _workFlowRepository.GetNextNodeRuleId(flowid, fromnodeid, tonodeid, vernum, trans);
+            isDefaultNode = ruleid==Guid.Empty;
+            if (isDefaultNode)//如果是默认分支条件，则表示不设定过滤条件，全部通过
+                return true;
             var ruleInfoList = _ruleRepository.GetRule(ruleid, userinfo.UserId);
             if (ruleInfoList != null && ruleInfoList.Count > 0)//如果存在合法的rulesql，则进行数据校验
             {
