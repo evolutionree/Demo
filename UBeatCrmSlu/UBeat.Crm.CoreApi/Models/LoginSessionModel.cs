@@ -33,11 +33,16 @@ namespace UBeat.Crm.CoreApi.Models
         public string Token { set; get; }
 
         public DateTime Expiration { set; get; }
+        /// <summary>
+        /// 记录本次登录的时间戳
+        /// </summary>
+        public long RequestTimeStamp { set; get; }
 
-        public TokenInfo(string token,DateTime expiration)
+        public TokenInfo(string token,DateTime expiration, long requestTimeStamp)
         {
             Token = token;
             Expiration = expiration;
+            RequestTimeStamp = requestTimeStamp;
         }
     }
 }

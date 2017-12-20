@@ -33,9 +33,18 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         [AllowAnonymous]
         [HttpPost]
+        [Route("getpublickey")]
+        public OutputResult<object> GetPublicKey()
+        {
+            return _accountServices.GetPublicKey();
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
         [Route("login")]
         public OutputResult<object> Login([FromBody] AccountLoginModel loginModel = null)
         {
+
             if (loginModel == null) return ResponseError<object>("参数格式错误");
 
 
@@ -45,6 +54,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 throw new Exception("Headers缺少DeviceId参数");
             }
+            long requestTimeStamp = 0;
+            if (loginModel.EncryptType == 1) //RSA加密算法
+            {
+                loginModel.AccountPwd = _accountServices.DecryptAccountPwd(loginModel.AccountPwd, out requestTimeStamp,true);
+            }
+
             var handleResult = _accountServices.Login(loginModel, header);
             if (!(handleResult.DataBody is AccountUserMapper))
             {
@@ -64,12 +79,17 @@ namespace UBeat.Crm.CoreApi.Controllers
 
 
             LoginUser.UserId = userInfo.UserId;
+            //校验是否该请求时间戳是否合法
+            if (loginModel.EncryptType == 1 && !ValidateRequestTimeStamp(requestTimeStamp))
+            {
+                throw new Exception("登录凭证已失效");
+            }
+
             //update user's Token in redis 
             if (isMobile)
             {
 
-                SetLoginSession(MobileLoginSessionKey, token, header.DeviceId, expiration - DateTime.UtcNow, false);
-
+                SetLoginSession(MobileLoginSessionKey, token, header.DeviceId, expiration - DateTime.UtcNow, requestTimeStamp, false);
 
                 //Cache.Remove(userInfo.UserId.ToString());
                 //CacheService.Repository.Add($"MOBILE_{userInfo.UserId.ToString()}", $"Bearer {token}_{header.DeviceId}", expiration - DateTime.UtcNow);
@@ -91,7 +111,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                     webexpiration = new TimeSpan(0, 0, seconds);
                 }
 
-                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration, true);
+                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration, requestTimeStamp, true);
                 //CacheService.Repository.Add($"WEB_{userInfo.UserId.ToString()}", $"Bearer {token}", expiration - DateTime.UtcNow);
             }
             //result
@@ -108,7 +128,41 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>(response);
         }
 
-        private void SetLoginSession(string sessionKey, string token, string deviceId, TimeSpan expiration, bool isMultipleLogin = true)
+        /// <summary>
+        /// 验证请求时间戳是否合法
+        /// </summary>
+        /// <param name="requestTimeStamp"></param>
+        /// <returns></returns>
+        private bool ValidateRequestTimeStamp(long requestTimeStamp)
+        {
+            try
+            {
+                var mobileLoginSession = CacheService.Repository.Get<LoginSessionModel>(MobileLoginSessionKey);
+                var webLoginSession = CacheService.Repository.Get<LoginSessionModel>(WebLoginSessionKey);
+                if (mobileLoginSession != null && mobileLoginSession.Sessions != null)
+                {
+                    foreach (var m in mobileLoginSession.Sessions)
+                    {
+                        if (m.Value.RequestTimeStamp == requestTimeStamp)
+                            return false;
+                    }
+                }
+                if (webLoginSession != null && webLoginSession.Sessions != null)
+                {
+                    foreach (var m in webLoginSession.Sessions)
+                    {
+                        if (m.Value.RequestTimeStamp == requestTimeStamp)
+                            return false;
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return true;
+        }
+
+        private void SetLoginSession(string sessionKey, string token, string deviceId, TimeSpan expiration, long requestTimeStamp, bool isMultipleLogin = true)
         {
             LoginSessionModel loginSession = null;
             try
@@ -132,9 +186,9 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             if (loginSession.Sessions.ContainsKey(deviceId))
             {
-                loginSession.Sessions[deviceId] = new TokenInfo(token, DateTime.UtcNow + expiration);
+                loginSession.Sessions[deviceId] = new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp);
             }
-            else loginSession.Sessions.Add(deviceId, new TokenInfo(token, DateTime.UtcNow + expiration));
+            else loginSession.Sessions.Add(deviceId, new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp));
 
             if (isExist)
                 CacheService.Repository.Replace(sessionKey, loginSession, expiration);
@@ -368,8 +422,10 @@ namespace UBeat.Crm.CoreApi.Controllers
         [AllowAnonymous]
         [HttpGet]
         [Route("updateversion/android")]
-        public OutputResult<object> UpdateSoftwareVersionForAndroid([FromQuery] string apkname) {
-            if (apkname == null || apkname.Length == 0) {
+        public OutputResult<object> UpdateSoftwareVersionForAndroid([FromQuery] string apkname)
+        {
+            if (apkname == null || apkname.Length == 0)
+            {
                 return ResponseError<object>("安卓包名异常");
             }
             return _accountServices.UpdateSoftwareVersionForAndorid(apkname, UserId);
@@ -505,7 +561,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                     webexpiration = new TimeSpan(0, 0, seconds);
                 }
 
-                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration, true);
+                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration,0, true);
                 //CacheService.Repository.Add($"WEB_{userInfo.UserId.ToString()}", $"Bearer {token}", expiration - DateTime.UtcNow);
             }
             //result

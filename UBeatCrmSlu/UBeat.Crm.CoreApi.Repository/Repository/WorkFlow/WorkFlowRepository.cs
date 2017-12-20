@@ -759,7 +759,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             GetEntityField(trans, caseInfo, flowNodeInfo, out fieldname, out entityTableName);
                             cmdText += string.Format(@"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid IN (
 													SELECT userid::INT from (
-																SELECT UNNEST( string_to_array(SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
+																SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													) as r WHERE r.userid!=''
                                        )
                                     AND recstatus = 1 LIMIT 1)", fieldname, entityTableName);
@@ -791,7 +791,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             cmdText += string.Format(@"  AND ur.deptid =  (SELECT s.pdeptid FROM crm_sys_department AS s WHERE s.deptid = (
 															    SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid IN (
 													                            SELECT userid::INT from (
-																                            SELECT UNNEST( string_to_array(SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
+																                            SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													                            ) as r WHERE r.userid!=''
                                                                    ) AND e.recstatus = 1 LIMIT 1
                                                                 )
@@ -839,7 +839,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             GetEntityField(trans, caseInfo, flowNodeInfo, out fieldname, out entityTableName);
                             cmdText += string.Format(@" AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid IN (
 													                            SELECT userid::INT from (
-																                            SELECT UNNEST( string_to_array(SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
+																                            SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													                            ) as r WHERE r.userid!=''
                                                                         ) AND recstatus = 1 LIMIT 1)
                                                         AND EXISTS(SELECT 1 FROM crm_sys_userinfo_role_relate AS ro WHERE ro.userid = u.userid AND ro.roleid IN (
@@ -882,7 +882,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             cmdText += string.Format(@" AND ur.deptid = (SELECT s.pdeptid  FROM crm_sys_department AS s WHERE s.deptid = (
 									                            SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid IN (
 													                            SELECT userid::INT from (
-																                            SELECT UNNEST( string_to_array(SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
+																                            SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													                            ) as r WHERE r.userid!=''
                                                                         ) AND e.recstatus = 1 LIMIT 1
                                                                 )

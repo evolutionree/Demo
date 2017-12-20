@@ -522,7 +522,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
-
         #region 旧代码
         public OutputResult<object> AddCaseItem(WorkFlowAddCaseItemModel caseItemModel, int userNumber)
         {
@@ -886,11 +885,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //若是分支流程，则通过预处理数据获取下一步分支节点，并返回下一步处理人数据
                     if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
                     {
-                        AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems);
+                        bool canAddNextNode = false;
+                        var nowcaseitem = caseitems.FirstOrDefault();
+                        AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, out canAddNextNode);
                         if (casefinish)
                         {
                             //自由流程，uuid值为0作为流程起点，值为1作为流程终点'，值为2作为流程过程节点';
                             nodeid = freeFlowEndNodeId;
+                        }
+                        else if (caseItemEntity.ChoiceStatus == 2)//0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
+                        {
+                            nodeid = freeFlowBeginNodeId;
+                            canAddNextNode = false;
                         }
                         else
                         {
@@ -1139,12 +1145,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
                     {
-                        AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems);
+                        var nowcaseitem = caseitems.FirstOrDefault();
+                        AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem,out canAddNextNode);
                         if (casefinish)
                         {
                             //自由流程，uuid值为0作为流程起点，值为1作为流程终点';
                             nodeid = freeFlowEndNodeId;
                             lastNodeId = freeFlowEndNodeId;
+                            canAddNextNode = false;
+                        }
+                        else if(caseItemEntity.ChoiceStatus==2 )//0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
+                        {
+                            nodeid = freeFlowBeginNodeId;
                             canAddNextNode = false;
                         }
                         else
@@ -1263,10 +1275,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --自由流程审批--
-        private void AuditFreeFlow(UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, DbTransaction tran, WorkFlowCaseInfo caseInfo, List<WorkFlowCaseItemInfo> caseitems)
+        private void AuditFreeFlow(UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, DbTransaction tran, WorkFlowCaseInfo caseInfo, WorkFlowCaseItemInfo nowcaseitem, out bool canAddNextNode)
         {
             int casenodenum = caseInfo.NodeNum;
-            var nowcaseitem = caseitems.FirstOrDefault();
+            canAddNextNode = false;
             AuditStatusType auditstatus = AuditStatusType.Approving;
 
 
@@ -1290,6 +1302,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         auditstatus = AuditStatusType.Approving;
                         casenodenum = 1;
+                        canAddNextNode = true;
                     }
                     break;
                 case 2:       //2退回
@@ -1305,6 +1318,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     casenodenum = 0;
                     auditstatus = AuditStatusType.Begin;
                     _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
+                    canAddNextNode = true;
                     break;
             }
             var auditcase = _workFlowRepository.AuditWorkFlowCase(caseInfo.CaseId, auditstatus, casenodenum, userinfo.UserId, tran);
@@ -1600,17 +1614,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 tempcaseitems = caseitems;
                         }
                         approvers = tempcaseitems.Select(m => m.HandleUser).Distinct().ToList();
-                        //foreach (var item in tempcaseitems)
-                        //{
-                        //    if (!string.IsNullOrEmpty(item.CopyUser))
-                        //    {
-                        //        var copyUserArray = item.CopyUser.Split(',');
-                        //        foreach (var u in copyUserArray)
-                        //        {
-                        //            copyusers.Add(int.Parse(u));
-                        //        }
-                        //    }
-                        //}
+                        
                         copyusers = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId).Select(m => m.UserId).ToList();
                         #endregion
 
@@ -1724,6 +1728,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (caseInfo.AuditStatus == AuditStatusType.Begin || caseInfo.AuditStatus == AuditStatusType.Approving)//编辑重新发起
                     {
                         funcCode = "WorkFlowLaunch";
+                        isAddNextStep = true;
                     }
                     break;
                 case ChoiceStatusType.Approval://普通审批通过
@@ -1823,6 +1828,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (caseInfo.AuditStatus == AuditStatusType.Begin || caseInfo.AuditStatus == AuditStatusType.Approving)//编辑操作
                     {
                         funcCode = "WorkFlowLaunch";
+                        isAddNextStep = true;
                     }
                     break;
                 case ChoiceStatusType.Approval:

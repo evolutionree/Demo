@@ -51,19 +51,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _logger = logger;
         }
 
-        class DataWrapper
-        {
-            public ReceiveEMailMapper Entity { get; set; }
-            public IList<UserMailInfo> UserMailInfoLst { get; set; }
-        }
+
+
         private static int _receiveThreads;
         private static int _writeThreads;
+
         static EMailServices()
         {
             var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("ReceiveMailConfig");
             _receiveThreads = config.GetValue<int>("ReceiveThreads");
             _writeThreads = config.GetValue<int>("WriteThreads");
         }
+
         #region 定时接收邮件
         class ThreadPoolManager
         {
@@ -217,7 +216,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>
                 {
                     Status = 1,
-                    Message = ex.Message
+                    Message = ExceptionTipMsgSwitch.ExceptionTipMsg(ex)
                 };
             }
 
@@ -525,7 +524,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return new OutputResult<object>()
                     {
                         Status = 1,
-                        Message = "发送邮件失败"
+                        Message = ExceptionTipMsgSwitch.ExceptionTipMsg(ex)
                     };
                 }
             }, entity, Guid.Parse(_entityId), userNumber);

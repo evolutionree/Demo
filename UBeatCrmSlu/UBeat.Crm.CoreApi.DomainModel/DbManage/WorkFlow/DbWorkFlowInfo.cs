@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel.DbManage.RuleInfo;
 
 namespace UBeat.Crm.CoreApi.DomainModel.DbManage.WorkFlow
 {
@@ -11,8 +12,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.WorkFlow
     {
         public CrmSysWorkflow WorkFlow { set; get; }
 
-        public List<CrmSysWorkflowNode> WorkFlowNodes { set; get; }
+        public List<CrmSysWorkflowNode> Nodes { set; get; }
 
+        public List<CrmSysWorkflowNodeLine> NodeLines { set; get; }
+
+        public List<CrmSysWorkflowFuncEvent> FuncEvents { set; get; }
+
+        public List<CrmSysWorkflowRuleRelation> WorkFlowRuleRelations { set; get; }
+        
     }
 
    

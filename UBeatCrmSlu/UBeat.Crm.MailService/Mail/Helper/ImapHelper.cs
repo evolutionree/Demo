@@ -47,7 +47,7 @@ namespace UBeat.Crm.MailService.Mail.Helper
             MailValidatorHelper.ValideStrNullOrEmpty(password, "password");
 
             this.InitImapEmailConfig(host, port, enableSsl);
-            
+
             ImapClient.Authenticate(userName, password);
         }
 
@@ -65,9 +65,11 @@ namespace UBeat.Crm.MailService.Mail.Helper
         private void InitImapEmailConfig(string host, int port, bool enableSsl)
         {
             ImapClient = new ImapClient();
-            ImapClient.Disconnect(true);
-            ImapClient.Connect(host, port, enableSsl);
-            ImapClient.Timeout = 10000;
+            if (!ImapClient.IsConnected)
+            {
+                ImapClient.Timeout = 3000;
+                ImapClient.Connect(host, port, enableSsl);
+            }
             ImapClient.ServerCertificateValidationCallback = (s, c, h, e) => true;
             ImapClient.AuthenticationMechanisms.Remove("XOAUTH2");
         }

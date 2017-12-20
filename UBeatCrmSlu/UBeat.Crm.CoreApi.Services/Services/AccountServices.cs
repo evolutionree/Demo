@@ -5,8 +5,10 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Text;
 using System.Text.RegularExpressions;
 using UBeat.Crm.CoreApi.Core.Utility;
+using UBeat.Crm.CoreApi.Core.Utility.Encrypt;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.Version;
@@ -24,12 +26,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IAccountRepository _accountRepository;
         private readonly IMapper _mapper;
         private readonly string _passwordSalt;
+        private readonly SecuritysModel _securitysModel;
+
 
         public AccountServices(IMapper mapper, IAccountRepository accountRepository, IConfigurationRoot config)
         {
             _accountRepository = accountRepository;
             _mapper = mapper;
-            _passwordSalt = config.GetSection("Securitys").GetValue<string>("PwdSalt");
+            _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
+            _passwordSalt = _securitysModel.PwdSalt;
+
         }
 
         public int GetUserCount()
@@ -37,10 +43,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int count = _accountRepository.GetUserCount();
             return count;
         }
+
+        public OutputResult<object> GetPublicKey()
+        {
+            if (_securitysModel == null || _securitysModel.RSAKeys == null)
+            {
+                return ShowError<object>("RSA密码对配置错误");
+            }
+            return new OutputResult<object>(
+                new {
+                    RSAPublicKey = _securitysModel.RSAKeys.PublicKey,
+                    TimeStamp = DateTimeUtility.ConvertToTimeStamp(DateTime.Now)
+                });
+        }
+
         public OutputResult<object> Login(AccountLoginModel loginModel, AnalyseHeader header)
         {
 
-            var userInfo = _accountRepository.GetUserInfo(loginModel.AccountName, loginModel.AccountPwd);
+            var userInfo = _accountRepository.GetUserInfo(loginModel.AccountName);
 
             if (userInfo == null)
             {
@@ -51,6 +71,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("该账户已停用");
             }
+
 
             //pwd salt security
             var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
@@ -127,8 +148,37 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(userInfo);
         }
+        /// <summary>
+        /// 解密用户登录密码
+        /// </summary>
+        /// <param name="accountPwd"></param>
+        /// <returns></returns>
+        public string DecryptAccountPwd(string accountPwd, out long timeStamp, bool isValidTimeStamp = false)
+        {
+            timeStamp = 0;
+            if (_securitysModel == null || _securitysModel.RSAKeys == null)
+            {
+                throw new Exception("RSA加密密码对配置错误");
+            }
+            var plainText = RSAHelper.Decrypt(accountPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+            var timeStampText = plainText.Substring(0, plainText.IndexOf('_'));
 
-
+            if (!long.TryParse(timeStampText, out timeStamp))
+            {
+                throw new Exception("时间戳格式错误");
+            }
+            var loginTime = DateTimeUtility.ConvertToDateTime(timeStamp);
+            if (isValidTimeStamp)
+            {
+                if (DateTime.Now - loginTime > new TimeSpan(0, 1, 0))
+                {
+                    throw new Exception("登录凭证已失效");
+                }
+            }
+            var pwd = plainText.Substring(plainText.IndexOf('_') + 1);
+            return pwd;
+        }
+        
 
         public OutputResult<object> RegistUser(AccountRegistModel registModel, int userNumber)
         {
@@ -145,7 +195,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(registEntity);
             }
-
+            if (registEntity.EncryptType == 1)//RSA加密方式
+            {
+                long timeStamp = 0;
+                registEntity.AccountPwd = DecryptAccountPwd(registEntity.AccountPwd, out timeStamp);
+            }
             var resulttemp = ExcuteAction((transaction, arg, userData) =>
              {
                  result = _accountRepository.RegistUser(registEntity, userNumber);
@@ -179,6 +233,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(pwdEntity);
             }
+            if (pwdModel.EncryptType == 1)//RSA加密方式
+            {
+                long timeStamp = 0;
+                pwdEntity.AccountPwd = DecryptAccountPwd(pwdModel.AccountPwd, out timeStamp);
+                pwdEntity.OrginPwd = DecryptAccountPwd(pwdModel.OrginPwd, out timeStamp);
+            }
+
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.PwdUser(pwdEntity, userNumber);
@@ -193,6 +254,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
+            if (entity.EncryptType == 1)//RSA加密方式
+            {
+                long timeStamp = 0;
+                entity.Pwd = DecryptAccountPwd(entity.Pwd, out timeStamp);
+            }
+
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.ReConvertPwd(entity, userNumber);
@@ -342,7 +409,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }, entityModel, userNumber);
 
         }
-        public OutputResult<object> UpdateSoftwareVersionForAndorid(string apkName,int userNum) {
+        public OutputResult<object> UpdateSoftwareVersionForAndorid(string apkName, int userNum)
+        {
             string MainVersion = "";
             string subVersion = "";
             string buildCode = "";
@@ -362,9 +430,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 int.TryParse(buildCode, out iBuildCode);
                 IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
                 FileServiceConfig UrlConfig = config.GetSection("FileServiceSetting").Get<FileServiceConfig>();
-                int index =  UrlConfig.ReadUrl.IndexOf("/");
+                int index = UrlConfig.ReadUrl.IndexOf("/");
                 string serverUrl = UrlConfig.ReadUrl.Substring(0, index);
-                _accountRepository.UpdateSoftwareVersion(tran, apkName, iMainVersion, iSubVersion, iBuildCode, serverUrl,userNum);
+                _accountRepository.UpdateSoftwareVersion(tran, apkName, iMainVersion, iSubVersion, iBuildCode, serverUrl, userNum);
                 return new OutputResult<object>("ok");
             }
             else
