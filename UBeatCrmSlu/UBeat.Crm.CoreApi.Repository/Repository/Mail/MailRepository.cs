@@ -39,7 +39,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         "body.isread," +
                                         "(SELECT COUNT(1) FROM crm_sys_mail_attach WHERE mailid=body.recid AND recstatus=1) attachcount," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailid,recid,mongoid,filename FROM crm_sys_mail_attach WHERE  mailid=body.recid AND recstatus=1 ) t)::jsonb attachinfo" +
-                                        " FROM crm_sys_mail_mailbody body Where  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  {0}  ) AS tmp  {1} ";
+                                        " FROM crm_sys_mail_mailbody body Where 1=1  {0}  ) AS tmp  {1} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
@@ -47,7 +47,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
                 sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
-            var catalogSql = @"SELECT ctype FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid AND ctype = 1006 LIMIT 1; ";
+            var catalogSql = @"SELECT ctype FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid LIMIT 1; ";
             var param = new
             {
                 UserId = userId,
@@ -57,17 +57,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             switch (ctype)
             {
                 case 1006://
-                    sqlCondition = "  body.recstatus=0 ";
+                    sqlCondition = " body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  AND  body.recstatus=0 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1002:
+                    sqlCondition = "  body.isread=0 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1008:
+                    sqlCondition = "  body.istage=1 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1005:
-                    break;
                 default:
-                    sqlCondition = "  body.recstatus=1 ";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  AND body.recstatus=1 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
             }
