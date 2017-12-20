@@ -47,22 +47,29 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
                 sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
-            var validDeleteCatalogSql = @"SELECT count(1) FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid AND ctype = 1006 LIMIT 1; ";
+            var catalogSql = @"SELECT ctype FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid AND ctype = 1006 LIMIT 1; ";
             var param = new
             {
                 UserId = userId,
                 CatalogId = paramInfo.Catalog
             };
-            int isDeleteCatalog = DataBaseHelper.QuerySingle<int>(validDeleteCatalogSql, param);
-            if (isDeleteCatalog > 0)
+            int ctype = DataBaseHelper.QuerySingle<int>(catalogSql, param);
+            switch (ctype)
             {
-                sqlCondition = "  body.recstatus=0 ";
-                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
-            }
-            else
-            {
-                sqlCondition = "  body.recstatus=1 ";
-                sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                case 1006://
+                    sqlCondition = "  body.recstatus=0 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    break;
+                case 1002:
+                    break;
+                case 1008:
+                    break;
+                case 1005:
+                    break;
+                default:
+                    sqlCondition = "  body.recstatus=1 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    break;
             }
 
             sqlCondition = sqlWhere.Count() == 0 ? string.Empty : " AND " + string.Join(" AND ", sqlWhere);
