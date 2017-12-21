@@ -305,4 +305,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
         public int PageSize { get; set; }
     }
 
+    public class MailAddressPasswordModel
+    {
+        public Guid MailBoxId { get; set; }
+    }
+
 }

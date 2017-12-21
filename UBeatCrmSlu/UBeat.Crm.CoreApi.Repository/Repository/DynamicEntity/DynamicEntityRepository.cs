@@ -69,13 +69,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 new NpgsqlParameter("fieldData", JsonHelper.ToJson(fieldData)),
                 new NpgsqlParameter("userNo",userNumber)
             };
+            List<OperateResult> result;
             if (tran == null)
             {
-                var asds = DBHelper.ExecuteQuery<OperateResult>("", sql, param).FirstOrDefault();
-                return asds;
+                result = DBHelper.ExecuteQuery<OperateResult>("", sql, param);
+                return result.FirstOrDefault();
             }
 
-            var result = DBHelper.ExecuteQuery<OperateResult>(tran, sql, param);
+            result = DBHelper.ExecuteQuery<OperateResult>(tran, sql, param);
 
             return result.FirstOrDefault();
         }
@@ -469,17 +470,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             var sql = @"
                 SELECT * FROM crm_func_entity_protocol_data_delete(@entityId,@recId,@pagetype,@pageCode,@userNo)
             ";
-            
-         
-           var param = new DbParameter[]
-           {
+
+
+            var param = new DbParameter[]
+            {
                 new NpgsqlParameter("entityId",entityId),
                 new NpgsqlParameter("recId",recIds),
                 new NpgsqlParameter("pagetype", pageType),
                 new NpgsqlParameter("pageCode",pageCode),
                 new NpgsqlParameter("userNo",userNumber)
-           };
-           return ExecuteQuery<OperateResult>(sql, param, trans).FirstOrDefault();
+            };
+            return ExecuteQuery<OperateResult>(sql, param, trans).FirstOrDefault();
 
         }
         public OperateResult DeleteDataSrcRelation(DataSrcDeleteRelationMapper entityMapper, int userNumber)

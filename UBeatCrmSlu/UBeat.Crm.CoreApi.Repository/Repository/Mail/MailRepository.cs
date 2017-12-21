@@ -430,8 +430,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                     mailid=@mailid And ctype=1)  AND 
                                                    recstatus=1 LIMIT 1) AS tmp )";
             var senderSql = @" SELECT username as recname,usertel as phone,useremail as email,usericon as headicon FROM crm_sys_userinfo WHERE
-               userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1)AND  recstatus=1;";
-
+               userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1) AND  recstatus=1;";
+            var senderMailSql = @"Select displayname as recname,'' as phone,mailaddress as email,'' as headicon From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1";
             var conCustSql = @"SELECT recname ,phone ,email ,headicon  FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
 
             var isCustExistsSql = @"Select count(1) From crm_sys_customer Where recid=(SELECT belcust->>'id' FROM crm_sys_contact WHERE email=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1 LIMIT 1)::uuid";
@@ -442,11 +442,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                         AND controltype  NOT IN(20,1001,1002,1003,1004,1005,1006,1007,1008) AND recstatus=1
                                                     ) AS t ) AS tmp, (select
                                                     crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('349cba2f-42b0-44c2-89f5-207052f50a00',@userid)) AS tmp1";
-            var custSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0}   from crm_sys_customer e WHERE recid IN (
+            var custConSql = @"SELECT  '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0}   from crm_sys_customer e WHERE recid IN (
                                         SELECT regexp_split_to_table(custids,',')::uuid custid FROM (
                                         SELECT (belcust->>'id') AS custids FROM crm_sys_contact WHERE email=
                                         (Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1) AS tmp ) AND recstatus=1";
-
+            var custMailSuffixSql = @"SELECT '349cba2f-42b0-44c2-89f5-207052f50a00' as rectype,{0}  FROM crm_sys_customer as e WHERE e.recstatus=1 AND e.mailsuffix=(Select substr(mailaddress,position('@' in mailaddress)+1,length(mailaddress)+1) From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)";
             var contactConfigSql = @"select   crm_func_entity_protocol_extrainfo_fetch AS extracolumn from crm_func_entity_protocol_extrainfo_fetch('e450bfd7-ff17-4b29-a2db-7ddaf1e79342',@userid)";
 
             var contactsSql = @" Select e.* {0} From crm_sys_contact as e Where (belcust->> 'id')   IN (SELECT regexp_split_to_table(custid, ',')  FROM(SELECT(belcust->> 'id') as custid FROM crm_sys_contact WHERE email = (Select mailaddress From  crm_sys_mail_senderreceivers Where mailid =@mailid  And ctype = 1 LIMIT 1)  AND recstatus = 1 LIMIT 1) AS tmp )";
@@ -468,12 +468,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             {
                 senderResult = DataBaseHelper.Query<dynamic>(senderSql, param, CommandType.Text);
             }
+            if (senderResult == null || senderResult.Count == 0)
+            {
+                senderResult = DataBaseHelper.Query<dynamic>(senderMailSql, param, CommandType.Text);
+            }
             var countRecord = DataBaseHelper.QuerySingle<int>(isCustExistsSql, param, CommandType.Text);
             List<dynamic> custResult = new List<dynamic>();
             if (countRecord > 0)
             {
-                custSql = string.Format(custSql, DataBaseHelper.QuerySingle<string>(custConfigSql, param));
-                custResult = DataBaseHelper.Query<dynamic>(custSql, param, CommandType.Text);
+                custConSql = string.Format(custConSql, DataBaseHelper.QuerySingle<string>(custConfigSql, param));
+                custResult = DataBaseHelper.Query<dynamic>(custConSql, param, CommandType.Text);
+            }
+            if (custResult == null || custResult.Count == 0)
+            {
+                custMailSuffixSql = string.Format(custMailSuffixSql, DataBaseHelper.QuerySingle<string>(custConfigSql, param));
+                custResult = DataBaseHelper.Query<dynamic>(custMailSuffixSql, param, CommandType.Text);
             }
             Dictionary<string, object> dicResult = new Dictionary<string, object>();
             dicResult.Add("maildetail", mailDetail);

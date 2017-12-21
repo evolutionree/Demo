@@ -37,20 +37,19 @@ namespace UBeat.Crm.CoreApi.Controllers
             var header = GetAnalyseHeader();
             return _emailServices.ValidSendEMailData(model, header, UserId);
         }
+        
         /// <summary>
-        /// 发邮件
+        /// 草稿箱
         /// </summary>
         /// <param name="emailServices"></param>
         [HttpPost]
-        [Route("sendemail")]
-        public OutputResult<object> SendEMailAsync([FromBody]SendEMailModel model = null)
+        [Route("savedraft")]
+        public OutputResult<object> SaveDraftMail([FromBody]SendEMailModel model = null)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
             var header = GetAnalyseHeader();
-            //return _emailServices.SendEMailAsync(model, header, UserId);
-            return null;
+            return _emailServices.SaveDraftMail(model, header, UserId);
         }
-
         /// <summary>
         /// 收邮件
         /// </summary>
@@ -235,13 +234,21 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _emailServices.TransferInnerContact(dynamicModel, UserId);
         }
 
- 
+
         [HttpPost]
         [Route("getreconvertmaillst")]
         public OutputResult<object> TransferInnerPersonContact([FromBody] ReconvertMailModel model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
             return new OutputResult<object>(_emailServices.GetReconvertMailList(model, UserId));
+        }
+
+        [HttpPost]
+        [Route("getenablepassword")]
+        public OutputResult<object> GetEnablePassword([FromBody] MailAddressPasswordModel model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _emailServices.GetEnablePassword(model.MailBoxId, UserId);
         }
         #endregion
 
