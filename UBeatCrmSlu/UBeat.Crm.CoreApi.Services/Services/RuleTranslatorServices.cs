@@ -236,21 +236,122 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private string FormatInOrNotIn(string operate, string fieldName,string strData)
         {
             var data = JObject.Parse(strData);
-           var dataValue = data["dataVal"].ToString();
-            string ruleSql=null;
+            string ruleSql = null;
+            //var dataValue = data["dataVal"].ToString();
+            // string ruleSql=null;
+            // switch (operate)
+            // {
+            //     case "in":
+            //         ruleSql = string.Format(@"({0} {1} ('{2}'))", fieldName, Condition.In.GetSqlOperate(), dataValue);
+            //         break;
+            //     case "not in":
+            //         ruleSql = string.Format(@"({0} {1} ('{2}'))", fieldName, Condition.NotIn.GetSqlOperate(), dataValue);
+            //         break;
+            //     case "=":
+            //         ruleSql = string.Format(@"({0} {1} {2})", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
+            //         break;
+            // }
+            // return ruleSql;
+
+
+            var dataValue = data["dataVal"].ToString();
+            string userIds = string.Empty;
+            string deptIds = string.Empty;
+            JToken value;
+            if (data.TryGetValue("users", out value))
+            {
+                userIds = value.ToString();
+            }
+            if (data.TryGetValue("deptids", out value))
+            {
+                deptIds = value.ToString();
+            }
+
+            StringBuilder sb = new StringBuilder();
             switch (operate)
             {
                 case "in":
-                    ruleSql = string.Format(@"({0} {1} ('{2}'))", fieldName, Condition.In.GetSqlOperate(), dataValue);
+                    sb.Append("(");
+                    if (!string.IsNullOrEmpty(dataValue) && dataValue != "{}")
+                    {
+                        var strSql = string.Format(@" (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), dataValue);
+                        sb.Append(strSql);
+                    }
+                    else
+                    {
+                        var strSql = "1=1";
+                        sb.Append(strSql);
+                    }
+                    if (!string.IsNullOrEmpty(userIds))
+                    {
+                       var strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), userIds);
+                        sb.Append(strSql);
+                    }
+                    if (!string.IsNullOrEmpty(deptIds))
+                    {
+                        string departmentSql = "SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN (SELECT deptid FROM crm_func_department_tree('{0}', 1))  ";
+                        ArrayList ar = new ArrayList();
+                        foreach (var depid in deptIds.Split(','))
+                        {
+                            ar.Add(string.Format(departmentSql, depid));
+                        }
+                        departmentSql = " ( " + string.Join(" UNION ALL ", ar.ToArray()) + " ) ";
+                        var strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2})))", fieldName, Condition.In.GetSqlOperate(), departmentSql);
+                        sb.Append(strSql);
+                    }
+                    sb.Append(")");
+                    ruleSql = sb.ToString();
                     break;
                 case "not in":
-                    ruleSql = string.Format(@"({0} {1} ('{2}'))", fieldName, Condition.NotIn.GetSqlOperate(), dataValue);
+                    sb.Append("(");
+                    if (!string.IsNullOrEmpty(dataValue) && dataValue != "{}")
+                    {
+                        string strSql = "";
+                        if (dataValue == "{currentUser}")
+                        {
+                             strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
+                        }
+                        else if (dataValue == "{currentDepartment}" || dataValue == "{subDepartment}")
+                        {
+                             strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM ({0}) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
+                        }
+                        sb.Append(strSql);
+                    }
+                    else
+                    {
+                       var strSql = "1=1";
+                        sb.Append(strSql);
+                    }
+                    if (!string.IsNullOrEmpty(userIds))
+                    {
+                        var strSql = string.Format(@" AND (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", userIds, fieldName);
+                        sb.Append(strSql);
+                    }
+                    if (!string.IsNullOrEmpty(deptIds))
+                    {
+                        string departmentSql = "SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN (SELECT deptid FROM crm_func_department_tree('{0}', 1))  ";
+                        ArrayList ar = new ArrayList();
+                        foreach (var depid in deptIds.Split(','))
+                        {
+                            ar.Add(string.Format(departmentSql, depid));
+                        }
+                        departmentSql = " ( " + string.Join(" UNION ALL ", ar.ToArray()) + " ) ";
+                        var strSql = string.Format(@" AND  ( NOT EXISTS(SELECT * FROM ({0} ) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", departmentSql, fieldName);
+                        sb.Append(strSql);
+                    }
+                    sb.Append(")");
+                    ruleSql = sb.ToString();
                     break;
                 case "=":
-                    ruleSql = string.Format(@"({0} {1} {2})", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
+                    ruleSql = string.Format(@"(COALESCE({0},'')::text {1} {2}::text)", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
+                    break;
+                case "!=":
+                    ruleSql = string.Format(@"(COALESCE({0},'')::text {1} {2}::text)", fieldName, Condition.NotEqual.GetSqlOperate(), dataValue);
                     break;
             }
+
             return ruleSql;
+
         }
 
         public OutputResult<object> GetRule(GetRuleInfoModel entityModel, int userId)
