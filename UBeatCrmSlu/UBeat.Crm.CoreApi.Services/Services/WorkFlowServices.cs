@@ -1207,6 +1207,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (casefinish)//审批已经到达了最后一步
                     {
                         _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
+
+                        //判断是否有附加函数_event_func
+                        eventfuncname = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, 1, tran);
+                        if (!string.IsNullOrEmpty(eventfuncname))
+                        {
+                            _workFlowRepository.ExecuteWorkFlowEvent(eventfuncname, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                        }
                     }
                     else if (canAddNextNode) //添加下一步骤审批节点
                     {
