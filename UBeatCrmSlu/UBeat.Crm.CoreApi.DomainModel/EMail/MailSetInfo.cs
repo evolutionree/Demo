@@ -117,12 +117,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         PersonalRecycle = 1006,//个人回收箱
         GlobalRecycle = 1007,//集团回收箱
         FlagStar=1008,//标星邮件
+        InnerTransfer = 1009,//内部分发目录
         CustType = 3001,//客户分类目录
         Cust = 2001,//客户目录
         CustDyn = 4001,//客户自定义目录
         Personal = 2002,//个人目录
         PersonalDyn = 3002,//个人自定义目录
-        InnerTransfer = 2004//内部分发目录
     }
 
 
