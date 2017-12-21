@@ -454,24 +454,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 			            FROM crm_sys_mail_catalog b INNER JOIN cata  on cata.recid= b.vpid where  recstatus=1  
             ),
             usercatalog AS(
-		             SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recstatus=1  
+		             SELECT recid ,recname,userid,viewuserid,ctype,pid,vpid,recorder FROM crm_sys_mail_catalog WHERE viewuserid=@userId AND recstatus=1  
             ),
             catalogrelation AS(
 				SELECT a.catalogid,COUNT(mailid) AS unreadmail,c.vpid FROM crm_sys_mail_catalog_relation a INNER JOIN crm_sys_mail_catalog c on c.recid=a.catalogid inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where b.recstatus=1 and (b.isread is null or b.isread = 0) GROUP BY a.catalogid,c.vpid
             ),
             catalogmailcount AS(
-		             SELECT a.catalogid,COUNT(mailid) AS mailcount FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where b.recstatus!=2  GROUP BY a.catalogid
+		             SELECT a.catalogid,COUNT(mailid) AS mailcount,SUM(istag) flagstar FROM crm_sys_mail_catalog_relation a inner join crm_sys_mail_mailbody b on a.mailid = b.recid  where b.recstatus!=2  GROUP BY a.catalogid
             )
             SELECT usercatalog.*,
-            COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userid ))
-            WHEN usercatalog.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0 and viewuserid=@userid ))
-            WHEN usercatalog.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.vpid=usercatalog.recid)
-            WHEN usercatalog.CType=4001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('4001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)
-            WHEN usercatalog.CType=2002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2002' IN idpath) >0 and viewuserid=@userid ))
-            WHEN usercatalog.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=usercatalog.recid)
-            WHEN usercatalog.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userid ))
-            WHEN usercatalog.CType=2004 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2004' IN idpath) >0 and viewuserid=@userid ))
-            ELSE catalogrelation.unreadmail END,0)::int unreadcount,COALESCE(catalogmailcount.mailcount,0)::int mailcount,cata.idpath 
+            COALESCE(CASE WHEN usercatalog.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userId ))
+            WHEN usercatalog.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0 and viewuserid=@userId ))
+            WHEN usercatalog.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userId ) and catalogrelation.vpid=usercatalog.recid)
+            WHEN usercatalog.CType=4001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('4001' IN idpath) >0 and viewuserid=@userId ) and catalogrelation.catalogid=usercatalog.recid)
+            WHEN usercatalog.CType=2002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2002' IN idpath) >0 and viewuserid=@userId ))
+            WHEN usercatalog.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userId ) and catalogrelation.catalogid=usercatalog.recid)
+            WHEN usercatalog.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userId ))
+            WHEN usercatalog.CType=1009 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1009' IN idpath) >0 and viewuserid=@userId ))
+            WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userId ))
+						ELSE catalogrelation.unreadmail END,0)::int unreadcount,
+						COALESCE(CASE WHEN usercatalog.CType=1008 THEN (SELECT sum(flagstar) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userId ))       
+						ELSE catalogmailcount.mailcount END, 0)::int mailcount,cata.idpath 
             FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid 
             left join cata on cata.recid=usercatalog.recid left join catalogmailcount on catalogmailcount.catalogid=usercatalog.recid
              where 1=1 {0} order by vpid,recorder";
