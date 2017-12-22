@@ -1388,12 +1388,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> SaveMailOwner(List<Guid> Mails, int newUserId, int userId)
         {
-            ExcuteInsertAction((trans, arg, userData) =>
-            {
-                return HandleResult(_mailCatalogRepository.SaveMailOwner(Mails, newUserId, userId, trans));
-            }, Mails, Guid.Parse(_entityId), userId);
-
-            return null;
+            return ExcuteInsertAction((trans, arg, userData) =>
+              {
+                  return HandleResult(_mailCatalogRepository.SaveMailOwner(Mails, newUserId, userId, trans));
+              }, Mails, Guid.Parse(_entityId), userId);
         }
 
         public OutputResult<object> SaveWhiteList(List<Guid> Mails, string enable)

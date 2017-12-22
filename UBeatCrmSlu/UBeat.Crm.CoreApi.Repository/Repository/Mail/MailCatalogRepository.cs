@@ -789,9 +789,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <param name="newUserId"></param>
         public OperateResult SaveMailOwner(List<Guid> MailBoxs, int newUserId, int userId, DbTransaction dbTrans = null)
         {
-            //string userMailAddressSql = " select accountid as mailaddress,owner::int4 as userid from crm_sys_mail_mailbox where recid IN (SELECT regexp_split_to_table(@recids,',')::uuid)";
-            //var userMailAddressLst = DataBaseHelper.Query<TransferMailAddressMapper>(userMailAddressSql, new { RecIds = string.Join(",", MailBoxs) });
-            //return TransferMailToOtherMailAddress(userMailAddressLst, newUserId, dbTrans);
+            string userMailAddressSql = " select accountid as mailaddress,owner::int4 as userid from crm_sys_mail_mailbox where recid IN (SELECT regexp_split_to_table(@recids,',')::uuid)";
+            var userMailAddressLst = DataBaseHelper.Query<TransferMailAddressMapper>(userMailAddressSql, new { RecIds = string.Join(",", MailBoxs) });
+            var result = TransferMailToOtherMailAddress(userMailAddressLst, newUserId, dbTrans);//邮件转移
+            if (result.Flag == 0)
+            {
+                dbTrans.Rollback();
+                return result;
+            }
 
             string strSQL = "update crm_sys_mail_mailbox set owner=@userid where recid=@recid";
             List<DbParameter[]> paramList = new List<DbParameter[]>();
@@ -805,7 +810,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 paramList.Add(param);
             }
             ExecuteNonQueryMultiple(strSQL, paramList, dbTrans);
-            return null;
+            return result;
         }
 
         public OperateResult TransferMailToOtherMailAddress(List<TransferMailAddressMapper> entities, int userId, DbTransaction dbTrans = null)
@@ -819,11 +824,30 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                             "    SELECT cata.recname,cata.ctype,cata.recid,cata.viewuserid,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN  T1 ON T1.recid=cata.vpid AND " +
                             "   cata.viewuserid=@userid" +
                             ")" +
-                            "SELECT tmp.mailid,'{\"issendoreceive\":'||tmp.mailoperatetype::TEXT||',\"sendrecord\":{\"status\":'||COALESCE(record.status,-1)||'}}' as extradata FROM (SELECT * FROM crm_sys_mail_related related WHERE relatedmailaddress='pengxiaofeng@crmuke.com' AND mailid IN " +
+                            "SELECT tmp.mailid,'{\"issendoreceive\":'||tmp.mailoperatetype::TEXT||',\"sendrecord\":{\"status\":'||COALESCE(record.status,-1)||'}}' as extradata FROM (SELECT * FROM crm_sys_mail_related related WHERE relatedmailaddress=@mailaddress AND mailid IN " +
                             "(" +
                             " SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (  SELECT recid FROM T1 )" +
                             ") ) AS tmp LEFT JOIN crm_sys_mail_sendrecord record ON record.mailid=tmp.mailid" +
                             "";
+            var delMailCataReSql = @"WITH RECURSIVE T1 AS 
+				            ( 
+						            SELECT recname,ctype,recid,viewuserid,vpid FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND (ctype=1001 OR ctype=1004 OR ctype=1005 OR ctype=1006)   AND recstatus=1
+						            UNION  
+						            SELECT cata.recname,cata.ctype,cata.recid,cata.viewuserid,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN  T1 ON T1.recid=cata.vpid AND   cata.viewuserid=@userid    AND recstatus=1
+				            )
+                            DELETE FROM crm_sys_mail_catalog_relation WHERE mailid IN 
+                            (
+                            SELECT  mailid FROM crm_sys_mail_related related WHERE relatedmailaddress=@mailaddress
+                            )      AND catalogid IN (SELECT recid FROM T1)  ";
+
+            var delMailCataSql = @"WITH RECURSIVE T1 AS 
+				            ( 
+						            SELECT recname,ctype,recid,viewuserid,vpid FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND (ctype=1001 OR ctype=1004 OR ctype=1005 OR ctype=1006)   AND recstatus=1
+						            UNION  
+						            SELECT cata.recname,cata.ctype,cata.recid,cata.viewuserid,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN  T1 ON T1.recid=cata.vpid AND   cata.viewuserid=@userid  AND recstatus=1
+				            )
+                          Delete FROM crm_sys_mail_catalog WHERE recid IN (SELECT recid FROM T1) AND (ctype=4001 OR ctype=3001)";//只删除客户分类目录和客户目录
+            var mailRecSql = @"UPDATE crm_sys_mail_receivemailrelated SET userid=@newuserid WHERE userid=@userid AND mailaddress=@mailaddress";
             OperateResult result = new OperateResult { Flag = 1 };
             foreach (var entity in entities)
             {
@@ -838,13 +862,28 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 {
                     var args = new DbParameter[]
                     {
-                    new NpgsqlParameter("mailid",tmp.MailId),
-                    new NpgsqlParameter("extradata",tmp.ExtraData),
-                    new NpgsqlParameter("userid",userId)
+                        new NpgsqlParameter("mailid",tmp.MailId),
+                        new NpgsqlParameter("extradata",tmp.ExtraData),
+                        new NpgsqlParameter("userid",userId)
                     };
                     result = DBHelper.ExecuteQuery<OperateResult>(dbTrans, sqlPro, args).FirstOrDefault();
                 }
+                var args1 = new DbParameter[]
+                {
+                        new NpgsqlParameter("mailaddress",entity.MailAddress),
+                        new NpgsqlParameter("userid",entity.UserId)
+                };
+                DBHelper.ExecuteQuery(dbTrans, delMailCataReSql, args1);
+                DBHelper.ExecuteQuery(dbTrans, delMailCataSql, args1);
+                var args2 = new DbParameter[]
+                {
+                        new NpgsqlParameter("mailaddress",entity.MailAddress),
+                        new NpgsqlParameter("userid",entity.UserId),
+                        new NpgsqlParameter("newuserid",userId)
+                };
+                DBHelper.ExecuteQuery(dbTrans, mailRecSql, args2);
             }
+
             return result;
         }
 
