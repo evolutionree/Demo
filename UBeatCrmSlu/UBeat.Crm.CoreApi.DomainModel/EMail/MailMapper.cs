@@ -632,4 +632,19 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public string UserName { get; set; }
     }
 
+
+    public class TransferMailAddressMapper
+    {
+        public string MailAddress { get; set; }
+
+        public int UserId { get; set; }
+    }
+
+    public class TransferMailAddressInfo
+    {
+        public Guid MailId { get; set; }
+
+        public string ExtraData { get; set; }
+    }
+
 }

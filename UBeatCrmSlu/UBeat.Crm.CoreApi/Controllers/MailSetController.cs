@@ -237,7 +237,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("指定邮箱拥有人", dynamicModel);
             OutputResult<object> result = new OutputResult<object>();
-            _eMailServices.SaveMailOwner(dynamicModel.RecIds, dynamicModel.NewUserId);
+            _eMailServices.SaveMailOwner(dynamicModel.RecIds, dynamicModel.NewUserId,UserId);
             result.Message = "指定成功";
             return result;
         }

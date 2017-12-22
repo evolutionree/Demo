@@ -10,9 +10,9 @@ namespace UBeat.Crm.CoreApi.IRepository
     public interface IMailCatalogRepository : IBaseRepository
     {
 
-        List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword,int userId);
+        List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId);
 
-        List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword, string catalogType,int userid);
+        List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword, string catalogType, int userid);
 
         List<OrgAndStaffTree> GetOrgAndStaffTreeByLevel(int userId, string deptId, string keyword);
 
@@ -21,7 +21,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<Dictionary<string, object>> GetDefaultCatalog(int userId);
         int InitCatalog(Dictionary<string, object> newCatalog, int userId);
         int NeedInitCatalog(int userId);
-        void SaveMailOwner(List<Guid> MailBoxs, int newUserId);
+        OperateResult SaveMailOwner(List<Guid> MailBoxs, int newUserId, int userId, DbTransaction dbTrans = null);
         void SaveWhiteList(List<Guid> MailBoxs, string enable);
         void MailServerEnable(List<Guid> MailServers);
         void MailServerUnEnable(List<Guid> MailServers);
@@ -48,10 +48,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         MailCatalogInfo GetMailCataLogByCustId(Guid custId, int userid, DbTransaction p);
         UserMailInfo GetUserMailInfo(string fromAddress, int userId);
 
-        IList<UserMailInfo> GetAllUserMail(int deviceType,int userId);
-        bool checkHasMails(string recid,DbTransaction tran);
-        bool checkCycleCatalog(string parentid, string recid,DbTransaction tran);
-        void MoveCatalog(string v1, string v2,string v3, DbTransaction tran);
+        IList<UserMailInfo> GetAllUserMail(int deviceType, int userId);
+        bool checkHasMails(string recid, DbTransaction tran);
+        bool checkCycleCatalog(string parentid, string recid, DbTransaction tran);
+        void MoveCatalog(string v1, string v2, string v3, DbTransaction tran);
         MailCatalogInfo GetCatalogForCustType(Guid custCatalog, int newUserId, DbTransaction tran);
         void TransferCatalog(Guid recId, int newUserId, Guid newParentCatalogid, DbTransaction tran);
         void TransferMailsToNewCatalog(Guid newCatalogid, Guid oldCatalogid, DbTransaction tran);

@@ -239,7 +239,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var mailBoxLst = _mailRepository.GetMailBoxList(1, int.MaxValue, userNumber);
             if (msg.MessageId != null)
             {
-                var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
+                var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.MailAddress == currentMailAddress);
                 if (obj != null)
                     return;
             }
@@ -276,7 +276,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 ReceiveTime = msg.Date,
                 ServerId = msg.MessageId,
-                MailAddress = currentMailAddress
+                MailAddress = currentMailAddress,
             });
             DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
             {
@@ -738,7 +738,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }));
             extraData.Add("relatedrecord", new
             {
-                MailAddress = ((MailboxAddress)msgResult.Msg.From.FirstOrDefault()).Address//获取发件人
+                MailAddress = ((MailboxAddress)msgResult.Msg.From.FirstOrDefault()).Address,//获取发件人
+                ServerId = msgResult.Msg.MessageId
             });
             extraData.Add("sendrecord", new
             {
@@ -754,7 +755,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ExtraData = extraData
             };
             _dynamicEntityServices.RoutePath = "api/dynamicentity/add";//赋予新增权限
-            return _dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
+            var result = _dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
+            if (result.Flag == 0)
+                _logger.LogError(result.Msg);
+            return result;
         }
         private void BuilderMailBody(SendEMailMapper entity, int userNumber)
         {
@@ -1382,9 +1386,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return new OutputResult<object>(_mailRepository.GetInnerTransferRecord(entity, userId));
         }
-        public OutputResult<object> SaveMailOwner(List<Guid> Mails, int newUserId)
+        public OutputResult<object> SaveMailOwner(List<Guid> Mails, int newUserId, int userId)
         {
-            _mailCatalogRepository.SaveMailOwner(Mails, newUserId);
+            ExcuteInsertAction((trans, arg, userData) =>
+            {
+                return HandleResult(_mailCatalogRepository.SaveMailOwner(Mails, newUserId, userId, trans));
+            }, Mails, Guid.Parse(_entityId), userId);
+
             return null;
         }
 
@@ -1431,10 +1439,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (mailBoxId == Guid.Empty) return new OutputResult<object>(null, "邮箱信息Id不能为空", 1);
 
             var result = _mailRepository.GetEnablePassword(mailBoxId, userNum);
-            return new OutputResult<object>(new
-            {
-                Password = RSAEncrypt.RSADecryptStr(result.EncryptPwd)
-            });
+            return new OutputResult<object>(result);
         }
 
         #region  模糊查询我的通讯人员限制10个

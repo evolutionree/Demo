@@ -26,7 +26,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             var existSql = @"select count(1) from  crm_sys_mail_catalog where vpid=@catalogpid and recstatus=1 and recname=@catalogname ";
             var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
-            if (existCount > 0) {
+            if (existCount > 0)
+            {
                 return new OperateResult()
                 {
                     Flag = 0,
@@ -40,7 +41,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 CatalogName = entity.CatalogName.Trim(),
                 UserId = userId,
                 Ctype = entity.Ctype,
-                CustId=entity.CustId,
+                CustId = entity.CustId,
                 CustCataLog = entity.CustCataLog,
                 CatalogPId = entity.CatalogPId,
                 Recorder = recOrder
@@ -169,7 +170,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     Flag = 0,
                     Msg = "目录异常不能删除"
                 };
-            if ((int)catalogMap["isdynamic"]==0)
+            if ((int)catalogMap["isdynamic"] == 0)
             {
                 return new OperateResult()
                 {
@@ -177,7 +178,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     Msg = "该文件夹是系统文件夹,不允许删除"
                 };
             }
-            if ((int)catalogMap["catalogcount"] >0|| (int)catalogMap["mailcount"] >0)
+            if ((int)catalogMap["catalogcount"] > 0 || (int)catalogMap["mailcount"] > 0)
             {
                 return new OperateResult()
                 {
@@ -444,7 +445,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return resultList;
         }
 
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType,string keyword, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
         {
             var sql = @"WITH RECURSIVE cata as
             (
@@ -486,7 +487,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
             if (!string.IsNullOrEmpty(keyword))
             {
-                condition = string.Format(condition+" and usercatalog.recname like '%{0}%' ", keyword);
+                condition = string.Format(condition + " and usercatalog.recname like '%{0}%' ", keyword);
 
             }
             var param = new DbParameter[]
@@ -546,7 +547,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 condition = string.Format(" and ctype={0} ", catalogType);
 
             }
-            else {
+            else
+            {
                 condition = string.Format(" and vpid :: TEXT = '00000000-0000-0000-0000-000000000000' ");
             }
             string newSql = string.Format(sql, condition);
@@ -557,7 +559,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return ExecuteQuery<MailCatalogInfo>(newSql, param);
         }
 
-        public List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword,string catalogType,int userid)
+        public List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword, string catalogType, int userid)
         {
             var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
                 " FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0} " +
@@ -588,13 +590,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             {
                 new NpgsqlParameter("userid",  userid )
             };
-            var searchList=ExecuteQuery<MailCatalogInfo>(sql, param);
-            var wholeTree  =this.GetMailCataLogTreeByUserId(userid,catalogType);
+            var searchList = ExecuteQuery<MailCatalogInfo>(sql, param);
+            var wholeTree = this.GetMailCataLogTreeByUserId(userid, catalogType);
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in searchList)
             {
                 List<MailCatalogInfo> tempList = new List<MailCatalogInfo>();
-                foreach (var tempItem in wholeTree) {
+                foreach (var tempItem in wholeTree)
+                {
                     MailCatalogInfo info = new MailCatalogInfo();
                     info.RecName = tempItem.RecName;
                     info.RecId = tempItem.RecId;
@@ -661,10 +664,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         public bool checkHasMails(string recid, DbTransaction tran)
         {
             string strSQL = string.Format("select COALESCE(count(*),0)  totalcount  from crm_sys_mail_catalog_relation where catalogid = '{0}'", recid);
-            List<Dictionary<string,object>> list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
+            List<Dictionary<string, object>> list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
             object obj = null;
             if (list.Count > 0)
-                obj = list.FirstOrDefault()["totalcount"]; 
+                obj = list.FirstOrDefault()["totalcount"];
             if (obj == null) return false;
             int totalCount = 0;
             int.TryParse(obj.ToString(), out totalCount);
@@ -703,7 +706,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <param name="parentid"></param>
         /// <param name="tran"></param>
 
-        public void MoveCatalog(string recid, string parentid,string recname, DbTransaction tran)
+        public void MoveCatalog(string recid, string parentid, string recname, DbTransaction tran)
         {
             string strSQL = string.Format("update crm_sys_mail_catalog set recname='{2}',pid='{0}',vpid='{0}' where recid = '{1}'", parentid, recid, recname);
             ExecuteNonQuery(strSQL, new DbParameter[] { }, tran);
@@ -761,7 +764,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <param name="newUserId"></param>
         /// <param name="newParentCatalogid"></param>
         /// <param name="tran"></param>
-        public void TransferBatcCatalog(int newUserId,int oldUserId, Guid newParentCatalogid, int ctype, DbTransaction tran)
+        public void TransferBatcCatalog(int newUserId, int oldUserId, Guid newParentCatalogid, int ctype, DbTransaction tran)
         {
             string strSQL = @"update crm_sys_mail_catalog set viewuserid=@newUserId where recid in (
                 WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid 
@@ -784,8 +787,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// </summary>
         /// <param name="MailBoxs"></param>
         /// <param name="newUserId"></param>
-        public void SaveMailOwner(List<Guid> MailBoxs, int newUserId)
+        public OperateResult SaveMailOwner(List<Guid> MailBoxs, int newUserId, int userId, DbTransaction dbTrans = null)
         {
+            //string userMailAddressSql = " select accountid as mailaddress,owner::int4 as userid from crm_sys_mail_mailbox where recid IN (SELECT regexp_split_to_table(@recids,',')::uuid)";
+            //var userMailAddressLst = DataBaseHelper.Query<TransferMailAddressMapper>(userMailAddressSql, new { RecIds = string.Join(",", MailBoxs) });
+            //return TransferMailToOtherMailAddress(userMailAddressLst, newUserId, dbTrans);
+
             string strSQL = "update crm_sys_mail_mailbox set owner=@userid where recid=@recid";
             List<DbParameter[]> paramList = new List<DbParameter[]>();
             foreach (var recid in MailBoxs)
@@ -797,8 +804,48 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 };
                 paramList.Add(param);
             }
+            ExecuteNonQueryMultiple(strSQL, paramList, dbTrans);
+            return null;
+        }
 
-            ExecuteNonQueryMultiple(strSQL, paramList);
+        public OperateResult TransferMailToOtherMailAddress(List<TransferMailAddressMapper> entities, int userId, DbTransaction dbTrans = null)
+        {
+            var sqlPro = "SELECT * FROM crm_func_mail_cata_related_handle(@mailid, null,@extradata::json, '60ec5c79-dfe2-4c11-aaf8-51177e921c5d',@userid)";
+
+            var sql = "WITH RECURSIVE T1 AS" +
+                            "(" +
+                            "    SELECT recname,ctype,recid,viewuserid,vpid FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND (ctype=1001 OR ctype=1004 OR ctype=1005 OR ctype=1006)" +
+                            "    UNION " +
+                            "    SELECT cata.recname,cata.ctype,cata.recid,cata.viewuserid,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN  T1 ON T1.recid=cata.vpid AND " +
+                            "   cata.viewuserid=@userid" +
+                            ")" +
+                            "SELECT tmp.mailid,'{\"issendoreceive\":'||tmp.mailoperatetype::TEXT||',\"sendrecord\":{\"status\":'||COALESCE(record.status,-1)||'}}' as extradata FROM (SELECT * FROM crm_sys_mail_related related WHERE relatedmailaddress='pengxiaofeng@crmuke.com' AND mailid IN " +
+                            "(" +
+                            " SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (  SELECT recid FROM T1 )" +
+                            ") ) AS tmp LEFT JOIN crm_sys_mail_sendrecord record ON record.mailid=tmp.mailid" +
+                            "";
+            OperateResult result = new OperateResult { Flag = 1 };
+            foreach (var entity in entities)
+            {
+                var param = new
+                {
+                    MailAddress = entity.MailAddress,
+                    UserId = entity.UserId
+                };
+                var mailsResult = DataBaseHelper.Query<TransferMailAddressInfo>(sql, param);
+
+                foreach (var tmp in mailsResult)
+                {
+                    var args = new DbParameter[]
+                    {
+                    new NpgsqlParameter("mailid",tmp.MailId),
+                    new NpgsqlParameter("extradata",tmp.ExtraData),
+                    new NpgsqlParameter("userid",userId)
+                    };
+                    result = DBHelper.ExecuteQuery<OperateResult>(dbTrans, sqlPro, args).FirstOrDefault();
+                }
+            }
+            return result;
         }
 
         /// <summary>
