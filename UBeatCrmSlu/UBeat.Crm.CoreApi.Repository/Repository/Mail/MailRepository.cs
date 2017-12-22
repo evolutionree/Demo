@@ -429,7 +429,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                                    crm_sys_mail_senderreceivers Where
                                                     mailid=@mailid And ctype=1)  AND 
                                                    recstatus=1 LIMIT 1) AS tmp )";
-            var senderSql = @" SELECT username as recname,usertel as phone,useremail as email,usericon as headicon FROM crm_sys_userinfo WHERE
+            var senderSql = @" SELECT username as recname,usertel as phone,CASE WHEN useremail IS NULL OR useremail='' THEN (Select mailaddress From
+ crm_sys_mail_senderreceivers Where mailid='0e9f4571-fb80-4216-922e-98abdfdaac18' And ctype=1 LIMIT 1) ELSE useremail END  as email,usericon as headicon FROM crm_sys_userinfo WHERE
                userid = (SELECT owner::int4 FROM crm_sys_mail_mailbox  WHERE accountid=(Select mailaddress From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1) LIMIT 1) AND  recstatus=1;";
             var senderMailSql = @"Select displayname as recname,'' as phone,mailaddress as email,'' as headicon From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1 LIMIT 1";
             var conCustSql = @"SELECT recname ,phone ,email ,headicon  FROM crm_sys_contact WHERE email=(Select mailaddress address From crm_sys_mail_senderreceivers Where mailid=@mailid And ctype=1)  AND recstatus=1";
