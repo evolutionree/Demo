@@ -1217,12 +1217,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         public void ExecuteWorkFlowEvent(string funcname, Guid caseid, int nodenum, int choicestatus, int userno, DbTransaction trans = null)
         {
-            string sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@choicestatus,@userno)", funcname);
-
+            if (nodenum == 0)
+            {
+                return;
+            }
             var sqlParameters = new List<DbParameter>();
+
+            string sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@choicestatus,@userno)", funcname);
+            
+            sqlParameters.Add(new NpgsqlParameter("choicestatus", choicestatus));
             sqlParameters.Add(new NpgsqlParameter("nodenum", nodenum));
             sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
-            sqlParameters.Add(new NpgsqlParameter("choicestatus", choicestatus));
             sqlParameters.Add(new NpgsqlParameter("userno", userno));
 
 
