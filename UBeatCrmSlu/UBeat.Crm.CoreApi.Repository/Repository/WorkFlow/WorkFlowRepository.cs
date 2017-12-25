@@ -253,8 +253,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     #region --插入nodeevent--
                     if (node_eve_params.Count > 0)
                     {
-                        var node_event_sql = @"INSERT INTO crm_sys_workflow_func_event(flowid,funcname,steptype,nodeid)
-                                              VALUES(@flowid,@funcname,1,@nodeid)";
+                        var node_event_sql = @"INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid)
+                                              VALUES(@flowid,@funcname,@nodeid)";
                         ExecuteNonQueryMultiple(node_event_sql, node_eve_params, tran);
                     }
                     #endregion
