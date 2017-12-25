@@ -343,10 +343,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ruleSql = sb.ToString();
                     break;
                 case "=":
-                    ruleSql = string.Format(@"(COALESCE({0},'')::text {1} {2}::text)", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
+                    ruleSql = string.Format(@"(COALESCE({0},'0')::text {1} {2}::text)", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
                     break;
                 case "!=":
-                    ruleSql = string.Format(@"(COALESCE({0},'')::text {1} {2}::text)", fieldName, Condition.NotEqual.GetSqlOperate(), dataValue);
+                    ruleSql = string.Format(@"(COALESCE({0},'0')::text {1} {2}::text)", fieldName, Condition.NotEqual.GetSqlOperate(), dataValue);
                     break;
             }
 
