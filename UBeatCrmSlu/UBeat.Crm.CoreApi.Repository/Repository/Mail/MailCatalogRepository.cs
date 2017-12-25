@@ -649,8 +649,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             var param = new DynamicParameters();
             if (deviceType != 3)
             {
-                condition = " Where box.owner=@userid";
-                param.Add("userid", userId.ToString());
+                condition = " Where box.owner::int4=@userid";
+                param.Add("userid", userId);
             }
             return DataBaseHelper.Query<UserMailInfo>(string.Format(sql, condition), param, CommandType.Text);
         }
@@ -842,11 +842,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             var delMailCataSql = @"WITH RECURSIVE T1 AS 
 				            ( 
-						            SELECT recname,ctype,recid,viewuserid,vpid FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND (ctype=1001 OR ctype=1004 OR ctype=1005 OR ctype=1006)   AND recstatus=1
+						            SELECT recname,ctype,recid,viewuserid,vpid FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND (ctype=4001 OR ctype=3002)    AND recstatus=1
 						            UNION  
-						            SELECT cata.recname,cata.ctype,cata.recid,cata.viewuserid,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN  T1 ON T1.recid=cata.vpid AND   cata.viewuserid=@userid  AND recstatus=1
+						            SELECT cata.recname,cata.ctype,cata.recid,cata.viewuserid,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN  T1 ON T1.recid=cata.vpid AND   cata.viewuserid=@userid  AND recstatus=1  WHERE(cata.ctype=4001 OR cata.ctype=3002) 
 				            )
-                          Delete FROM crm_sys_mail_catalog WHERE recid IN (SELECT recid FROM T1) AND (ctype=4001 OR ctype=3001)";//只删除客户分类目录和客户目录
+                           DELETE FROM crm_sys_mail_catalog WHERE recid IN (SELECT T1.recid FROM T1 LEFT JOIN crm_sys_mail_catalog_relation re ON T1.recid=re.catalogid WHERE re.catalogid IS NULL)";//只删除客户目录  个人目录下面的
+            var delCategoryCataLogSql = @"WITH RECURSIVE T1 AS 
+				            ( 
+						            SELECT recname,ctype,recid,viewuserid,vpid FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND  ctype=3001    AND recstatus=1
+						            UNION  
+						            SELECT cata.recname,cata.ctype,cata.recid,cata.viewuserid,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN  T1 ON T1.recid=cata.vpid AND   cata.viewuserid=@userid  AND recstatus=1 WHERE  cata.ctype=3001
+				            )
+                           DELETE FROM crm_sys_mail_catalog WHERE recid IN (SELECT T1.recid FROM T1 LEFT JOIN crm_sys_mail_catalog cata ON cata.vpid=T1.recid WHERE cata.recid IS NULL)";//删除客户分类
             var mailRecSql = @"UPDATE crm_sys_mail_receivemailrelated SET userid=@newuserid WHERE userid=@userid AND mailaddress=@mailaddress";
             OperateResult result = new OperateResult { Flag = 1 };
             foreach (var entity in entities)
@@ -875,6 +882,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 };
                 DBHelper.ExecuteQuery(dbTrans, delMailCataReSql, args1);
                 DBHelper.ExecuteQuery(dbTrans, delMailCataSql, args1);
+                DBHelper.ExecuteQuery(dbTrans, delCategoryCataLogSql, args1);
                 var args2 = new DbParameter[]
                 {
                         new NpgsqlParameter("mailaddress",entity.MailAddress),
