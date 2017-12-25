@@ -262,7 +262,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return ExcuteAction((transaction, arg, userData) =>
             {
-                var result = _accountRepository.ReConvertPwd(entity, userNumber);
+                var result = _accountRepository.ReConvertPwd(arg, userNumber);
                 return HandleResult(result);
             }, entity, userNumber);
 

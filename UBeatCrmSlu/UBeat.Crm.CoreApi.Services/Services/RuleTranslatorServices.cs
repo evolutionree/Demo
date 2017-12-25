@@ -867,10 +867,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         strSql = sb.ToString();
                         break;
                     case "=":
-                        strSql = string.Format(@"(COALESCE({0},'')::text {1} {2}::text)", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
+                        strSql = string.Format(@"(COALESCE({0},'0')::text {1} {2}::text)", fieldName, Condition.Equal.GetSqlOperate(), dataValue);
                         break;
                     case "!=":
-                        strSql = string.Format(@"(COALESCE({0},'')::text {1} {2}::text)", fieldName, Condition.NotEqual.GetSqlOperate(), dataValue);
+                        strSql = string.Format(@"(COALESCE({0},'0')::text {1} {2}::text)", fieldName, Condition.NotEqual.GetSqlOperate(), dataValue);
                         break;
                 }
             }
