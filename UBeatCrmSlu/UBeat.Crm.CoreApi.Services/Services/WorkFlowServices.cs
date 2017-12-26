@@ -975,6 +975,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("流程节点数据异常");
             }
             var mycaseitems = caseitems.Find(m => m.HandleUser == userinfo.UserId);
+
             //自由流程
             if (workflowInfo.FlowType == WorkFlowType.FreeFlow)
             {
@@ -989,7 +990,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodetemp.NodeState = 2;
                 }
-                else if (newcaseInfo.NodeNum == 0 && mycaseitems.ChoiceStatus == ChoiceStatusType.Reback)//预审批审批回到第一节点，表明被退回
+                else if (newcaseInfo.NodeNum == 0 && mycaseitems!=null&& mycaseitems.ChoiceStatus == ChoiceStatusType.Reback)//预审批审批回到第一节点，表明被退回
                 {
                     nodetemp.NodeState = 3;
                 }
@@ -1021,7 +1022,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodetemp.NodeState = 2;
                 }
-                else if (newcaseInfo.NodeNum == 0&& mycaseitems.ChoiceStatus== ChoiceStatusType.Reback)//预审批审批回到第一节点，表明被退回
+                else if (newcaseInfo.NodeNum == 0 && mycaseitems != null && mycaseitems.ChoiceStatus== ChoiceStatusType.Reback)//预审批审批回到第一节点，表明被退回
                 {
                     nodetemp.NodeState = 3;
                 }
@@ -1111,9 +1112,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeInfo = nodetemp,
                     };
                 }
-                result.NodeInfo.NodeData = mycaseitems.Casedata;
+                
             }
-
+            result.NodeInfo.NodeData = mycaseitems != null ? mycaseitems.Casedata : null;
             return result;
         }
         #endregion
