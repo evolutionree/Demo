@@ -24,6 +24,7 @@ using System.Data.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using UBeat.Crm.LicenseCore;
+using System.Text;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -265,12 +266,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             fieldData.Add("urgency", 1);//邮件优先级
 
             fieldData.Add("receivedtime", msg.Date);//邮件优先级
-            var fileTask = UploadAttachmentFiles(msg.Attachments);
-            fileTask.Wait();
-            fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
+            var files = UploadAttachmentFiles(msg.Attachments);
+            fieldData.Add("mongoid", string.Join(";", files.Select(t => t.mongoid)));//文件id
             var extraData = new Dictionary<string, object>();
             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
-            extraData.Add("attachfile", fileTask.Result);
+            extraData.Add("attachfile", files);
             extraData.Add("issendoreceive", 1);
             extraData.Add("relatedrecord", new
             {
@@ -580,11 +580,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             fieldData.Add("urgency", 1);//邮件优先级
 
                             fieldData.Add("receivedtime", DateTime.Now);//邮件优先级
-                            var fileTask = UploadAttachmentFiles(msg.Attachments);
-                            fieldData.Add("mongoid", string.Join(";", fileTask.Result.Select(t => t.mongoid)));//文件id
+                            var files = UploadAttachmentFiles(msg.Attachments);
+                            fieldData.Add("mongoid", string.Join(";", files.Select(t => t.mongoid)));//文件id
                             var extraData = new Dictionary<string, object>();
                             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
-                            extraData.Add("attachfile", fileTask.Result);
+                            extraData.Add("attachfile", files);
                             extraData.Add("issendoreceive", 1);
                             extraData.Add("receivetimerecord", new
                             {
@@ -795,65 +795,73 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 attachFileRecord.Add(expandObj);
             }
         }
-        private async Task<IList<dynamic>> UploadAttachmentFiles(IEnumerable<MimeEntity> mimeEntities)
+        /// <summary>
+        /// 将byte数组转换为文件并保存到指定地址
+        /// </summary>
+        /// <param name="buff">byte数组</param>
+        /// <param name="savepath">保存地址</param>
+        public static void Bytes2File(byte[] buff, string savepath)
         {
-            return await Task.Run(() =>
+            try
             {
-                IList<dynamic> attachFileRecord = new List<dynamic>();
-                foreach (var tmp in mimeEntities)
+                FileStream fs = new FileStream(savepath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+            finally
+            {
+
+            }
+
+        }
+        private IList<dynamic> UploadAttachmentFiles(IEnumerable<MimeEntity> mimeEntities)
+        {
+
+            IList<dynamic> attachFileRecord = new List<dynamic>();
+            ArraySegment<byte> buffer;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                foreach (var attachment in mimeEntities)
                 {
-                    if (tmp is MimePart)
+                    string fileName = string.Empty;
+                    if (attachment is MessagePart)
                     {
-                        MimePart part = (MimePart)tmp;
-                        byte[] buffer;
-                        using (MemoryStream ms = new MemoryStream())
-                        {
-                            part.ContentObject.DecodeTo(ms);
-                            ms.Flush();
-                            ms.Position = 0;
-                            buffer = new byte[ms.Length];
-                            ms.Seek(0, SeekOrigin.Begin);
-                            ms.Write(buffer, 0, buffer.Length);
-                        }
-                        string fileId = _fileServices.UploadFile(string.Empty, Guid.NewGuid().ToString(), part.FileName, buffer);
-                        attachFileRecord.Add(new
-                        {
-                            mongoid = fileId,
-                            data = buffer,
-                            filename = part.FileName,
-                            filesize = buffer.Length,
-                            filetype = part.FileName.Substring(part.FileName.LastIndexOf("."))
-                        });
+                        fileName = string.IsNullOrEmpty(attachment.ContentDisposition.FileName) ? attachment.ContentType.Name : "attached.eml";
+                        var rfc822 = (MessagePart)attachment;
+                        rfc822.Message.WriteTo(ms);
                     }
                     else
                     {
-                        byte[] buffer;
-                        using (MemoryStream ms = new MemoryStream())
+                        var part = (MimePart)attachment;
+                        fileName = part.FileName;
+                        part.ContentObject.DecodeTo(ms);
+                        ms.Flush();
+                        ms.Position = 0;
+                        bool result = ms.TryGetBuffer(out buffer);
+                        if (!result)
                         {
-                            tmp.WriteTo(ms);
-                            ms.Flush();
-                            ms.Position = 0;
-                            buffer = new byte[ms.Length];
-                            ms.Seek(0, SeekOrigin.Begin);
-                            ms.Write(buffer, 0, buffer.Length);
+                            _logger.LogError("附件邮件异常");
                         }
-                        string fileId = _fileServices.UploadFile(string.Empty, Guid.NewGuid().ToString(), tmp.ContentType.Name, buffer);
-                        attachFileRecord.Add(new
-                        {
-                            mongoid = fileId,
-                            data = buffer,
-                            filename = tmp.ContentType.Name,
-                            filesize = buffer.Length,
-                            filetype = tmp.ContentType.Name.Substring(tmp.ContentType.Name.LastIndexOf("."))
-                        });
                     }
+                    string fileId = _fileServices.UploadFile(string.Empty, Guid.NewGuid().ToString(), fileName, buffer.ToArray());
+                    attachFileRecord.Add(new
+                    {
+                        mongoid = fileId,
+                        data = buffer,
+                        filename = fileName,
+                        filesize = buffer.Count,
+                        filetype = fileName.Substring(fileName.LastIndexOf("."))
+                    });
                 }
-                if (mimeEntities.Count() != attachFileRecord.Count)
-                {
-                    throw new Exception("获取邮件附件异常");
-                }
-                return attachFileRecord;
-            });
+            }
+            if (mimeEntities.Count() != attachFileRecord.Count)
+            {
+                throw new Exception("获取邮件附件异常");
+            }
+            return attachFileRecord;
         }
         private string BuilderAddress(InternetAddressList internetAddressList)
         {
