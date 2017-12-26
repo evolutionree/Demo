@@ -10,6 +10,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public Guid? NodeId { set; get; }
 
         public string NodeName { set; get; }
+        /// <summary>
+        /// 当前节点的CaseData字段
+        /// </summary>
+        public object NodeData { get; set; }
 
         /// <summary>
         /// 0普通审批 1会审

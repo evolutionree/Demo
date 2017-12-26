@@ -1115,7 +1115,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// </summary>
         public bool AuditWorkFlowCaseItem(WorkFlowAuditCaseItemMapper auditdata, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
         {
-
+            
             string sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casedata = @casedata, casestatus = 2,recupdator = @userno 
                                           WHERE caseitemid = @caseitemid;");
 

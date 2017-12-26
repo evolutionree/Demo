@@ -1111,6 +1111,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeInfo = nodetemp,
                     };
                 }
+                result.NodeInfo.NodeData = mycaseitems.Casedata;
             }
 
             return result;
@@ -1297,7 +1298,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return isbranchflow;
-
 
 
 
