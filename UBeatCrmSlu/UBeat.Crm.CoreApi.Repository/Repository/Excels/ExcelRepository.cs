@@ -449,7 +449,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
             {
                 return Guid.Empty;
             }
-            var executeSql = @"SELECT p.productsetid FROM crm_sys_products_series AS p WHERE array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(s.productsetid, 0) ORDER BY nodepath DESC),'/')=@serialPath";
+            var executeSql = @"SELECT p.productsetid FROM crm_sys_products_series AS p WHERE array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(p.productsetid, 0) ORDER BY nodepath DESC),'/')=@serialPath";
 
             var param = new DbParameter[]
             {
