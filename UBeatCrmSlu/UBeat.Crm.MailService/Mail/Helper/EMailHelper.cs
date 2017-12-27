@@ -42,8 +42,30 @@ namespace UBeat.Crm.MailService.Mail.Helper
             {
                 builder.Attachments.Add(tmp.filename, tmp.data, ContentType.Parse(GetFileType(tmp.filetype)));
             }
-
             message.Body = builder.ToMessageBody();
+            //var html = new TextPart("html")
+            //{
+            //    Text = string.IsNullOrEmpty(bodyContent) ? string.Empty : bodyContent,
+            //};
+
+            ////multipart / mixed：附件。
+            ////multipart / related：内嵌资源。
+            ////multipart / alternative：纯文本与超文本共存。
+            //var alternative = new Multipart("alternative");
+            //alternative.Add(html);
+
+            //var multipart = new Multipart("mixed");
+            //multipart.Add(alternative);
+
+            //var related = new Multipart("related");
+            //multipart.Add(related);
+
+            //foreach (var tmp in AttachEmailFile(attachmentFile))
+            //{
+            //    multipart.Add(tmp);
+            //}
+            //message.Body = multipart;
+
             return message;
         }
         static string GetFileType(string fileSuffix)
@@ -79,14 +101,13 @@ namespace UBeat.Crm.MailService.Mail.Helper
 
             foreach (dynamic tmp in attachmentFile)
             {
-
                 Stream ms = new MemoryStream(tmp.data);
                 ms.Position = 0;
                 var attachment = new MimePart("application", "vnd.ms-excel")
                 {
                     ContentObject = new ContentObject(ms, ContentEncoding.Default),
                     ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
-                    ContentTransferEncoding = ContentEncoding.Base64,
+                    ContentTransferEncoding= ContentEncoding.Default,
                     FileName = tmp.filename
                 };
 
