@@ -703,18 +703,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         body.mailbody as summary, 
                                         COALESCE(body.senttime, body.receivedtime)  senttime,
                                         COALESCE(body.receivedtime,body.senttime)  receivedtime,
-										rl.mailserverid
+                                        rl.mailserverid,
+                                        rl.userid
                                         FROM crm_sys_mail_mailbody body  LEFT JOIN crm_sys_mail_receivemailrelated rl ON body.recid=rl.mailid {0} 
                                         ),
                                         T2 AS (
-                                                SELECT * FROM crm_sys_mail_receivemailrelated WHERE mailserverid = (
-                                                SELECT mailserverid FROM crm_sys_mail_receivemailrelated WHERE mailid IN ( SELECT  mailid FROM T1 ) GROUP BY mailserverid HAVING (COUNT(mailserverid))>1 LIMIT 1
-                                                ) LIMIT 1
+                                              SELECT * FROM (SELECT RANK() OVER(PARTITION BY T1.mailserverid  order by T1.userid desc) id,T1.mailserverid,T1.mailid FROM  T1  ) AS t WHERE t.id=1
+
                                         )
-                                        SELECT * FROM (SELECT * FROM (
-                                        SELECT * FROM T1 WHERE mailserverid NOT IN (SELECT mailserverid FROM T2)  OR mailserverid IS NULL
-                                        UNION ALL
-                                        SELECT * FROM T1 WHERE mailid IN (SELECT mailid FROM T2) ) AS tmp ORDER BY tmp.receivedtime DESC) AS tmp1  LIMIT @pagesize OFFSET @pageindex
+                                        SELECT * FROM T1 WHERE T1.mailid IN (SELECT mailid FROM T2)     ORDER BY T1.receivedtime DESC  LIMIT @pagesize OFFSET @pageindex
                                         ";
             string countSql = @" WITH T1 AS (
                                         Select                               
@@ -728,14 +725,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         FROM crm_sys_mail_mailbody body LEFT JOIN crm_sys_mail_receivemailrelated rl ON body.recid=rl.mailid  {0} 
                                         ),
                                         T2 AS (
-                                                SELECT * FROM crm_sys_mail_receivemailrelated WHERE mailserverid = (
-                                                SELECT mailserverid FROM crm_sys_mail_receivemailrelated WHERE mailid IN ( SELECT  mailid FROM T1 ) GROUP BY mailserverid HAVING (COUNT(mailserverid))>1 LIMIT 1
-                                                ) LIMIT 1
+                                              SELECT * FROM (SELECT RANK() OVER(PARTITION BY T1.mailserverid  order by T1.userid desc) id,T1.mailserverid,T1.mailid FROM  T1  ) AS t WHERE t.id=1
+
                                         )
-                                        SELECT Count(1) FROM (SELECT * FROM (
-                                        SELECT * FROM T1 WHERE mailserverid NOT IN (SELECT mailserverid FROM T2)  OR mailserverid IS NULL
-                                        UNION ALL
-                                        SELECT * FROM T1 WHERE mailid IN (SELECT mailid FROM T2) ) AS tmp ORDER BY tmp.receivedtime DESC) AS tmp1 
+                                        SELECT COUNT(1) FROM T1 WHERE T1.mailid IN (SELECT mailid FROM T2) 
+
                                         ";
             string whereSql = string.Empty;
             //与自己往来+收到和发出的邮件
@@ -845,36 +839,29 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         body.recid mailid,
 										rl.mailserverid,
                                         att.filename,att.filetype,att.filesize,att.mongoid, COALESCE(body.senttime, body.receivedtime)  senttime,
-                                        COALESCE(body.receivedtime,body.senttime)  receivedtime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid
+                                        COALESCE(body.receivedtime,body.senttime)  receivedtime,rl.userid FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid
                                          LEFT JOIN crm_sys_mail_receivemailrelated rl ON body.recid=rl.mailid {0} 
                                         ),
                                         T2 AS (
-                                                SELECT * FROM crm_sys_mail_receivemailrelated WHERE mailserverid = (
-                                                SELECT mailserverid FROM crm_sys_mail_receivemailrelated WHERE mailid IN ( SELECT  mailid FROM T1 ) GROUP BY mailserverid HAVING (COUNT(mailserverid))>1 LIMIT 1
-                                                ) LIMIT 1
+                                              SELECT * FROM (SELECT RANK() OVER(PARTITION BY T1.mailserverid  order by T1.userid desc) id,T1.mailserverid,T1.mailid FROM  T1  ) AS t WHERE t.id=1
+
                                         )
-                                        SELECT * FROM (SELECT * FROM (
-                                        SELECT * FROM T1 WHERE mailserverid NOT IN (SELECT mailserverid FROM T2)  OR mailserverid IS NULL
-                                        UNION ALL
-                                        SELECT * FROM T1 WHERE mailid IN (SELECT mailid FROM T2) ) AS tmp ORDER BY tmp.receivedtime DESC) AS tmp1  LIMIT @pagesize OFFSET @pageindex
+                                        SELECT * FROM T1 WHERE T1.mailid IN (SELECT mailid FROM T2)     ORDER BY T1.receivedtime DESC  LIMIT @pagesize OFFSET @pageindex
+
                                         ";
             string countSql = @" WITH T1 AS (
                                         Select                               
                                         body.recid mailid,
 										rl.mailserverid,
                                         att.filename,att.filetype,att.filesize,att.mongoid, COALESCE(body.senttime, body.receivedtime)  senttime,
-                                        COALESCE(body.receivedtime,body.senttime)  receivedtime FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid
+                                        COALESCE(body.receivedtime,body.senttime)  receivedtime,rl.userid FROM crm_sys_mail_attach att LEFT JOIN crm_sys_mail_mailbody body ON body.recid=att.mailid
                                          LEFT JOIN crm_sys_mail_receivemailrelated rl ON body.recid=rl.mailid {0} 
                                         ),
                                         T2 AS (
-                                                SELECT * FROM crm_sys_mail_receivemailrelated WHERE mailserverid = (
-                                                SELECT mailserverid FROM crm_sys_mail_receivemailrelated WHERE mailid IN ( SELECT  mailid FROM T1 ) GROUP BY mailserverid HAVING (COUNT(mailserverid))>1 LIMIT 1
-                                                ) LIMIT 1
+                                              SELECT * FROM (SELECT RANK() OVER(PARTITION BY T1.mailserverid  order by T1.userid desc) id,T1.mailserverid,T1.mailid FROM  T1  ) AS t WHERE t.id=1
                                         )
-                                        SELECT Count(1) FROM (SELECT * FROM (
-                                        SELECT * FROM T1 WHERE mailserverid NOT IN (SELECT mailserverid FROM T2)  OR mailserverid IS NULL
-                                        UNION ALL
-                                        SELECT * FROM T1 WHERE mailid IN (SELECT mailid FROM T2) ) AS tmp ORDER BY tmp.receivedtime DESC) AS tmp1 
+                                        SELECT COUNT(1) FROM T1 WHERE T1.mailid IN (SELECT mailid FROM T2)    
+
                                         ";
             string whereSql = string.Empty;
 
