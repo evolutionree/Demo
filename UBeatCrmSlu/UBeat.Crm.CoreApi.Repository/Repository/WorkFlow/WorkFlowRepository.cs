@@ -1115,17 +1115,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// </summary>
         public bool AuditWorkFlowCaseItem(WorkFlowAuditCaseItemMapper auditdata, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
         {
-            
-            string sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casedata = @casedata, casestatus = 2,recupdator = @userno 
-                                          WHERE caseitemid = @caseitemid;");
-
+            string sql = string.Empty;
             var sqlParameters = new List<DbParameter>();
+            if (caseitem.NodeNum==0&& caseitem.StepNum==0)
+            {
+                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casestatus = 2,recupdator = @userno 
+                                          WHERE caseitemid = @caseitemid;");
+            }
+            else
+            {
+                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casedata = @casedata, casestatus = 2,recupdator = @userno 
+                                          WHERE caseitemid = @caseitemid;");
+                sqlParameters.Add(new NpgsqlParameter("casedata", JsonConvert.SerializeObject(auditdata.CaseData)) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
+            }
+           
             sqlParameters.Add(new NpgsqlParameter("choicestatus", auditdata.ChoiceStatus));
-            sqlParameters.Add(new NpgsqlParameter("casedata", JsonConvert.SerializeObject(auditdata.CaseData)) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
             sqlParameters.Add(new NpgsqlParameter("suggest", auditdata.Suggest ?? ""));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
             sqlParameters.Add(new NpgsqlParameter("caseitemid", caseitem.CaseItemId));
-
 
             var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
 
