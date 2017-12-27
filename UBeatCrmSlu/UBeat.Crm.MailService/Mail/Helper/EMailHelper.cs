@@ -7,6 +7,7 @@ using System.Linq;
 using UBeat.Crm.MailService.Mail.Enum;
 using System.IO;
 using System.Dynamic;
+using System.Net;
 
 namespace UBeat.Crm.MailService.Mail.Helper
 {
@@ -32,51 +33,74 @@ namespace UBeat.Crm.MailService.Mail.Helper
             SetEmailAddress(EmailAddrType.CC, message, ccAddressList);
             SetEmailAddress(EmailAddrType.Bcc, message, bccAddressList);
 
-
             message.Subject = string.IsNullOrEmpty(subject) ? string.Empty : subject;
-            var html = new TextPart("html")
+
+
+            var builder = new BodyBuilder();
+            builder.HtmlBody = string.IsNullOrEmpty(bodyContent) ? string.Empty : bodyContent;
+            foreach (dynamic tmp in attachmentFile)
             {
-                Text = string.IsNullOrEmpty(bodyContent) ? string.Empty : bodyContent,
-            };
-
-            //multipart / mixed：附件。
-            //multipart / related：内嵌资源。
-            //multipart / alternative：纯文本与超文本共存。
-            var alternative = new Multipart("alternative");
-            alternative.Add(html);
-
-            var multipart = new Multipart("mixed");
-            multipart.Add(alternative);
-
-            var related = new Multipart("related");
-            multipart.Add(related);
-
-            foreach (var tmp in AttachEmailFile(attachmentFile))
-            {
-                multipart.Add(tmp);
+                builder.Attachments.Add(tmp.filename, tmp.data, ContentType.Parse(GetFileType(tmp.filetype)));
             }
 
-            message.Body = multipart;
+            message.Body = builder.ToMessageBody();
             return message;
         }
-
+        static string GetFileType(string fileSuffix)
+        {
+            Dictionary<string, string> dicContentType = new Dictionary<string, string>();
+            dicContentType.Add(".html", "text/html");
+            dicContentType.Add(".txt", "text/plain");
+            dicContentType.Add(".gif", "image/gif");
+            dicContentType.Add(".jpeg", "image/jpeg");
+            dicContentType.Add(".png", "image/png");
+            dicContentType.Add(".xhtml", "application/xhtml");
+            dicContentType.Add(".xml", "application/xml");
+            dicContentType.Add(".json", "application/json");
+            dicContentType.Add(".pdf", "application/pdf");
+            dicContentType.Add(".doc", "application/msword");
+            dicContentType.Add(".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            dicContentType.Add(".xls", "application/vnd.ms-excel");
+            dicContentType.Add(".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            dicContentType.Add(".ppt", "application/vnd.ms-powerpoint");
+            dicContentType.Add(".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+            if (dicContentType.Keys.Contains(fileSuffix.ToLower()))
+            {
+                return dicContentType[fileSuffix.ToLower()];
+            }
+            return "application/octet-stream";
+        }
         /// <summary>
         /// 添加附件
         /// </summary>
         private static IList<MimePart> AttachEmailFile(IList<ExpandoObject> attachmentFile)
         {
             IList<MimePart> mimePartList = new List<MimePart>();
+
             foreach (dynamic tmp in attachmentFile)
             {
-                Stream stream = new MemoryStream(tmp.data);
-                MimePart attachment = new MimePart()
+
+                Stream ms = new MemoryStream(tmp.data);
+                ms.Position = 0;
+                var attachment = new MimePart("application", "vnd.ms-excel")
                 {
-                    ContentObject = new ContentObject(stream, ContentEncoding.Default),
+                    ContentObject = new ContentObject(ms, ContentEncoding.Default),
                     ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
                     ContentTransferEncoding = ContentEncoding.Base64,
                     FileName = tmp.filename
                 };
+
                 mimePartList.Add(attachment);
+
+                //    Stream stream = new MemoryStream(tmp.data);
+                //    MimePart attachment = new MimePart()
+                //    {
+                //        ContentObject = new ContentObject(stream, ContentEncoding.Default),
+                //        ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
+                //        ContentTransferEncoding = ContentEncoding.Base64,
+                //        FileName = tmp.filename,
+                //    };
+
             }
             return mimePartList;
         }

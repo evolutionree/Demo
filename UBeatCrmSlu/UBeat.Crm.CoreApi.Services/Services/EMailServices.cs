@@ -795,28 +795,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 attachFileRecord.Add(expandObj);
             }
         }
-        /// <summary>
-        /// 将byte数组转换为文件并保存到指定地址
-        /// </summary>
-        /// <param name="buff">byte数组</param>
-        /// <param name="savepath">保存地址</param>
-        public static void Bytes2File(byte[] buff, string savepath)
-        {
-            try
-            {
-                FileStream fs = new FileStream(savepath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-            finally
-            {
-
-            }
-
-        }
         private IList<dynamic> UploadAttachmentFiles(IEnumerable<MimeEntity> mimeEntities)
         {
 
@@ -827,24 +805,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (var attachment in mimeEntities)
                 {
                     string fileName = string.Empty;
-                    if (attachment is MessagePart)
-                    {
-                        fileName = string.IsNullOrEmpty(attachment.ContentDisposition.FileName) ? attachment.ContentType.Name : "attached.eml";
-                        var rfc822 = (MessagePart)attachment;
-                        rfc822.Message.WriteTo(ms);
-                    }
-                    else
+                    if (attachment is MimePart)
                     {
                         var part = (MimePart)attachment;
                         fileName = part.FileName;
                         part.ContentObject.DecodeTo(ms);
                         ms.Flush();
                         ms.Position = 0;
-                        bool result = ms.TryGetBuffer(out buffer);
-                        if (!result)
-                        {
-                            _logger.LogError("附件邮件异常");
-                        }
+                    }
+                    else
+                    {
+                        fileName = string.IsNullOrEmpty(attachment.ContentDisposition.FileName) ? attachment.ContentType.Name : "attached.eml";
+                        var rfc822 = (MessagePart)attachment;
+                        rfc822.Message.WriteTo(ms);
+                    }
+                    bool result = ms.TryGetBuffer(out buffer);
+                    if (!result)
+                    {
+                        _logger.LogError("附件邮件异常");
                     }
                     string fileId = _fileServices.UploadFile(string.Empty, Guid.NewGuid().ToString(), fileName, buffer.ToArray());
                     attachFileRecord.Add(new
