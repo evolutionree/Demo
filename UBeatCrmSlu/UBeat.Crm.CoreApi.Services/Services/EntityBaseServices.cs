@@ -171,7 +171,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                         }
                     }
-
+                    
                     tran.Commit();
                 }
                 catch (Exception ex)

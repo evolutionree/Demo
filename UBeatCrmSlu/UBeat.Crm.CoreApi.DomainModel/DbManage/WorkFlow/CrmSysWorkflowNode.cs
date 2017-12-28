@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NpgsqlTypes;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -18,14 +19,17 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.WorkFlow
 
         public int StepTypeId { set; get; }
 
+        [SqlType(NpgsqlDbType.Jsonb)]
         public object RuleConfig { set; get; }
 
+        [SqlType(NpgsqlDbType.Jsonb)]
         public object ColumnConfig { set; get; }
 
         public int VerNum { set; get; }
 
         public int AuditSucc { set; get; }
-        
+
+        [SqlType(NpgsqlDbType.Jsonb)]
         public object NodeConfig { set; get; }
 
     }

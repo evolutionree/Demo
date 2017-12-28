@@ -35,12 +35,25 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         [HttpPost]
         [Route("addcase")]
-        public OutputResult<object> AddCase([FromBody] WorkFlowAddCaseModel caseModel = null)
+        public OutputResult<object> AddCase([FromBody] WorkFlowCaseAddModel caseModel = null)
         {
             if (caseModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("提交审批数据", caseModel);
-            return _workFlowServices.AddCase(caseModel, UserId);
+            WriteOperateLog("发起审批数据", caseModel);
+            return _workFlowServices.AddWorkflowCase(caseModel, LoginUser);
         }
+
+        /// <summary>
+        /// 预发起审批接口
+        /// </summary>
+        [HttpPost]
+        [Route("preaddcase")]
+        public OutputResult<object> PreAddCase([FromBody] WorkFlowCaseAddModel caseModel = null)
+        {
+            if (caseModel == null) return ResponseError<object>("参数格式错误");
+            
+            return _workFlowServices.PreAddWorkflowCase(caseModel, LoginUser);
+        }
+
 
         //获取下一个节点，以及节点选人数据
         [HttpPost]

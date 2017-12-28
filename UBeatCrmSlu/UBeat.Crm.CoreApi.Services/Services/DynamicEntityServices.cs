@@ -19,6 +19,7 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Message;
+using UBeat.Crm.CoreApi.Services.Models.WorkFlow;
 using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
@@ -31,12 +32,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IAccountRepository _accountRepository;
 
-        private readonly WorkFlowServices _workflowService;
+        //private readonly WorkFlowServices _workflowService;
 
 
         private readonly IMapper _mapper;
 
-        public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository, IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository, WorkFlowServices workflowService)
+        public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository, IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
             _entityProRepository = entityProRepository;
@@ -45,11 +46,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dynamicRepository = dynamicRepository;
             _accountRepository = accountRepository;
 
-            _workflowService = workflowService;
+            //_workflowService = workflowService;
         }
 
         public OutputResult<object> Add(DynamicEntityAddModel dynamicModel, AnalyseHeader header, int userNumber)
         {
+            var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.TypeId);
+            var res = ExcuteInsertAction((transaction, arg, userData) =>
+            {
+                WorkFlowAddCaseModel workFlowAddCaseModel = null;
+                return AddEntityData(transaction, userData, entityInfo, arg, header, userNumber,out workFlowAddCaseModel);
+
+            }, dynamicModel, entityInfo.EntityId, userNumber);
+
+            if (res.Status == 0)
+            {
+                var bussinessId = Guid.Parse(res.DataBody.ToString());
+                var relbussinessId = dynamicModel.RelRecId.GetValueOrDefault();
+                if (!dynamicModel.FlowId.HasValue)
+                {
+                    //单据转换消息
+                    if (dynamicModel.ExtraData!=null&&dynamicModel.ExtraData.ContainsKey("funccode") && dynamicModel.ExtraData["funccode"] != null
+                        && dynamicModel.ExtraData.ContainsKey("entityId") && dynamicModel.ExtraData["entityId"] != null
+                        && dynamicModel.ExtraData.ContainsKey("recordId") && dynamicModel.ExtraData["recordId"] != null)
+                    {
+                        SendMessage(new Guid(dynamicModel.ExtraData["recordId"].ToString()), userNumber, new Guid(dynamicModel.ExtraData["entityId"].ToString()), dynamicModel.ExtraData["funccode"].ToString());
+                    }
+                    else WriteEntityAddMessage(dynamicModel.TypeId, bussinessId, relbussinessId, userNumber);
+                }
+
+            }
+            return res;
+        }
+
+        public OutputResult<object> AddEntityData(DbTransaction transaction, UserData userData, SimpleEntityInfo entityInfo, DynamicEntityAddModel dynamicModel, AnalyseHeader header, int userNumber, out WorkFlowAddCaseModel workFlowAddCaseModel)
+        {
+            workFlowAddCaseModel = null;
             var dynamicEntity = _mapper.Map<DynamicEntityAddModel, DynamicEntityAddMapper>(dynamicModel);
             if (dynamicEntity == null || !dynamicEntity.IsValid())
             {
@@ -108,109 +140,76 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 data.Add(pair.Key, pair.Value);
             }
-            var entityInfo = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId, userNumber);
+
 
             if (entityInfo != null)
             {
                 bool success = false;
-                SimpleEntityInfo entityInfotemp = null;
                 Guid bussinessId;
-                var res = ExcuteInsertAction((transaction, arg, userData) =>
-                 {
-                     #region --旧代码--
-                     ////验证通过后，插入数据
-                     //var result = !dynamicEntity.FlowId.HasValue ? _dynamicEntityRepository.DynamicAdd(transaction, dynamicEntity.TypeId, data, dynamicEntity.ExtraData, userNumber) : _dynamicEntityRepository.DynamicAdd(transaction, dynamicEntity.TypeId, data, dynamicEntity.FlowId.Value, dynamicEntity.RelEntityId, dynamicEntity.RelRecId, userNumber);
-                     //if (result.Flag != 1)
-                     //{
-                     //    return HandleResult(result);
-                     //}
-                     ////处理回写
-                     //if (dynamicEntity.WriteBackData != null && dynamicEntity.WriteBackData.Count > 0)
-                     //{
-                     //    _dynamicEntityRepository.WriteBack(transaction, dynamicEntity.WriteBackData, userNumber);
-                     //}
-                     //if (result.Flag == 1)
-                     //{
-                     //    if (!IsValidEntityPower(entityInfo) && !dynamicEntity.FlowId.HasValue && !userData.HasDataAccess(transaction, RoutePath, (Guid)entityInfo.entityid, DeviceClassic, new List<Guid>() { Guid.Parse(result.Id) }))
-                     //    {
-                     //        throw new Exception("您没有权限新增该实体数据");
-                     //    }
-                     //}
 
-                     //success = result.Flag == 1;
-                     //bussinessId = Guid.Parse(result.Id);
-                     //var entityInfotemp = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId);
-                     //CheckCallBackService(transaction, OperatType.Insert, entityInfotemp.Servicesjson, bussinessId, (Guid)entityInfo.entityid, userNumber, "");
+                #region --旧代码--
+                ////验证通过后，插入数据
+                //var result = !dynamicEntity.FlowId.HasValue ? _dynamicEntityRepository.DynamicAdd(transaction, dynamicEntity.TypeId, data, dynamicEntity.ExtraData, userNumber) : _dynamicEntityRepository.DynamicAdd(transaction, dynamicEntity.TypeId, data, dynamicEntity.FlowId.Value, dynamicEntity.RelEntityId, dynamicEntity.RelRecId, userNumber);
+                //if (result.Flag != 1)
+                //{
+                //    return HandleResult(result);
+                //}
+                ////处理回写
+                //if (dynamicEntity.WriteBackData != null && dynamicEntity.WriteBackData.Count > 0)
+                //{
+                //    _dynamicEntityRepository.WriteBack(transaction, dynamicEntity.WriteBackData, userNumber);
+                //}
+                //if (result.Flag == 1)
+                //{
+                //    if (!IsValidEntityPower(entityInfo) && !dynamicEntity.FlowId.HasValue && !userData.HasDataAccess(transaction, RoutePath, (Guid)entityInfo.entityid, DeviceClassic, new List<Guid>() { Guid.Parse(result.Id) }))
+                //    {
+                //        throw new Exception("您没有权限新增该实体数据");
+                //    }
+                //}
 
-                     //return HandleResult(result); 
-                     #endregion
+                //success = result.Flag == 1;
+                //bussinessId = Guid.Parse(result.Id);
+                //var entityInfotemp = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId);
+                //CheckCallBackService(transaction, OperatType.Insert, entityInfotemp.Servicesjson, bussinessId, (Guid)entityInfo.entityid, userNumber, "");
 
-                     //新增表单数据
-                     var entityResult = _dynamicEntityRepository.DynamicAdd(transaction, dynamicEntity.TypeId, data, dynamicEntity.ExtraData, userNumber);
-                     success = entityResult.Flag == 1;
+                //return HandleResult(result); 
+                #endregion
 
-                     if (success)
-                     {
-                         bussinessId = Guid.Parse(entityResult.Id);
-                         //处理回写
-                         if (dynamicEntity.WriteBackData != null && dynamicEntity.WriteBackData.Count > 0)
-                         {
-                             _dynamicEntityRepository.WriteBack(transaction, dynamicEntity.WriteBackData, userNumber);
-                         }
-                         if (!IsValidEntityPower(entityInfo) && !dynamicEntity.FlowId.HasValue && !userData.HasDataAccess(transaction, RoutePath, (Guid)entityInfo.entityid, DeviceClassic, new List<Guid>() { bussinessId }))
-                         {
-                             throw new Exception("您没有权限新增该实体数据");
-                         }
-                         entityInfotemp = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId);
-
-                         CheckCallBackService(transaction, OperatType.Insert, entityInfotemp.Servicesjson, bussinessId, (Guid)entityInfo.entityid, userNumber, "");
-                         if (dynamicEntity.FlowId.HasValue)
-                         {
-                             //新增流程数据
-                             var caseModel = new WorkFlowAddCaseMapper()
-                             {
-                                 EntityId = (Guid)entityInfo.entityid,
-                                 FlowId = dynamicEntity.FlowId.Value,
-                                 RecId = bussinessId,
-                                 RelEntityId = dynamicEntity.RelEntityId,
-                                 RelRecId = dynamicEntity.RelRecId,
-                                 CaseData = data
-                             };
-                             var flowResult = _workflowService.AddCase(transaction, caseModel, userNumber);
-
-                             return HandleResult(flowResult);
-                         }
-                         else
-                         {
-                             return HandleResult(entityResult);
-                         }
-                     }
-                     else
-                     {
-                         return HandleResult(entityResult);
-                     }
-
-
-                 }, dynamicEntity, (Guid)entityInfo.entityid, userNumber);
+                //新增表单数据
+                var entityResult = _dynamicEntityRepository.DynamicAdd(transaction, dynamicEntity.TypeId, data, dynamicEntity.ExtraData, userNumber);
+                success = entityResult.Flag == 1;
 
                 if (success)
                 {
-                    var relbussinessId = dynamicEntity.RelRecId.GetValueOrDefault();
-                    if (!dynamicEntity.FlowId.HasValue)
+                    bussinessId = Guid.Parse(entityResult.Id);
+                    //处理回写
+                    if (dynamicEntity.WriteBackData != null && dynamicEntity.WriteBackData.Count > 0)
                     {
-                        //单据转换消息
-                        if (dynamicEntity.ExtraData.ContainsKey("funccode") && dynamicEntity.ExtraData["funccode"] != null
-                            && dynamicEntity.ExtraData.ContainsKey("entityId") && dynamicEntity.ExtraData["entityId"] != null
-                            && dynamicEntity.ExtraData.ContainsKey("recordId") && dynamicEntity.ExtraData["recordId"] != null)
-                        {
-                            SendMessage(new Guid(dynamicEntity.ExtraData["recordId"].ToString()), userNumber, new Guid(dynamicEntity.ExtraData["entityId"].ToString()), dynamicEntity.ExtraData["funccode"].ToString());
-                        }
-                        else
-                            WriteEntityAddMessage(dynamicEntity.TypeId, bussinessId, relbussinessId, userNumber);
+                        _dynamicEntityRepository.WriteBack(transaction, dynamicEntity.WriteBackData, userNumber);
+                    }
+                    if (!IsValidEntityPower(entityInfo) && !dynamicEntity.FlowId.HasValue && !userData.HasDataAccess(transaction, RoutePath, entityInfo.EntityId, DeviceClassic, new List<Guid>() { bussinessId }))
+                    {
+                        throw new Exception("您没有权限新增该实体数据");
                     }
 
+
+                    CheckCallBackService(transaction, OperatType.Insert, entityInfo.Servicesjson, bussinessId, entityInfo.EntityId, userNumber, "");
+
+                    if (dynamicEntity.FlowId.HasValue)
+                    {
+                        //新增流程数据
+                        workFlowAddCaseModel = new WorkFlowAddCaseModel()
+                        {
+                            EntityId = entityInfo.EntityId,
+                            FlowId = dynamicEntity.FlowId.Value,
+                            RecId = bussinessId,
+                            RelEntityId = dynamicEntity.RelEntityId,
+                            RelRecId = dynamicEntity.RelRecId,
+                            CaseData = data
+                        };
+                    }
                 }
-                return res;
+                return HandleResult(entityResult);
             }
             else
             {
@@ -417,7 +416,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //
             EntityExtFunctionInfo extFuncInfo = this._dynamicEntityRepository.getExtFunctionByFunctionName(paramInfo.EntityId, functionname);
             if (extFuncInfo == null) throw (new Exception("实体函数异常"));
-            if (extFuncInfo.RecStatus != 1) {
+            if (extFuncInfo.RecStatus != 1)
+            {
                 throw (new Exception("该函数已经被停用了"));
             }
             try
@@ -426,8 +426,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 object retObj = this._dynamicEntityRepository.ExecuteExtFunction(extFuncInfo, paramInfo.RecIds, paramInfo.OtherParams, userId);
                 return new OutputResult<object>(retObj);
             }
-            catch (Exception ex) {
-                if (ex.InnerException != null) {
+            catch (Exception ex)
+            {
+                if (ex.InnerException != null)
+                {
                     return new OutputResult<object>("", ex.InnerException.Message, -1);
                 }
                 else
@@ -1427,16 +1429,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             fromClause = string.Format(@"{0} left outer join {1} as {2}_t on jsonb_extract_path_text(e.{2},'id') = {2}_t.recid::text ", fromClause, tablename, fieldInfo.FieldName);
                             selectClause = string.Format(@"{0},{1}_t.recname as {1}_name", selectClause, fieldInfo.FieldName);
                         }
-                        else {
+                        else
+                        {
                             Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo.FieldConfig);
                             bool SaveNamed = false;
                             if (fieldConfigDict.ContainsKey("dataSource")
-                                && fieldConfigDict["dataSource"] != null) {
+                                && fieldConfigDict["dataSource"] != null)
+                            {
                                 Dictionary<string, object> datasourceInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(
                                 Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfigDict["dataSource"]));
-                                if (datasourceInfo != null && datasourceInfo.ContainsKey("namefrom") && datasourceInfo["namefrom"] != null) {
+                                if (datasourceInfo != null && datasourceInfo.ContainsKey("namefrom") && datasourceInfo["namefrom"] != null)
+                                {
                                     string namefrom = datasourceInfo["namefrom"].ToString();
-                                    if (namefrom.Equals("1")) {
+                                    if (namefrom.Equals("1"))
+                                    {
                                         SaveNamed = true;
                                     }
                                 }
@@ -1445,7 +1451,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 selectClause = string.Format(@"{0},jsonb_extract_path_text(e.{1},'name') as {1}_name", selectClause, fieldInfo.FieldName);
                             }
-                            else {
+                            else
+                            {
                                 string tmpDataSourceId = fieldNameMapDataSource[fieldInfo.FieldName];
                                 string tablename = dataSources[tmpDataSourceId];
                                 fromClause = string.Format(@"{0} left outer join {1} as {2}_t on jsonb_extract_path_text(e.{2},'id') = {2}_t.recid::text ", fromClause, tablename, fieldInfo.FieldName);
@@ -1588,7 +1595,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
 
             string SpecFuncName = _dynamicEntityRepository.CheckDataListSpecFunction(dynamicModel.EntityId);
-            
+
             var dynamicEntity = _mapper.Map<DynamicEntityListModel, DynamicEntityListMapper>(dynamicModel);
             if (dynamicEntity == null || !dynamicEntity.IsValid())
             {
@@ -1615,10 +1622,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
                 var validResults = isAdvanceQuery ? DynamicProtocolHelper.AdvanceQuery2(searchFields, dynamicModel.SearchData) : DynamicProtocolHelper.SimpleQuery(searchFields, dynamicModel.SearchData);
-                if (SpecFuncName != null) {
+                if (SpecFuncName != null)
+                {
                     validResults = isAdvanceQuery ? DynamicProtocolHelper.AdvanceQuery(searchFields, dynamicModel.SearchData) : DynamicProtocolHelper.SimpleQuery(searchFields, dynamicModel.SearchData);
                 }
-                
+
                 var validTips = new List<string>();
                 var data = new Dictionary<string, string>();
 
@@ -1713,7 +1721,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public Dictionary<string, List<IDictionary<string, object>>> Detail(DynamicEntityDetailtMapper dynamicEntity, int userNumber)
         {
-           
+
             if (dynamicEntity == null || !dynamicEntity.IsValid())
             {
                 var errorTips = dynamicEntity.ValidationState.Errors.First();
@@ -2028,14 +2036,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var details = _dynamicEntityRepository.DetailList(detailMapper, userNumber);
 
                 //删除数据
-                var result = _dynamicEntityRepository.Delete(transaction,dynamicModel.EntityId, dynamicModel.RecId, dynamicModel.PageType, dynamicModel.PageCode, userNumber);
+                var result = _dynamicEntityRepository.Delete(transaction, dynamicModel.EntityId, dynamicModel.RecId, dynamicModel.PageType, dynamicModel.PageCode, userNumber);
                 if (result.Flag == 1)
                 {
                     Task.Run(() =>
                     {
                         foreach (var detail in details)
                         {
-                            object rectype = detail.ContainsKey("rectype")? detail["rectype"]: entityId;
+                            object rectype = detail.ContainsKey("rectype") ? detail["rectype"] : entityId;
                             typeid = Guid.Parse(rectype.ToString());
                             var entityInfotemp = _entityProRepository.GetEntityInfo(typeid);
                             //var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.EntityId, userNumber);
@@ -2455,10 +2463,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
         }
 
-        public bool IsValidEntityPower(dynamic entityInfo)
+        public bool IsValidEntityPower(SimpleEntityInfo entityInfo)
         {
             //简单实体 没有关联实体 且走审批的就不校验权限
-            if (entityInfo.modeltype == 2 && entityInfo.relentityid == null && entityInfo.relaudit == 1)
+            if (entityInfo.ModelType ==  EntityModelType.Simple && entityInfo.RelEntityId == null && entityInfo.RelAudit == 1)
                 return true;
             return false;
         }

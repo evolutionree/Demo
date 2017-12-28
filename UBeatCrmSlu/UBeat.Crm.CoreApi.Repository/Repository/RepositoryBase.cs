@@ -1,7 +1,12 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Npgsql;
+using NpgsqlTypes;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
+using System.Reflection;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.Repository.Utility;
 
@@ -10,7 +15,37 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
     public class RepositoryBase
     {
         protected IDBHelper DBHelper = new PostgreHelper();
-        
+
+        public DbParameter[] GetDbParameters<T>(T model)
+        {
+            var sqlParameters = new List<DbParameter>();
+            var properties = model.GetType().GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            foreach (var property in properties)
+            {
+
+                var attribute = property.GetCustomAttributes(typeof(SqlTypeAttribute), false).FirstOrDefault();
+                SqlTypeAttribute sqltype = attribute as SqlTypeAttribute;
+                if(attribute != null && sqltype.NpgsqlDbType == NpgsqlDbType.Unknown)
+                {
+                    continue;
+                }
+                else if (attribute != null)
+                {
+                    sqlParameters.Add(new NpgsqlParameter(property.Name.ToLower(), JsonConvert.SerializeObject(property.GetValue(model))) { NpgsqlDbType = sqltype.NpgsqlDbType });
+                }
+                else sqlParameters.Add(new NpgsqlParameter(property.Name.ToLower(), property.GetValue(model)));
+            }
+            return sqlParameters.ToArray();
+        }
+        public List<DbParameter[]> GetDbParameters<T>(List<T> models)
+        {
+            List<DbParameter[]> results = new List<DbParameter[]>();
+            foreach (var m in models)
+            {
+                results.Add(GetDbParameters(m));
+            }
+            return results;
+        }
 
 
         /// <summary>

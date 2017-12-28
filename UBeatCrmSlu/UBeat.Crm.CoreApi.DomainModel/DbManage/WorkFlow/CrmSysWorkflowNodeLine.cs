@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NpgsqlTypes;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel.DbManage.RuleInfo;
@@ -22,9 +23,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.WorkFlow
         /// <summary>
         /// 线配置字段，如线的位置等
         /// </summary>
+        [SqlType(NpgsqlDbType.Jsonb)]
         public object LineConfig { set; get; }
 
-        public DbRuleInfo RuleInfo { set; get; }
+        
 
     }
 }

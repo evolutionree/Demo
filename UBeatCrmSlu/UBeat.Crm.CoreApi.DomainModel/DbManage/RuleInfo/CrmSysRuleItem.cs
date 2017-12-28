@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NpgsqlTypes;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,7 +18,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.RuleInfo
         /// <summary>
         /// 字段ID
         /// </summary>
-        public Guid FieldId { set; get; }
+        public Guid? FieldId { set; get; }
         /// <summary>
         /// 操作符 + - *
         /// </summary>
@@ -25,6 +26,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.RuleInfo
         /// <summary>
         /// 规则数据
         /// </summary>
+        [SqlType(NpgsqlDbType.Json)]
         public object RuleData { set; get; }
         /// <summary>
         /// 规则类型 0范围规则 1字段规则 2语句规则
