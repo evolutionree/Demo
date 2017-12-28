@@ -1567,7 +1567,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             #endregion
             string WhereSQL = "1=1";
-            string OrderBySQL = " reccreated desc ";
+            string OrderBySQL = " recversion desc ";
+            if (dynamicEntity.SearchOrder != null && dynamicEntity.SearchOrder.Length > 0) {
+                OrderBySQL = dynamicEntity.SearchOrder;
+            }
             if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
             {
                 WhereSQL = " 1=1    " + dynamicEntity.SearchQuery;
