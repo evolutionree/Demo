@@ -1022,7 +1022,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 "b.refreshinterval,b.servertype,b.smtpaddress,a.signature	" +
                 " from crm_sys_mail_mailbox a " +
                 " inner join crm_sys_mail_server b on(a.mailserver->> 'id')::uuid = b.recid " +
-                " where a.OWNER= @userid ";
+                " where a.OWNER= @userid  and a.recstatus=1 ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid", userId.ToString())
