@@ -95,6 +95,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EMail
 
         public string CatalogType { get; set; }
 
+        public string ParentId { get; set; }
+
         public int SearchUserId { get; set; }
 
     }

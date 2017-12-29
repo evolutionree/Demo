@@ -10,7 +10,7 @@ namespace UBeat.Crm.CoreApi.IRepository
     public interface IMailCatalogRepository : IBaseRepository
     {
 
-        List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId);
+        List<MailCatalogInfo> GetMailCataLog(string catalogType, string vpid,string keyword, int userId);
 
         List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword, string catalogType, int userid);
 

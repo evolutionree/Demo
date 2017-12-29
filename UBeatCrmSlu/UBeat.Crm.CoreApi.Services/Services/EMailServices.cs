@@ -1123,7 +1123,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="catalogName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string vpid, string keyword, int userId)
         {
             InitMailCatalog(userId);
 
@@ -1132,7 +1132,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return _mailCatalogRepository.GetMailCataLogTreeByKeyword(keyword, catalogType, userId);
             }
-            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword, userId);
+            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType,vpid, keyword, userId);
+            if (!string.IsNullOrEmpty(vpid)) {
+                return list;
+            }
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in list)
             {

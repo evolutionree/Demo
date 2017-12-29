@@ -445,7 +445,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             return resultList;
         }
 
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string vpid,string keyword, int userId)
         {
             var sql = @"WITH RECURSIVE cata as
             (
@@ -472,9 +472,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             WHEN usercatalog.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userId ) and catalogrelation.catalogid=usercatalog.recid)
             WHEN usercatalog.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userId ))
             WHEN usercatalog.CType=1009 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1009' IN idpath) >0 and viewuserid=@userId ))
-            WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userId ))
+            WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))
 						ELSE catalogrelation.unreadmail END,0)::int unreadcount,
-						COALESCE(CASE WHEN usercatalog.CType=1008 THEN (SELECT sum(flagstar) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userId ))       
+						COALESCE(CASE WHEN usercatalog.CType=1008 THEN (SELECT sum(flagstar) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))       
 						ELSE catalogmailcount.mailcount END, 0)::int mailcount,cata.idpath 
             FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid 
             left join cata on cata.recid=usercatalog.recid left join catalogmailcount on catalogmailcount.catalogid=usercatalog.recid
@@ -488,6 +488,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             if (!string.IsNullOrEmpty(keyword))
             {
                 condition = string.Format(condition + " and usercatalog.recname like '%{0}%' ", keyword);
+
+            }
+            if (!string.IsNullOrEmpty(vpid))
+            {
+                condition = string.Format(condition + " and usercatalog.vpid='{0}' ", vpid);
 
             }
             var param = new DbParameter[]
