@@ -39,6 +39,19 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         /// <summary>
+        /// 发邮件
+        /// </summary>
+        /// <param name="emailServices"></param>
+        [HttpPost]
+        [Route("sendemail")]
+        public OutputResult<object> SendEMailAsync([FromBody]SendEMailModel model = null)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            var header = GetAnalyseHeader();
+            return _emailServices.SendEMailAsync(model, header, UserId);
+        }
+
+        /// <summary>
         /// 草稿箱
         /// </summary>
         /// <param name="emailServices"></param>
