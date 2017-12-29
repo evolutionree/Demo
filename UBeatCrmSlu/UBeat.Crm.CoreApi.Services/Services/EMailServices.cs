@@ -263,7 +263,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             fieldData.Add("bccers", BuilderAddress(msg.Bcc));//邮件密送人
             fieldData.Add("attachcount", msg.Attachments.Count());//邮件附件
             fieldData.Add("urgency", 1);//邮件优先级
-
+            fieldData.Add("isread", 0);
             fieldData.Add("receivedtime", msg.Date);//邮件优先级
             var files = UploadAttachmentFiles(msg.Attachments);
             fieldData.Add("mongoid", string.Join(";", files.Select(t => t.mongoid)));//文件id
@@ -649,8 +649,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Status = (int)MailStatus.Waiting,
                 AttachFileRecord = attachFileRecord,
             };
-            var repResult = SaveSendMailDataInDb(msgResult, userNumber);
-            return HandleResult(repResult);
+            return ExcuteInsertAction((trans, arg, userData) =>
+             {
+                 OperateResult repResult;
+                 if (entity.MailId != Guid.Empty)
+                 {
+                     repResult = _mailRepository.DeleteMailDraft(model.MailId, trans, userNumber);
+                     if (repResult.Flag == 0)
+                     {
+                         trans.Rollback();
+                         return HandleResult(repResult);
+                     }
+                 }
+                 repResult = SaveSendMailDataInDb(msgResult, userNumber, trans);
+                 return HandleResult(repResult);
+             }, msgResult, Guid.Parse(_entityId), userNumber);
+
+
         }
 
         private SearchQuery BuilderSearchQuery(SearchQueryEnum query, string conditionVal, string mailAddress, int userId)
@@ -699,7 +714,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        private OperateResult SaveSendMailDataInDb(MimeMessageResult msgResult, int userNumber)
+        private OperateResult SaveSendMailDataInDb(MimeMessageResult msgResult, int userNumber, DbTransaction dbTrans = null)
         {
             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
             string key = String.Empty;
@@ -754,7 +769,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ExtraData = extraData
             };
             _dynamicEntityServices.RoutePath = "api/dynamicentity/add";//赋予新增权限
-            var result = _dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
+            var result = _dynamicEntityRepository.DynamicAdd(dbTrans, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
             if (result.Flag == 0)
                 _logger.LogError(result.Msg);
             return result;
@@ -1122,7 +1137,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="catalogName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string vpid, string keyword, int userId)
         {
             InitMailCatalog(userId);
 
@@ -1131,7 +1146,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return _mailCatalogRepository.GetMailCataLogTreeByKeyword(keyword, catalogType, userId);
             }
-            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, keyword, userId);
+            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType,vpid, keyword, userId);
+            if (!string.IsNullOrEmpty(vpid)) {
+                return list;
+            }
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
             foreach (var catalog in list)
             {

@@ -417,11 +417,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     WITH mails as(select viewuserid,count(1) unreadcount from crm_sys_mail_catalog a inner join crm_sys_mail_catalog_relation b on a.recid=b.catalogid
                     inner join crm_sys_mail_mailbody c on c.recid=b.mailid where c.isread is null or c.isread = 0 group by viewuserid )
                     select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
-                        inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where(b.isleader is null or b.isleader <> 1) and a.recstatus = 1 
+                        inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where 1=1 {0} and a.recstatus = 1 
                             and a.deptid = @deptId  order by b.username) t1 ) x where 1=1";
                 string searchDept = result[0]["deptid"].ToString();
-                if (!string.IsNullOrEmpty(deptId))
+                string condition = string.Empty;
+                if (string.IsNullOrEmpty(deptId))
                 {
+                    condition = string.Format(" and (b.isleader is null or b.isleader <> 1) ");
+                }
+                else {
+                    if (deptId == searchDept) {
+                        condition = string.Format(" and (b.isleader is null or b.isleader <> 1) ");
+                    }
                     searchDept = deptId;
                 }
                 var paramTree = new DbParameter[]
@@ -435,17 +442,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     getOrgTreeSql = @"WITH mails as(select viewuserid,count(1) unreadcount from crm_sys_mail_catalog a inner join crm_sys_mail_catalog_relation b on a.recid=b.catalogid
                             inner join crm_sys_mail_mailbody c on c.recid=b.mailid where c.isread is null or c.isread = 0 group by viewuserid )
 		                            select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
-	                             inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where (b.isleader is null or b.isleader <> 1) and a.recstatus = 1 
+	                             inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where 1=1 {0}  and a.recstatus = 1 
 		                            and a.deptid in (SELECT deptid FROM crm_func_department_tree_power(@deptId,1,1,@userId)) ";
                     getOrgTreeSql = string.Format(getOrgTreeSql + " and b.username like '%{0}%'  order by b.username ", keyword);
 
                 }
-                resultList = ExecuteQuery<OrgAndStaffTree>(getOrgTreeSql, paramTree);
+                string newSql = string.Format(getOrgTreeSql,condition);
+                resultList = ExecuteQuery<OrgAndStaffTree>(newSql, paramTree);
             }
             return resultList;
         }
 
-        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string keyword, int userId)
+        public List<MailCatalogInfo> GetMailCataLog(string catalogType, string vpid,string keyword, int userId)
         {
             var sql = @"WITH RECURSIVE cata as
             (
@@ -472,9 +480,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             WHEN usercatalog.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userId ) and catalogrelation.catalogid=usercatalog.recid)
             WHEN usercatalog.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userId ))
             WHEN usercatalog.CType=1009 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1009' IN idpath) >0 and viewuserid=@userId ))
-            WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userId ))
+            WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))
 						ELSE catalogrelation.unreadmail END,0)::int unreadcount,
-						COALESCE(CASE WHEN usercatalog.CType=1008 THEN (SELECT sum(flagstar) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userId ))       
+						COALESCE(CASE WHEN usercatalog.CType=1008 THEN (SELECT sum(flagstar) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))       
 						ELSE catalogmailcount.mailcount END, 0)::int mailcount,cata.idpath 
             FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid 
             left join cata on cata.recid=usercatalog.recid left join catalogmailcount on catalogmailcount.catalogid=usercatalog.recid
@@ -488,6 +496,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             if (!string.IsNullOrEmpty(keyword))
             {
                 condition = string.Format(condition + " and usercatalog.recname like '%{0}%' ", keyword);
+
+            }
+            if (!string.IsNullOrEmpty(vpid))
+            {
+                condition = string.Format(condition + " and usercatalog.vpid='{0}' ", vpid);
 
             }
             var param = new DbParameter[]
