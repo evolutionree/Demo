@@ -45,7 +45,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public IList<AttachmentFileMapper> AttachmentFile { get; set; }
 
         public Guid PMailId { get; set; }
-        public Guid PMailId { get; set; }
+        public Guid MailId { get; set; }
 
         protected override IValidator GetValidator()
         {

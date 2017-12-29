@@ -87,6 +87,6 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         UserMailInfo GetEnablePassword(Guid mailBoxId, int userId);
 
-        OperateResult DeleteMailDraft(Guid mailId, DbTransaction dbTrans, int userId)；
+        OperateResult DeleteMailDraft(Guid mailId, DbTransaction dbTrans, int userId);
     }
 }

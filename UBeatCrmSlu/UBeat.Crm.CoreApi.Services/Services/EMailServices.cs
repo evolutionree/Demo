@@ -652,16 +652,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ExcuteInsertAction((trans, arg, userData) =>
              {
                  OperateResult repResult;
-                 if (entity.PMailId != Guid.Empty)
+                 if (entity.MailId != Guid.Empty)
                  {
-                       repResult = _mailRepository.DeleteMailDraft(model.MailId, trans, userNumber);
+                     repResult = _mailRepository.DeleteMailDraft(model.MailId, trans, userNumber);
                      if (repResult.Flag == 0)
                      {
                          trans.Rollback();
                          return HandleResult(repResult);
                      }
                  }
-                 repResult = SaveSendMailDataInDb(msgResult, trans, userNumber);
+                 repResult = SaveSendMailDataInDb(msgResult, userNumber, trans);
                  return HandleResult(repResult);
              }, msgResult, Guid.Parse(_entityId), userNumber);
 
@@ -714,7 +714,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        private OperateResult SaveSendMailDataInDb(MimeMessageResult msgResult, DbTransaction dbTrans, int userNumber)
+        private OperateResult SaveSendMailDataInDb(MimeMessageResult msgResult, int userNumber, DbTransaction dbTrans = null)
         {
             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
             string key = String.Empty;
