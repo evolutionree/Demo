@@ -232,7 +232,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Message = ExceptionTipMsgSwitch.ExceptionTipMsg(ex)
                 };
             }
-
         }
         void SaveRecMailDataInDb(MimeMessage msg, string currentMailAddress, int userNumber)
         {

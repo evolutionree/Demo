@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var header = GetAnalyseHeader();
             return _emailServices.ValidSendEMailData(model, header, UserId);
         }
-        
+
         /// <summary>
         /// 草稿箱
         /// </summary>
@@ -64,9 +64,21 @@ namespace UBeat.Crm.CoreApi.Controllers
                 model = new ReceiveEMailModel();
                 model.Conditon = SearchQueryEnum.None;
                 model.ConditionVal = string.Empty;
-                model.IsFirstInit = false;
             }
             return _emailServices.QueueReceiveEMailAsync(model, UserId);
+        }
+
+        [HttpPost]
+        [Route("queuereceiveemail")]
+        public OutputResult<object> QueueReceiveEMailAsync([FromBody] ReceiveEMailModel model = null)
+        {
+            if (model == null || model.ConditionVal == null)
+            {
+                model = new ReceiveEMailModel();
+                model.Conditon = SearchQueryEnum.None;
+                model.ConditionVal = string.Empty;
+            }
+            return _emailServices.QueueReceiveEMailAsync(model, model.UserId);
         }
 
         #region 邮件CRUD
