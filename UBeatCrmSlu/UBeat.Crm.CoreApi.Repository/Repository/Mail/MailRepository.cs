@@ -1523,5 +1523,48 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             };
             return DataBaseHelper.QuerySingle<UserMailInfo>(strSQL, param);
         }
+
+        public OperateResult DeleteMailDraft(Guid mailId, DbTransaction dbTrans, int userId)
+        {
+            var cataRelationSql = @" SELECT COUNT(1) FROM crm_sys_mail_catalog_relation WHERE catalogid IN ( SELECT recid FROM crm_sys_mail_catalog WHERE  ctype=1005 AND viewuserid=@userid) AND mailid=@mailid";
+            var senderReceiversSql = @"DELETE FROM　crm_sys_mail_senderreceivers WHERE mailid=@mailid";
+            var relatedSql = @"DELETE FROM　crm_sys_mail_related WHERE mailid=@mailid";
+            var sendrecordSql = @"DELETE FROM　crm_sys_mail_sendrecord WHERE mailid=@mailid";
+            var attachSql = @"DELETE FROM　crm_sys_mail_attach WHERE mailid=@mailid";
+            var mailBodySql = @"Delete From crm_sys_mail_mailbody Where recid=@mailid;";
+            var param = new
+            {
+                MailId = mailId,
+                UserId = userId
+            };
+            try
+            {
+                var result = DataBaseHelper.QuerySingle<int>(cataRelationSql, param);
+                if (result > 0)
+                {
+                    var dbParam = new DbParameter[] {
+                    new NpgsqlParameter("mailid",mailId)
+                };
+                    DBHelper.ExecuteQuery(dbTrans, senderReceiversSql, dbParam);
+                    DBHelper.ExecuteQuery(dbTrans, relatedSql, dbParam);
+                    DBHelper.ExecuteQuery(dbTrans, sendrecordSql, dbParam);
+                    DBHelper.ExecuteQuery(dbTrans, attachSql, dbParam);
+                    DBHelper.ExecuteQuery(dbTrans, mailBodySql, dbParam);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new OperateResult
+                {
+                    Flag = 0,
+                    Msg = "草稿箱邮件异常"
+                };
+            }
+            return new OperateResult
+            {
+                Flag = 1,
+                Msg = ""
+            };
+        }
     }
 }

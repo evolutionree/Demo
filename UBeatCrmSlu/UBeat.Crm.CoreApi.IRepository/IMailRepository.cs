@@ -86,5 +86,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId);
 
         UserMailInfo GetEnablePassword(Guid mailBoxId, int userId);
+
+        OperateResult DeleteMailDraft(Guid mailId, DbTransaction dbTrans, int userId)；
     }
 }
