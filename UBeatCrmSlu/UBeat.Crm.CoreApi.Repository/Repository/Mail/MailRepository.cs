@@ -25,7 +25,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public PageDataInfo<MailBodyMapper> ListMail(MailListActionParamInfo paramInfo, string orderbyfield, string keyWord, int userId, DbTransaction tran = null)
         {
-            string strSQL = @" SELECT  * FROM (SELECT " +
+            string strSQL = @"
+                                        WITH RECURSIVE  T1 AS (
+                                           SELECT recid,recname,vpid FROM crm_sys_mail_catalog WHERE ctype=1001 AND viewuserid=125 AND recstatus=1
+                                           UNION ALL
+                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid=T1.recid WHERE cata.viewuserid=125
+                                        )
+                                        SELECT  * FROM (SELECT " +
                                         "body.recid mailid," +
                                         "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                                         "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
@@ -61,11 +67,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1002:
-                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid )) AND  body.isread=0 ";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.isread=0 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1008:
-                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid )) AND  body.istag=1 ";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.istag=1 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     break;
                 case 1005:
