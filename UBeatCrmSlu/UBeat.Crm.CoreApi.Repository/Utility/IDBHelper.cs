@@ -14,11 +14,13 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
         /// 执行 Transact-SQL 语句并返回受影响的行数。
         /// </summary>
         int ExecuteNonQuery(string connectionString, string cmdText, DbParameter[] cmdParms, CommandType cmdType = CommandType.Text);
-
+        
         /// <summary>
         /// 在事务中执行 Transact-SQL 语句并返回受影响的行数。
         /// </summary>
         int ExecuteNonQuery(DbTransaction trans, string cmdText, DbParameter[] cmdParms, CommandType cmdType = CommandType.Text);
+
+       
 
         #region --执行查询--
         /// <summary>
