@@ -428,6 +428,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
             cmd.Parameters.Clear();
             return val;
         }
+       
+
 
         /// <summary>
         /// 执行查询，返回DataReader
