@@ -72,12 +72,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("queuereceiveemail")]
         public OutputResult<object> QueueReceiveEMailAsync([FromBody] ReceiveEMailModel model = null)
         {
-            if (model == null || model.ConditionVal == null)
-            {
-                model = new ReceiveEMailModel();
-                model.Conditon = SearchQueryEnum.None;
-                model.ConditionVal = string.Empty;
-            }
+            if (model == null) return ResponseError<object>("参数格式错误");
             return _emailServices.QueueReceiveEMailAsync(model, model.UserId);
         }
 
