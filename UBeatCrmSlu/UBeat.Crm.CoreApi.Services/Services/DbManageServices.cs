@@ -573,13 +573,11 @@ WITH (OIDS=FALSE);", tablename, fieldSQL);
         public string GetWorkFlowInfoList(WorkFlowInfoListModel model)
         {
             List<Guid> flowIds = null;
-            if (model != null && model.FlowIds != null && model.FlowIds.Count > 0)
-            {
-                flowIds = model.FlowIds;
-            }
-          
-            var workflows = _dbWorkFlowRepository.GetWorkFlowInfoList(flowIds, null);
-            var workflowsJson= JsonConvert.SerializeObject(workflows);
+            if (model.FlowId.HasValue)
+                flowIds = new List<Guid>() { model.FlowId.Value };
+
+              var workflows = _dbWorkFlowRepository.GetWorkFlowInfoList(flowIds, null);
+            var workflowsJson = JsonConvert.SerializeObject(workflows);
             return workflowsJson;
         }
 

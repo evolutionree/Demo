@@ -56,7 +56,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
             var ruleids = new List<Guid>();
             foreach (var flow in workflows)
             {
-                
+
                 if (flow.NodeLines != null)
                 {
                     ruleids.AddRange(flow.NodeLines.Select(m => m.RuleId));
@@ -69,9 +69,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                     flowRuleids.Add(flow.WorkFlow.FlowId, ruleids);
             }
             ruleids = ruleids.Distinct().ToList();
-            var rules =new DbRuleRepository().GetRuleInfoList(ruleids, trans);
-            
-            foreach(var item in flowRuleids)
+            var rules = new DbRuleRepository().GetRuleInfoList(ruleids, trans);
+
+            foreach (var item in flowRuleids)
             {
                 var flow = workflows.Find(m => m.WorkFlow.FlowId == item.Key);
                 flow.RuleInfos = rules.Where(m => item.Value.Contains(m.RuleInfo.RuleId)).ToList();
@@ -133,17 +133,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
         public void SaveWorkFlowInfoList(List<DbWorkFlowInfo> flowInfos, int userNum, DbTransaction trans = null)
         {
             var workFlows = new List<CrmSysWorkflow>();
+            var updateWorkFlows = new List<CrmSysWorkflow>();
             var nodes = new List<CrmSysWorkflowNode>();
             var nodeLines = new List<CrmSysWorkflowNodeLine>();
             var funcEvents = new List<CrmSysWorkflowFuncEvent>();
-            var workFlowRuleRelations = new List<CrmSysWorkflowRuleRelation>();
+            //var workFlowRuleRelations = new List<CrmSysWorkflowRuleRelation>();
             List<DbRuleInfo> ruleInfos = new List<DbRuleInfo>();
             if (flowInfos == null || flowInfos.Count == 0)
             {
                 throw new Exception("流程数据不可为空");
             }
-            
-            
+
+
 
             DbConnection conn = null;
             if (trans == null)
@@ -156,25 +157,62 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
             try
             {
                 var allworkflow = GetAllCrmSysWorkflowList(trans);
+                var allnodes = GetAllCrmSysWorkflowNodeList(trans);
+                var allnodelines = GetAllCrmSysWorkflowNodeLineList(trans);
+
+
                 //判断源数据是否存在目标数据库中，若存在，则需要把源版本号重置为目标数据库流程版本号+1的值
                 foreach (var flow in flowInfos)
                 {
                     if (flow.WorkFlow == null)
                         continue;
                     var existFlow = allworkflow.Find(m => m.FlowId == flow.WorkFlow.FlowId);
-                    if (allworkflow.Exists(m => m.FlowId == flow.WorkFlow.FlowId))
+                    if (existFlow == null)
                     {
+                        workFlows.Add(flow.WorkFlow);
 
                     }
-                    workFlows.Add(flow.WorkFlow);
+                    else
+                    {
+                        var newVerNum = existFlow.VerNum + 1;
+                        flow.WorkFlow.VerNum = newVerNum;
+
+                        if (existFlow.FlowType == 1)//固定流程
+                        {
+                            if (flow.Nodes == null || flow.Nodes.Count == 0)//如果流程节点没配置，则不同步该条流程配置数据
+                                throw new Exception("不可导入未生成节点的固定流程");
+                            else
+                            {
+                                var firstnode = flow.Nodes.FirstOrDefault();
+                                if (allnodes.Exists(m => m.NodeId == firstnode.NodeId))//如果节点id已经存在，说明该条流程数据已经存在目标数据库了，则不导入
+                                {
+                                    continue;
+                                }
+                                foreach (var o in flow.Nodes)
+                                {
+                                    if (o != null)
+                                        o.VerNum = newVerNum;
+                                }
+
+                                if (flow.NodeLines == null || flow.NodeLines.Count == 0)//如果流程节点没配置，则不同步该条流程配置数据
+                                    throw new Exception("不可导入未生成节点连线的固定流程");
+                                foreach (var o in flow.NodeLines)
+                                {
+                                    if (o != null)
+                                        o.VerNum = newVerNum;
+                                }
+                            }
+                        }
+                        updateWorkFlows.Add(flow.WorkFlow);
+                    }
                     if (flow.Nodes != null)
                         nodes.AddRange(flow.Nodes);
                     if (flow.NodeLines != null)
                         nodeLines.AddRange(flow.NodeLines);
                     if (flow.FuncEvents != null)
                         funcEvents.AddRange(flow.FuncEvents);
-                    if (flow.WorkFlowRuleRelations != null)
-                        workFlowRuleRelations.AddRange(flow.WorkFlowRuleRelations);
+                    //if (flow.WorkFlowRuleRelations != null)
+                    //    workFlowRuleRelations.AddRange(flow.WorkFlowRuleRelations);
                     if (flow.RuleInfos != null)
                         ruleInfos.AddRange(flow.RuleInfos);
                 }
@@ -182,22 +220,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                 nodes = nodes.Distinct(new CrmSysWorkflowNodeComparer()).ToList();
                 nodeLines = nodeLines.Distinct(new CrmSysWorkflowNodeLineComparer()).ToList();
                 funcEvents = funcEvents.Distinct(new CrmSysWorkflowFuncEventComparer()).ToList();
-                workFlowRuleRelations = workFlowRuleRelations.Distinct(new CrmSysWorkflowRuleRelationComparer()).ToList();
+                //workFlowRuleRelations = workFlowRuleRelations.Distinct(new CrmSysWorkflowRuleRelationComparer()).ToList();
+
+                var allfuncEvents = GetAllCrmSysWorkflowFuncEventList(trans);
+                funcEvents.RemoveAll(m => allfuncEvents.Exists(a => a.FuncEventId == m.FuncEventId || (a.FlowId == m.FlowId && a.NodeId == m.NodeId)));
 
                 ruleInfos = ruleInfos.Distinct(new DbRuleInfoComparer()).ToList();
 
-                
-                //判断源数据是否存在目标数据库中，若存在，则需要把源版本号重置为目标数据库流程版本号+1的值
-                foreach(var flow in workFlows)
-                {
-                   
-                }
-
+                var updateWorkflowExecuteSql = string.Format(@"WITH t1 as(
+                                                        SELECT flowid,flowname,flowtype,backflag,resetflag,expireday,remark,entityid,vernum,skipflag,{0},{0} 
+                                                        FROM jsonb_populate_recordset(null::crm_sys_workflow,@flows)
+                                                        )
+                                                        UPDATE crm_sys_workflow AS bt SET(flowid,flowname,flowtype,backflag,resetflag,expireday,remark,entityid,vernum,skipflag,reccreator,recupdator)=(
+                                                        SELECT * FROM t1  WHERE flowid =bt.flowid) WHERE bt.flowid in (SELECT flowid FROM t1);", userNum);
+                DbParameter[] updateWorkflowparams = new DbParameter[] { new NpgsqlParameter("flows", JsonConvert.SerializeObject(updateWorkFlows)) { NpgsqlDbType = NpgsqlDbType.Jsonb } };
+                ExecuteNonQuery(updateWorkflowExecuteSql, updateWorkflowparams, trans);
 
                 var workflowExecuteSql = string.Format(@"INSERT INTO crm_sys_workflow(flowid,flowname,flowtype,backflag,resetflag,expireday,remark,entityid,vernum,skipflag,reccreator,recupdator)
                                    SELECT flowid,flowname,flowtype,backflag,resetflag,expireday,remark,entityid,vernum,skipflag,{0},{0} 
                                    FROM jsonb_populate_recordset(null::crm_sys_workflow,@flows)", userNum);
-                DbParameter[] workflowparams = new DbParameter[] { new NpgsqlParameter("flows", JsonConvert.SerializeObject(workFlows)) { NpgsqlDbType =  NpgsqlDbType.Jsonb } };
+                DbParameter[] workflowparams = new DbParameter[] { new NpgsqlParameter("flows", JsonConvert.SerializeObject(workFlows)) { NpgsqlDbType = NpgsqlDbType.Jsonb } };
                 ExecuteNonQuery(workflowExecuteSql, workflowparams, trans);
 
                 var nodesExecuteSql = string.Format(@"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,vernum,auditsucc,nodeconfig)
@@ -218,12 +260,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
                 DbParameter[] funcEventparams = new DbParameter[] { new NpgsqlParameter("funcEvent", JsonConvert.SerializeObject(funcEvents)) { NpgsqlDbType = NpgsqlDbType.Jsonb } };
                 ExecuteNonQuery(funcEventExecuteSql, funcEventparams, trans);
 
-                var workFlowRuleRelationsExecuteSql = string.Format(@"INSERT INTO crm_sys_workflow_rule_relation(flowid,ruleid)
-                                   SELECT flowid,ruleid
-                                   FROM jsonb_populate_recordset(null::crm_sys_workflow_rule_relation,@workFlowRuleRelations)", userNum);
-                DbParameter[] workFlowRuleRelationsparams = new DbParameter[] { new NpgsqlParameter("workFlowRuleRelations", JsonConvert.SerializeObject(workFlowRuleRelations)) { NpgsqlDbType = NpgsqlDbType.Jsonb } };
-                ExecuteNonQuery(workFlowRuleRelationsExecuteSql, workFlowRuleRelationsparams, trans);
-                
+                //暂时不处理crm_sys_workflow_rule_relation表，由其他使用该表数据的模块同步
+                //var allworkFlowRuleRelations = GetAllCrmSysWorkflowRuleRelationList(trans);
+                // workFlowRuleRelations.RemoveAll(m => allworkFlowRuleRelations.Exists(a => a.FlowId == m.FlowId && a.RuleId == m.RuleId));
+                //var workFlowRuleRelationsExecuteSql = string.Format(@"INSERT INTO crm_sys_workflow_rule_relation(flowid,ruleid)
+                //                   SELECT flowid,ruleid
+                //                   FROM jsonb_populate_recordset(null::crm_sys_workflow_rule_relation,@workFlowRuleRelations)", userNum);
+                //DbParameter[] workFlowRuleRelationsparams = new DbParameter[] { new NpgsqlParameter("workFlowRuleRelations", JsonConvert.SerializeObject(workFlowRuleRelations)) { NpgsqlDbType = NpgsqlDbType.Jsonb } };
+                //ExecuteNonQuery(workFlowRuleRelationsExecuteSql, workFlowRuleRelationsparams, trans);
+
                 //保存rule数据
                 new DbRuleRepository().SaveRuleInfoList(ruleInfos, userNum, trans);
 
@@ -233,7 +278,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
             }
             catch (Exception ex)
             {
-                
+
                 trans.Rollback();
                 throw ex;
             }
@@ -250,6 +295,6 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DbManage
 
         }
 
-       
+
     }
 }
