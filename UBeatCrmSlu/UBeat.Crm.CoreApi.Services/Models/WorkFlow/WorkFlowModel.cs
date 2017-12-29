@@ -1,11 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Rule;
 using UBeat.Crm.CoreApi.Services.Models.Vocation;
 
 namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 {
+    public class WorkFlowCaseAddModel
+    {
+        /// <summary>
+        /// 数据类型：0=实体数据，1=流程数据
+        /// </summary>
+        public int DataType { set; get; }
+
+        public DynamicEntityAddModel EntityModel { set; get; }
+
+        public WorkFlowAddCaseModel CaseModel { set; get; }
+
+        public Guid NodeId { set; get; }
+        public string HandleUser { get; set; }
+        public string CopyUser { get; set; }
+
+
+    }
+
     public class WorkFlowAddCaseModel
     {
         public Guid FlowId { get; set; }

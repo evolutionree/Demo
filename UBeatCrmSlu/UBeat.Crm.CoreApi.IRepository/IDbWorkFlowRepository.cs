@@ -8,6 +8,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 {
     public interface IDbWorkFlowRepository
     {
-        List<DbWorkFlowInfo> GetWorkFlowInfoList(DbTransaction trans);
+        List<DbWorkFlowInfo> GetWorkFlowInfoList(List<Guid> flowids, DbTransaction trans);
+
+        void SaveWorkFlowInfoList(List<DbWorkFlowInfo> flowInfos, int userNum, DbTransaction trans);
     }
 }

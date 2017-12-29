@@ -19,7 +19,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DbManage.WorkFlow
         public List<CrmSysWorkflowFuncEvent> FuncEvents { set; get; }
 
         public List<CrmSysWorkflowRuleRelation> WorkFlowRuleRelations { set; get; }
-        
+
+        public List<DbRuleInfo> RuleInfos { set; get; }
     }
 
    

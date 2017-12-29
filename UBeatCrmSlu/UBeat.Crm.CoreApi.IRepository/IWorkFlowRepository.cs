@@ -11,6 +11,8 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
         OperateResult AddCase(DbTransaction tran, WorkFlowAddCaseMapper caseMapper, int userNumber);
 
+        Guid  AddWorkflowCase(DbTransaction tran, WorkFlowInfo workflowinfo, WorkFlowAddCaseMapper caseMapper, int userNumber);
+
         Dictionary<string, List<IDictionary<string, object>>> NextNodeData(Guid caseId, int userNumber);
 
         OperateResult AddCaseItem(WorkFlowAddCaseItemMapper caseItemMapper, int userNumber);
@@ -48,7 +50,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         WorkFlowNodeInfo GetPreviousWorkFlowNodeInfo(DbTransaction trans, Guid flowid, int vernum, Guid nodeid);
 
         List<WorkFlowNodeInfo> GetNextNodeInfoList(DbTransaction trans, Guid flowid, int vernum, Guid fromnodeid);
-       
+        List<WorkFlowNodeInfo> GetNodeInfoList(DbTransaction trans, Guid flowid, int vernum);
 
         List<WorkFlowCaseItemInfo> GetWorkFlowCaseItemInfo(DbTransaction trans, Guid caseid, int nodenum,int stepnum=-1);
         List<WorkFlowCaseInfo> getWorkFlowCaseListByRecId(DbTransaction trans, string recid, int userNum);
@@ -117,12 +119,14 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <param name="flowid">流程id</param>
         /// <param name="nodeid">event关联的节点nodeid，固定流程的节点id，若为自由流程，则uuid值为0作为流程起点，值为1作为流程终点</param>
-        /// <param name="steptype">0为caseitemadd执行 1为caseitemaudit执行</param>
         /// <param name="trans"></param>
         /// <returns></returns>
-        string GetWorkFlowEvent(Guid flowid, Guid nodeid, int steptype, DbTransaction trans = null);
+        WorkFlowEventInfo GetWorkFlowEvent(Guid flowid, Guid nodeid, DbTransaction trans = null);
 
-        void ExecuteWorkFlowEvent(string funcname, Guid caseid, int nodenum, int choicestatus, int userno, DbTransaction trans = null);
+        /// <summary>
+        /// 执行流程扩展函数
+        /// </summary>
+        void ExecuteWorkFlowEvent(WorkFlowEventInfo eventInfo, Guid caseid, int nodenum, int choicestatus, int userno, DbTransaction trans = null);
 
         void ExecuteUpdateWorkFlowEntity( Guid caseid, int nodenum, int userno, DbTransaction trans = null);
 

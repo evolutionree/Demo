@@ -11,6 +11,8 @@ using UBeat.Crm.CoreApi.Services.Services;
 using System.Text.Encodings.Web;
 using System.Reflection;
 using System.IO;
+using UBeat.Crm.CoreApi.Services.Models.DbManage;
+using System.Text;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -194,6 +196,37 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> StatDbSize() {
             DbSizeStatInfo statInfo = this._dbManageServices.StatDbSize(UserId);
             return new OutputResult<object>(statInfo);
+        }
+
+
+        [HttpGet("workflowconfigs")]
+        [AllowAnonymous]
+        public IActionResult GetWorkFlowInfoList([FromQuery]WorkFlowInfoListModel queryParam)
+        {
+            var jsonText = _dbManageServices.GetWorkFlowInfoList(queryParam);
+            byte[] json_bytes = System.Text.Encoding.UTF8.GetBytes(jsonText);
+            return File(json_bytes, "application/octet-stream; charset=utf-8", "workflowconfigs.json");
+
+        }
+        /// <summary>
+        /// 保存工作流配置
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("saveworkflowconfigs")]
+        public OutputResult<object> SaveWorkFlowInfoList([FromForm]SaveWorkFlowInfoModel formData)
+        {
+            if (formData == null)
+                return ResponseError<object>("缺乏查询参数");
+
+            var stream = formData.Data.OpenReadStream();
+            var jsonText = string.Empty;
+            using (StreamReader sr = new StreamReader(stream))
+            {
+                jsonText = sr.ReadToEnd().ToString();
+            }
+            return this._dbManageServices.SaveWorkFlowInfoList(jsonText, UserId);
         }
     }
 }

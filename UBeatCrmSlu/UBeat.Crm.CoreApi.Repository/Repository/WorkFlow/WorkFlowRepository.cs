@@ -37,6 +37,45 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         }
 
+        public Guid AddWorkflowCase(DbTransaction tran, WorkFlowInfo workflowinfo, WorkFlowAddCaseMapper caseMapper, int userNumber)
+        {
+            Guid caseid = Guid.NewGuid();
+            var executeSql = @"INSERT INTO crm_sys_workflow_case (caseid,flowid, recid, vernum, reccreator, recupdator,auditstatus) 
+                               VALUES (@caseid,@flowid, @recid, @flowvernum, @userno, @userno,3)";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("caseid", caseid),
+                new NpgsqlParameter("flowid", caseMapper.FlowId),
+                new NpgsqlParameter("recid", caseMapper.RecId),
+                new NpgsqlParameter("flowvernum", workflowinfo.VerNum),
+                new NpgsqlParameter("userno", userNumber),
+            };
+            int rows = ExecuteNonQuery(executeSql, param, tran);
+            
+            if (rows>0)
+            {
+                if(caseMapper.RelEntityId.HasValue&& caseMapper.RelRecId.HasValue)
+                {
+                     var tempSql = @"INSERT INTO crm_sys_workflow_case_entity_relation(caseid,relentityid,relrecid)
+                               VALUES (@caseid,@relentityid,@relrecid) ";
+                    var tempParam = new DbParameter[]
+                    {
+                        new NpgsqlParameter("caseid", caseid),
+                        new NpgsqlParameter("relentityid", caseMapper.RelEntityId.Value),
+                        new NpgsqlParameter("relrecid", caseMapper.RelRecId.Value),
+                       
+                    };
+                    rows = ExecuteNonQuery(tempSql, tempParam, tran);
+                }
+                return caseid;
+            }
+
+            return Guid.Empty;
+
+        }
+
+
         public Dictionary<string, List<IDictionary<string, object>>> NextNodeData(Guid caseId, int userNumber)
         {
             var procName =
@@ -253,8 +292,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     #region --插入nodeevent--
                     if (node_eve_params.Count > 0)
                     {
-                        var node_event_sql = @"INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid)
-                                              VALUES(@flowid,@funcname,@nodeid)";
+                        var node_event_sql = @"INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
+                                              VALUES(@flowid,@funcname,@nodeid,1)";
                         ExecuteNonQueryMultiple(node_event_sql, node_eve_params, tran);
                     }
                     #endregion
@@ -503,6 +542,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             };
             return ExecuteQuery<WorkFlowNodeInfo>(executeSql, param, trans);
 
+        }
+
+        public List<WorkFlowNodeInfo> GetNodeInfoList(DbTransaction trans, Guid flowid, int vernum)
+        {
+            var executeSql = @"SELECT * FROM crm_sys_workflow_node WHERE flowid = @flowid AND vernum = @vernum ";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("flowid", flowid),
+                new NpgsqlParameter("vernum", vernum),
+             
+            };
+            return ExecuteQuery<WorkFlowNodeInfo>(executeSql, param, trans);
         }
 
 
@@ -1203,36 +1255,44 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// </summary>
         /// <param name="flowid">流程id</param>
         /// <param name="nodeid">event关联的节点nodeid，固定流程的节点id，若为自由流程，则uuid值为0作为流程起点，值为1作为流程终点</param>
-        /// <param name="steptype">0为caseitemadd执行 1为caseitemaudit执行</param>
         /// <param name="trans"></param>
         /// <returns></returns>
-        public string GetWorkFlowEvent(Guid flowid, Guid nodeid, int steptype, DbTransaction trans = null)
+        public WorkFlowEventInfo GetWorkFlowEvent(Guid flowid, Guid nodeid, DbTransaction trans = null)
         {
-            string sql = string.Format(@"SELECT funcname FROM crm_sys_workflow_func_event  WHERE flowid = @flowid AND nodeid = @nodeid AND steptype=@steptype");
+            string sql = string.Format(@"SELECT funcname,steptype FROM crm_sys_workflow_func_event  WHERE flowid = @flowid AND nodeid = @nodeid ");
 
             var sqlParameters = new List<DbParameter>();
-            sqlParameters.Add(new NpgsqlParameter("steptype", steptype));
+
             sqlParameters.Add(new NpgsqlParameter("flowid", flowid));
             sqlParameters.Add(new NpgsqlParameter("nodeid", nodeid));
 
 
-            var result = ExecuteScalar(sql, sqlParameters.ToArray(), trans);
+            var result = ExecuteQuery<WorkFlowEventInfo>(sql, sqlParameters.ToArray(), trans);
 
-            return result == null ? null : result.ToString();
+            return result.FirstOrDefault();
         }
         #endregion
 
-        public void ExecuteWorkFlowEvent(string funcname, Guid caseid, int nodenum, int choicestatus, int userno, DbTransaction trans = null)
-        {
-            if (nodenum == 0)
-            {
-                return;
-            }
-            var sqlParameters = new List<DbParameter>();
 
-            string sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@choicestatus,@userno)", funcname);
-            
-            sqlParameters.Add(new NpgsqlParameter("choicestatus", choicestatus));
+        /// <summary>
+        /// 执行流程扩展函数
+        /// </summary>
+        public void ExecuteWorkFlowEvent(WorkFlowEventInfo eventInfo, Guid caseid, int nodenum, int choicestatus, int userno, DbTransaction trans = null)
+        {
+            if (eventInfo == null || string.IsNullOrEmpty(eventInfo.FuncName))
+                return;
+            string sql = string.Empty;
+            var sqlParameters = new List<DbParameter>();
+            if (eventInfo.SteptType == 0)
+            {
+                sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@userno)", eventInfo.FuncName);
+            }
+            else
+            {
+                sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@choicestatus,@userno)", eventInfo.FuncName);
+                sqlParameters.Add(new NpgsqlParameter("choicestatus", choicestatus));
+            }
+
             sqlParameters.Add(new NpgsqlParameter("nodenum", nodenum));
             sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
             sqlParameters.Add(new NpgsqlParameter("userno", userno));

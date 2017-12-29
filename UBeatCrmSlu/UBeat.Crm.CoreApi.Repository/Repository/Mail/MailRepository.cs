@@ -1022,7 +1022,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 "b.refreshinterval,b.servertype,b.smtpaddress,a.signature	" +
                 " from crm_sys_mail_mailbox a " +
                 " inner join crm_sys_mail_server b on(a.mailserver->> 'id')::uuid = b.recid " +
-                " where a.OWNER= @userid ";
+                " where a.OWNER= @userid  and a.recstatus=1 ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid", userId.ToString())
@@ -1145,7 +1145,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 select useremail mail,username as name from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= ''
                 UNION ALL
                 select a.accountid mail,b.username as name  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid 
-                where b.recstatus=1
+                where b.recstatus=1 and a.recstatus=1
                 ) x where 1=1 {0}
                 group by email,name ";
 
@@ -1204,7 +1204,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                     (select regexp_split_to_table(mail,';') mail,x.userid::text treeid,x.username treename,d.deptname,x.icon from (
                                     select useremail mail,userid,username,usericon::uuid icon  from crm_sys_userinfo a where a.recstatus=1 and a.useremail is not null  and a.useremail!= '' 
                                     UNION all 
-                                    select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1) x
+                                    select a.accountid mail,b.userid,b.username,b.usericon::uuid icon  from crm_sys_mail_mailbox a inner join crm_sys_userinfo b on a.OWNER::integer=b.userid where b.recstatus=1 and a.recstatus=1) x
                                     inner join crm_sys_account_userinfo_relate ur on ur.userid=x.userid
                                     left join crm_sys_department d on d.deptid=ur.deptid
                                         where ur.recstatus = 1 and d.deptid::text=@deptId ) t2 where t2.mail is not null
