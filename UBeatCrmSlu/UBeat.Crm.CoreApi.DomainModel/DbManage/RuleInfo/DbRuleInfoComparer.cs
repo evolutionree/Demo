@@ -4,6 +4,24 @@ using System.Text;
 
 namespace UBeat.Crm.CoreApi.DomainModel.DbManage.RuleInfo
 {
+    public class DbRuleInfoComparer : IEqualityComparer<DbRuleInfo>
+    {
+
+        public bool Equals(DbRuleInfo x, DbRuleInfo y)
+        {
+            if (x.RuleInfo != null && y.RuleInfo != null && x.RuleInfo.RuleId == y.RuleInfo.RuleId)
+                return true;
+            else
+                return false;
+        }
+
+        public int GetHashCode(DbRuleInfo obj)
+        {
+            return 0;
+        }
+
+    }
+
     public class CrmSysRuleComparer : IEqualityComparer<CrmSysRule>
     {
 

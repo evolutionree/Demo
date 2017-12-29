@@ -260,7 +260,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseModel.CaseModel.FlowId);
                     if (workflowInfo == null)
-                        throw new Exception("流程配置不存在");
+                        throw new Exception("流程配置不存在,请先配置审批节点");
                     WorkFlowNodeInfo firstNodeInfo = null;
                     var caseid = AddWorkFlowCase(true, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo);
                     //走完审批所有操作，获取下一步数据
@@ -272,7 +272,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 catch (Exception ex)
                 {
-                    tran.Rollback();
                     throw ex;
                 }
                 finally
