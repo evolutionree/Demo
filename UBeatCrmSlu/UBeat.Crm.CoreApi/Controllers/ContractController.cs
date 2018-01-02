@@ -16,6 +16,7 @@ using UBeat.Crm.CoreApi.Services.Models.Contract;
 /// </summary>
 namespace UBeat.Crm.CoreApi.Controllers
 {
+
     [Route("api/[controller]")]
     public class ContractController : BaseController
     {
