@@ -484,7 +484,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
-
+            entity.FromName = string.IsNullOrEmpty(userMailInfo.NickName) ? userMailInfo.DisplayName : userMailInfo.NickName;
             var errors = ValidEmailAddressAuth(model, userNumber);
 
             IList<MailboxAddress> fromAddressList;
@@ -631,7 +631,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
-
+            entity.FromName = string.IsNullOrEmpty(userMailInfo.NickName) ? userMailInfo.DisplayName : userMailInfo.NickName;
             IList<MailboxAddress> fromAddressList;
             IList<MailboxAddress> toAddressList;
             IList<MailboxAddress> ccAddressList;
@@ -1146,8 +1146,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return _mailCatalogRepository.GetMailCataLogTreeByKeyword(keyword, catalogType, userId);
             }
-            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType,vpid, keyword, userId);
-            if (!string.IsNullOrEmpty(vpid)) {
+            List<MailCatalogInfo> list = _mailCatalogRepository.GetMailCataLog(catalogType, vpid, keyword, userId);
+            if (!string.IsNullOrEmpty(vpid))
+            {
                 return list;
             }
             List<MailCatalogInfo> resultList = new List<MailCatalogInfo>();
