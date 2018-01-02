@@ -57,6 +57,18 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return new OutputResult<object>(null, ex.Message, -1);
             }
         }
+        [HttpPost("detail")]
+        [AllowAnonymous]
+        public OutputResult<object> DetailTrigger([FromBody]TriggerDetailParamInfo paramInfo ) {
+
+            if (paramInfo == null) return ResponseError<object>("参数异常");
+            try
+            {
+            }
+            catch (Exception ex) {
+            }
+            return null;
+        }
         [HttpPost("update")]
         [AllowAnonymous]
         public OutputResult<object> UpdateTrigger([FromBody] TriggerDefineInfo triggerInfo) {
@@ -119,6 +131,9 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
+    }
+    public class TriggerDetailParamInfo {
+        public Guid RecId { get; set; }
     }
     public class UpdateTriggerStatuParamInfo {
         public Guid RecId { get; set; }
