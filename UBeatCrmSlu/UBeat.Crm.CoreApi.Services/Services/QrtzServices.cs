@@ -63,6 +63,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             oldInfo.LastErrorTime = triggerInfo.LastErrorTime;
             this._qrtzRepository.UpdateTrigger(oldInfo, userid, null);
         }
+
+        public TriggerDefineInfo TriggerDetail(Guid recId, int userId)
+        {
+            return this._qrtzRepository.TriggerDetail(recId, userId, null);
+        }
+
         /// <summary>
         /// 更新事务定义的基本信息
         /// </summary>

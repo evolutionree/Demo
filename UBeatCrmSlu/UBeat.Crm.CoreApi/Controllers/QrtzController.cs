@@ -62,10 +62,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> DetailTrigger([FromBody]TriggerDetailParamInfo paramInfo ) {
 
             if (paramInfo == null) return ResponseError<object>("参数异常");
+            if (paramInfo.RecId == null || paramInfo.RecId.Equals(Guid.Empty)) return ResponseError<object>("参数异常(RecId)");
             try
             {
+                TriggerDefineInfo triggerInfo = this._qrtzServices.TriggerDetail(paramInfo.RecId, UserId);
+                return new OutputResult<object>(triggerInfo);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
+                return new OutputResult<object>(null, ex.Message, -1);
             }
             return null;
         }

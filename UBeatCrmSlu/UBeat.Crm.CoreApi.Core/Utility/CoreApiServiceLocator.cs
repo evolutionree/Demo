@@ -28,6 +28,10 @@ namespace UBeat.Crm.CoreApi.Core.Utility
             }
             catch (Exception ex) {
             }
+            if (t == null) {
+                //尝试去扩展类找
+                t = PlugInsUtils.getInstance().getTypeWithName(servicename);
+            }
             //ConstructorInfo[] acts = t.GetConstructors();
             //ConstructorInfo defaultAct = acts[0];
             //ParameterInfo[] paramsInfo = defaultAct.GetParameters();
