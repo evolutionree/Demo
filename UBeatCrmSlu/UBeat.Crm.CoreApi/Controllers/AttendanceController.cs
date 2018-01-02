@@ -13,7 +13,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 {
     [Route("api/[controller]")]
     public class AttendanceController:BaseController
-    {
+    { 
         private static readonly Logger Logger = LogManager.GetLogger(typeof(AttendanceController).FullName);
 
         private readonly AttendanceServices _attendanceServices;
