@@ -27,9 +27,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         {
             string strSQL = @"
                                         WITH RECURSIVE  T1 AS (
-                                           SELECT recid,recname,vpid FROM crm_sys_mail_catalog WHERE ctype=1001 AND viewuserid=125 AND recstatus=1
+                                           SELECT recid,recname,vpid FROM crm_sys_mail_catalog WHERE (ctype=1001 OR ctype=1004) AND viewuserid=@userid AND recstatus=1
                                            UNION ALL
-                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid=T1.recid WHERE cata.viewuserid=125
+                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid=T1.recid WHERE cata.viewuserid=@userid
                                         )
                                         SELECT  * FROM (SELECT " +
                                         "body.recid mailid," +
@@ -95,7 +95,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
             orderbyfield = @" order by tmp.receivedtime desc ";
             strSQL = string.Format(strSQL, sqlCondition, orderbyfield);
-            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("userid", userId), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
+            return ExecuteQueryByPaging<MailBodyMapper>(strSQL, new DbParameter[] { new NpgsqlParameter("catalogid", paramInfo.Catalog), new NpgsqlParameter("ctype", ctype), new NpgsqlParameter("userid", userId), new NpgsqlParameter("keyword", keyWord) }, paramInfo.PageSize, paramInfo.PageIndex);
         }
 
         /// <summary>
