@@ -727,7 +727,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         body.mailbody as summary, 
                                         COALESCE(body.senttime, body.receivedtime)  senttime,
                                         COALESCE(body.receivedtime,body.senttime)  receivedtime,
-										rl.mailserverid
+										rl.mailserverid,
+                                        rl.userid
                                         FROM crm_sys_mail_mailbody body LEFT JOIN crm_sys_mail_receivemailrelated rl ON body.recid=rl.mailid  {0} 
                                         ),
                                         T2 AS (
