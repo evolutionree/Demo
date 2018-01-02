@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 {
     [Route("api/[controller]")]
     public class AccountController : BaseController
-    {
+    {  
         private readonly AccountServices _accountServices;
         private readonly SalesTargetServices _salesTargetServices;
 
