@@ -10,7 +10,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// <summary>
         /// 0为caseitemadd执行 1为caseitemaudit执行
         /// </summary>
-        public int SteptType { set; get; }
+        public int StepType { set; get; }
 
         
     }

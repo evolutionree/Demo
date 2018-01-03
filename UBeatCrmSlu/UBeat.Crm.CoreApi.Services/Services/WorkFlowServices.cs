@@ -1362,9 +1362,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     nodetemp.NeedSuccAuditCount = 1;
                     nodetemp.FlowType = WorkFlowType.FixedFlow;
                     var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nodetemp.NodeId.GetValueOrDefault(), userinfo.UserId, workflowInfo.FlowType, tran);
-                    if (users == null || users.Count == 0 && nodetemp.NodeState == 0)//没有满足下一步审批人条件的选人列表
+                    if (users == null || users.Count == 0 && nodetemp.NodeState == 0)//没有满足下一步审批人条件的选人列表,则获取与自由流程一样返回全公司人员
                     {
-                        nodetemp.NodeState = 4;
+                        nodetemp.NodeState = 0;
+                        users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
                     }
                     result = new NextNodeDataModel()
                     {
@@ -1665,7 +1666,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     break;
                 case 4:       //4编辑
                     casenodenum = 0;
-                    auditstatus = AuditStatusType.Begin;
+                    auditstatus = hasNextNode? AuditStatusType.Begin: AuditStatusType.Finished;
                     canAddNextNodeItem = hasNextNode;
                     casefinish = !hasNextNode;
                     _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
@@ -2119,6 +2120,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (caseInfo.AuditStatus == AuditStatusType.Finished)//完成审批
             {
                 funcCode = "WorkFlowNodeFinish";
+                return funcCode;
             }
 
             //判断是否还有人未完成审批
@@ -2256,6 +2258,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IncreaseDataVersion(DataVersionType.FlowData, null);
             return new OutputResult<object>("");
         }
+        public OutputResult<object> SaveFreeFlowNodeEvents(FreeFlowEventModel configModel, int userNumber)
+        {
+            if (configModel == null)
+            {
+                return ShowError<object>("参数不可为空");
+            }
+            WorkFlowInfo workFlowInfo = this._workFlowRepository.GetWorkFlowInfo(null, configModel.FlowId);
+            if(workFlowInfo==null)
+                return ShowError<object>("流程不存在");
+            else if(workFlowInfo.FlowType== WorkFlowType.FixedFlow)
+                return ShowError<object>("该流程不是自由流程，保存失败");
+            List<WorkFlowNodeMapper> nodes = new List<WorkFlowNodeMapper>();
+            nodes.Add(new WorkFlowNodeMapper()
+            {
+                NodeId = freeFlowBeginNodeId,
+                NodeEvent = configModel.BeginNodeFunc,
+                StepTypeId = 0,
+            });
+            nodes.Add(new WorkFlowNodeMapper()
+            {
+                NodeId = freeFlowEndNodeId,
+                NodeEvent = configModel.EndNodeFunc,
+                StepTypeId = -1,
+            });
+            _workFlowRepository.SaveNodeEvents(configModel.FlowId,nodes);
+            IncreaseDataVersion(DataVersionType.FlowData, null);
+            return new OutputResult<object>("OK");
+        }
+
 
         public OutputResult<object> FlowList(WorkFlowListModel listModel, int userNumber)
         {
