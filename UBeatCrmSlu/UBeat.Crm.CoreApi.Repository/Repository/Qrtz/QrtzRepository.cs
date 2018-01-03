@@ -124,7 +124,7 @@ from jsonb_populate_recordset(null::crm_sys_qrtz_triggerinstance,@qrtzinstance)"
               
                 strSQL = strSQL + " and  b.recid = @triggerid";
                 strSQL = strSQL + " and a.begintime between @fromtime and @totime ";
-                strSQL = strSQL + " order by b.recname,a.begintime ";
+                strSQL = strSQL + " order by b.recname,a.begintime desc ";
                 DbParameter[] param = null;
                 param = new DbParameter[] {
                     new Npgsql.NpgsqlParameter("@triggerid", triggerid),
