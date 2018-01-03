@@ -1667,6 +1667,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     casenodenum = 0;
                     auditstatus = AuditStatusType.Begin;
                     canAddNextNodeItem = hasNextNode;
+                    casefinish = !hasNextNode;
                     _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
                     break;
             }
@@ -1709,6 +1710,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 casenodenum = 0;
                 auditstatus = AuditStatusType.Begin;
+                canAddNextNodeItem = hasNextNode;
+                casefinish = !hasNextNode;
                 _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
             }
             else
