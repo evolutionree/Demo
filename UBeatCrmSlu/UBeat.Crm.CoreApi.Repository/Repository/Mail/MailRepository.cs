@@ -25,12 +25,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>
         public PageDataInfo<MailBodyMapper> ListMail(MailListActionParamInfo paramInfo, string orderbyfield, string keyWord, int userId, DbTransaction tran = null)
         {
-            string strSQL = @"
-                                        WITH RECURSIVE  T1 AS (
-                                           SELECT recid,recname,vpid FROM crm_sys_mail_catalog WHERE (ctype=1001 OR ctype=1004) AND viewuserid=@userid AND recstatus=1
-                                           UNION ALL
-                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid=T1.recid WHERE cata.viewuserid=@userid
-                                        )
+            string strSQL = @" #recursivesql#
                                         SELECT  * FROM (SELECT " +
                                         "body.recid mailid," +
                                         "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
@@ -48,6 +43,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                         " FROM crm_sys_mail_mailbody body Where 1=1  {0}  ) AS tmp  {1} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
+            string recursiveSql = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
             {
                 sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
@@ -62,22 +58,38 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             int ctype = DataBaseHelper.QuerySingle<int>(catalogSql, param);
             switch (ctype)
             {
-                case 1006://
-                    sqlCondition = " body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  AND  body.recstatus=0 ";
-                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
-                    break;
                 case 1002:
+                    recursiveSql = @"
+                                          WITH RECURSIVE  T1 AS (
+                                           SELECT recid, recname, vpid FROM crm_sys_mail_catalog WHERE (ctype = 1001 OR ctype = 1004) AND viewuserid = @userid AND recstatus = 1
+                                           UNION ALL
+                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid = T1.recid WHERE cata.viewuserid = @userid
+                                        )";
                     sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.isread=0 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
                     break;
                 case 1008:
+                    recursiveSql = @"
+                                          WITH RECURSIVE  T1 AS (
+                                           SELECT recid, recname, vpid FROM crm_sys_mail_catalog WHERE (ctype = 1001 OR ctype = 1004) AND viewuserid = @userid AND recstatus = 1
+                                           UNION ALL
+                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid = T1.recid WHERE cata.viewuserid = @userid
+                                        )";
                     sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.istag=1 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
                     break;
-                case 1005:
                 default:
-                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid=@catalogid)  AND body.recstatus=1 ";
+                    recursiveSql = @"
+                                          WITH RECURSIVE  T1 AS (
+                                           SELECT recid, recname, vpid FROM crm_sys_mail_catalog WHERE  viewuserid = @userid AND recstatus = 1 AND recid=@catalogid
+                                           UNION ALL
+                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid = T1.recid WHERE cata.viewuserid = @userid
+                                        )";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1))  AND body.recstatus=1 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
                     break;
             }
 
