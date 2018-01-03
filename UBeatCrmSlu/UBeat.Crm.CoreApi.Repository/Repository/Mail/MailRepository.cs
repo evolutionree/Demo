@@ -286,9 +286,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string validCatalogRelationSql = @"SELECT re.*,cata.catalogid FROM crm_sys_mail_reconvert re LEFT JOIN crm_sys_mail_catalog_relation cata ON re.mailid=cata.mailid AND re.srccatalogid=cata.catalogid WHERE re.mailid=@mailid;";//判断邮件和目录的关系是否存在
             string cataSql = @"SELECT recid,recname FROM crm_sys_mail_catalog WHERE viewuserid=(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1) AND ctype=2002 LIMIT 1";//个人目录
             string createCatalogSql = @"INSERT INTO public.crm_sys_mail_catalog (recname, userid, viewuserid, ctype, custcatalog, custid, recstatus, pid, vpid, recorder, isdynamic, defaultid) VALUES ('恢复已删除',(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1),(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1),3002,null,null,1,@catalogid,@catalogid,(SELECT COUNT(COALESCE(recorder,1))+1 FROM crm_sys_mail_catalog WHERE viewuserid=(SELECT srcuserid FROM crm_sys_mail_reconvert WHERE mailid=@mailid LIMIT 1) AND ctype=3002 AND vpid=@catalogid),1,null) returning recid;";
-            string catalogRelationSql = @"INSERT INTO public.crm_sys_mail_catalog_relation (mailid, catalogid, relativetype) VALUES (@mailid,@catalogid,1);";
+            string catalogRelationSql = @"delete from crm_sys_mail_catalog_relation where mailid=@mailid;INSERT INTO public.crm_sys_mail_catalog_relation (mailid, catalogid, relativetype) VALUES (@mailid,@catalogid,1);";
             string sql = "update crm_sys_mail_mailbody set recstatus=@recstatus where recid=@mailid;Delete From crm_sys_mail_reconvert Where mailid=@mailid;";
-
             try
             {
                 dynamic catalog;
