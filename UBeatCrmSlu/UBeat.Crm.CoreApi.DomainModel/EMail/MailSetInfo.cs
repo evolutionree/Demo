@@ -218,5 +218,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Int64 Wgvhhx { get; set; }
 
         public string NickName { get; set; }
+
+        public string DisplayName { get; set; }
+
     }
 }
