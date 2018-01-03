@@ -1666,7 +1666,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case 4:       //4编辑
                     casenodenum = 0;
                     auditstatus = AuditStatusType.Begin;
-                    canAddNextNodeItem = true;
+                    canAddNextNodeItem = hasNextNode;
                     _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
                     break;
             }
