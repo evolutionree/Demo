@@ -444,7 +444,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 		                            select b.userid::text treeid, b.username treename,a1.deptname,b.userjob,1 nodetype,COALESCE(mails.unreadcount,0)::int unreadcount from crm_sys_account_userinfo_relate a 
 	                             inner join crm_sys_userinfo b on a.userid = b.userid left join crm_sys_department a1 on a1.deptid=a.deptid left join mails on mails.viewuserid=b.userid  where 1=1 {0}  and a.recstatus = 1 
 		                            and a.deptid in (SELECT deptid FROM crm_func_department_tree_power(@deptId,1,1,@userId)) ";
-                    getOrgTreeSql = string.Format(getOrgTreeSql + " and b.username like '%{0}%'  order by b.username ", keyword);
+                    getOrgTreeSql = getOrgTreeSql + " and b.username like '%" + keyword + "%'  order by b.username ";
 
                 }
                 string newSql = string.Format(getOrgTreeSql,condition);
