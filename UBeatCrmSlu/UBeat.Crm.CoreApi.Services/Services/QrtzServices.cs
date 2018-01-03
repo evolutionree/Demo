@@ -84,6 +84,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             oldInfo.SingleRun = triggerInfo.SingleRun;
             oldInfo.ActionCmd = triggerInfo.ActionCmd;
             oldInfo.ActionType = triggerInfo.ActionType;
+            oldInfo.ActionParameters = triggerInfo.ActionParameters;
             this._qrtzRepository.UpdateTrigger(oldInfo, userid, null);
             return this._qrtzRepository.TriggerDetail(oldInfo.RecId, userid, null);
         }
