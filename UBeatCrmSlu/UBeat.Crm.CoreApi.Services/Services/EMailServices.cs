@@ -25,6 +25,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using UBeat.Crm.LicenseCore;
 using System.Text;
+using NLog;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -419,6 +420,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
 
+        
         public OutputResult<object> ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
@@ -528,6 +530,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }, entity, Guid.Parse(_entityId), userNumber);
             return res;
+        }
+        public void ReceiveMailsForQrtz()
+        {
+            string strSQL = @"select * from crm_sys_userinfo a 
+where userid::text in (select distinct  ""owner""  from crm_sys_mail_mailbox
+where ""owner"" is not null  )
+and recstatus = 1
+";
+            List<Dictionary<string,object>> list =  this._dynamicEntityRepository.ExecuteQuery(strSQL, null);
+            Logger logger = LogManager.GetLogger(this.GetType().FullName);
+            if (list == null) return;
+            logger.Debug("开始检查邮件:" + list.Count.ToString());
+            int curIndex = 0;
+            foreach (Dictionary<string, object> item in list) {
+                int userid = 0;
+                string username = "";
+                curIndex++;
+                logger.Debug("开始检查:" + curIndex);
+                if (item == null) continue;
+                if (item.ContainsKey("userid") == false || item["userid"] == null) continue;
+                if (Int32.TryParse(item["userid"].ToString(), out userid) == false) continue;
+                if (item.ContainsKey("username") && item["username"] != null) {
+                    username = item["username"].ToString();
+                }
+                logger.Debug("本次检查用户：" + username);
+                ReceiveEMailModel model = new ReceiveEMailModel();
+                model.UserId = userid;
+                model.Conditon = SearchQueryEnum.None;
+                ReceiveEMailAsync(model, userid);
+                logger.Debug("" + username + "检查结束");
+            }
+            logger.Debug("邮件检查结束");
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
