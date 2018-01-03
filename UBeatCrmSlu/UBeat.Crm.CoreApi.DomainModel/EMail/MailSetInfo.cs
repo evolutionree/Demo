@@ -123,6 +123,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         CustDyn = 4001,//客户自定义目录
         Personal = 2002,//个人目录
         PersonalDyn = 3002,//个人自定义目录
+        CustType_Send = 3003,//客户分类目录_发送
+        Cust_Send = 2004,//客户目录_发送
+        CustDyn_Send = 4002,//客户自定义目录_发送
+        Personal_Send = 2005,//个人目录_发送
+        PersonalDyn_Send = 3004,//个人自定义目录_发送
+        UnSpec_Send = 2006,//未归类邮件目录_发送
     }
 
 
@@ -212,7 +218,5 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public Int64 Wgvhhx { get; set; }
 
         public string NickName { get; set; }
-
-        public string DisplayName { get; set; }
     }
 }
