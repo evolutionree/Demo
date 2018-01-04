@@ -108,7 +108,7 @@ namespace UBeat.Crm.MailService
                     var inBox = client.GetFolder("INBOX");
                     try
                     {
-                        inBox.Open(FolderAccess.ReadOnly);
+                        inBox.Open(FolderAccess.ReadWrite);
                         List<MimeMessage> lstMsg = new List<MimeMessage>();
                         if (searchQuery != null)
                         {
