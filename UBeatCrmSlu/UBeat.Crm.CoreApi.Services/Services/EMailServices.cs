@@ -636,7 +636,7 @@ and recstatus = 1
                     {
                         if (taskResult.Exception != null)
                         {
-                            _logger.LogError("自动收取邮件异常：" + taskResult.Exception.Message);
+                            _logger.LogError(userMailInfo.AccountId +"自动收取邮件异常：" + taskResult.Exception.Message);
                             return;
                         }
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
@@ -645,7 +645,7 @@ and recstatus = 1
                         };
                         var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
                         if (taskResult.Result != null) {
-                            _logger.LogError(string.Format("共收取了{0}封邮件!", taskResult.Result.Count.ToString()));
+                            _logger.LogError(string.Format("在{1}中共收取了{0}封邮件!", taskResult.Result.Count.ToString(), userMailInfo.AccountId));
                         }
                         foreach (var msg in taskResult.Result)
                         {
