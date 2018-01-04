@@ -604,6 +604,17 @@ and recstatus = 1
         }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
+            #region 兼容通过自带调度服务进入的处理
+            if (this.header == null)
+            {
+                AnalyseHeader h = new AnalyseHeader();
+                h.Device = "WEB";
+                h.DeviceId = "";
+                this.header = h;
+            }
+            if (_dynamicEntityServices.header == null)
+                _dynamicEntityServices.header = this.header;
+                #endregion
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
             //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
@@ -680,10 +691,11 @@ and recstatus = 1
                             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
                             extraData.Add("attachfile", files);
                             extraData.Add("issendoreceive", 1);
-                            extraData.Add("receivetimerecord", new
+                            extraData.Add("relatedrecord", new
                             {
                                 ReceiveTime = msg.Date,
-                                ServerId = msg.MessageId
+                                ServerId = msg.MessageId,
+                                MailAddress = userMailInfo.AccountId
                             });
                             DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
                             {
@@ -691,13 +703,17 @@ and recstatus = 1
                                 FieldData = fieldData,
                                 ExtraData = extraData
                             };
-                            addList.EntityFields.Add(dynamicEntity);
+                            //addList.EntityFields.Add(dynamicEntity);//改用单条插入方式
+                            this._dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
                         }
-                        _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
-                        OutputResult<object>ret =  _dynamicEntityServices.AddList(addList, header, userNumber);
-                        _logger.LogError(userMailInfo.AccountId + "保存结果:" + Newtonsoft.Json.JsonConvert.SerializeObject(ret));
-
-                        //   _workerEvent.Set();
+                        if (addList.EntityFields.Count >0)
+                        {
+                            _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
+                            _logger.LogError(userMailInfo.AccountId + "准备保存" + addList.EntityFields.Count.ToString()+"个邮件");
+                            OutputResult<object> ret = _dynamicEntityServices.AddList(addList, header, userNumber);
+                            _logger.LogError(userMailInfo.AccountId + "保存结果:" + Newtonsoft.Json.JsonConvert.SerializeObject(ret));
+                        }
+                        
                     });
                 }
                 // _workerEvent.WaitOne();
