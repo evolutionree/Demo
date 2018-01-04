@@ -208,10 +208,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
             thrManager.StartTask(userNumber);
             try
             {
+                #region 处理加密密码
+                var config = new ConfigurationBuilder()
+                              .SetBasePath(Directory.GetCurrentDirectory())
+                              .AddJsonFile("appsettings.json")
+                              .Build();
+
+                #endregion
+                SecuritysModel _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
                     if (userMailInfo.EncryptPwd == null || string.IsNullOrEmpty(userMailInfo.ImapAddress) || userMailInfo.ImapPort <= 0)
                         continue;
+                    #region 兼容加密密码和非加密密码
+                    string newPassword = null;
+                    try
+                    {//为了兼容旧版本没有加密的密码
+                        newPassword = RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+                        if (newPassword != null && newPassword.Length > 0)
+                            userMailInfo.EncryptPwd = newPassword;
+                    }
+                    catch (Exception ex)
+                    {
+
+                    } 
+                    #endregion
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
