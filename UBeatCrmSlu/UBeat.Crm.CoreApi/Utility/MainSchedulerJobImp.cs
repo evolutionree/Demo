@@ -14,6 +14,8 @@ namespace UBeat.Crm.CoreApi.Utility
     {
         private QrtzServices _qrtzServices;
         private string ServerName = null;
+        public void clearRunningStatus (){
+        }
         public Task Execute(IJobExecutionContext context)
         {
             DateTime dt = DateTime.Now;

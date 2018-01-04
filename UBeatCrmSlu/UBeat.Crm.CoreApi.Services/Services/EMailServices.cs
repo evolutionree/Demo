@@ -634,12 +634,19 @@ and recstatus = 1
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
-                        if (taskResult.Exception != null) return;
+                        if (taskResult.Exception != null)
+                        {
+                            _logger.LogError("自动收取邮件异常：" + taskResult.Exception.Message);
+                            return;
+                        }
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
                         {
                             EntityFields = new List<DynamicEntityFieldDataModel>()
                         };
                         var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
+                        if (taskResult.Result != null) {
+                            _logger.LogDebug(string.Format("共收取了{0}封邮件", taskResult.Result.Count.ToString()));
+                        }
                         foreach (var msg in taskResult.Result)
                         {
                             var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
