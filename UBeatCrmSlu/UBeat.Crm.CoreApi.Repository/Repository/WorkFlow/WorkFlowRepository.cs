@@ -368,27 +368,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
         public void SaveNodeEvents(Guid flowId, List<WorkFlowNodeMapper> nodes, DbTransaction tran=null)
         {
-            var executeSql = @"DELETE FROM crm_sys_workflow_func_event WHERE flowid='' ";
+           
 
             List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
             foreach (var node in nodes)
             {
-                if (!string.IsNullOrEmpty(node.NodeEvent))
-                {
-
-                    node_eve_params.Add(new DbParameter[]
+                node_eve_params.Add(new DbParameter[]
                     {
                             new NpgsqlParameter("nodeid", node.NodeId),
                             new NpgsqlParameter("flowid", flowId),
                             new NpgsqlParameter("funcname", node.NodeEvent),
                             new NpgsqlParameter("steptype", node.StepTypeId==0?0:1)
                     });
-                }
             }
             if (node_eve_params.Count > 0)
             {
                 var node_event_sql = @"
-DELETE FROM crm_sys_workflow_func_event WHERE flowid=@flowid ;
+DELETE FROM crm_sys_workflow_func_event WHERE flowid=@flowid AND steptype=@steptype ;
 INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                               VALUES(@flowid,@funcname,@nodeid,@steptype)";
                 ExecuteNonQueryMultiple(node_event_sql, node_eve_params, tran);
