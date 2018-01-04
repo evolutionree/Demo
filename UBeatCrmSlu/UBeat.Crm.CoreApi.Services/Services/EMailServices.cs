@@ -645,7 +645,7 @@ and recstatus = 1
                         };
                         var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
                         if (taskResult.Result != null) {
-                            _logger.LogDebug(string.Format("共收取了{0}封邮件", taskResult.Result.Count.ToString()));
+                            _logger.LogError(string.Format("共收取了{0}封邮件!", taskResult.Result.Count.ToString()));
                         }
                         foreach (var msg in taskResult.Result)
                         {
