@@ -629,7 +629,7 @@ and recstatus = 1
                     catch (Exception ex) {
                         
                     }
-                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, "", userMailInfo.Owner);
+                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
