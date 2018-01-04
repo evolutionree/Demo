@@ -508,7 +508,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Status = (int)MailStatus.Sending,
                 AttachFileRecord = attachFileRecord,
             };
+            #region 处理邮件密码加密的问题，同时兼容密码未加密的情况
+            var config = new ConfigurationBuilder()
+                         .SetBasePath(Directory.GetCurrentDirectory())
+                         .AddJsonFile("appsettings.json")
+                         .Build();
+            SecuritysModel _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
+            try
+            {//为了兼容旧版本没有加密的密码
+                string newPassword = RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+                if (newPassword != null && newPassword.Length > 0)
+                    userMailInfo.EncryptPwd = newPassword;
+            }
+            catch (Exception ex)
+            {
 
+            } 
+            #endregion
             var repResult = SaveSendMailDataInDb(msgResult, userNumber);
             if (repResult.Flag == 0)
                 throw new Exception("邮件实体异常:" + repResult.Msg);
