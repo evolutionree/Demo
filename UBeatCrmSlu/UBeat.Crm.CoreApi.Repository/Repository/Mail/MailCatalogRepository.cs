@@ -483,6 +483,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))
 						ELSE catalogrelation.unreadmail END,0)::int unreadcount,
 						COALESCE(CASE WHEN usercatalog.CType=1008 THEN (SELECT sum(flagstar) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))       
+					  WHEN usercatalog.CType=1004 THEN (SELECT sum(mailcount) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1004' IN idpath) >0 and viewuserid=@userId ))
 						ELSE catalogmailcount.mailcount END, 0)::int mailcount,cata.idpath 
             FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid 
             left join cata on cata.recid=usercatalog.recid left join catalogmailcount on catalogmailcount.catalogid=usercatalog.recid
