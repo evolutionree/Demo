@@ -694,7 +694,8 @@ and recstatus = 1
                             addList.EntityFields.Add(dynamicEntity);
                         }
                         _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
-                        _dynamicEntityServices.AddList(addList, header, userNumber);
+                        OutputResult<object>ret =  _dynamicEntityServices.AddList(addList, header, userNumber);
+                        _logger.LogError(userMailInfo.AccountId + "保存结果:" + Newtonsoft.Json.JsonConvert.SerializeObject(ret));
 
                         //   _workerEvent.Set();
                     });
