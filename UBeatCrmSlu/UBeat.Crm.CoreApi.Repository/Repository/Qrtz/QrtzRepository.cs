@@ -206,7 +206,7 @@ where recid = @recid ";
             {
                 string strSQL = @"select * 
 from crm_sys_qrtz_triggerdefine 
-where (singlerun =0 or inbusy = 0 ) and recstatus = 1 
+where ( inbusy = 0   or inbusy is null) and recstatus = 1 
 order by recname ";
                 return ExecuteQuery<TriggerDefineInfo>(strSQL, new DbParameter[] { }, tran);
             }
