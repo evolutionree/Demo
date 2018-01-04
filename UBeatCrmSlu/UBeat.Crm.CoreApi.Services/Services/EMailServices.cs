@@ -26,6 +26,8 @@ using Microsoft.Extensions.Logging;
 using UBeat.Crm.LicenseCore;
 using System.Text;
 using NLog;
+using UBeat.Crm.CoreApi.Core.Utility.Encrypt;
+using UBeat.Crm.CoreApi.Services.Models.Account;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -570,11 +572,26 @@ and recstatus = 1
             //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
+                var config = new ConfigurationBuilder()
+                      .SetBasePath(Directory.GetCurrentDirectory())
+                      .AddJsonFile("appsettings.json")
+                      .Build();
+                SecuritysModel _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
                 OutputResult<object> repResult = new OutputResult<object>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
                     if (userMailInfo.EncryptPwd == null)
                         continue;
+                    string newPassword = null;
+                    try
+                    {//为了兼容旧版本没有加密的密码
+                        newPassword= RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+                        if (newPassword != null && newPassword.Length >0 )
+                            userMailInfo.EncryptPwd = newPassword;
+                    }
+                    catch (Exception ex) {
+                        
+                    }
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, "", userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
