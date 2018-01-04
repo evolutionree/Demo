@@ -70,7 +70,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string CopyUser { get; set; }
     }
 
+    public class GetFreeFlowEventModel
+    {
+        public Guid FlowId { get; set; }
+       
 
+    }
     public class FreeFlowEventModel
     {
         public Guid FlowId { get; set; }

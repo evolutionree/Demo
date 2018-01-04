@@ -165,6 +165,15 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _workFlowServices.SaveFreeFlowNodeEvents(configModel, UserId);
         }
 
+        [HttpPost]
+        [Route("getfreeflowevent")]
+        public OutputResult<object> GetFreeFlowNodeEvents([FromBody] GetFreeFlowEventModel configModel = null)
+        {
+            if (configModel == null) return ResponseError<object>("参数格式错误");
+            WriteOperateLog("修改自由流程配置", configModel);
+            return _workFlowServices.GetFreeFlowNodeEvents(configModel, UserId);
+        }
+
 
         [HttpPost]
         [Route("flowlist")]
