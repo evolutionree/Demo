@@ -346,9 +346,30 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
             }
         }
+        public dynamic GetFreeFlowNodeEvents(Guid flowId, DbTransaction tran = null)
+        {
+            var executeSql = @"(SELECT e.funcname,e.steptype FROM crm_sys_workflow_func_event e
+                                INNER JOIN crm_sys_workflow w ON w.flowid=e.flowid 
+                                WHERE w.flowtype=0 AND e.steptype=0 AND e.flowid=@flowid LIMIT 1 
+                                )
+                                UNION
+                                (SELECT e.funcname,e.steptype FROM crm_sys_workflow_func_event e
+                                INNER JOIN crm_sys_workflow w ON w.flowid=e.flowid
+                                WHERE w.flowtype=0 AND e.steptype=1 AND e.flowid=@flowid LIMIT 1 
+                                )";
+            var param = new DbParameter[]
+           {
+                new NpgsqlParameter("flowid", flowId),
+
+           };
+
+            return ExecuteQuery(executeSql, param);
+        }
 
         public void SaveNodeEvents(Guid flowId, List<WorkFlowNodeMapper> nodes, DbTransaction tran=null)
         {
+            var executeSql = @"DELETE FROM crm_sys_workflow_func_event WHERE flowid='' ";
+
             List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
             foreach (var node in nodes)
             {
@@ -366,7 +387,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             }
             if (node_eve_params.Count > 0)
             {
-                var node_event_sql = @"INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
+                var node_event_sql = @"
+DELETE FROM crm_sys_workflow_func_event WHERE flowid=@flowid ;
+INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                               VALUES(@flowid,@funcname,@nodeid,@steptype)";
                 ExecuteNonQueryMultiple(node_event_sql, node_eve_params, tran);
             }

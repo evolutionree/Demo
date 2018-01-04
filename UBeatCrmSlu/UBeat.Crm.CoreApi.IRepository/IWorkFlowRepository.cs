@@ -29,6 +29,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         void SaveNodeLinesConfig(WorkFlowNodeLinesConfigMapper nodeLineConfig, int userNumber);
 
         void SaveNodeEvents(Guid flowId, List<WorkFlowNodeMapper> nodes, DbTransaction tran = null);
+
+        dynamic GetFreeFlowNodeEvents(Guid flowId, DbTransaction tran = null);
+
         Dictionary<string, List<IDictionary<string, object>>> FlowList(PageParam pageParam, int flowstatus, string searchName, int userNumber);
 
         Dictionary<string, List<IDictionary<string, object>>> Detail(Guid flowId, int userNumber);

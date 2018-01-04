@@ -2258,6 +2258,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IncreaseDataVersion(DataVersionType.FlowData, null);
             return new OutputResult<object>("");
         }
+        public OutputResult<object> GetFreeFlowNodeEvents(GetFreeFlowEventModel configModel, int userNumber)
+        {
+            if (configModel == null)
+            {
+                return ShowError<object>("参数不可为空");
+            }
+            WorkFlowInfo workFlowInfo = this._workFlowRepository.GetWorkFlowInfo(null, configModel.FlowId);
+            if (workFlowInfo == null)
+                return ShowError<object>("流程不存在");
+            else if (workFlowInfo.FlowType == WorkFlowType.FixedFlow)
+                return ShowError<object>("该流程不是自由流程，无法获取Event函数");
+
+            var result= _workFlowRepository.GetFreeFlowNodeEvents(configModel.FlowId, null);
+            return new OutputResult<object>(result);
+        }
+
         public OutputResult<object> SaveFreeFlowNodeEvents(FreeFlowEventModel configModel, int userNumber)
         {
             if (configModel == null)
