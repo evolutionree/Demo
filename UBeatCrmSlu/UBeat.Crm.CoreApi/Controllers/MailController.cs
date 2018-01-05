@@ -260,7 +260,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> TransferInnerPersonContact([FromBody] ReconvertMailModel model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
-            return new OutputResult<object>(_emailServices.GetReconvertMailList(model, UserId));
+            return _emailServices.GetReconvertMailList(model, UserId);
         }
 
         [HttpPost]

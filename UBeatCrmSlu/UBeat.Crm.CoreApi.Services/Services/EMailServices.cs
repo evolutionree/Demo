@@ -1552,11 +1552,13 @@ and recstatus = 1
         public OutputResult<object> GetReconvertMailList(ReconvertMailModel model, int userNum)
         {
             var entity = _mapper.Map<ReconvertMailModel, ReconvertMailMapper>(model);
+
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
             return new OutputResult<object>(_mailRepository.GetReconvertMailList(entity, userNum));
+
         }
 
         public OutputResult<object> GetEnablePassword(Guid mailBoxId, int userNum)

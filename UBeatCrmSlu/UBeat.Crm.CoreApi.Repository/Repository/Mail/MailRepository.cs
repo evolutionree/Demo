@@ -1483,20 +1483,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId)
         {
-            string strSQL = @" SELECT  tmp.*,re.srcuserid,ur.username FROM (SELECT " +
+            string strSQL = @" SELECT  tmp.*,re.srcuserid,ur.username,tmp1.receivers,tmp1.displayname FROM (SELECT " +
                               "body.recid mailid," +
                               "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
-                              "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
                               "body.title," +
                                "COALESCE(body.senttime,body.receivedtime)  senttime," +
                                "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
                               "COALESCE(body.receivedtime,body.senttime) mailtime,body.recstatus" +
-                              " FROM crm_sys_mail_mailbody body ) AS tmp INNER JOIN crm_sys_mail_reconvert re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
+                              " FROM crm_sys_mail_mailbody body ) AS tmp INNER JOIN (SELECT array_to_json(array_agg(row_to_json(t))) as receivers,array_to_string(ARRAY(SELECT unnest(array_agg(t.displayname))),',') as displayname,mailid" +
+                            " FROM(SELECT mailaddress address, mailid, CASE WHEN displayname = '' OR displayname IS NULL THEN split_part(mailaddress, '@', 1)" +
+                            " ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype = 2 ) t GROUP BY t.mailid" +
+                            " ) as tmp1 ON tmp1.mailid=tmp.mailid INNER JOIN crm_sys_mail_reconvert re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
             {
-                sqlCondition = "  ((tmp.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
+                sqlCondition = "  (((tmp.sender->>'displayname') ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp1.displayname ILIKE '%' || @keyword || '%' ESCAPE '`'))";
                 sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
             if (entity.UserId.HasValue)
