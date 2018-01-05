@@ -80,6 +80,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
                     break;
+                case 1006:
+                    recursiveSql = @"
+                                          WITH RECURSIVE  T1 AS (
+                                           SELECT recid, recname, vpid FROM crm_sys_mail_catalog WHERE  viewuserid = @userid AND recstatus = 1 AND recid=@catalogid
+                                           UNION ALL
+                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid = T1.recid WHERE cata.viewuserid = @userid
+                                        )";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1))   AND body.recstatus=0 ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
+                    break;
                 default:
                     recursiveSql = @"
                                           WITH RECURSIVE  T1 AS (
@@ -229,14 +240,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
         }
 
-        public OperateResult DeleteMails(DeleteMailMapper entity, int userId)
+        public OperateResult DeleteMails(DeleteMailMapper entity, int userId, DbTransaction dbTrans = null)
         {
             var preSql = "SELECT count(1) hashdata FROM crm_sys_mail_catalog WHERE recid IN(SELECT catalogid FROM crm_sys_mail_catalog_relation  WHERE mailid =@mailid ) AND viewuserid = @userid ";
+            var draftMailSql = "DELETE FROM crm_sys_mail_mailbody WHERE recid=@mailid;DELETE FROM crm_sys_mail_catalog_relation WHERE mailid=@mailid;DELETE FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid;DELETE FROM crm_sys_mail_related WHERE mailid=@mailid;DELETE FROM crm_sys_mail_sendrecord WHERE mailid=@mailid;DELETE FROM crm_sys_mail_attach WHERE mailid=@mailid;";
+            var catalogSql = "SELECT ctype FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recid=(SELECT catalogid FROM crm_sys_mail_catalog_relation WHERE mailid=@mailid LIMIT 1);";
+            bool isDraftMail = false;
             foreach (var tmp in entity.MailIds.Split(','))
             {
+                Guid mailId = Guid.Parse(tmp);
                 var args = new
                 {
-                    MailId = Guid.Parse(tmp),
+                    MailId = mailId,
                     UserId = userId
                 };
                 var result = DataBaseHelper.QuerySingle<int>(preSql, args, CommandType.Text);
@@ -248,14 +263,28 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                         Msg = "正在被删除的邮件中有不属于你的邮件,不允许删除"
                     };
                 }
+                var ctype = DataBaseHelper.QuerySingle<int>(catalogSql, args);
+                if (ctype == 1005)
+                {
+                    DBHelper.ExecuteNonQuery(dbTrans, draftMailSql, new DbParameter[] { new NpgsqlParameter("userid", userId), new NpgsqlParameter("mailid", mailId) });
+                    isDraftMail = true;
+                }
+                else
+                    isDraftMail = false;
             }
+            if (isDraftMail)
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "删除邮件成功"
+                };
             string sql = string.Empty;
 
             if (entity.IsTruncate)
                 sql = "Update  crm_sys_mail_mailbody set recstatus=2 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                    "Update  crm_sys_mail_attach set recstatus=2  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                  "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid,srcuserid) SELECT mailid,catalogid,@userid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                   "Delete From  crm_sys_mail_reconvert  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
+                   "Delete From  crm_sys_mail_reconvert  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
+                  "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid,srcuserid) SELECT mailid,catalogid,@userid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             else
                 sql = "update crm_sys_mail_mailbody set recstatus=0 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
                     "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid,srcuserid) SELECT mailid,catalogid,@userid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
@@ -1327,12 +1356,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>       
         public PageDataInfo<MailUserMapper> GetRecentContact(int pageIndex, int pageSize, int userId)
         {
-            var executeSql = @"select distinct on (x.mailAddress) x.mailAddress EmailAddress,COALESCE(x.usericon,'00000000-0000-0000-0000-000000000000')::uuid icon,displayname as name
+            var executeSql = @"select * from (select distinct on (x.mailAddress) x.mailAddress EmailAddress,x.reccreated,COALESCE(x.usericon,'00000000-0000-0000-0000-000000000000')::uuid icon,displayname as name
 		         from (select a.reccreated,c.*,u.usericon from crm_sys_mail_mailbody a 
 		         inner join crm_sys_mail_sendrecord b on a.recid=b.mailid 
 		         inner join crm_sys_mail_senderreceivers c ON c.mailid = b.mailid 
-		         left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and c.displayname is not null and c.displayname!='' and a.recmanager =@userId ) x 
-		         order by x.mailAddress,displayname DESC";
+		         left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and c.displayname is not null and c.displayname!='' and a.recmanager =@userId ) x ) t
+		         order by t.reccreated DESC";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userId", userId)
@@ -1454,20 +1483,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId)
         {
-            string strSQL = @" SELECT  tmp.*,re.srcuserid,ur.username FROM (SELECT " +
+            string strSQL = @" SELECT  tmp.*,re.srcuserid,ur.username,tmp1.receivers,tmp1.displayname FROM (SELECT " +
                               "body.recid mailid," +
                               "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
-                              "(SELECT array_to_json(array_agg(row_to_json(t))) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=2 AND mailid=body.recid ) t)::jsonb receivers," +
                               "body.title," +
                                "COALESCE(body.senttime,body.receivedtime)  senttime," +
                                "COALESCE(body.receivedtime,body.senttime)  receivedtime," +
                               "COALESCE(body.receivedtime,body.senttime) mailtime,body.recstatus" +
-                              " FROM crm_sys_mail_mailbody body ) AS tmp INNER JOIN crm_sys_mail_reconvert re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
+                              " FROM crm_sys_mail_mailbody body ) AS tmp INNER JOIN (SELECT array_to_json(array_agg(row_to_json(t))) as receivers,array_to_string(ARRAY(SELECT unnest(array_agg(t.displayname))),',') as displayname,mailid" +
+                            " FROM(SELECT mailaddress address, mailid, CASE WHEN displayname = '' OR displayname IS NULL THEN split_part(mailaddress, '@', 1)" +
+                            " ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype = 2 ) t GROUP BY t.mailid" +
+                            " ) as tmp1 ON tmp1.mailid=tmp.mailid INNER JOIN crm_sys_mail_reconvert re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
             {
-                sqlCondition = "  ((tmp.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
+                sqlCondition = "  (((tmp.sender->>'displayname') ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (tmp1.displayname ILIKE '%' || @keyword || '%' ESCAPE '`'))";
                 sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
             if (entity.UserId.HasValue)

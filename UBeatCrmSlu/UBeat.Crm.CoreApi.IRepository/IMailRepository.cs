@@ -38,7 +38,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<TransferRecordMapper> GetInnerTransferRecord(TransferRecordParamMapper entity, int userId);
 
-        OperateResult DeleteMails(DeleteMailMapper entity, int userId);
+        OperateResult DeleteMails(DeleteMailMapper entity, int userId,DbTransaction _dbTrans);
 
         OperateResult ReConverMails(ReConverMailMapper entity, int userId, DbTransaction dbTrans = null);
 

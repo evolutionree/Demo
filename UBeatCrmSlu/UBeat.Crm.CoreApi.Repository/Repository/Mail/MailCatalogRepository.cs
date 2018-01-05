@@ -483,6 +483,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             WHEN usercatalog.CType=1002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))
 						ELSE catalogrelation.unreadmail END,0)::int unreadcount,
 						COALESCE(CASE WHEN usercatalog.CType=1008 THEN (SELECT sum(flagstar) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE (POSITION('1001' IN idpath) >0 or POSITION('1004' IN idpath) >0 ) and viewuserid=@userId ))       
+					  WHEN usercatalog.CType=1004 THEN (SELECT sum(mailcount) FROM catalogmailcount WHERE catalogmailcount.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1004' IN idpath) >0 and viewuserid=@userId ))
 						ELSE catalogmailcount.mailcount END, 0)::int mailcount,cata.idpath 
             FROM usercatalog LEFT JOIN catalogrelation ON usercatalog.recid=catalogrelation.catalogid 
             left join cata on cata.recid=usercatalog.recid left join catalogmailcount on catalogmailcount.catalogid=usercatalog.recid
@@ -549,11 +550,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public List<MailCatalogInfo> GetMailCataLogTreeByUserId(int userid, string catalogType)
         {
-            var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
-                " FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0} " +
-                " UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid " +
-                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid ) " +
-                " select * from cata where VIEWuserid = @userid";
+            //会对收件箱 进行未读邮件进行统计
+            var sql = @"WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid,ARRAY[ctype]::text as idpath
+                FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0}
+                 UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid,cata.idpath || b.ctype
+                FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid ), 
+								catalogrelation AS(
+										SELECT a.catalogid,COUNT(mailid) AS unreadmail,c.vpid FROM crm_sys_mail_catalog_relation a 
+										INNER JOIN crm_sys_mail_catalog c on c.recid=a.catalogid inner join crm_sys_mail_mailbody b on a.mailid = b.recid  
+                    where b.recstatus=1 and (b.isread is null or b.isread = 0) GROUP BY a.catalogid,c.vpid
+								)
+                       select cata.*,
+									COALESCE(CASE WHEN cata.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userid ))
+									WHEN cata.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0 and viewuserid=@userid ))
+									WHEN cata.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.vpid=cata.recid)
+									WHEN cata.CType=4001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('4001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=cata.recid)
+									WHEN cata.CType=2002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2002' IN idpath) >0 and viewuserid=@userid ))
+									WHEN cata.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=cata.recid)
+									WHEN cata.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userid ))
+									ELSE catalogrelation.unreadmail END,0)::int unreadcount 
+								from cata left JOIN  catalogrelation on cata.recid=catalogrelation.catalogid  where cata.VIEWuserid = @userid";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
             {
@@ -574,11 +590,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public List<MailCatalogInfo> GetMailCataLogTreeByKeyword(string keyword, string catalogType, int userid)
         {
-            var sql = "WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid " +
-                " FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0} " +
-                " UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid " +
-                " FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid where b.recstatus=1 ) " +
-                " select * from cata where VIEWuserid = @userid";
+            //会对收件箱 进行未读邮件进行统计
+            var sql = @"WITH RECURSIVE cata AS ( SELECT a.recname,A.recid,A.vpid,A.ctype,A.viewuserid,ARRAY[ctype]::text as idpath
+                FROM crm_sys_mail_catalog A WHERE recstatus = 1 {0}
+                 UNION ALL SELECT  b.recname,b.recid,b.vpid,b.ctype,b.viewuserid,cata.idpath || b.ctype
+                FROM crm_sys_mail_catalog b INNER JOIN cata ON cata.recid = b.vpid ), 
+								catalogrelation AS(
+										SELECT a.catalogid,COUNT(mailid) AS unreadmail,c.vpid FROM crm_sys_mail_catalog_relation a 
+										INNER JOIN crm_sys_mail_catalog c on c.recid=a.catalogid inner join crm_sys_mail_mailbody b on a.mailid = b.recid  
+                    where b.recstatus=1 and (b.isread is null or b.isread = 0) GROUP BY a.catalogid,c.vpid
+								)
+                       select cata.*,
+									COALESCE(CASE WHEN cata.CType=1001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('1001' IN idpath) >0 and viewuserid=@userid ))
+									WHEN cata.CType=2001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2001' IN idpath) >0 and viewuserid=@userid ))
+									WHEN cata.CType=3001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.vpid=cata.recid)
+									WHEN cata.CType=4001 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('4001' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=cata.recid)
+									WHEN cata.CType=2002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2002' IN idpath) >0 and viewuserid=@userid ))
+									WHEN cata.CType=3002 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('3002' IN idpath) >0 and viewuserid=@userid ) and catalogrelation.catalogid=cata.recid)
+									WHEN cata.CType=2003 THEN (SELECT sum(unreadmail) FROM catalogrelation WHERE catalogrelation.catalogid IN (SELECT cata.recid FROM  cata WHERE POSITION('2003' IN idpath) >0 and viewuserid=@userid ))
+									ELSE catalogrelation.unreadmail END,0)::int unreadcount 
+								from cata left JOIN  catalogrelation on cata.recid=catalogrelation.catalogid  where cata.VIEWuserid = @userid";
             string condition = string.Empty;
             if (!string.IsNullOrEmpty(catalogType))
             {
@@ -617,6 +648,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     info.VPId = tempItem.VPId;
                     info.CType = tempItem.CType;
                     info.ViewUserId = tempItem.ViewUserId;
+                    info.UnReadCount = tempItem.UnReadCount;
                     tempList.Add(info);
                 }
                 foreach (var itemTreeOne in tempList)
