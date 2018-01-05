@@ -1282,7 +1282,15 @@ and recstatus = 1
                         {
                             catalog.SubCatalogs = new List<MailCatalogInfo>();
                         }
-                        catalog.SubCatalogs.Add(item);
+                        if (item.CType == MailCatalogType.CustDyn)
+                        {
+                            if (item.MailCount > 0) {
+                                catalog.SubCatalogs.Add(item);
+                            }
+                        }
+                        else {
+                            catalog.SubCatalogs.Add(item);
+                        }
                     }
                 }
             }
