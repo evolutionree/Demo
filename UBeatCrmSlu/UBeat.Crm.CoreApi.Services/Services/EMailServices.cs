@@ -231,7 +231,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     catch (Exception ex)
                     {
 
-                    } 
+                    }
                     #endregion
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
@@ -443,7 +443,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
 
-        
+
         public OutputResult<object> ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
@@ -544,7 +544,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             catch (Exception ex)
             {
 
-            } 
+            }
             #endregion
             var repResult = SaveSendMailDataInDb(msgResult, userNumber);
             if (repResult.Flag == 0)
@@ -577,12 +577,13 @@ where userid::text in (select distinct  ""owner""  from crm_sys_mail_mailbox
 where ""owner"" is not null  )
 and recstatus = 1
 ";
-            List<Dictionary<string,object>> list =  this._dynamicEntityRepository.ExecuteQuery(strSQL, null);
+            List<Dictionary<string, object>> list = this._dynamicEntityRepository.ExecuteQuery(strSQL, null);
             Logger logger = LogManager.GetLogger(this.GetType().FullName);
             if (list == null) return;
             logger.Debug("开始检查邮件:" + list.Count.ToString());
             int curIndex = 0;
-            foreach (Dictionary<string, object> item in list) {
+            foreach (Dictionary<string, object> item in list)
+            {
                 int userid = 0;
                 string username = "";
                 curIndex++;
@@ -590,7 +591,8 @@ and recstatus = 1
                 if (item == null) continue;
                 if (item.ContainsKey("userid") == false || item["userid"] == null) continue;
                 if (Int32.TryParse(item["userid"].ToString(), out userid) == false) continue;
-                if (item.ContainsKey("username") && item["username"] != null) {
+                if (item.ContainsKey("username") && item["username"] != null)
+                {
                     username = item["username"].ToString();
                 }
                 logger.Debug("本次检查用户：" + username);
@@ -614,7 +616,7 @@ and recstatus = 1
             }
             if (_dynamicEntityServices.header == null)
                 _dynamicEntityServices.header = this.header;
-                #endregion
+            #endregion
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
             //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
@@ -633,12 +635,13 @@ and recstatus = 1
                     string newPassword = null;
                     try
                     {//为了兼容旧版本没有加密的密码
-                        newPassword= RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
-                        if (newPassword != null && newPassword.Length >0 )
+                        newPassword = RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+                        if (newPassword != null && newPassword.Length > 0)
                             userMailInfo.EncryptPwd = newPassword;
                     }
-                    catch (Exception ex) {
-                        
+                    catch (Exception ex)
+                    {
+
                     }
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
@@ -647,7 +650,7 @@ and recstatus = 1
                     {
                         if (taskResult.Exception != null)
                         {
-                            _logger.LogError(userMailInfo.AccountId +"自动收取邮件异常：" + taskResult.Exception.Message);
+                            _logger.LogError(userMailInfo.AccountId + "自动收取邮件异常：" + taskResult.Exception.Message);
                             return;
                         }
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
@@ -655,7 +658,8 @@ and recstatus = 1
                             EntityFields = new List<DynamicEntityFieldDataModel>()
                         };
                         var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
-                        if (taskResult.Result != null) {
+                        if (taskResult.Result != null)
+                        {
                             _logger.LogError(string.Format("在{1}中共收取了{0}封邮件!", taskResult.Result.Count.ToString(), userMailInfo.AccountId));
                         }
                         foreach (var msg in taskResult.Result)
@@ -706,14 +710,14 @@ and recstatus = 1
                             //addList.EntityFields.Add(dynamicEntity);//改用单条插入方式
                             this._dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
                         }
-                        if (addList.EntityFields.Count >0)
+                        if (addList.EntityFields.Count > 0)
                         {
                             _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
-                            _logger.LogError(userMailInfo.AccountId + "准备保存" + addList.EntityFields.Count.ToString()+"个邮件");
+                            _logger.LogError(userMailInfo.AccountId + "准备保存" + addList.EntityFields.Count.ToString() + "个邮件");
                             OutputResult<object> ret = _dynamicEntityServices.AddList(addList, header, userNumber);
                             _logger.LogError(userMailInfo.AccountId + "保存结果:" + Newtonsoft.Json.JsonConvert.SerializeObject(ret));
                         }
-                        
+
                     });
                 }
                 // _workerEvent.WaitOne();
@@ -1358,7 +1362,10 @@ and recstatus = 1
             {
                 return HandleValid(entity);
             }
-            return HandleResult(_mailRepository.DeleteMails(entity, userNum));
+            return ExcuteInsertAction((trans, arg, userData) =>
+            {
+                return HandleResult(_mailRepository.DeleteMails(entity, userNum, trans));
+            }, entity, Guid.Parse(_entityId), userNum);
         }
 
         public OutputResult<object> ReConverMails(ReConverMailModel model, int userNum)

@@ -80,6 +80,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
                     break;
+                case 1006:
+                    recursiveSql = @"
+                                          WITH RECURSIVE  T1 AS (
+                                           SELECT recid, recname, vpid FROM crm_sys_mail_catalog WHERE  viewuserid = @userid AND recstatus = 1 AND recid=@catalogid
+                                           UNION ALL
+                                           SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid = T1.recid WHERE cata.viewuserid = @userid
+                                        )";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) ";
+                    sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
+                    strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
+                    break;
                 default:
                     recursiveSql = @"
                                           WITH RECURSIVE  T1 AS (
@@ -229,14 +240,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             }
         }
 
-        public OperateResult DeleteMails(DeleteMailMapper entity, int userId)
+        public OperateResult DeleteMails(DeleteMailMapper entity, int userId, DbTransaction dbTrans = null)
         {
             var preSql = "SELECT count(1) hashdata FROM crm_sys_mail_catalog WHERE recid IN(SELECT catalogid FROM crm_sys_mail_catalog_relation  WHERE mailid =@mailid ) AND viewuserid = @userid ";
+            var draftMailSql = "DELETE FROM crm_sys_mail_mailbody WHERE recid=@mailid;DELETE FROM crm_sys_mail_catalog_relation WHERE mailid=@mailid;DELETE FROM crm_sys_mail_senderreceivers WHERE mailid=@mailid;DELETE FROM crm_sys_mail_related WHERE mailid=@mailid;DELETE FROM crm_sys_mail_sendrecord WHERE mailid=@mailid;DELETE FROM crm_sys_mail_attach WHERE mailid=@mailid;";
+            var catalogSql = "SELECT ctype FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND recid=(SELECT catalogid FROM crm_sys_mail_catalog_relation WHERE mailid=@mailid LIMIT 1);";
+            bool isDraftMail = false;
             foreach (var tmp in entity.MailIds.Split(','))
             {
+                Guid mailId = Guid.Parse(tmp);
                 var args = new
                 {
-                    MailId = Guid.Parse(tmp),
+                    MailId = mailId,
                     UserId = userId
                 };
                 var result = DataBaseHelper.QuerySingle<int>(preSql, args, CommandType.Text);
@@ -248,7 +263,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                         Msg = "正在被删除的邮件中有不属于你的邮件,不允许删除"
                     };
                 }
+                var ctype = DataBaseHelper.QuerySingle<int>(catalogSql, args);
+                if (ctype == 1005)
+                {
+                    DBHelper.ExecuteNonQuery(dbTrans, draftMailSql, new DbParameter[] { new NpgsqlParameter("userid", userId), new NpgsqlParameter("mailid", mailId) });
+                    isDraftMail = true;
+                }
+                else
+                    isDraftMail = false;
             }
+            if (isDraftMail)
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "删除邮件成功"
+                };
             string sql = string.Empty;
 
             if (entity.IsTruncate)
