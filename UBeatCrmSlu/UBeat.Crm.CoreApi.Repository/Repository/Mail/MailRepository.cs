@@ -1356,12 +1356,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
         /// <returns></returns>       
         public PageDataInfo<MailUserMapper> GetRecentContact(int pageIndex, int pageSize, int userId)
         {
-            var executeSql = @"select distinct on (x.mailAddress) x.mailAddress EmailAddress,COALESCE(x.usericon,'00000000-0000-0000-0000-000000000000')::uuid icon,displayname as name
+            var executeSql = @"select * from (select distinct on (x.mailAddress) x.mailAddress EmailAddress,x.reccreated,COALESCE(x.usericon,'00000000-0000-0000-0000-000000000000')::uuid icon,displayname as name
 		         from (select a.reccreated,c.*,u.usericon from crm_sys_mail_mailbody a 
 		         inner join crm_sys_mail_sendrecord b on a.recid=b.mailid 
 		         inner join crm_sys_mail_senderreceivers c ON c.mailid = b.mailid 
-		         left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and c.displayname is not null and c.displayname!='' and a.recmanager =@userId ) x 
-		         order by x.mailAddress,displayname DESC";
+		         left join crm_sys_userinfo u on u.userid=c.relativetouser where c.ctype = 2 and c.displayname is not null and c.displayname!='' and a.recmanager =@userId ) x ) t
+		         order by t.reccreated DESC";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userId", userId)
