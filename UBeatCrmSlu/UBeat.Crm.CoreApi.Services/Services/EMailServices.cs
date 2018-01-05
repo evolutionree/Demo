@@ -25,6 +25,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using UBeat.Crm.LicenseCore;
 using System.Text;
+using NLog;
+using UBeat.Crm.CoreApi.Core.Utility.Encrypt;
+using UBeat.Crm.CoreApi.Services.Models.Account;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -205,10 +208,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
             thrManager.StartTask(userNumber);
             try
             {
+                #region 处理加密密码
+                var config = new ConfigurationBuilder()
+                              .SetBasePath(Directory.GetCurrentDirectory())
+                              .AddJsonFile("appsettings.json")
+                              .Build();
+
+                #endregion
+                SecuritysModel _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
                     if (userMailInfo.EncryptPwd == null || string.IsNullOrEmpty(userMailInfo.ImapAddress) || userMailInfo.ImapPort <= 0)
                         continue;
+                    #region 兼容加密密码和非加密密码
+                    string newPassword = null;
+                    try
+                    {//为了兼容旧版本没有加密的密码
+                        newPassword = RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+                        if (newPassword != null && newPassword.Length > 0)
+                            userMailInfo.EncryptPwd = newPassword;
+                    }
+                    catch (Exception ex)
+                    {
+
+                    } 
+                    #endregion
                     SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessage(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
@@ -419,6 +443,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
 
+        
         public OutputResult<object> ValidSendEMailData(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
@@ -504,7 +529,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Status = (int)MailStatus.Sending,
                 AttachFileRecord = attachFileRecord,
             };
+            #region 处理邮件密码加密的问题，同时兼容密码未加密的情况
+            var config = new ConfigurationBuilder()
+                         .SetBasePath(Directory.GetCurrentDirectory())
+                         .AddJsonFile("appsettings.json")
+                         .Build();
+            SecuritysModel _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
+            try
+            {//为了兼容旧版本没有加密的密码
+                string newPassword = RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+                if (newPassword != null && newPassword.Length > 0)
+                    userMailInfo.EncryptPwd = newPassword;
+            }
+            catch (Exception ex)
+            {
 
+            } 
+            #endregion
             var repResult = SaveSendMailDataInDb(msgResult, userNumber);
             if (repResult.Flag == 0)
                 throw new Exception("邮件实体异常:" + repResult.Msg);
@@ -529,29 +570,94 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }, entity, Guid.Parse(_entityId), userNumber);
             return res;
         }
+        public void ReceiveMailsForQrtz()
+        {
+            string strSQL = @"select * from crm_sys_userinfo a 
+where userid::text in (select distinct  ""owner""  from crm_sys_mail_mailbox
+where ""owner"" is not null  )
+and recstatus = 1
+";
+            List<Dictionary<string,object>> list =  this._dynamicEntityRepository.ExecuteQuery(strSQL, null);
+            Logger logger = LogManager.GetLogger(this.GetType().FullName);
+            if (list == null) return;
+            logger.Debug("开始检查邮件:" + list.Count.ToString());
+            int curIndex = 0;
+            foreach (Dictionary<string, object> item in list) {
+                int userid = 0;
+                string username = "";
+                curIndex++;
+                logger.Debug("开始检查:" + curIndex);
+                if (item == null) continue;
+                if (item.ContainsKey("userid") == false || item["userid"] == null) continue;
+                if (Int32.TryParse(item["userid"].ToString(), out userid) == false) continue;
+                if (item.ContainsKey("username") && item["username"] != null) {
+                    username = item["username"].ToString();
+                }
+                logger.Debug("本次检查用户：" + username);
+                ReceiveEMailModel model = new ReceiveEMailModel();
+                model.UserId = userid;
+                model.Conditon = SearchQueryEnum.None;
+                ReceiveEMailAsync(model, userid);
+                logger.Debug("" + username + "检查结束");
+            }
+            logger.Debug("邮件检查结束");
+        }
         public OutputResult<object> ReceiveEMailAsync(ReceiveEMailModel model, int userNumber)
         {
+            #region 兼容通过自带调度服务进入的处理
+            if (this.header == null)
+            {
+                AnalyseHeader h = new AnalyseHeader();
+                h.Device = "WEB";
+                h.DeviceId = "";
+                this.header = h;
+            }
+            if (_dynamicEntityServices.header == null)
+                _dynamicEntityServices.header = this.header;
+                #endregion
             var entity = _mapper.Map<ReceiveEMailModel, ReceiveEMailMapper>(model);
             var userMailInfoLst = _mailCatalogRepository.GetAllUserMail((int)DeviceType, userNumber);
             //  AutoResetEvent _workerEvent = new AutoResetEvent(false);
             try
             {
+                var config = new ConfigurationBuilder()
+                      .SetBasePath(Directory.GetCurrentDirectory())
+                      .AddJsonFile("appsettings.json")
+                      .Build();
+                SecuritysModel _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
                 OutputResult<object> repResult = new OutputResult<object>();
                 foreach (var userMailInfo in userMailInfoLst)
                 {
                     if (userMailInfo.EncryptPwd == null)
                         continue;
-                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, "", userMailInfo.Owner);
+                    string newPassword = null;
+                    try
+                    {//为了兼容旧版本没有加密的密码
+                        newPassword= RSAHelper.Decrypt(userMailInfo.EncryptPwd, _securitysModel.RSAKeys.PrivateKey, Encoding.UTF8);
+                        if (newPassword != null && newPassword.Length >0 )
+                            userMailInfo.EncryptPwd = newPassword;
+                    }
+                    catch (Exception ex) {
+                        
+                    }
+                    SearchQuery searchQuery = BuilderSearchQuery(model.Conditon, model.ConditionVal, userMailInfo.AccountId, userMailInfo.Owner);
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     var taskResult = _email.ImapRecMessageAsync(userMailInfo.ImapAddress, userMailInfo.ImapPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, searchQuery, enableSsl);
                     taskResult.GetAwaiter().OnCompleted(() =>
                     {
-                        if (taskResult.Exception != null) return;
+                        if (taskResult.Exception != null)
+                        {
+                            _logger.LogError(userMailInfo.AccountId +"自动收取邮件异常：" + taskResult.Exception.Message);
+                            return;
+                        }
                         DynamicEntityAddListModel addList = new DynamicEntityAddListModel()
                         {
                             EntityFields = new List<DynamicEntityFieldDataModel>()
                         };
                         var mailRelatedLst = _mailRepository.GetReceiveMailRelated(userNumber);
+                        if (taskResult.Result != null) {
+                            _logger.LogError(string.Format("在{1}中共收取了{0}封邮件!", taskResult.Result.Count.ToString(), userMailInfo.AccountId));
+                        }
                         foreach (var msg in taskResult.Result)
                         {
                             var obj = mailRelatedLst.FirstOrDefault(t => t.MailServerId == msg.MessageId && t.UserId == userNumber);
@@ -585,10 +691,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             extraData.Add("relatedmailuser", BuilderSenderReceivers(msg));
                             extraData.Add("attachfile", files);
                             extraData.Add("issendoreceive", 1);
-                            extraData.Add("receivetimerecord", new
+                            extraData.Add("relatedrecord", new
                             {
                                 ReceiveTime = msg.Date,
-                                ServerId = msg.MessageId
+                                ServerId = msg.MessageId,
+                                MailAddress = userMailInfo.AccountId
                             });
                             DynamicEntityFieldDataModel dynamicEntity = new DynamicEntityFieldDataModel()
                             {
@@ -596,12 +703,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 FieldData = fieldData,
                                 ExtraData = extraData
                             };
-                            addList.EntityFields.Add(dynamicEntity);
+                            //addList.EntityFields.Add(dynamicEntity);//改用单条插入方式
+                            this._dynamicEntityRepository.DynamicAdd(null, dynamicEntity.TypeId, dynamicEntity.FieldData, dynamicEntity.ExtraData, userNumber);
                         }
-                        _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
-                        _dynamicEntityServices.AddList(addList, header, userNumber);
-
-                        //   _workerEvent.Set();
+                        if (addList.EntityFields.Count >0)
+                        {
+                            _dynamicEntityServices.RoutePath = "api/dynamicentity/add";
+                            _logger.LogError(userMailInfo.AccountId + "准备保存" + addList.EntityFields.Count.ToString()+"个邮件");
+                            OutputResult<object> ret = _dynamicEntityServices.AddList(addList, header, userNumber);
+                            _logger.LogError(userMailInfo.AccountId + "保存结果:" + Newtonsoft.Json.JsonConvert.SerializeObject(ret));
+                        }
+                        
                     });
                 }
                 // _workerEvent.WaitOne();

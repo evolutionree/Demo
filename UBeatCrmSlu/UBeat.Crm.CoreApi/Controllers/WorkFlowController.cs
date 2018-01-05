@@ -156,6 +156,24 @@ namespace UBeat.Crm.CoreApi.Controllers
             WriteOperateLog("修改审批节点配置", configModel);
             return _workFlowServices.SaveNodeLinesConfig(configModel, UserId);
         }
+        [HttpPost]
+        [Route("savefreeflowevent")]
+        public OutputResult<object> SaveFreeFlowNodeEvents([FromBody] FreeFlowEventModel configModel = null)
+        {
+            if (configModel == null) return ResponseError<object>("参数格式错误");
+            WriteOperateLog("修改自由流程配置", configModel);
+            return _workFlowServices.SaveFreeFlowNodeEvents(configModel, UserId);
+        }
+
+        [HttpPost]
+        [Route("getfreeflowevent")]
+        public OutputResult<object> GetFreeFlowNodeEvents([FromBody] GetFreeFlowEventModel configModel = null)
+        {
+            if (configModel == null) return ResponseError<object>("参数格式错误");
+            WriteOperateLog("修改自由流程配置", configModel);
+            return _workFlowServices.GetFreeFlowNodeEvents(configModel, UserId);
+        }
+
 
         [HttpPost]
         [Route("flowlist")]

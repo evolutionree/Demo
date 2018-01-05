@@ -124,7 +124,7 @@ from jsonb_populate_recordset(null::crm_sys_qrtz_triggerinstance,@qrtzinstance)"
               
                 strSQL = strSQL + " and  b.recid = @triggerid";
                 strSQL = strSQL + " and a.begintime between @fromtime and @totime ";
-                strSQL = strSQL + " order by b.recname,a.begintime ";
+                strSQL = strSQL + " order by b.recname,a.begintime desc ";
                 DbParameter[] param = null;
                 param = new DbParameter[] {
                     new Npgsql.NpgsqlParameter("@triggerid", triggerid),
@@ -206,7 +206,7 @@ where recid = @recid ";
             {
                 string strSQL = @"select * 
 from crm_sys_qrtz_triggerdefine 
-where (singlerun =0 or inbusy = 0 ) and recstatus = 1 
+where ( inbusy = 0   or inbusy is null) and recstatus = 1 
 order by recname ";
                 return ExecuteQuery<TriggerDefineInfo>(strSQL, new DbParameter[] { }, tran);
             }

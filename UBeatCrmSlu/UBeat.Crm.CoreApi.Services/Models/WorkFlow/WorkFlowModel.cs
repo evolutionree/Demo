@@ -70,6 +70,26 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string CopyUser { get; set; }
     }
 
+    public class GetFreeFlowEventModel
+    {
+        public Guid FlowId { get; set; }
+       
+
+    }
+    public class FreeFlowEventModel
+    {
+        public Guid FlowId { get; set; }
+        /// <summary>
+        /// 自由流程第一个节点的触发函数
+        /// </summary>
+        public string BeginNodeFunc { set; get; }
+        /// <summary>
+        /// 自由流程最后一个节点触发的函数
+        /// </summary>
+        public string EndNodeFunc { set; get; }
+
+    }
+
     public class WorkFlowAuditCaseItemListModel
     {
         public Guid CaseId { get; set; }

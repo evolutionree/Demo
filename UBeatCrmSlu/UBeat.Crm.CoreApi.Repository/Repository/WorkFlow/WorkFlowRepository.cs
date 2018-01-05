@@ -52,19 +52,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 new NpgsqlParameter("userno", userNumber),
             };
             int rows = ExecuteNonQuery(executeSql, param, tran);
-            
-            if (rows>0)
+
+            if (rows > 0)
             {
-                if(caseMapper.RelEntityId.HasValue&& caseMapper.RelRecId.HasValue)
+                if (caseMapper.RelEntityId.HasValue && caseMapper.RelRecId.HasValue)
                 {
-                     var tempSql = @"INSERT INTO crm_sys_workflow_case_entity_relation(caseid,relentityid,relrecid)
+                    var tempSql = @"INSERT INTO crm_sys_workflow_case_entity_relation(caseid,relentityid,relrecid)
                                VALUES (@caseid,@relentityid,@relrecid) ";
                     var tempParam = new DbParameter[]
                     {
                         new NpgsqlParameter("caseid", caseid),
                         new NpgsqlParameter("relentityid", caseMapper.RelEntityId.Value),
                         new NpgsqlParameter("relrecid", caseMapper.RelRecId.Value),
-                       
+
                     };
                     rows = ExecuteNonQuery(tempSql, tempParam, tran);
                 }
@@ -282,7 +282,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             {
                             new NpgsqlParameter("nodeid", node.NodeId),
                             new NpgsqlParameter("flowid", nodeLineConfig.FlowId),
-                            new NpgsqlParameter("funcname", node.NodeEvent)
+                            new NpgsqlParameter("funcname", node.NodeEvent),
+                            new NpgsqlParameter("steptype", node.StepTypeId==0?0:1)
                             });
                         }
                     }
@@ -293,7 +294,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     if (node_eve_params.Count > 0)
                     {
                         var node_event_sql = @"INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
-                                              VALUES(@flowid,@funcname,@nodeid,1)";
+                                              VALUES(@flowid,@funcname,@nodeid,@steptype)";
                         ExecuteNonQueryMultiple(node_event_sql, node_eve_params, tran);
                     }
                     #endregion
@@ -345,6 +346,51 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 
             }
         }
+        public dynamic GetFreeFlowNodeEvents(Guid flowId, DbTransaction tran = null)
+        {
+            var executeSql = @"(SELECT e.funcname,e.steptype FROM crm_sys_workflow_func_event e
+                                INNER JOIN crm_sys_workflow w ON w.flowid=e.flowid 
+                                WHERE w.flowtype=0 AND e.steptype=0 AND e.flowid=@flowid LIMIT 1 
+                                )
+                                UNION
+                                (SELECT e.funcname,e.steptype FROM crm_sys_workflow_func_event e
+                                INNER JOIN crm_sys_workflow w ON w.flowid=e.flowid
+                                WHERE w.flowtype=0 AND e.steptype=1 AND e.flowid=@flowid LIMIT 1 
+                                )";
+            var param = new DbParameter[]
+           {
+                new NpgsqlParameter("flowid", flowId),
+
+           };
+
+            return ExecuteQuery(executeSql, param);
+        }
+
+        public void SaveNodeEvents(Guid flowId, List<WorkFlowNodeMapper> nodes, DbTransaction tran=null)
+        {
+           
+
+            List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
+            foreach (var node in nodes)
+            {
+                node_eve_params.Add(new DbParameter[]
+                    {
+                            new NpgsqlParameter("nodeid", node.NodeId),
+                            new NpgsqlParameter("flowid", flowId),
+                            new NpgsqlParameter("funcname", node.NodeEvent),
+                            new NpgsqlParameter("steptype", node.StepTypeId==0?0:1)
+                    });
+            }
+            if (node_eve_params.Count > 0)
+            {
+                var node_event_sql = @"
+DELETE FROM crm_sys_workflow_func_event WHERE flowid=@flowid AND steptype=@steptype ;
+INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
+                                              VALUES(@flowid,@funcname,@nodeid,@steptype)";
+                ExecuteNonQueryMultiple(node_event_sql, node_eve_params, tran);
+            }
+        }
+
         public OperateResult NodeLinesConfig(WorkFlowNodeLinesConfigMapper nodeLineConfig, int userNumber)
         {
             var sql = @"
@@ -552,7 +598,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             {
                 new NpgsqlParameter("flowid", flowid),
                 new NpgsqlParameter("vernum", vernum),
-             
+
             };
             return ExecuteQuery<WorkFlowNodeInfo>(executeSql, param, trans);
         }
@@ -1169,7 +1215,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         {
             string sql = string.Empty;
             var sqlParameters = new List<DbParameter>();
-            if (caseitem.NodeNum==0&& caseitem.StepNum==0)
+            if (caseitem.NodeNum == 0 && caseitem.StepNum == 0)
             {
                 sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casestatus = 2,recupdator = @userno 
                                           WHERE caseitemid = @caseitemid;");
@@ -1180,7 +1226,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                                           WHERE caseitemid = @caseitemid;");
                 sqlParameters.Add(new NpgsqlParameter("casedata", JsonConvert.SerializeObject(auditdata.CaseData)) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
             }
-           
+
             sqlParameters.Add(new NpgsqlParameter("choicestatus", auditdata.ChoiceStatus));
             sqlParameters.Add(new NpgsqlParameter("suggest", auditdata.Suggest ?? ""));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
@@ -1283,7 +1329,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 return;
             string sql = string.Empty;
             var sqlParameters = new List<DbParameter>();
-            if (eventInfo.SteptType == 0)
+            if (eventInfo.StepType == 0)
             {
                 sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@userno)", eventInfo.FuncName);
             }
@@ -1420,7 +1466,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 Dictionary<string, object> item = ExecuteQuery(strSQL, new DbParameter[] { }, tran).FirstOrDefault();
                 if (item != null) return (Guid)item["ruleid"];
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
             return Guid.Empty;
         }
@@ -1432,7 +1479,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 string sql = string.Format(@"update crm_sys_workflow_rule_relation set ruleid='{0}' where flowid='{1}' ", id, workflowId);
                 ExecuteNonQuery(sql, new DbParameter[] { }, tran);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
         }
 
@@ -1443,7 +1491,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         /// <returns></returns>
         public List<DomainModel.Account.UserInfo> GetWorkFlowCopyUser(Guid caseid, DbTransaction trans = null)
         {
-           
+
             string sql = string.Format(@" SELECT ci.copyuser FROM crm_sys_workflow_case_item ci
                                           WHERE ci.caseid=@caseid AND stepnum>= (SELECT MAX( stepnum) FROM crm_sys_workflow_case_item WHERE caseid=@caseid AND nodenum=0) 
                                           ");
@@ -1456,11 +1504,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             foreach (var row in result)
             {
                 string copyusertext = row["copyuser"] != null ? row["copyuser"].ToString() : null;
-               
-                if(!string.IsNullOrEmpty(copyusertext))
+
+                if (!string.IsNullOrEmpty(copyusertext))
                 {
                     var temps = copyusertext.Split(',');
-                    
+
                     foreach (var tem in temps)
                     {
                         int copyuser = 0;
@@ -1470,7 +1518,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                         }
                     }
                 }
-                
+
             }
 
             var usersql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo WHERE userid =ANY(@userids)";
@@ -1480,7 +1528,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                         new NpgsqlParameter("userids", copyuserlist.Distinct().ToArray()),
                     };
             return ExecuteQuery<DomainModel.Account.UserInfo>(usersql, param);
-            
+
         }
 
         public void SetWorkFlowCaseItemReaded(DbTransaction trans, Guid caseid, int nodenum, int userNumber, int stepnum = -1)
@@ -1498,7 +1546,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and stepnum=@stepnum and  handleuser=@handleuser and casestatus=0";
                 }
 
-                ExecuteNonQuery(executeSql, new DbParameter[] 
+                ExecuteNonQuery(executeSql, new DbParameter[]
                 {
                     new NpgsqlParameter("caseid", caseid),
                     new NpgsqlParameter("nodenum", nodenum),
