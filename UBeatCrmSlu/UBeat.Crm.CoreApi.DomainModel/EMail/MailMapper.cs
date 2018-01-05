@@ -587,7 +587,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         }
     }
 
-    public class ReconvertMailMapper
+    public class ReconvertMailMapper : BaseEntity
     {
         public int? UserId { get; set; }
         /// <summary>
@@ -613,6 +613,19 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
         public int PageIndex { get; set; }
 
         public int PageSize { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new ReconvertMailMapperValidator();
+        }
+        class ReconvertMailMapperValidator : AbstractValidator<ReconvertMailMapper>
+        {
+            public ReconvertMailMapperValidator()
+            {
+                RuleFor(d => d.PageIndex).Must(d => d > 0).WithMessage("页索引不能小于等于0");
+                RuleFor(d => d.PageSize).Must(d => d > 0).WithMessage("页大小不能小于等于0");
+                RuleFor(d => d.UserId).NotNull().WithMessage("用户不能为空");
+            }
+        }
     }
 
     public class MailTruncateLstMapper
