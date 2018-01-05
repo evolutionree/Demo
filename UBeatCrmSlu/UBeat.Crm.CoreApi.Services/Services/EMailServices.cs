@@ -1200,6 +1200,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw (new Exception("用户与目录不匹配"));
                 }
+                userNum = paramInfo.FetchUserId;
             }
 
 
