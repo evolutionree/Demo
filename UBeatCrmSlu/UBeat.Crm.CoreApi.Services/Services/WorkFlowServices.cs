@@ -477,7 +477,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #endregion
 
-       
+
 
         #endregion
 
@@ -1666,7 +1666,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     break;
                 case 4:       //4编辑
                     casenodenum = 0;
-                    auditstatus = hasNextNode? AuditStatusType.Begin: AuditStatusType.Finished;
+                    auditstatus = hasNextNode ? AuditStatusType.Begin : AuditStatusType.Finished;
                     canAddNextNodeItem = hasNextNode;
                     casefinish = !hasNextNode;
                     _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
@@ -1985,13 +1985,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
                             var newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);
 
-                            if (entityInfotemp.ModelType == EntityModelType.Dynamic && msg.FuncCode == "WorkFlowLaunch")
-                            {
-                                // 发布关联动态实体的动态消息
-                                var dynamicMsgtemp = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, "EntityDynamicAdd", userNumber, newMembers, null, msgpParam);
-
-                                MessageService.WriteMessage(tran, dynamicMsgtemp, userNumber, null);
-                            }
+                            
 
                             string dynamicFuncode = msg.FuncCode + "Dynamic";
                             var dynamicMsg = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, dynamicFuncode, userNumber, newMembers, null, msgpParam);
@@ -2000,7 +1994,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             //发布审批消息到实体动态列表
                             MessageService.WriteMessage(tran, dynamicMsg, userNumber, null, 2);
 
+                            if (entityInfotemp.ModelType == EntityModelType.Dynamic && msg.FuncCode == "WorkFlowLaunch")
+                            {
+                                // 发布关联动态实体的动态消息
+                                var dynamicMsgtemp = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, "EntityDynamicAdd", userNumber, newMembers, null, msgpParam);
 
+                                MessageService.WriteMessage(tran, dynamicMsgtemp, userNumber, null);
+
+                                //发起流程时直接结束的场景
+                                if (caseInfo.AuditStatus == AuditStatusType.Finished)
+                                {
+                                    msg.FuncCode = "WorkFlowNodeFinishDynamic";
+                                    MessageService.WriteMessage(tran, msg, userNumber);
+                                }
+                            }
+
+                           
                         }
 
                         else MessageService.WriteMessage(tran, msg, userNumber);
@@ -2080,6 +2089,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         funcCode = "WorkFlowLaunch";
                         isAddNextStep = true;
                     }
+                    if (caseInfo.AuditStatus == AuditStatusType.Finished)//审批完成
+                    {
+                        funcCode = "WorkFlowLaunch";
+                    }
                     break;
                 case ChoiceStatusType.Approval://普通审批通过
                     if (caseInfo.AuditStatus == AuditStatusType.Finished)//审批完成
@@ -2135,6 +2148,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         funcCode = "WorkFlowLaunch";
                         isAddNextStep = true;
+                    }
+                    if (caseInfo.AuditStatus == AuditStatusType.Finished)//审批完成
+                    {
+                        funcCode = "WorkFlowLaunch";
                     }
                     break;
                 case ChoiceStatusType.Approval:
@@ -2270,7 +2287,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else if (workFlowInfo.FlowType == WorkFlowType.FixedFlow)
                 return ShowError<object>("该流程不是自由流程，无法获取Event函数");
 
-            var result= _workFlowRepository.GetFreeFlowNodeEvents(configModel.FlowId, null);
+            var result = _workFlowRepository.GetFreeFlowNodeEvents(configModel.FlowId, null);
             return new OutputResult<object>(result);
         }
 
@@ -2281,9 +2298,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>("参数不可为空");
             }
             WorkFlowInfo workFlowInfo = this._workFlowRepository.GetWorkFlowInfo(null, configModel.FlowId);
-            if(workFlowInfo==null)
+            if (workFlowInfo == null)
                 return ShowError<object>("流程不存在");
-            else if(workFlowInfo.FlowType== WorkFlowType.FixedFlow)
+            else if (workFlowInfo.FlowType == WorkFlowType.FixedFlow)
                 return ShowError<object>("该流程不是自由流程，保存失败");
             List<WorkFlowNodeMapper> nodes = new List<WorkFlowNodeMapper>();
             nodes.Add(new WorkFlowNodeMapper()
@@ -2298,7 +2315,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 NodeEvent = configModel.EndNodeFunc,
                 StepTypeId = -1,
             });
-            _workFlowRepository.SaveNodeEvents(configModel.FlowId,nodes);
+            _workFlowRepository.SaveNodeEvents(configModel.FlowId, nodes);
             IncreaseDataVersion(DataVersionType.FlowData, null);
             return new OutputResult<object>("OK");
         }
