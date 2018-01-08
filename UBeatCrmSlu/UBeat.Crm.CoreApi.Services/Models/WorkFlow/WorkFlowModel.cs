@@ -65,7 +65,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         /// <summary>
         /// 分支流程时，选择的节点id
         /// </summary>
-        public Guid NodeId { set; get; }
+        public Guid? NodeId { set; get; }
         public string HandleUser { get; set; }
         public string CopyUser { get; set; }
     }

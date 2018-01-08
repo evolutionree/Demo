@@ -1765,7 +1765,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 throw new Exception("步骤处理人不能为空");
             }
-            Guid nodeid = caseItemModel.NodeId;
+            Guid nodeid = caseItemModel.NodeId.GetValueOrDefault();
 
             if (workFlowInfo.FlowType == WorkFlowType.FixedFlow)//如果是固定流程，则获取对应的node
             {
