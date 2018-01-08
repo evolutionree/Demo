@@ -1548,6 +1548,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             nextnode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
             if (nextnode == null)
                 nextnode = flowNextNodeInfos.FirstOrDefault();
+            if(caseItemEntity.ChoiceStatus==3)//中止操作，需要获取结束节点
+            {
+                var nodelist = _workFlowRepository.GetNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum);
+                nextnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
+            }
+
             if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
             {
                 canAddNextNode = false;
