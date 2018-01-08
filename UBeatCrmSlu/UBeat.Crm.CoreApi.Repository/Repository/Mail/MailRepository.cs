@@ -65,7 +65,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                            UNION ALL
                                            SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid = T1.recid WHERE cata.viewuserid = @userid
                                         )";
-                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.isread=0 ";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.isread=0  AND  body.recstatus=1 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
                     break;
@@ -76,7 +76,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                                            UNION ALL
                                            SELECT cata.recid,cata.recname,cata.vpid FROM crm_sys_mail_catalog cata INNER JOIN T1 ON cata.vpid = T1.recid WHERE cata.viewuserid = @userid
                                         )";
-                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.istag=1 ";
+                    sqlCondition = "  body.recid IN (SELECT mailid FROM crm_sys_mail_catalog_relation WHERE catalogid IN (SELECT recid FROM T1)) AND  body.istag=1  AND  body.recstatus=1 ";
                     sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
                     strSQL = strSQL.Replace("#recursivesql#", recursiveSql);
                     break;
@@ -287,7 +287,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                   "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid,srcuserid) SELECT mailid,catalogid,@userid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             else
                 sql = "update crm_sys_mail_mailbody set recstatus=0 where recid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
-                    "update crm_sys_mail_catalog_relation set catalogid=(SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND ctype = 1006 LIMIT 1) where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
+                   "Delete From  crm_sys_mail_reconvert  where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
+                  "INSERT INTO crm_sys_mail_reconvert ( mailid,srccatalogid,srcuserid) SELECT mailid,catalogid,@userid FROM crm_sys_mail_catalog_relation WHERE mailid IN (select regexp_split_to_table(@mailids,',')::uuid);" +
+                  "update crm_sys_mail_catalog_relation set catalogid=(SELECT recid FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND ctype = 1006 LIMIT 1) where mailid IN (select regexp_split_to_table(@mailids,',')::uuid);";
             try
             {
                 var param = new
@@ -334,21 +336,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 DbParameter[] param;
                 string tipMsg = string.Empty;
 
-                int recstatus = -1;
+                int recstatus = 1;
                 foreach (var tmp in entity.MailIds.Split(','))
                 {
                     Guid mailId = Guid.Parse(tmp);
                     var catalogExist = DataBaseHelper.QuerySingle<dynamic>(validCatalogSql, new { MailId = mailId });//先判断目录是否存在
-                    if (catalogExist.ctype == 1006)
-                    {
-                        recstatus = 0;
-                    }
-                    else
-                    {
-                        recstatus = 1;
-                    }
+
                     if (catalogExist == null)
                     {
+                        recstatus = 1;
                         catalog = DataBaseHelper.QuerySingle<dynamic>(cataSql, new { MailId = mailId });
 
                         if (catalog != null)
@@ -374,6 +370,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                     }
                     else
                     {
+                        if (catalogExist.ctype == 1006)
+                            recstatus = 0;
                         var catalogRelationExist = DataBaseHelper.QuerySingle<MailReconvert>(validCatalogRelationSql, new { MailId = mailId });//先判断目录关系是否存在
                         if (catalogRelationExist.CatalogId == Guid.Empty)
                         {
