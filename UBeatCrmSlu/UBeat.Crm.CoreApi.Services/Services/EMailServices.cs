@@ -507,6 +507,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
+
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
             entity.FromName = string.IsNullOrEmpty(userMailInfo.NickName) ? userMailInfo.DisplayName : userMailInfo.NickName;
@@ -555,6 +556,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
+                    if (entity.MailId != Guid.Empty)
+                    {
+                        _mailRepository.DeleteMailDraft(entity.MailId, transaction, userNumber);//如果是草稿箱的邮件 直接干掉
+                    }
                     repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
                     return HandleResult(repResult);
                 }
@@ -1284,11 +1289,13 @@ and recstatus = 1
                         }
                         if (item.CType == MailCatalogType.CustDyn)
                         {
-                            if (item.MailCount > 0) {
+                            if (item.MailCount > 0)
+                            {
                                 catalog.SubCatalogs.Add(item);
                             }
                         }
-                        else {
+                        else
+                        {
                             catalog.SubCatalogs.Add(item);
                         }
                     }

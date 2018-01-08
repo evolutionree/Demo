@@ -1160,6 +1160,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             };
         }
 
+        public bool IsDraftMail(Guid mailId, int userId)
+        {
+            var sql = "select count(1) from crm_sys_mail_mailbody where recid in (select catalogid FROM crm_sys_mail_catalog_relation WHERE mailid=@mailid AND catalogid=(SELECT recid from crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=1005 LIMIT 1))";
+            var param = new
+            {
+                mailId = mailId,
+                UserId = userId
+            };
+            var count = DataBaseHelper.QuerySingle<int>(sql, param);
+            if (count >= 1)
+            {
+                return true;
+            }
+            return false;
+        }
+
         #region
         /// <summary>
         /// 获取白名单或者黑名单
