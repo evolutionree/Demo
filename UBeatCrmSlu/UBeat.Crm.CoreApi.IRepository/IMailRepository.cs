@@ -75,6 +75,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<MailBox> GetMailBoxList(int pageIndex, int pageSize, int userId);
 
+        bool IsDraftMail(Guid mailId, int userId);
         ReceiveMailRelatedMapper GetUserReceiveMailTime(string mailAddress, int userId);
 
         List<ReceiveMailRelatedMapper> GetReceiveMailRelated(int userId);
