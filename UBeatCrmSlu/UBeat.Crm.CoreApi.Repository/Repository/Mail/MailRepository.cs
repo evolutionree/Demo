@@ -696,8 +696,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                         result = DataBaseHelper.QuerySingle<int>(sql, param, CommandType.Text);
                         if (result > 0)
                         {
-
-                            sql = @"Update crm_sys_mail_catalog_relation Set catalogid=@catalogid Where mailid=@mailid";
+                            //由于多个客户目录关联同一个邮箱，会出现移动目录产生多条记录，先清除，再插入新记录，保证唯一
+                            sql = @"DELETE FROM crm_sys_mail_catalog_relation WHERE mailid=@mailid;
+                                    INSERT INTO crm_sys_mail_catalog_relation (mailid,catalogid) VALUES(@mailid,@catalogid)";
                             var args = new DbParameter[]
                             {
                                     new NpgsqlParameter("mailid",uuid),
