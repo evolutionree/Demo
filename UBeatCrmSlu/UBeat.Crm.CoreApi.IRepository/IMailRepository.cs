@@ -82,7 +82,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         MailBodyMapper GetMailInfo(List<Guid> mailIds, int userId);
 
-        OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId, DbTransaction dbTrans = null);
+        OperateResult MirrorWritingMailStatus(Guid mailId, int mailStatus, int userId,DbTransaction dbTrans = null);
 
         PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId);
 

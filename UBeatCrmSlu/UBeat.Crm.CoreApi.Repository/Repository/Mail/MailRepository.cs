@@ -1102,8 +1102,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             try
             {
                 var sql = @" update crm_sys_mail_sendrecord set status=@mailstatus where mailid=@mailid;";
-                var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=@ctype";
-                var mailCatalogChangeSql = @" update crm_sys_mail_catalog_relation set catalogid=@catalogid where mailid=@mailid;";
+                var mailCatalogSql = "select * from  crm_func_mail_cata_related_handle" +
+                                                    "(" +
+                                                    "@mailid," +
+                                                    "NULL," +
+                                                    "'{\"sendrecord\":{\"aciontype\":2,\"status\":6,\"message\":null},\"issendoreceive\":0}'::json," +
+                                                    "null,\n" +
+                                                    "@userid" +
+                                                    ")";
+                // var mailCatalogSql = @"		SELECT recid  FROM crm_sys_mail_catalog WHERE viewuserid=@userid AND ctype=@ctype";
+                //var mailCatalogChangeSql = @" update crm_sys_mail_catalog_relation set catalogid=@catalogid where mailid=@mailid;";
                 var param = new DbParameter[]
                 {
                 new NpgsqlParameter("mailstatus",mailStatus),
@@ -1111,34 +1119,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 };
 
                 int count = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
-                if (count > 0)
+                if (count > 0 && mailStatus == 6)
                 {
-                    var arg = new DynamicParameters();
-                    arg.Add("userid", userId);
-                    if (mailStatus != 6)
-                    {
-                        arg.Add("ctype", 1003);
-                    }
-                    else
-                    {
-                        arg.Add("ctype", 1004);
-                    }
-                    var catalogId = DataBaseHelper.QuerySingle<Guid>(mailCatalogSql, arg);
-                    if (catalogId == Guid.Empty)
-                        throw new Exception("该用户没有发送或已发送目录");
                     param = new DbParameter[]
                     {
-                    new NpgsqlParameter("catalogid",catalogId),
-                    new NpgsqlParameter("mailid",mailId)
+                        new NpgsqlParameter("userid",userId),
+                        new NpgsqlParameter("mailstatus",mailStatus),
+                        new NpgsqlParameter("mailid",mailId)
                     };
-                    count = DBHelper.ExecuteNonQuery(dbTrans, mailCatalogChangeSql, param, CommandType.Text);
-                    if (count > 0)
-                    {
-                        return new OperateResult
-                        {
-                            Flag = 1
-                        };
-                    }
+                    var result = DBHelper.ExecuteQuery<OperateResult>(dbTrans, mailCatalogSql, param, CommandType.Text).FirstOrDefault();
+                    return result;
                 }
             }
             catch (Exception ex)

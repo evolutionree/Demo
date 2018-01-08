@@ -267,6 +267,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (obj != null)
                     return;
             }
+            else
+            {
+                return;//如果邮件的服务器Id等于null 则可能是系统邮件和异常邮件(postmaster 邮件)
+            }
             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
             string key = String.Empty;
             foreach (var header in msg.Headers)
@@ -523,13 +527,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BuilderMailBody(entity, userNumber);
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
 
-            MimeMessageResult msgResult = new MimeMessageResult
-            {
-                Msg = emailMsg,
-                ActionType = (int)MailActionType.ExternalSend,
-                Status = (int)MailStatus.Sending,
-                AttachFileRecord = attachFileRecord,
-            };
             #region 处理邮件密码加密的问题，同时兼容密码未加密的情况
             var config = new ConfigurationBuilder()
                          .SetBasePath(Directory.GetCurrentDirectory())
@@ -547,6 +544,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             }
             #endregion
+
+            MimeMessageResult msgResult = new MimeMessageResult
+            {
+                Msg = emailMsg,
+                ActionType = (int)MailActionType.ExternalSend,
+                Status = (int)MailStatus.Sending,
+                AttachFileRecord = attachFileRecord,
+            };
             var repResult = SaveSendMailDataInDb(msgResult, userNumber);
             if (repResult.Flag == 0)
                 throw new Exception("邮件实体异常:" + repResult.Msg);
