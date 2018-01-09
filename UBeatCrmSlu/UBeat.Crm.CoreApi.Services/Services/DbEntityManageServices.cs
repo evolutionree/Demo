@@ -90,5 +90,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             paramInfo.FieldUpdatePolicy = DbEntityImportFieldUpdatePolicyEnum.UpdateAll;
             return paramInfo;
         }
+        
     }
 }

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -31,6 +32,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IWorkFlowRepository _workFlowRepository;
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IAccountRepository _accountRepository;
+        private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService;
 
@@ -390,6 +392,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 CheckServicesJson(OperatType.Insert, entityInfotemp.Servicesjson, detail as Dictionary<string, object>, userNumber);
             });
         }
+
 
 
         /// <summary>
@@ -2559,6 +2562,111 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+        #region 用于安居宝测试表单传输
+        public OutputResult<object> SendToMule(MuleSendParamInfo paramInfo, int userId)
+        {
+            _logger.Debug("开始处理同步至OA");
+            Guid entityid = Guid.Parse("93f101f0-b8f9-4bd3-9d6c-54ed315f1f9a");
+            List<DynamicEntityFieldSearch> listFieldInfo = this.GetEntityFields(entityid, userId);
+            DynamicEntityDetailModel detailModel = new DynamicEntityDetailModel();
+            detailModel.NeedPower = 0;
+            detailModel.RecId = paramInfo.RecIds[0];
+            detailModel.EntityId = entityid;
+            _logger.Debug("获取实体单据数据");
+            OutputResult<object> detailResult = this.Detail(detailModel, userId);
+
+            _logger.Debug("生成流程表单数据");
+            string flowid = "2190922460808888842";
+            string formid = "formmain_0924";
+            string formdata = string.Format(@"<formExport version=\""2.0\"">
+ < summary id =\""{0}\"" name=\""{1}\""/>
+    \r\n ", flowid, formid);
+            formdata += "< values >\r\n";
+            Dictionary<string, object> tmpDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(((Dictionary<string, object>)detailResult.DataBody)["Detail"]));
+            formdata += generateMuleForm(tmpDict, listFieldInfo);
+            formdata += "\r\n";
+            formdata += "</values> \r\n";
+            formdata += "<subForms>\r\n";
+            formdata += generateMuleSubForm(tmpDict, entityid, userId);
+            formdata += "</subForms>\r\n";
+            formdata += "</ formExport > ";
+            _logger.Debug("流程表单数据生成完毕:");
+            _logger.Debug(formdata);
+            _logger.Debug("尝试连接Http://localhost:8081/api/oa/sendhtmlflow");
+            _logger.Debug("连接失败...");
+            _logger.Debug("同步到OA结束");
+            return new OutputResult<object>(null, "连接远程服务失败", -1);
+        }
+        public string generateMuleSubForm(Dictionary<string, object> data, Guid entityid, int userNumber)
+        {
+            string retstr = "";
+            var searchFields = GetEntityFields(entityid, userNumber);
+            var linkTableFields = searchFields.Where(m => (DynamicProtocolControlType)m.ControlType == DynamicProtocolControlType.LinkeTable).ToList();
+            foreach (var filed in linkTableFields)
+            {
+                
+                if (data.ContainsKey(filed.FieldName) && data[filed.FieldName] != null) {
+                    var fieldConfig = JObject.Parse(filed.FieldConfig);
+                    var linketable_entityid = new Guid(fieldConfig["entityId"].ToString());
+                    var linkFieldList = GetEntityFields(linketable_entityid, userNumber);
+                    retstr += "<subForm>\r\n";
+                    retstr += "<values>\r\n";
+                    List<Dictionary<string, object>> tmpList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(Newtonsoft.Json.JsonConvert.SerializeObject(data[filed.FieldName]));
+                    foreach (var row in tmpList)
+                    {
+
+                        retstr += "<row>\r\n";
+                        foreach (DynamicEntityFieldSearch linkFiled in linkFieldList) {
+                            string fieldValue = "";
+                            if (row.ContainsKey(linkFiled.FieldName) && row[linkFiled.FieldName] != null) {
+                                fieldValue = row[linkFiled.FieldName].ToString();
+                            }
+                            retstr += string.Format(@"<column name=\""{0}\""><value><![CDATA[{1}]]></value></column>\r\n", linkFiled.FieldLabel, fieldValue);
+                        }
+                        retstr += "</row>\r\n";
+                    }
+                    retstr += "</values>\r\n";
+                    retstr += "</subForm>\r\n";
+
+                }
+                
+
+            }
+            return retstr;
+        }
+        private string generateMuleForm(Dictionary<string, object> detail, List<DynamicEntityFieldSearch> fieldList)
+        {
+            string tmp = "";
+            foreach (DynamicEntityFieldSearch field in fieldList)
+            {
+                if (field.ControlType == (int)EntityFieldControlType.LinkeTable) continue;
+                string fieldName = field.FieldName + "_name";
+                string fieldValue = "";
+                bool isFound = false;
+                if (detail.ContainsKey(fieldName) && detail[fieldName] != null)
+                {
+                    fieldValue = detail[fieldName].ToString();
+                    isFound = true;
+                }
+                if (isFound == false)
+                {
+                    fieldName = field.FieldName;
+                    if (detail.ContainsKey(fieldName) && detail[fieldName] != null)
+                    {
+                        fieldValue = detail[fieldName].ToString();
+                        isFound = true;
+                    }
+                }
+                if (!isFound) continue;
+                tmp = tmp + string.Format(@"<column name=\""{0}\""><value><![CDATA[{1}]]></value></column>", field.FieldLabel, fieldValue);
+            }
+            return tmp;
+        } 
+        #endregion
+    }
+    public class MuleSendParamInfo
+    {
+        public Guid [] RecIds { get; set; }
 
     }
 }
