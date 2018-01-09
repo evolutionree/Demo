@@ -1589,11 +1589,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<Dictionary<string, object>> datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, tran);
             List<Dictionary<string, object>> page = this._dynamicEntityRepository.ExecuteQuery(CountSQL, tran);
             Dictionary<string, List<Dictionary<string, object>>> retData = new Dictionary<string, List<Dictionary<string, object>>>();
+
+            #region 数字类型整理
+            foreach (DynamicEntityFieldSearch fieldInfo in fieldList)
+            {
+                if (fieldInfo.ControlType == (int)EntityFieldControlType.NumberInt
+                    || fieldInfo.ControlType == (int)EntityFieldControlType.NumberDecimal)
+                {
+                    DynamicProtocolHelper.FormatNumericFieldInList(datas, fieldInfo);
+                }
+            } 
+            #endregion
             retData.Add("PageData", datas);
             retData.Add("PageCount", page);
 
             return new OutputResult<object>(retData);
         }
+        
         public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber)
         {
 
@@ -1721,7 +1733,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else return new OutputResult<object>(result);
         }
-
         public Dictionary<string, List<IDictionary<string, object>>> Detail(DynamicEntityDetailtMapper dynamicEntity, int userNumber)
         {
 
@@ -1732,6 +1743,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             var result = _dynamicEntityRepository.DetailMulti(dynamicEntity, userNumber);
+            //List<DynamicEntityFieldSearch>fieldsList =  _dynamicEntityRepository.GetEntityFields(dynamicEntity.EntityId, userNumber);
+            //if (result.ContainsKey("Detail") && result["Detail"] != null) {
+            //    foreach (DynamicEntityFieldSearch fieldInfo in fieldsList) {
+            //        if (fieldInfo.ControlType == (int)EntityFieldControlType.NumberDecimal
+            //            || fieldInfo.ControlType == (int)EntityFieldControlType.NumberInt) {
+            //            DynamicProtocolHelper.FormatNumericFieldInList(result["Detail"],fieldInfo);
+            //        }
+            //    }
+            //}
+            //foreach (DynamicEntityFieldSearch fieldInfo in fieldsList) {
+            //    FormatNumericFieldInDict(result["Detail"], fieldInfo);
+            //}
             // IEnumerable<DynamicEntityFieldSearch> linkTableFields = new List<DynamicEntityFieldSearch>();
 
             Guid entityid = dynamicEntity.EntityId;

@@ -6,6 +6,8 @@ using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using System.Linq;
+using UBeat.Crm.CoreApi.DomainModel.EntityPro;
+
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
     public static class DynamicProtocolHelper
@@ -446,7 +448,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                             else
                             {
-                                result.FieldData = string.Format(" {0} '%{1}%'", tryParseFieldSearchString(field,"e"), dataStr);//这里应该有问题，要判断多选还是单选
+                                result.FieldData = string.Format(" {0} '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);//这里应该有问题，要判断多选还是单选
                             }
                             break;
                         }
@@ -633,7 +635,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         {
                             //一个是等于，两个是between
                             var dataArr = dataStr.Split(',');
-                            if (dataArr.Length != 2 && dataArr.Length !=1 )
+                            if (dataArr.Length != 2 && dataArr.Length != 1)
                             {
                                 result.Tips = "数据格式不对,应为逗号分隔";
                                 validResultDic.Add(field.FieldName, result);
@@ -668,7 +670,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                             }
 
-                           
+
                             break;
                         }
                     case DynamicProtocolControlType.RecName:
@@ -979,7 +981,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
             return field.ControlType;
         }
-        public static string tryParseFieldSearchString(DynamicEntityFieldSearch field ,string tablealias ="t")
+        public static string tryParseFieldSearchString(DynamicEntityFieldSearch field, string tablealias = "t")
         {
             if ((DynamicProtocolControlType)field.ControlType == DynamicProtocolControlType.QuoteControl)
             {
@@ -1018,7 +1020,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             else if ((DynamicProtocolControlType)field.ControlType == DynamicProtocolControlType.PersonSelectSingle)
             {
-                return string.Format("crm_func_entity_protocol_format_userinfo_multi({1}.{0}) ", field.FieldName,tablealias);
+                return string.Format("crm_func_entity_protocol_format_userinfo_multi({1}.{0}) ", field.FieldName, tablealias);
             }
             else if ((DynamicProtocolControlType)field.ControlType == DynamicProtocolControlType.PersonSelectMulti)
             {
@@ -1079,7 +1081,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     int dataId = Convert.ToInt32(jo["sourceId"].ToString());
                     return string.Format("crm_func_entity_protocol_format_dictionary({0},{2}.{1}::text) ", dataId, field.FieldName, tablealias);
                 }
-                
+
                 return field.FieldName;
             }
             else if ((DynamicProtocolControlType)field.ControlType == DynamicProtocolControlType.AreaRegion)
@@ -1087,6 +1089,77 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 return string.Format("crm_func_entity_protocol_format_region({1}.{0}) ", field.FieldName, tablealias);
             }
             return string.Format("{1}.{0}", field.FieldName, tablealias);
+        }
+        /// <summary>
+        /// 格式化数字类型的返回值
+        /// </summary>
+        /// <param name="dynamicModel"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public static void FormatNumericFieldInList(List<Dictionary<string, object>> datas, DynamicEntityFieldSearch fieldInfo)
+        {
+            if (fieldInfo.ControlType != (int)EntityFieldControlType.NumberDecimal
+                && fieldInfo.ControlType != (int)EntityFieldControlType.NumberInt)
+                return;
+            bool isNeedFormat = false;
+            Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo.FieldConfig);
+            if (fieldConfigDict != null
+                && fieldConfigDict.ContainsKey("separator")
+                && fieldConfigDict["separator"] != null
+                && fieldConfigDict["separator"].ToString().Equals("1"))
+            {
+                isNeedFormat = true;
+            }
+            if (!isNeedFormat) return;
+            int numCount = 0;
+            if (fieldInfo.ControlType == (int)EntityFieldControlType.NumberDecimal
+                && fieldConfigDict != null
+                && fieldConfigDict.ContainsKey("decimalsLength")
+                && fieldConfigDict["decimalsLength"] != null)
+            {
+                Int32.TryParse(fieldConfigDict["decimalsLength"].ToString(), out numCount);
+            }
+            Decimal tmpResult = -1;
+            foreach (Dictionary<string, object> data in datas)
+            {
+                if (Decimal.TryParse(data[fieldInfo.FieldName].ToString(), out tmpResult))
+                {
+                    data[fieldInfo.FieldName] = String.Format("{0:N" + numCount.ToString() + "}", tmpResult);
+                }
+            }
+        }
+        public static void FormatNumericFieldInList(List<IDictionary<string, object>> datas, DynamicEntityFieldSearch fieldInfo)
+        {
+            if (fieldInfo.ControlType != (int)EntityFieldControlType.NumberDecimal
+                && fieldInfo.ControlType != (int)EntityFieldControlType.NumberInt)
+                return;
+            bool isNeedFormat = false;
+            Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo.FieldConfig);
+            if (fieldConfigDict != null
+                && fieldConfigDict.ContainsKey("separator")
+                && fieldConfigDict["separator"] != null
+                && fieldConfigDict["separator"].ToString().Equals("1"))
+            {
+                isNeedFormat = true;
+            }
+            if (!isNeedFormat) return;
+            int numCount = 0;
+            if (fieldInfo.ControlType == (int)EntityFieldControlType.NumberDecimal
+                && fieldConfigDict != null
+                && fieldConfigDict.ContainsKey("decimalsLength")
+                && fieldConfigDict["decimalsLength"] != null)
+            {
+                Int32.TryParse(fieldConfigDict["decimalsLength"].ToString(), out numCount);
+            }
+            Decimal tmpResult = -1;
+            foreach (IDictionary<string, object> data in datas)
+            {
+                if (data.ContainsKey(fieldInfo.FieldName) == false  || data[fieldInfo.FieldName] == null) continue;
+                if (Decimal.TryParse(data[fieldInfo.FieldName].ToString(), out tmpResult))
+                {
+                    data[fieldInfo.FieldName] = String.Format("{0:N" + numCount.ToString() + "}", tmpResult);
+                }
+            }
         }
     }
 }
