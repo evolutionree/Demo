@@ -644,6 +644,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EMail
 
         public int SrcUserId { get; set; }
         public string UserName { get; set; }
+
+        public string CatalogName { get; set; }
     }
 
 
