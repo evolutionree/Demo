@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -422,5 +423,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return null;
         }
+        [Route("sendtomule")]
+
+        #region 用于测试安居宝，过后会删除
+        public OutputResult<object> SendToMule([FromBody] MuleSendParamInfo paramInfo)
+        {
+            return this._dynamicEntityServices.SendToMule(paramInfo, UserId);
+
+        } 
+        #endregion
     }
+    
 }
