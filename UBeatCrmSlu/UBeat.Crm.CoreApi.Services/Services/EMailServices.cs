@@ -267,6 +267,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (obj != null)
                     return;
             }
+            else
+            {
+                return;//如果邮件的服务器Id等于null 则可能是系统邮件和异常邮件(postmaster 邮件)
+            }
             Dictionary<string, string> dicHeader = new Dictionary<string, string>();
             string key = String.Empty;
             foreach (var header in msg.Headers)
@@ -507,6 +511,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> SendEMailAsync(SendEMailModel model, AnalyseHeader header, int userNumber)
         {
+
             var entity = _mapper.Map<SendEMailModel, SendEMailMapper>(model);
             var userMailInfo = _mailCatalogRepository.GetUserMailInfo(entity.FromAddress, userNumber);
             entity.FromName = string.IsNullOrEmpty(userMailInfo.NickName) ? userMailInfo.DisplayName : userMailInfo.NickName;
@@ -522,13 +527,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BuilderMailBody(entity, userNumber);
             var emailMsg = EMailHelper.CreateMessage(fromAddressList, toAddressList, ccAddressList, bccAddressList, entity.Subject, entity.BodyContent, attachFileRecord);
 
-            MimeMessageResult msgResult = new MimeMessageResult
-            {
-                Msg = emailMsg,
-                ActionType = (int)MailActionType.ExternalSend,
-                Status = (int)MailStatus.Sending,
-                AttachFileRecord = attachFileRecord,
-            };
             #region 处理邮件密码加密的问题，同时兼容密码未加密的情况
             var config = new ConfigurationBuilder()
                          .SetBasePath(Directory.GetCurrentDirectory())
@@ -546,6 +544,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             }
             #endregion
+
+            MimeMessageResult msgResult = new MimeMessageResult
+            {
+                Msg = emailMsg,
+                ActionType = (int)MailActionType.ExternalSend,
+                Status = (int)MailStatus.Sending,
+                AttachFileRecord = attachFileRecord,
+            };
             var repResult = SaveSendMailDataInDb(msgResult, userNumber);
             if (repResult.Flag == 0)
                 throw new Exception("邮件实体异常:" + repResult.Msg);
@@ -555,6 +561,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     bool enableSsl = userMailInfo.EnableSsl == 2 ? true : false;
                     _email.SendMessage(userMailInfo.SmtpAddress, userMailInfo.SmtpPort, userMailInfo.AccountId, userMailInfo.EncryptPwd, emailMsg, enableSsl);
+                    if (entity.MailId != Guid.Empty)
+                    {
+                        _mailRepository.DeleteMailDraft(entity.MailId, transaction, userNumber);//如果是草稿箱的邮件 直接干掉
+                    }
                     repResult = _mailRepository.MirrorWritingMailStatus(Guid.Parse(repResult.Id), (int)MailStatus.SendSuccess, userNumber);
                     return HandleResult(repResult);
                 }
@@ -1284,11 +1294,13 @@ and recstatus = 1
                         }
                         if (item.CType == MailCatalogType.CustDyn)
                         {
-                            if (item.MailCount > 0) {
+                            if (item.MailCount > 0)
+                            {
                                 catalog.SubCatalogs.Add(item);
                             }
                         }
-                        else {
+                        else
+                        {
                             catalog.SubCatalogs.Add(item);
                         }
                     }
