@@ -1509,7 +1509,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                               " FROM crm_sys_mail_mailbody body ) AS tmp INNER JOIN (SELECT array_to_json(array_agg(row_to_json(t))) as receivers,array_to_string(ARRAY(SELECT unnest(array_agg(t.displayname))),',') as displayname,mailid" +
                             " FROM(SELECT mailaddress address, mailid, CASE WHEN displayname = '' OR displayname IS NULL THEN split_part(mailaddress, '@', 1)" +
                             " ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype = 2 ) t GROUP BY t.mailid" +
-                            " ) as tmp1 ON tmp1.mailid=tmp.mailid INNER JOIN SELECT array_to_string(ARRAY(SELECT unnest(array_agg(cata.recname))),',') as catalogname,re.mailid,re.srcuserid FROM crm_sys_mail_reconvert  re INNER JOIN crm_sys_mail_catalog cata ON cata.recid = re.srccatalogid  GROUP BY mailid,re.mailid,re.srcuserid)  re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
+                            " ) as tmp1 ON tmp1.mailid=tmp.mailid INNER JOIN (SELECT array_to_string(ARRAY(SELECT unnest(array_agg(cata.recname))),',') as catalogname,re.mailid,re.srcuserid FROM crm_sys_mail_reconvert  re INNER JOIN crm_sys_mail_catalog cata ON cata.recid = re.srccatalogid  GROUP BY mailid,re.mailid,re.srcuserid)  re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
