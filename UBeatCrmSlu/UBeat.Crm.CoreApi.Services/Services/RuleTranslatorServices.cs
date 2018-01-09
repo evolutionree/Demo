@@ -175,7 +175,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     case 2001://分支流程条件--发起人
                         {
-                            entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancher", entity.RuleData);
+                            entity.RuleSql = UserIdFormatInOrNotIn(entity.Operate, "flowluancher", entity.RuleData);
                         }
                         break;
                     case 2002://分支流程条件--发起人部门 
@@ -191,11 +191,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     case 2004://分支流程条件--发起人角色
                         {
                             entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherroleid", entity.RuleData);
+                            
                         }
                         break;
                     case 2005://分支流程条件--是否是领导
                         {
-                            entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherisleader", entity.RuleData);
+                            var data = JObject.Parse(entity.RuleData);
+                            var dataValue = data["dataVal"].ToString();
+                            entity.RuleSql = string.Format(@"(flowluancherisleader = {0})",  dataValue);
                         }
                         break;
 
@@ -232,8 +235,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return res;
         }
+        private string FormatInOrNotIn(string operate, string fieldName, string strData)
+        {
+            var data = JObject.Parse(strData);
+            string ruleSql = null;
+            var dataValue = data["dataVal"].ToString();
 
-        private string FormatInOrNotIn(string operate, string fieldName,string strData)
+            switch (operate)
+            {
+                case "in":
+                    ruleSql = string.Format(@"({0} IN (SELECT unnest(string_to_array('{1}', ','))::uuid AS tempid))", fieldName, dataValue);
+                    break;
+                case "not in":
+                    ruleSql = string.Format(@"({0} NOT IN (SELECT unnest(string_to_array('{1}', ','))::uuid AS tempid))", fieldName, dataValue);
+                    break;
+            }
+            return ruleSql;
+        }
+
+
+
+        private string UserIdFormatInOrNotIn(string operate, string fieldName,string strData)
         {
             var data = JObject.Parse(strData);
             string ruleSql = null;
