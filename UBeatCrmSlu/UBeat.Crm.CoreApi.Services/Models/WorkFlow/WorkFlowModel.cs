@@ -18,7 +18,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
         public WorkFlowAddCaseModel CaseModel { set; get; }
 
-        public Guid NodeId { set; get; }
+        public Guid? NodeId { set; get; }
         public string HandleUser { get; set; }
         public string CopyUser { get; set; }
 
