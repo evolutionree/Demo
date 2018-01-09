@@ -340,56 +340,58 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                 foreach (var tmp in entity.MailIds.Split(','))
                 {
                     Guid mailId = Guid.Parse(tmp);
-                    var catalogExist = DataBaseHelper.QuerySingle<dynamic>(validCatalogSql, new { MailId = mailId });//先判断目录是否存在
-
-                    if (catalogExist == null)
+                    var catalogExistLs = DataBaseHelper.Query<dynamic>(validCatalogSql, new { MailId = mailId });//先判断目录是否存在
+                    foreach (var catalogExist in catalogExistLs)
                     {
-                        recstatus = 1;
-                        catalog = DataBaseHelper.QuerySingle<dynamic>(cataSql, new { MailId = mailId });
-
-                        if (catalog != null)
+                        if (catalogExist == null)
                         {
-                            param = new DbParameter[]
+                            recstatus = 1;
+                            catalog = DataBaseHelper.QuerySingle<dynamic>(cataSql, new { MailId = mailId });
+
+                            if (catalog != null)
                             {
+                                param = new DbParameter[]
+                                {
                                     new NpgsqlParameter("mailid",mailId),
                                     new NpgsqlParameter("catalogid",catalog.recid),
-                            };
-                            var resultUUID = DBHelper.ExecuteScalar(dbTrans, createCatalogSql, param, CommandType.Text);
-                            param = new DbParameter[]
-                            {
+                                };
+                                var resultUUID = DBHelper.ExecuteScalar(dbTrans, createCatalogSql, param, CommandType.Text);
+                                param = new DbParameter[]
+                                {
                                     new NpgsqlParameter("mailid",mailId),
                                     new NpgsqlParameter("catalogid",resultUUID),
-                            };
-                            DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
-                            tipMsg = "邮件已经恢复到恢复已删除文件夹中";
+                                };
+                                DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
+                                tipMsg = "邮件源文件夹中";
+                            }
+                            else
+                            {
+                                throw new Exception("缺少个人文件夹");
+                            }
                         }
                         else
                         {
-                            throw new Exception("缺少个人文件夹");
-                        }
-                    }
-                    else
-                    {
-                        if (catalogExist.ctype == 1006)
-                            recstatus = 0;
-                        var catalogRelationExist = DataBaseHelper.QuerySingle<MailReconvert>(validCatalogRelationSql, new { MailId = mailId });//先判断目录关系是否存在
-                        if (catalogRelationExist.CatalogId == Guid.Empty)
-                        {
-                            param = new DbParameter[]
-                           {
+                            if (catalogExist.ctype == 1006)
+                                recstatus = 0;
+                            var catalogRelationExist = DataBaseHelper.QuerySingle<MailReconvert>(validCatalogRelationSql, new { MailId = mailId });//先判断目录关系是否存在
+                            if (catalogRelationExist.CatalogId == Guid.Empty)
+                            {
+                                param = new DbParameter[]
+                               {
                                 new NpgsqlParameter("mailid",mailId),
                                 new NpgsqlParameter("catalogid",catalogRelationExist.SrcCatalogId),
-                           };
-                            DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
+                               };
+                                DBHelper.ExecuteNonQuery(dbTrans, catalogRelationSql, param, CommandType.Text);
+                            }
+                            tipMsg = "邮件源文件夹中";
                         }
-                        tipMsg = "邮件已经恢复到" + catalogExist.recname + "文件夹中";
-                    }
-                    param = new DbParameter[]
-                    {
+                        param = new DbParameter[]
+                        {
                         new NpgsqlParameter("recstatus",recstatus),
                         new NpgsqlParameter("mailid",mailId)
-                    };
-                    var result = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
+                        };
+                        var result = DBHelper.ExecuteNonQuery(dbTrans, sql, param, CommandType.Text);
+                    }
                 }
                 if (entity.MailIds.Split(',').Count() == 1)
                 {
@@ -1497,7 +1499,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
 
         public PageDataInfo<MailTruncateLstMapper> GetReconvertMailList(ReconvertMailMapper entity, int userId)
         {
-            string strSQL = @" SELECT  tmp.*,re.srcuserid,ur.username,tmp1.receivers,tmp1.displayname FROM (SELECT " +
+            string strSQL = @" SELECT  tmp.*,re.srcuserid,ur.username,tmp1.receivers,tmp1.displayname,COALESCE(re.catalogname,'恢复已删除文件夹') catalogname  FROM (SELECT " +
                               "body.recid mailid," +
                               "(SELECT row_to_json(t) FROM (SELECT mailaddress address,CASE WHEN displayname='' OR displayname IS NULL THEN split_part(mailaddress,'@',1) ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype=1 AND mailid=body.recid LIMIT 1) t)::jsonb sender," +
                               "body.title," +
@@ -1507,7 +1509,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
                               " FROM crm_sys_mail_mailbody body ) AS tmp INNER JOIN (SELECT array_to_json(array_agg(row_to_json(t))) as receivers,array_to_string(ARRAY(SELECT unnest(array_agg(t.displayname))),',') as displayname,mailid" +
                             " FROM(SELECT mailaddress address, mailid, CASE WHEN displayname = '' OR displayname IS NULL THEN split_part(mailaddress, '@', 1)" +
                             " ELSE displayname END FROM crm_sys_mail_senderreceivers WHERE ctype = 2 ) t GROUP BY t.mailid" +
-                            " ) as tmp1 ON tmp1.mailid=tmp.mailid INNER JOIN crm_sys_mail_reconvert re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
+                            " ) as tmp1 ON tmp1.mailid=tmp.mailid INNER JOIN SELECT array_to_string(ARRAY(SELECT unnest(array_agg(cata.recname))),',') as catalogname,re.mailid,re.srcuserid FROM crm_sys_mail_reconvert  re INNER JOIN crm_sys_mail_catalog cata ON cata.recid = re.srccatalogid  GROUP BY mailid,re.mailid,re.srcuserid)  re ON re.mailid=tmp.mailid LEFT JOIN crm_sys_userinfo ur ON ur.userid = re.srcuserid   Where   tmp.recstatus=2  {0} ";
             object[] sqlWhere = new object[] { };
             string sqlCondition = string.Empty;
             if (!string.IsNullOrEmpty(entity.KeyWord))
