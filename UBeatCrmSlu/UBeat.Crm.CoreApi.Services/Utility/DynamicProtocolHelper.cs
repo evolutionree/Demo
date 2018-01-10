@@ -1122,9 +1122,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             Decimal tmpResult = -1;
             foreach (Dictionary<string, object> data in datas)
             {
-                if (Decimal.TryParse(data[fieldInfo.FieldName].ToString(), out tmpResult))
+                if (data.ContainsKey(fieldInfo.FieldName) && data[fieldInfo.FieldName] != null)
                 {
-                    data[fieldInfo.FieldName] = String.Format("{0:N" + numCount.ToString() + "}", tmpResult);
+                    if (Decimal.TryParse(data[fieldInfo.FieldName].ToString(), out tmpResult))
+                    {
+                        data[fieldInfo.FieldName] = String.Format("{0:N" + numCount.ToString() + "}", tmpResult);
+                    }
                 }
             }
         }
