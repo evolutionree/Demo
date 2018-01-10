@@ -1577,9 +1577,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             #endregion
             string WhereSQL = "1=1";
-            string OrderBySQL = " recversion desc ";
+            string OrderBySQL = " e.recversion desc ";
             if (dynamicEntity.SearchOrder != null && dynamicEntity.SearchOrder.Length > 0) {
                 OrderBySQL = dynamicEntity.SearchOrder;
+                string tmp = GenerateOrderBySQL(dynamicEntity.SearchOrder, fieldList);
+                if (tmp != null && tmp.Length > 0) {
+                    OrderBySQL = tmp; 
+                }
             }
             if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
             {
@@ -1607,6 +1611,218 @@ namespace UBeat.Crm.CoreApi.Services.Services
             retData.Add("PageCount", page);
 
             return new OutputResult<object>(retData);
+        }
+        /// <summary>
+        /// 处理orderby 的方法
+        /// </summary>
+        /// <param name="orderby"></param>
+        /// <param name="fieldList"></param>
+        /// <returns></returns>
+        private string GenerateOrderBySQL(string orderby , List<DynamicEntityFieldSearch> fieldList) {
+            string totalReturn = "";
+            if (orderby == null || orderby.Length == 0) {
+                return null;
+            }
+            string[] orders = orderby.Trim().Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            if (orders == null || orders.Length == 0) return null;
+            foreach (string orderitem in orders) {
+                string curItemOrderBySQL = "";
+                string tmpItem = orderitem.Trim();
+                string [] orderStruct = tmpItem.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                string orderFieldName = "";
+                string orderType = "ASC";
+                bool isNameField = false;
+                if (orderStruct.Length == 1)
+                {
+                    orderFieldName = orderStruct[0];
+                }
+                else if (orderStruct.Length == 2) {
+                    orderFieldName = orderStruct[0];
+                    orderType = orderStruct[1].ToUpper();
+                    if (orderType.Equals("DSC")) orderType = "DESC";
+                }
+                if (orderFieldName.EndsWith("_name")) {
+                    isNameField = true;
+                    orderFieldName = orderFieldName.Substring(0, orderFieldName.Length - "_name".Length);
+                }
+                DynamicEntityFieldSearch orderFieldInfo = null;
+                foreach (DynamicEntityFieldSearch fieldInfo in fieldList) {
+                    if (fieldInfo.FieldName.Equals(orderFieldName)) {
+                        orderFieldInfo = fieldInfo;
+                        break;
+                    }
+                }
+                if (orderFieldInfo != null) {
+                    EntityFieldControlType controlType = (EntityFieldControlType)orderFieldInfo.ControlType;
+                    switch (controlType)
+                    {
+                        case EntityFieldControlType.Address://31,地址
+                        case EntityFieldControlType.Location://14定位
+                            curItemOrderBySQL = "convert_to(e." + orderFieldInfo.FieldName + "->>'address','GBK') "+ orderType;
+                            break;
+                        case EntityFieldControlType.RecCreator://1002创建人
+                        case EntityFieldControlType.RecUpdator://1003更新人
+                        case EntityFieldControlType.RecManager://1006负责人
+                            curItemOrderBySQL = string.Format("convert_to({0}_t.username ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.AreaGroup://20分组，不处理
+                            break;
+                        case EntityFieldControlType.AreaRegion://16 行政区域
+                            curItemOrderBySQL = string.Format("convert_to({0}_t.fullname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.DataSourceMulti://19数据源多选
+                                                                    //目前这个没有使用
+                            break;
+                        case EntityFieldControlType.DataSourceSingle://18数据源单选
+                            if (orderFieldInfo.FieldConfig == null)
+                            {
+                                curItemOrderBySQL = string.Format("convert_to({0}_t.recname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            }
+                            else
+                            {
+                                Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(orderFieldInfo.FieldConfig);
+                                bool SaveNamed = false;
+                                if (fieldConfigDict.ContainsKey("dataSource")
+                                    && fieldConfigDict["dataSource"] != null)
+                                {
+                                    Dictionary<string, object> datasourceInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                                    Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfigDict["dataSource"]));
+                                    if (datasourceInfo != null && datasourceInfo.ContainsKey("namefrom") && datasourceInfo["namefrom"] != null)
+                                    {
+                                        string namefrom = datasourceInfo["namefrom"].ToString();
+                                        if (namefrom.Equals("1"))
+                                        {
+                                            SaveNamed = true;
+                                        }
+                                    }
+                                }
+                                if (SaveNamed)
+                                {
+                                    curItemOrderBySQL = string.Format("convert_to(jsonb_extract_path_text(e.{0},'name') ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                                }
+                                else
+                                {
+                                    curItemOrderBySQL = string.Format("convert_to({0}_t.recname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                                }
+                            }
+                            break;
+                        case EntityFieldControlType.RecType://1009记录类型
+                            curItemOrderBySQL = string.Format("convert_to({0}_t.categoryname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.SelectMulti://4本地字典多选
+                            break;
+                        case EntityFieldControlType.SelectSingle://3本地字典单选
+                            curItemOrderBySQL = string.Format("convert_to({0}_t.dataval ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.SalesStage://销售阶段
+                            curItemOrderBySQL = string.Format("convert_to({0}_t.stagename ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+
+                        case EntityFieldControlType.RecCreated://1004创建时间
+                        case EntityFieldControlType.RecUpdated://
+                            curItemOrderBySQL = string.Format("TO_CHAR(e.{0},'YYYY-MM-DD HH24:MI:SS')  {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+
+                        case EntityFieldControlType.TimeDate://8
+                            curItemOrderBySQL = string.Format("TO_CHAR(e.{0},'YYYY-MM-DD')  {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.TimeStamp://9
+                            curItemOrderBySQL = string.Format("TO_CHAR(e.{0},'YYYY-MM-DD HH24:MI:SS')  {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+
+                        case EntityFieldControlType.QuoteControl://31引用(分三种情况，)
+                            if (orderFieldInfo.FieldName.ToUpper().Equals("predeptgroup".ToUpper()))
+                            {
+                                curItemOrderBySQL = string.Format("convert_to({0}_t.deptname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            }
+                            else if (orderFieldInfo.FieldName.ToUpper().Equals("deptgroup".ToUpper()))
+                            {
+                                curItemOrderBySQL = string.Format("convert_to({0}_t.deptname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            }
+                            else
+                            {
+                                curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_quote_control(row_to_json(outersql)::json,'{0}','{1}') ,'GBK') {2}", orderFieldInfo.FieldId, orderFieldInfo.FieldName, orderType);
+                            }
+                            break;
+                        case EntityFieldControlType.Department://17部门
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_dept_multi(outersql.{0}::text)  ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            //outerSelectClause = string.Format(@"{0},crm_func_entity_protocol_format_dept_multi(outersql.{1}::text) as {1}_name", outerSelectClause, fieldInfo.FieldName);
+                            break;
+                        case EntityFieldControlType.EmailAddr://11email地址
+                            curItemOrderBySQL = string.Format("convert_to(e.{0} ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.FileAttach://23 文件地址
+                            //此字段不能排序
+                            break;
+                        case EntityFieldControlType.HeadPhoto://15 头像
+                            //此字段不能排序
+                            break;
+                        case EntityFieldControlType.LinkeTable://24关联表格
+                            //此字段不能排序
+                            break;
+                        case EntityFieldControlType.NumberDecimal:
+                        case EntityFieldControlType.NumberInt:
+                        case EntityFieldControlType.PhoneNum://
+                            curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.PersonSelectMulti://26人员多选
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.PersonSelectSingle://25人员单选
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.Product://28产品
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_product_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.ProductSet://29产品系列
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_productserial_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.RecAudits://1007记录状态
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_workflow_auditstatus(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.RecId://1001
+                            curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.RecItemid://1010明细ID
+                            //不能排序
+                            break;
+                        case EntityFieldControlType.RecName://1012记录名称
+                            curItemOrderBySQL = string.Format("convert_to(e.{0} ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.RecOnlive://1011 活动时间
+                            curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.RecStatus://1008 记录状态
+                            curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.TakePhoto://
+                            //不能排序
+                            break;
+                        case EntityFieldControlType.Telephone:
+                        case EntityFieldControlType.Text:
+                        case EntityFieldControlType.TextArea:
+                        case EntityFieldControlType.TipText:
+                            curItemOrderBySQL = string.Format("convert_to(e.{0} ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            break;
+                        case EntityFieldControlType.TreeMulti://27树形多选
+                            //不处理
+                            break;
+                        case EntityFieldControlType.TreeSingle://21树形
+                            //不处理
+                            break;
+                    }
+                    if (curItemOrderBySQL != null && curItemOrderBySQL.Length > 0) {
+                        if (totalReturn == null || totalReturn.Length == 0)
+                        {
+                            totalReturn = curItemOrderBySQL;
+                        }
+                        else {
+                            totalReturn += ("," + curItemOrderBySQL);
+                        }
+                    }
+                }
+            }
+            return totalReturn;
         }
         
         public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber)
