@@ -37,6 +37,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public bool IsVisible { get; set; }
         public bool IsReadOnly { get; set; }
         public string DefaultValue { get; set; }
+        /// <summary>
+        /// 默认的列表显示宽度
+        /// </summary>
+        public int DefaultWidth { get; set; }
     }
 
     public class DynamicEntityFieldSearch
