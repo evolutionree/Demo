@@ -1404,6 +1404,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             bool casefinish = false;
             int stepnum = 0;
             Guid nodeid = Guid.Empty;
+            Guid event_nodeid = Guid.Empty;
             Guid lastNodeId = Guid.Empty;
             bool canAddNextNode = true;
             bool isbranchFlow = false;
@@ -1457,7 +1458,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     else
                     {
-                        nodeid = freeFlowNodeId;
+                        nodeid = caseItemEntity.NodeNum == 0 ? freeFlowBeginNodeId : freeFlowNodeId;
+                        
                     }
                 }
                 else //固定流程
