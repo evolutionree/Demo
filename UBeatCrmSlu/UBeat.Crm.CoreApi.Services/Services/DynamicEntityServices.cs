@@ -2176,132 +2176,132 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     EntityFieldControlType controlType = (EntityFieldControlType)fieldInfo.ControlType;
                     switch (controlType) {
                         case EntityFieldControlType.Address:
-                            fieldInfo.DefaultWidth = 100;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                         case EntityFieldControlType.AreaGroup:
                             break;
                         case EntityFieldControlType.AreaRegion:
-                            fieldInfo.DefaultWidth = 100;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                         case EntityFieldControlType.DataSourceMulti:
-                            fieldInfo.DefaultWidth = 100;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                         case EntityFieldControlType.DataSourceSingle:
-                            fieldInfo.DefaultWidth = 100;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                         case EntityFieldControlType.Department:
-                            fieldInfo.DefaultWidth = 50;
+                            fieldInfo.DefaultWidth = 150;
                             break;
                         case EntityFieldControlType.EmailAddr:
-                            fieldInfo.DefaultWidth = 50;
+                            fieldInfo.DefaultWidth = 150;
                             break;
                         case EntityFieldControlType.FileAttach:
-                            fieldInfo.DefaultWidth = 40;
+                            fieldInfo.DefaultWidth = 140;
                             break;
                         case EntityFieldControlType.HeadPhoto:
-                            fieldInfo.DefaultWidth = 30;
+                            fieldInfo.DefaultWidth = 130;
                             break;
                         case EntityFieldControlType.LinkeTable:
-                            fieldInfo.DefaultWidth = 10;
+                            fieldInfo.DefaultWidth = 110;
                             break;
                         case EntityFieldControlType.Location:
-                            fieldInfo.DefaultWidth = 100;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                         case EntityFieldControlType.NumberDecimal:
-                            fieldInfo.DefaultWidth = 80;
-                            break;
-                        case EntityFieldControlType.NumberInt:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.PersonSelectMulti:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.PersonSelectSingle:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.PhoneNum:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.Product:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.ProductSet:
-                            fieldInfo.DefaultWidth = 50; ;
-                            break;
-                        case EntityFieldControlType.QuoteControl:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.RecAudits:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecCreated:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecCreator:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecId:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecItemid:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecManager:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.RecName:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.RecOnlive:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecStatus:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecType:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecUpdated:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.RecUpdator:
-                            fieldInfo.DefaultWidth = 30;
-                            break;
-                        case EntityFieldControlType.SalesStage:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.SelectMulti:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.SelectSingle:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.TakePhoto:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.Telephone:
-                            fieldInfo.DefaultWidth = 50;
-                            break;
-                        case EntityFieldControlType.Text:
-                            fieldInfo.DefaultWidth = 80;
-                            break;
-                        case EntityFieldControlType.TextArea:
                             fieldInfo.DefaultWidth = 100;
                             break;
+                        case EntityFieldControlType.NumberInt:
+                            fieldInfo.DefaultWidth = 100;
+                            break;
+                        case EntityFieldControlType.PersonSelectMulti:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.PersonSelectSingle:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.PhoneNum:
+                            fieldInfo.DefaultWidth = 130;
+                            break;
+                        case EntityFieldControlType.Product:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.ProductSet:
+                            fieldInfo.DefaultWidth = 150; ;
+                            break;
+                        case EntityFieldControlType.QuoteControl:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.RecAudits:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecCreated:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecCreator:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecId:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecItemid:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecManager:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecName:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.RecOnlive:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.RecStatus:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecType:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.RecUpdated:
+                            fieldInfo.DefaultWidth = 100;
+                            break;
+                        case EntityFieldControlType.RecUpdator:
+                            fieldInfo.DefaultWidth = 80;
+                            break;
+                        case EntityFieldControlType.SalesStage:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.SelectMulti:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.SelectSingle:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.TakePhoto:
+                            fieldInfo.DefaultWidth = 100;
+                            break;
+                        case EntityFieldControlType.Telephone:
+                            fieldInfo.DefaultWidth = 150;
+                            break;
+                        case EntityFieldControlType.Text:
+                            fieldInfo.DefaultWidth = 200;
+                            break;
+                        case EntityFieldControlType.TextArea:
+                            fieldInfo.DefaultWidth = 200;
+                            break;
                         case EntityFieldControlType.TimeDate:
-                            fieldInfo.DefaultWidth = 50;
+                            fieldInfo.DefaultWidth = 150;
                             break;
                         case EntityFieldControlType.TimeStamp:
-                            fieldInfo.DefaultWidth = 50;
+                            fieldInfo.DefaultWidth = 150;
                             break;
                         case EntityFieldControlType.TipText:
-                            fieldInfo.DefaultWidth = 50;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                         case EntityFieldControlType.TreeMulti:
-                            fieldInfo.DefaultWidth = 10;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                         case EntityFieldControlType.TreeSingle:
-                            fieldInfo.DefaultWidth = 10;
+                            fieldInfo.DefaultWidth = 200;
                             break;
                     }
                 }
