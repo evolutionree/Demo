@@ -74,6 +74,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         /// </summary>
         public int RecOrder { set; get; }
 
+        public Guid WebFuncId { set; get; }
+
+        public Guid MobileFuncId { set; get; }
+
     }
 
     /// <summary>

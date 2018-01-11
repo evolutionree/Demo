@@ -505,7 +505,7 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
             };
             return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);
         }
-        public OperateResult AddFunction(FunctionInfo data, int userNumber)
+        public OperateResult AddFunction(FunctionInfo data, int userNumber, DbTransaction trans = null)
         {
             var executeSql = @"SELECT * FROM crm_func_function_insert(@islastchild,@routepath,@topfuncid,@funcname,@funccode,@entityid,@devicetype,@rectype,@relationvalue,@userno)";
             var sqlParameters = new List<DbParameter>();
@@ -519,7 +519,32 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
             sqlParameters.Add(new NpgsqlParameter("rectype", (int)data.RecType));
             sqlParameters.Add(new NpgsqlParameter("relationvalue", data.RelationValue??""));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
-            return ExecuteQuery<OperateResult>(executeSql, sqlParameters.ToArray()).FirstOrDefault();
+            return ExecuteQuery<OperateResult>(executeSql, sqlParameters.ToArray(), trans).FirstOrDefault();
+        }
+
+        public bool DeleteFunction(Guid funcid, int userNumber, DbTransaction trans = null)
+        {
+            var executeSql = @"UPDATE crm_sys_function SET recstatus=0,recupdator=@recupdator,recupdated=@recupdated WHERE funcid=@funcid";
+            var sqlParameters = new List<DbParameter>();
+            sqlParameters.Add(new NpgsqlParameter("recupdator", userNumber));
+            sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
+            sqlParameters.Add(new NpgsqlParameter("funcid", funcid));
+
+            return ExecuteNonQuery(executeSql, sqlParameters.ToArray(), trans) > 0;
+        }
+
+        public bool EditFunction(FunctionInfo data, int userNumber, DbTransaction trans = null)
+        {
+            var executeSql = @"UPDATE crm_sys_function SET funcname=@funcname,funccode=@funccode,islastchild=@islastchild,routepath=@routepath,recupdator=@recupdator,recupdated=@recupdated WHERE funcid=@funcid";
+            var sqlParameters = new List<DbParameter>();
+            sqlParameters.Add(new NpgsqlParameter("funcname", data.FuncName));
+            sqlParameters.Add(new NpgsqlParameter("funccode", data.Funccode ));
+            sqlParameters.Add(new NpgsqlParameter("routepath", data.RoutePath));
+            sqlParameters.Add(new NpgsqlParameter("recupdator", userNumber));
+            sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
+            sqlParameters.Add(new NpgsqlParameter("funcid", data.FuncId));
+            sqlParameters.Add(new NpgsqlParameter("islastchild", data.IsLastChild));
+            return ExecuteNonQuery(executeSql, sqlParameters.ToArray(), trans) >0;
         }
 
 

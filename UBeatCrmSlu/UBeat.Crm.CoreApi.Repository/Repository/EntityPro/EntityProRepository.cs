@@ -1003,7 +1003,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        public bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info, int userNumber)
+        public bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info, int userNumber, DbTransaction trans = null)
         {
 
             var sql = @"UPDATE crm_sys_entity SET functionbuttons =@functionbuttons ,recupdator=@recupdator,recupdated=now() WHERE entityid=@entityid; ";
@@ -1012,7 +1012,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             sqlParameters.Add(new NpgsqlParameter("functionbuttons", JsonConvert.SerializeObject(info)) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
             sqlParameters.Add(new NpgsqlParameter("recupdator", userNumber));
             sqlParameters.Add(new NpgsqlParameter("entityid", entityId));
-            var result = ExecuteNonQuery(sql, sqlParameters.ToArray());
+            var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
             return result > 0;
         }
 

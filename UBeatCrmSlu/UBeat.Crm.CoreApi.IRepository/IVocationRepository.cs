@@ -150,9 +150,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         OperateResult AddFunction(FunctionAdd data, int userNumber);
 
-        OperateResult AddFunction(FunctionInfo data, int userNumber);
+        OperateResult AddFunction(FunctionInfo data, int userNumber, DbTransaction trans = null);
 
-
+        bool EditFunction(FunctionInfo data, int userNumber, DbTransaction trans = null);
+        bool DeleteFunction(Guid funcid, int userNumber, DbTransaction trans = null);
 
         /// <summary>
         /// 编辑功能

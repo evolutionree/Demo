@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
@@ -109,7 +110,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info,int userNumber);
+        bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info,int userNumber, DbTransaction trans = null);
 
 
         Dictionary<string, List<IDictionary<string, object>>> SetRepeatList(string entityId, int userId);
