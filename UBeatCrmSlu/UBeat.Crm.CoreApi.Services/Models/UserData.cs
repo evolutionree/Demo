@@ -139,7 +139,7 @@ namespace UBeat.Crm.CoreApi.Services.Models
         /// <param name="deviceClassic"></param>
         /// <param name="recids"></param>
         /// <returns></returns>
-        public bool HasDataAccess(DbTransaction tran, string routePath, Guid entityid, DeviceClassic deviceClassic, List<Guid> recids,string recidFieldName="recid")
+        public bool HasDataAccess(DbTransaction tran, string routePath, Guid entityid, DeviceClassic deviceClassic, List<Guid> recids, string recidFieldName = "recid")
         {
             if (routePath == null)
                 return false;
@@ -177,14 +177,20 @@ namespace UBeat.Crm.CoreApi.Services.Models
                             && a.DeviceType == (int)deviceClassic);
                         else functionInfo = vocation.Functions.Find(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(routePath)
                              && a.DeviceType == (int)deviceClassic && a.EntityId == entityid);
-                        if (functionInfo != null)
-                            break;
+
+                        if (functionInfo != null )
+                        {
+                            string temp = string.Empty;
+                            if (functionInfo.Rule != null && !string.IsNullOrEmpty(functionInfo.Rule.Rulesql))
+                                temp = functionInfo.Rule.Rulesql;
+                            else temp = "1=1";
+                            if (string.IsNullOrEmpty(functionRuleSql))
+                                functionRuleSql = temp;
+                            else functionRuleSql = string.Format("{0} OR {1}", functionRuleSql, temp );
+                        }
                     }
                 }
-                if (functionInfo != null && functionInfo.Rule != null && !string.IsNullOrEmpty(functionInfo.Rule.Rulesql))
-                {
-                    functionRuleSql = functionInfo.Rule.Rulesql;
-                }
+
 
             }
             //获取角色权限，取最大权限的角色rule，假如有个角色没有rule或者rule的sql为空，则没有角色权限限制
@@ -208,7 +214,7 @@ namespace UBeat.Crm.CoreApi.Services.Models
             var roleRuleSqlString = roleRuleSql.ToString();
             roleRuleSqlString = string.IsNullOrEmpty(roleRuleSqlString) ? "1=1" : string.Format("({0})", roleRuleSqlString);
 
-            var sql = string.Format("{0} AND {1}", functionRuleSql, roleRuleSqlString);
+            var sql = string.Format("({0}) AND ({1})", functionRuleSql, roleRuleSqlString);
 
             if (AccountUserInfo == null)
                 return null;

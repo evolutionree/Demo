@@ -54,16 +54,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> Add(DynamicEntityAddModel dynamicModel, AnalyseHeader header, int userNumber)
         {
             var entityInfo = _entityProRepository.GetEntityInfo(dynamicModel.TypeId);
+            OutputResult<object> addRes = null;
             var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
                 WorkFlowAddCaseModel workFlowAddCaseModel = null;
-                return AddEntityData(transaction, userData, entityInfo, arg, header, userNumber,out workFlowAddCaseModel);
+                return addRes=AddEntityData(transaction, userData, entityInfo, arg, header, userNumber,out workFlowAddCaseModel);
 
             }, dynamicModel, entityInfo.EntityId, userNumber);
 
-            if (res.Status == 0)
+            if (addRes.Status == 0)
             {
-                var bussinessId = Guid.Parse(res.DataBody.ToString());
+                var bussinessId = Guid.Parse(addRes.DataBody.ToString());
                 var relbussinessId = dynamicModel.RelRecId.GetValueOrDefault();
                 if (!dynamicModel.FlowId.HasValue)
                 {
