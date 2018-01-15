@@ -640,7 +640,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportEngine
             try
             {
                 Dictionary<string, object> ret = new Dictionary<string, object>();
-                string strSQL = @"select userinfo.userid::text,userInfo.isleader::int4 ,userDept.deptid::text
+                string strSQL = @"select userinfo.userid::text,userInfo.username,userInfo.isleader::int4 ,userDept.deptid::text
                                 from (
                                 select * from crm_sys_userinfo where recstatus = 1 
                                 ) userInfo 

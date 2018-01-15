@@ -15,6 +15,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 Dictionary<string, object> item = new Dictionary<string, object>();
                 item.Add("id", userdata.UserId);
                 item.Add("name", userdata.AccountUserInfo.UserName);
+                ret.Add(item);
+                return ret;
             }
             return null;
         }
