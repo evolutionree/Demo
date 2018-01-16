@@ -16,6 +16,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.menus
         public Guid ParentId { get; set; }
         public int IsDynamic { get; set; }
         public int IsLogicMenu { get; set; }
+        /// <summary>
+        /// 此字段不保存，仅用于返回个人默认页面
+        /// </summary>
+        public int IsDefaultPage { get; set; }
         public List<WebMenuItem> ChildRen { get; set; }
         public WebMenuItem()
         {

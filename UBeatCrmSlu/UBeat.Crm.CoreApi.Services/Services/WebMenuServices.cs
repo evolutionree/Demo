@@ -28,6 +28,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<WebMenuItem> getAllWebMenus(int type,int userNumber) {
             List<WebMenuItem> retList = _webMenuRepository.getAllMenu(type,userNumber);
             List<WebMenuItem> topList = new List<WebMenuItem>();
+            WebMenuItem defaultPage = null;
             Dictionary<Guid, WebMenuItem> allMenus = new Dictionary<Guid, WebMenuItem>();
             Dictionary<string, FunctionInfo> allMyFuncs = AllMyFunctionIds(userNumber);
             foreach (WebMenuItem item in retList) {
@@ -40,6 +41,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (allMyFuncs.ContainsKey(item.FuncID) == false) {
                         continue;
                     } 
+                }
+                if (defaultPage == null) {
+                    if (item.path != null && item.path.Length > 0) {
+                        defaultPage = item;
+                    }
                 }
                 if (item.ParentId == Guid.Empty) {
                         topList.Add(item);
@@ -55,6 +61,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             //这里要删除没有子目录的
             removeEmptyDir(topList);
+            if (defaultPage != null) {
+                defaultPage.IsDefaultPage = 1;
+            }
             return topList;
         }
         private void removeEmptyDir(List<WebMenuItem>  topList) {
