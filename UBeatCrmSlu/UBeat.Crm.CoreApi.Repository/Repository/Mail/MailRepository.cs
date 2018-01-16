@@ -1102,7 +1102,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             try
             {
                 var sql = @" update crm_sys_mail_sendrecord set status=@mailstatus where mailid=@mailid;";
-                var mailCatalogSql = "select * from  crm_func_mail_cata_related_handle" +
+                var mailCatalogSql = " select * from  crm_func_mail_cata_related_handle" +
                                                     "(" +
                                                     "@mailid," +
                                                     "NULL," +

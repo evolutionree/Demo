@@ -1092,7 +1092,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             var procName =
                 "SELECT crm_func_entrance_list(@userno)";
 
-            var dataNames = new List<string> { "Crm", "Office", "StandbyChoose" };
+            var dataNames = new List<string> { "Crm", "Office","DynamicEntity", "StandbyChoose" };
             var param = new DynamicParameters();
             param.Add("userno", userNumber);
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
@@ -1515,9 +1515,25 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     conn.Dispose();
                 }
             }
+        }
 
 
 
+        /// <summary>
+        /// 获取动态实体
+        /// </summary>
+        /// <param name="modelType"></param>
+        /// <returns></returns>
+        public List<EntityProMapper> GetDynamicEntityList(int modelType = 3)
+        {
+            var sql = @"select entityid::text,entityname,relentityid::text from crm_sys_entity where relentityid is not null and modeltype=@modeltype and recstatus=1";
+
+            var param = new
+            {
+                ModelType = modelType
+            };
+
+            return DataBaseHelper.Query<EntityProMapper>(sql, param);
         }
 
     }

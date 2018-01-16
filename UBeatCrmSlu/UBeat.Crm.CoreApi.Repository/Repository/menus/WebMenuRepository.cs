@@ -23,12 +23,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
         }
         public bool deleteDynamicByParentID(Guid parentid)
         {
-            string cmdText = "delete from crm_sys_webmenu where parentid=@parentid and isdynamic = 1";
+            var sql = @"WITH RECURSIVE T1 as(
+                                SELECT id,name,parentid  FROM crm_sys_webmenu WHERE isdynamic=1 AND parentid=@parentid
+                                UNION
+                                SELECT wm.id,wm.name,wm.parentid  FROM crm_sys_webmenu wm INNER JOIN T1 ON T1.id=wm.parentid WHERE isdynamic=1
+                            )
+                            DELETE FROM crm_sys_webmenu WHERE  id IN (SELECT id FROM T1);";
             var param = new
             {
                 parentid
             };
-            DataBaseHelper.ExecuteNonQuery(cmdText, param);
+            DataBaseHelper.ExecuteNonQuery(sql, param);
             return true;
         }
 
@@ -83,13 +88,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
             return retList;
         }
 
-        public bool insertMennInfo(WebMenuItem item)
+        public Guid insertMennInfo(WebMenuItem item)
         {
             if (item.Id == null || item.Id == Guid.Empty)
             {
-                return false;
+                return Guid.Empty;
             }
-            string cmdText = @"insert into crm_sys_webmenu(id,index,name,icon,path,funcid,parentid,isdynamic)values(@id,@index,@name,@icon,@path,@funcid,@parentid,@isdynamic)";
+            string cmdText = @"insert into crm_sys_webmenu(id,index,name,icon,path,funcid,parentid,isdynamic)values(@id,@index,@name,@icon,@path,@funcid,@parentid,@isdynamic) returning id";
             var param = new
             {
                 item.Id,
@@ -101,8 +106,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
                 item.ParentId,
                 item.IsDynamic
             };
-            DataBaseHelper.ExecuteNonQuery(cmdText, param);
-            return true;
+            return DataBaseHelper.ExecuteScalar<Guid>(cmdText, param);
         }
 
         public bool updateMenuInfo(WebMenuItem item)

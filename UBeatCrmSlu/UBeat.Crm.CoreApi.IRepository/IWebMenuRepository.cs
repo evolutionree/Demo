@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<WebMenuItem> getSubMenus(string id);
 
         bool updateMenuInfo(WebMenuItem item);//保存菜单详情
-        bool insertMennInfo(WebMenuItem item);//插入菜单详情
+        Guid insertMennInfo(WebMenuItem item);//插入菜单详情
         bool deleteMenuInfo(string id);//删除菜单详情
 
         bool deleteByParentId(Guid parentid);//删除所有的子菜单

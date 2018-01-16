@@ -159,5 +159,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         void SyncFunctionList(Guid entityId, List<FunctionInfo> webfuncs, List<FunctionInfo> mobilefuncs, int usernumber);
 
+        List<EntityProMapper> GetDynamicEntityList(int modelType = 3);
+
     }
 }
