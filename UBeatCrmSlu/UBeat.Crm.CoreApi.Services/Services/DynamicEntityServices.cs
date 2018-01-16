@@ -1598,13 +1598,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<Dictionary<string, object>> page = this._dynamicEntityRepository.ExecuteQuery(CountSQL, tran);
             Dictionary<string, List<Dictionary<string, object>>> retData = new Dictionary<string, List<Dictionary<string, object>>>();
 
-            #region 数字类型整理
+            #region 数字类型整理,日期整理
             foreach (DynamicEntityFieldSearch fieldInfo in fieldList)
             {
                 if (fieldInfo.ControlType == (int)EntityFieldControlType.NumberInt
                     || fieldInfo.ControlType == (int)EntityFieldControlType.NumberDecimal)
                 {
                     DynamicProtocolHelper.FormatNumericFieldInList(datas, fieldInfo);
+                }
+                else if (fieldInfo.ControlType == (int)EntityFieldControlType.RecCreated
+                   || fieldInfo.ControlType == (int)EntityFieldControlType.RecUpdated
+                   || fieldInfo.ControlType == (int)EntityFieldControlType.TimeDate
+                   || fieldInfo.ControlType == (int)EntityFieldControlType.TimeStamp) {
+                    
                 }
             } 
             #endregion

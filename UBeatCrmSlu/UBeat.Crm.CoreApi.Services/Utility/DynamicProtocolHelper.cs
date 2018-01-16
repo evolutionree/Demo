@@ -1090,6 +1090,37 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             return string.Format("{1}.{0}", field.FieldName, tablealias);
         }
+        public static void FormatDateTimeFieldInList(List<Dictionary<string, object>> datas, DynamicEntityFieldSearch fieldInfo)
+        {
+            if (fieldInfo.ControlType != (int)EntityFieldControlType.TimeDate
+                && fieldInfo.ControlType != (int)EntityFieldControlType.TimeStamp
+                && fieldInfo.ControlType != (int)EntityFieldControlType.RecCreated
+                && fieldInfo.ControlType != (int)EntityFieldControlType.RecUpdated)
+                return;
+            bool isNeedFormat = false;
+            string formatString = "";
+            Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo.FieldConfig);
+            if (fieldConfigDict != null
+                && fieldConfigDict.ContainsKey("format")
+                && fieldConfigDict["format"] != null)
+            {
+                isNeedFormat = true;
+                formatString = fieldConfigDict["format"].ToString();
+            }
+            if (!isNeedFormat) return;
+            if (formatString == null || formatString.Length == 0) return;
+            DateTime tmpDateTime;
+            foreach (Dictionary<string, object> data in datas)
+            {
+                if (data.ContainsKey(fieldInfo.FieldName) && data[fieldInfo.FieldName] != null)
+                {
+                    if (DateTime.TryParse(data[fieldInfo.FieldName].ToString(), out tmpDateTime))
+                    {
+                        data[fieldInfo.FieldName + "_name"] = tmpDateTime.ToString(formatString);
+                    }
+                }
+            }
+        }
         /// <summary>
         /// 格式化数字类型的返回值
         /// </summary>
