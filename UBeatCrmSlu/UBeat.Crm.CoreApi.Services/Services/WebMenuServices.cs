@@ -206,7 +206,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     webMenu.Name = (string)item["entryname"];
                     webMenu.IsLogicMenu= (int)item["islogicmenu"];
                     webMenu.ParentId = CrmMenuId;
-                    webMenu.Id = (Guid)item["entranceid"];
+                    webMenu.Id = (Guid)item["entranceid"]; 
                     webMenu.Index = index;
                     bool isCustPage = false;
                     if (item.ContainsKey("servicesjson") && item["servicesjson"] != null) {
