@@ -53,6 +53,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public int RecOrder { get; set; }
 
+        public Guid RelFieldId { get; set; }
+
         protected override IValidator GetValidator()
         {
             return new EntityProSaveMapperValidator();
@@ -64,6 +66,20 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
             {
                 RuleFor(d => d.EntityName).NotEmpty().WithMessage("实体名称不能为空");
                 RuleFor(d => d.EntityTable).NotEmpty().WithMessage("实体表名不能为空");
+                RuleFor(d => d.RelEntityId).NotEmpty().WithMessage("关联实体不能为空");
+                RuleFor(d => d).Must(Valid).WithMessage("关联实体字段不能为空");
+
+            }
+
+            bool Valid(EntityProSaveMapper entity)
+            {
+                if (!string.IsNullOrEmpty(entity.RelEntityId))
+                {
+                    if (entity.RelFieldId != null || entity.RelFieldId != Guid.Empty)
+                        return true;
+                    return false;
+                }
+                return true;
             }
         }
     }

@@ -402,7 +402,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         webSubMenu.Index = secIndex;
                         webSubMenu.Icon = "";
                         webSubMenu.IsDynamic = 1;
-                        webMenu.FuncID = getFunctionIDByEntity(Guid.Parse(subMenu.EntityId), allFunctions);
+                        webSubMenu.path = "/entcomm-dynamic/" + subMenu.EntityId;
+                        webSubMenu.FuncID = getFunctionIDByEntity(Guid.Parse(subMenu.EntityId), allFunctions);
                         _webMenuRepository.insertMennInfo(webSubMenu);
                         secIndex++;
                     }

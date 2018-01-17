@@ -60,7 +60,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertEntityPro(EntityProSaveMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_add(@entityname,@entitytable, @typeid, @remark, @styles, @icons,@relentityid,@relaudit, @recstatus,@userno)
+                SELECT * FROM crm_func_entity_add(@entityname,@entitytable, @typeid, @remark, @styles, @icons,@relentityid,@relfieldid,@relaudit, @recstatus,@userno)
             ";
             var param = new DynamicParameters();
             param.Add("entityname", entity.EntityName);
@@ -70,6 +70,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("styles", entity.Styles);
             param.Add("icons", entity.Icons);
             param.Add("relentityid", entity.RelEntityId);
+            param.Add("relfieldid", entity.RelFieldId);
             param.Add("relaudit", entity.Relaudit);
             param.Add("recstatus", 1);
             param.Add("userno", userNumber);
@@ -111,7 +112,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateEntityPro(EntityProSaveMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_edit(@entityid,@entityname, @typeid,@icons, @remark,@relentityid,@relaudit,@userno)
+                SELECT * FROM crm_func_entity_edit(@entityid,@entityname, @typeid,@icons, @remark,@relentityid,@relfieldid,@relaudit,@userno)
             ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
@@ -120,6 +121,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("icons", entity.Icons);
             param.Add("remark", entity.Remark);
             param.Add("relentityid", entity.RelEntityId);
+            param.Add("relfieldid", entity.RelFieldId);
             param.Add("relaudit", entity.Relaudit);
             param.Add("userno", userNumber);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
@@ -1092,7 +1094,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             var procName =
                 "SELECT crm_func_entrance_list(@userno)";
 
-            var dataNames = new List<string> { "Crm", "Office","DynamicEntity", "StandbyChoose" };
+            var dataNames = new List<string> { "Crm", "Office", "DynamicEntity", "StandbyChoose" };
             var param = new DynamicParameters();
             param.Add("userno", userNumber);
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);

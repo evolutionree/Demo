@@ -48,6 +48,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public int Relaudit { get; set; }
         public string Perfix { get; set; }
         public int RecStatus { get; set; }
+
+        public Guid RelFieldId { get; set; }
     }
 
 

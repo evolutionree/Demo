@@ -49,7 +49,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> InsertEntityPro(EntityProModel entityModel, int userNumber)
         {
-            var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
+               var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
             OperateResult newEntity = _entityProRepository.InsertEntityPro(entity, userNumber);
             if (newEntity.Flag == 0)
                 return HandleResult(newEntity);
