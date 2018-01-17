@@ -120,10 +120,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 fields = _entityProRepository.FieldQuery(entityModel.RelEntityId, userId);
             }
-            else if (entityModel.TypeId == 3)
-            {
-                fields = null;
-            }
             else
             {
                 fields = _entityProRepository.FieldQuery(entityModel.EntityId, userId);
@@ -420,7 +416,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> WorkFlowRuleInfoQuery(FlowRuleModel entityModel, int userId)
         {
-            var entity = mapper.Map<FlowRuleModel, FlowRuleMapper>(entityModel);
+            var entity = new FlowRuleMapper
+            {
+                ruleid= entityModel.RuleId,
+                flowid= entityModel.FlowId
+            };
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
