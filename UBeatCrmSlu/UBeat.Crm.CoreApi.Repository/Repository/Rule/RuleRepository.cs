@@ -47,6 +47,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
             var result = DataBaseHelper.QueryStoredProcCursor<DynamicRuleQueryMapper>(procName, param, CommandType.Text);
             return result;
         }
+
+        /// <summary>
+        /// 获取独立实体流程的可见规则
+        /// </summary>
+        public List<WorkFlowRuleQueryMapper> WorkFlowRuleInfoQuery(string flowid, int userNumber)
+        {
+            var sql = @"SELECT pl.ruleid::varchar,pl.flowid::varchar, r.ruleid::varchar,r.rulename,r.entityid::varchar,r.recstatus,
+                i.itemid::varchar,i.fieldid::varchar,i.itemname,i.operate,i.usetype,i.ruletype,
+                i.ruledata,s.ruleset FROM crm_sys_workflow_rule_relation pl left join  crm_sys_rule r  on pl.ruleid=r.ruleid
+               Left JOIN crm_sys_rule_item_relation ir ON r.ruleid=ir.ruleid 
+               Left JOIN crm_sys_rule_item  i on i.itemid=ir.itemid
+               Left JOIN crm_sys_rule_set  s on s.ruleid=r.ruleid where r.recstatus=1 and pl.flowid=@flowid order by i.recorder";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("flowid", new Guid(flowid))
+            };
+            var result = ExecuteQuery<WorkFlowRuleQueryMapper>(sql, param);
+            return result;
+        }
+
         public Dictionary<string, List<IDictionary<string, object>>> MenuRuleQuery(string entityId, int userNumber)
         {
             var procName =

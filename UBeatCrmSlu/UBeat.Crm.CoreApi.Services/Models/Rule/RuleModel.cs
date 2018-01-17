@@ -66,6 +66,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
         public ICollection<RuleItemModel> RuleItems { get; set; }
         public RuleSetModel RuleSet { get; set; }
     }
+
+    public class FlowRuleModel
+    {
+        public string RuleId { get; set; }
+        public string RuleName { get; set; }
+        public string FlowId { get; set; }
+        public string Rulesql { get; set; }
+        public ICollection<RuleItemModel> RuleItems { get; set; }
+        public RuleSetModel RuleSet { get; set; }
+    }
     public class RuleItemModel
     {
         public string ItemId { get; set; }

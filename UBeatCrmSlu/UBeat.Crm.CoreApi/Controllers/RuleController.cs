@@ -51,8 +51,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> SaveEntityRule([FromBody]RuleModel entityModel)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-            if (entityModel.RuleItems.Count == 0) return ResponseError<object>("规则明细不能为空");
-            if (string.IsNullOrEmpty(entityModel.RuleSet.RuleSet)) return ResponseError<object>("规则集合不能为空");
+            //删除规则
+            //if (entityModel.RuleItems.Count == 0) return ResponseError<object>("规则明细不能为空");
+            //if (string.IsNullOrEmpty(entityModel.RuleSet.RuleSet)) return ResponseError<object>("规则集合不能为空");
             return _ruleTranslatorServices.SaveRule(entityModel, UserId);
         }
 
@@ -88,6 +89,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
             return _ruleTranslatorServices.DynamicRuleInfoQuery(entityModel, UserId);
+        }
+
+        [HttpPost]
+        [Route("queryflowruleinfo")]
+        public OutputResult<object> WorkFlowRuleInfoQuery([FromBody]FlowRuleModel entityModel)
+        {
+            if (entityModel == null) return ResponseError<object>("参数格式错误");
+            return _ruleTranslatorServices.WorkFlowRuleInfoQuery(entityModel, UserId);
         }
     }
 }

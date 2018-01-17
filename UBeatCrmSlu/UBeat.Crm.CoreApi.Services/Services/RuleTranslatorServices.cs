@@ -417,7 +417,43 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }).ToList();
             return new OutputResult<object>(obj);
         }
-        public OutputResult<object> DynamicRuleInfoQuery(DynamicRuleModel entityModel, int userId)
+
+        public OutputResult<object> WorkFlowRuleInfoQuery(FlowRuleModel entityModel, int userId)
+        {
+            var entity = mapper.Map<FlowRuleModel, FlowRuleMapper>(entityModel);
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            var infoList = _ruleRepository.WorkFlowRuleInfoQuery(entity.flowid, userId);
+            var obj = infoList.GroupBy(t => new
+            {
+                t.RuleId,
+                t.RuleName,
+                t.RuleSet,
+            }).Select(group => new RoleRuleInfoModel
+            {
+                RuleId = group.Key.RuleId,
+                RuleName = group.Key.RuleName,
+                RuleItems = group.Select(t => new RuleItemInfoModel
+                {
+                    ItemId = t.ItemId,
+                    ItemName = t.ItemName,
+                    FieldId = t.FieldId,
+                    Operate = t.Operate,
+                    UseType = t.UseType,
+                    RuleData = t.RuleData,
+                    RuleType = t.RuleType
+                }).ToList(),
+                RuleSet = new RuleSetInfoModel
+                {
+                    RuleSet = group.Key.RuleSet
+                }
+            }).ToList();
+            return new OutputResult<object>(obj);
+        }
+
+            public OutputResult<object> DynamicRuleInfoQuery(DynamicRuleModel entityModel, int userId)
         {
             var entity = mapper.Map<DynamicRuleModel, DynamicRuleMapper>(entityModel);
             if (entity == null || !entity.IsValid())

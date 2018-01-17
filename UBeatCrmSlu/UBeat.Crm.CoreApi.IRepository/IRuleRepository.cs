@@ -18,6 +18,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<RoleRuleQueryMapper> RoleRuleInfoQuery(string roleId, string entityId, int userNumber);
         List<DynamicRuleQueryMapper> DynamicRuleInfoQuery(string entityId, int userNumber);
+        List<WorkFlowRuleQueryMapper> WorkFlowRuleInfoQuery(string flowid, int userNumber);
+
         OperateResult DisabledEntityRule(string menuId, int userId);
 
         /// <summary>
