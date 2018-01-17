@@ -1576,9 +1576,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     case EntityFieldControlType.RelateControl://专供关联对象用
                         JObject jo = JObject.Parse(fieldInfo.FieldConfig);
-                        if (jo["relentityid"] == null || jo["relfieldid"] == null)
+                        if (jo["relentityid"] == null || jo["relfieldid"] == null || EntityInfo["relfieldname"] == null)
                             throw new Exception("关联对象信息配置异常");
-                        var entityInfo = _entityProRepository.GetEntityInfo(Guid.Parse(jo["relentityid"].ToString()));
+
+                        var relEntityInfo = _entityProRepository.GetEntityInfo(Guid.Parse(jo["relentityid"].ToString()));
                         var relField = _entityProRepository.GetFieldInfo(Guid.Parse(jo["relfieldid"].ToString()), userNumber);
                         var selectField = DynamicProtocolHelper.tryParseFieldSearchString(new DynamicEntityFieldSearch
                         {
@@ -1586,10 +1587,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             FieldName = relField.fieldname,
                             ControlType = relField.controltype,
                             FieldConfig = relField.fieldconfig
-                        }, entityInfo.EntityTable + "_t");
-                        var entityTable = entityInfo.EntityTable;
+                        }, relEntityInfo.EntityTable + "_t");
+                        var entityTable = relEntityInfo.EntityTable;
                         fromClause = string.Format(@"{0} left outer join {1} as {1}_t on {1}_t.recid = e.recrelateid ", fromClause, entityTable);
-                        selectClause = string.Format(@"{0},{1}_t.{2},{3} as {2}_name", selectClause, entityTable, relField.fieldname, selectField);
+                        selectClause = string.Format(@"{0},{1}_t.{2} as {3},{4} as {3}_name", selectClause, entityTable, relField.fieldname, EntityInfo["relfieldname"].ToString(), selectField);
                         break;
                 }
             }
