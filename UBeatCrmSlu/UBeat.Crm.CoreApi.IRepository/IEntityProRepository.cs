@@ -90,6 +90,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         SimpleEntityInfo GetEntityInfo(Guid typeId);
 
+        dynamic GetFieldInfo(Guid fieldId, int userNumber);
+
         /// <summary>
         /// 获取实体页面入口信息
         /// </summary>

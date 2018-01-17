@@ -925,7 +925,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         {
             //插入操作
             //生成插入语句
-            var sql = @"SELECT c.categoryid ,c.categoryname, e.entityid,e.entityname,e.modeltype,e.relentityid,re.entityname AS relentityname,e.relaudit,e.servicesjson 
+            var sql = @"SELECT e.entitytable,c.categoryid ,c.categoryname, e.entityid,e.entityname,e.modeltype,e.relentityid,re.entityname AS relentityname,e.relaudit,e.servicesjson 
                         FROM crm_sys_entity_category AS c
                         INNER JOIN crm_sys_entity AS e ON e.entityid=c.entityid
                         LEFT JOIN crm_sys_entity AS re ON re.entityid=e.relentityid
@@ -937,6 +937,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
             return ExecuteQuery<SimpleEntityInfo>(sql, sqlParameters.ToArray()).FirstOrDefault();
         }
+
+        public dynamic GetFieldInfo(Guid fieldId, int userNumber)
+        {
+            //插入操作
+            //生成插入语句
+            var sql = @"
+                select * from crm_sys_entity_fields where  fieldid=@fieldid and recstatus=1 ;
+            ";
+
+            var param = new
+            {
+                FieldId = fieldId,
+                UserNo = userNumber
+            };
+            var result = DataBaseHelper.QuerySingle<dynamic>(sql, param);
+            return result;
+        }
+
 
         /// <summary>
         /// 获取实体功能配置数据

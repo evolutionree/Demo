@@ -58,7 +58,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
                 WorkFlowAddCaseModel workFlowAddCaseModel = null;
-                return addRes=AddEntityData(transaction, userData, entityInfo, arg, header, userNumber,out workFlowAddCaseModel);
+                return addRes = AddEntityData(transaction, userData, entityInfo, arg, header, userNumber, out workFlowAddCaseModel);
 
             }, dynamicModel, entityInfo.EntityId, userNumber);
 
@@ -69,7 +69,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (!dynamicModel.FlowId.HasValue)
                 {
                     //单据转换消息
-                    if (dynamicModel.ExtraData!=null&&dynamicModel.ExtraData.ContainsKey("funccode") && dynamicModel.ExtraData["funccode"] != null
+                    if (dynamicModel.ExtraData != null && dynamicModel.ExtraData.ContainsKey("funccode") && dynamicModel.ExtraData["funccode"] != null
                         && dynamicModel.ExtraData.ContainsKey("entityId") && dynamicModel.ExtraData["entityId"] != null
                         && dynamicModel.ExtraData.ContainsKey("recordId") && dynamicModel.ExtraData["recordId"] != null)
                     {
@@ -1574,16 +1574,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     case EntityFieldControlType.TreeSingle://21树形
                         break;
+                    case EntityFieldControlType.RelateControl://专供关联对象用
+                        JObject jo = JObject.Parse(fieldInfo.FieldConfig);
+                        if (jo["relentityid"] == null || jo["relfieldid"] == null)
+                            throw new Exception("关联对象信息配置异常");
+                        var entityInfo = _entityProRepository.GetEntityInfo(Guid.Parse(jo["relentityid"].ToString()));
+                        var relField = _entityProRepository.GetFieldInfo(Guid.Parse(jo["relfieldid"].ToString()), userNumber);
+                        var selectField = DynamicProtocolHelper.tryParseFieldSearchString(new DynamicEntityFieldSearch
+                        {
+                            FieldId = relField.fieldid,
+                            FieldName = relField.fieldname,
+                            ControlType = relField.controltype,
+                            FieldConfig = relField.fieldconfig
+                        }, entityInfo.EntityTable + "_t");
+                        var entityTable = entityInfo.EntityTable;
+                        fromClause = string.Format(@"{0} left outer join {1} as {1}_t on {1}_t.recid = e.recrelateid ", fromClause, entityTable);
+                        selectClause = string.Format(@"{0},{1}_t.{2},{3} as {2}_name", selectClause, entityTable, relField.fieldname, selectField);
+                        break;
                 }
             }
             #endregion
             string WhereSQL = "1=1";
             string OrderBySQL = " e.recversion desc ";
-            if (dynamicEntity.SearchOrder != null && dynamicEntity.SearchOrder.Length > 0) {
+            if (dynamicEntity.SearchOrder != null && dynamicEntity.SearchOrder.Length > 0)
+            {
                 OrderBySQL = dynamicEntity.SearchOrder;
                 string tmp = GenerateOrderBySQL(dynamicEntity.SearchOrder, fieldList);
-                if (tmp != null && tmp.Length > 0) {
-                    OrderBySQL = tmp; 
+                if (tmp != null && tmp.Length > 0)
+                {
+                    OrderBySQL = tmp;
                 }
             }
             if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
@@ -1609,10 +1628,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else if (fieldInfo.ControlType == (int)EntityFieldControlType.RecCreated
                    || fieldInfo.ControlType == (int)EntityFieldControlType.RecUpdated
                    || fieldInfo.ControlType == (int)EntityFieldControlType.TimeDate
-                   || fieldInfo.ControlType == (int)EntityFieldControlType.TimeStamp) {
-                    
+                   || fieldInfo.ControlType == (int)EntityFieldControlType.TimeStamp)
+                {
+
                 }
-            } 
+            }
             #endregion
             retData.Add("PageData", datas);
             retData.Add("PageCount", page);
@@ -1625,17 +1645,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="orderby"></param>
         /// <param name="fieldList"></param>
         /// <returns></returns>
-        private string GenerateOrderBySQL(string orderby , List<DynamicEntityFieldSearch> fieldList) {
+        private string GenerateOrderBySQL(string orderby, List<DynamicEntityFieldSearch> fieldList)
+        {
             string totalReturn = "";
-            if (orderby == null || orderby.Length == 0) {
+            if (orderby == null || orderby.Length == 0)
+            {
                 return null;
             }
             string[] orders = orderby.Trim().Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             if (orders == null || orders.Length == 0) return null;
-            foreach (string orderitem in orders) {
+            foreach (string orderitem in orders)
+            {
                 string curItemOrderBySQL = "";
                 string tmpItem = orderitem.Trim();
-                string [] orderStruct = tmpItem.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                string[] orderStruct = tmpItem.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
                 string orderFieldName = "";
                 string orderType = "ASC";
                 bool isNameField = false;
@@ -1643,29 +1666,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     orderFieldName = orderStruct[0];
                 }
-                else if (orderStruct.Length == 2) {
+                else if (orderStruct.Length == 2)
+                {
                     orderFieldName = orderStruct[0];
                     orderType = orderStruct[1].ToUpper();
                     if (orderType.Equals("DSC")) orderType = "DESC";
                 }
-                if (orderFieldName.EndsWith("_name")) {
+                if (orderFieldName.EndsWith("_name"))
+                {
                     isNameField = true;
                     orderFieldName = orderFieldName.Substring(0, orderFieldName.Length - "_name".Length);
                 }
                 DynamicEntityFieldSearch orderFieldInfo = null;
-                foreach (DynamicEntityFieldSearch fieldInfo in fieldList) {
-                    if (fieldInfo.FieldName.Equals(orderFieldName)) {
+                foreach (DynamicEntityFieldSearch fieldInfo in fieldList)
+                {
+                    if (fieldInfo.FieldName.Equals(orderFieldName))
+                    {
                         orderFieldInfo = fieldInfo;
                         break;
                     }
                 }
-                if (orderFieldInfo != null) {
+                if (orderFieldInfo != null)
+                {
                     EntityFieldControlType controlType = (EntityFieldControlType)orderFieldInfo.ControlType;
                     switch (controlType)
                     {
                         case EntityFieldControlType.Address://31,地址
                         case EntityFieldControlType.Location://14定位
-                            curItemOrderBySQL = "convert_to(e." + orderFieldInfo.FieldName + "->>'address','GBK') "+ orderType;
+                            curItemOrderBySQL = "convert_to(e." + orderFieldInfo.FieldName + "->>'address','GBK') " + orderType;
                             break;
                         case EntityFieldControlType.RecCreator://1002创建人
                         case EntityFieldControlType.RecUpdator://1003更新人
@@ -1818,12 +1846,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             //不处理
                             break;
                     }
-                    if (curItemOrderBySQL != null && curItemOrderBySQL.Length > 0) {
+                    if (curItemOrderBySQL != null && curItemOrderBySQL.Length > 0)
+                    {
                         if (totalReturn == null || totalReturn.Length == 0)
                         {
                             totalReturn = curItemOrderBySQL;
                         }
-                        else {
+                        else
+                        {
                             totalReturn += ("," + curItemOrderBySQL);
                         }
                     }
@@ -1831,7 +1861,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return totalReturn;
         }
-        
+
         public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber)
         {
 
@@ -2168,7 +2198,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public List<DynamicEntityWebFieldMapper> GetWebFields(Guid typeId, DynamicProtocolOperateType operateType, int userNumber)
         {
-            List<DynamicEntityWebFieldMapper>  listColumns = _dynamicEntityRepository.GetWebFields(typeId, (int)operateType, userNumber);
+            List<DynamicEntityWebFieldMapper> listColumns = _dynamicEntityRepository.GetWebFields(typeId, (int)operateType, userNumber);
             CalcDefaultListViewColumnWidth(listColumns);
             return listColumns;
         }
@@ -2176,12 +2206,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// 初始化默认的web列表宽度显示 
         /// </summary>
         /// <param name="listColumns"></param>
-        private void CalcDefaultListViewColumnWidth(List<DynamicEntityWebFieldMapper> listColumns) {
+        private void CalcDefaultListViewColumnWidth(List<DynamicEntityWebFieldMapper> listColumns)
+        {
             if (listColumns == null) return;
-            foreach (DynamicEntityWebFieldMapper fieldInfo in listColumns) {
-                if (fieldInfo.DefaultWidth <= 0) {
+            foreach (DynamicEntityWebFieldMapper fieldInfo in listColumns)
+            {
+                if (fieldInfo.DefaultWidth <= 0)
+                {
                     EntityFieldControlType controlType = (EntityFieldControlType)fieldInfo.ControlType;
-                    switch (controlType) {
+                    switch (controlType)
+                    {
                         case EntityFieldControlType.Address:
                             fieldInfo.DefaultWidth = 200;
                             break;
@@ -2862,7 +2896,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public bool IsValidEntityPower(SimpleEntityInfo entityInfo)
         {
             //简单实体 没有关联实体 且走审批的就不校验权限
-            if (entityInfo.ModelType ==  EntityModelType.Simple && entityInfo.RelEntityId == null && entityInfo.RelAudit == 1)
+            if (entityInfo.ModelType == EntityModelType.Simple && entityInfo.RelEntityId == null && entityInfo.RelAudit == 1)
                 return true;
             return false;
         }
@@ -2971,8 +3005,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var linkTableFields = searchFields.Where(m => (DynamicProtocolControlType)m.ControlType == DynamicProtocolControlType.LinkeTable).ToList();
             foreach (var filed in linkTableFields)
             {
-                
-                if (data.ContainsKey(filed.FieldName) && data[filed.FieldName] != null) {
+
+                if (data.ContainsKey(filed.FieldName) && data[filed.FieldName] != null)
+                {
                     var fieldConfig = JObject.Parse(filed.FieldConfig);
                     var linketable_entityid = new Guid(fieldConfig["entityId"].ToString());
                     var linkFieldList = GetEntityFields(linketable_entityid, userNumber);
@@ -2983,9 +3018,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
 
                         retstr += "<row>\r\n";
-                        foreach (DynamicEntityFieldSearch linkFiled in linkFieldList) {
+                        foreach (DynamicEntityFieldSearch linkFiled in linkFieldList)
+                        {
                             string fieldValue = "";
-                            if (row.ContainsKey(linkFiled.FieldName) && row[linkFiled.FieldName] != null) {
+                            if (row.ContainsKey(linkFiled.FieldName) && row[linkFiled.FieldName] != null)
+                            {
                                 fieldValue = row[linkFiled.FieldName].ToString();
                             }
                             retstr += string.Format(@"<column name=\""{0}\""><value><![CDATA[{1}]]></value></column>\r\n", linkFiled.FieldLabel, fieldValue);
@@ -2996,7 +3033,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     retstr += "</subForm>\r\n";
 
                 }
-                
+
 
             }
             return retstr;
@@ -3028,12 +3065,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 tmp = tmp + string.Format(@"<column name=\""{0}\""><value><![CDATA[{1}]]></value></column>", field.FieldLabel, fieldValue);
             }
             return tmp;
-        } 
+        }
         #endregion
     }
     public class MuleSendParamInfo
     {
-        public Guid [] RecIds { get; set; }
+        public Guid[] RecIds { get; set; }
 
     }
 }

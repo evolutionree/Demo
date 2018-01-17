@@ -987,7 +987,7 @@ and recstatus = 1
             List<string> addressCol = new List<string>();
             foreach (var tmp in internetAddressList.ToList())
             {
-
+               
                 var mailboxAddress = (MailboxAddress)tmp;
                 addressCol.Add(mailboxAddress.Name + "<" + mailboxAddress.Address + ">");
             }

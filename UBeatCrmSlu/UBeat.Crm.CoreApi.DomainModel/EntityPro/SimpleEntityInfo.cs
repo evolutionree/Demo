@@ -6,6 +6,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 {
     public class SimpleEntityInfo
     {
+
+        public string EntityTable { get; set; }
         /// <summary>
         /// 实体类型ID
         /// </summary>
