@@ -73,7 +73,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
             bool Valid(EntityProSaveMapper entity)
             {
-                if (!string.IsNullOrEmpty(entity.RelEntityId))
+                if (!string.IsNullOrEmpty(entity.RelEntityId) && entity.TypeId == 3)
                 {
                     if (entity.RelFieldId != null || entity.RelFieldId != Guid.Empty)
                         return true;
