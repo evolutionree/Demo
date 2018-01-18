@@ -909,7 +909,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(fields);
         }
+        public OutputResult<object> DynamicListViewColumns(DynamicEntityGeneralModel dynamicModel, int userNumber)
+        {
+            //获取该实体分类的字段
+            var fields = GetWebDynamicListFields(dynamicModel.TypeId, (DynamicProtocolOperateType)dynamicModel.OperateType, userNumber);
 
+            if (fields.Count == 0)
+            {
+                return ShowError<object>("该实体没有配置列表字段");
+            }
+
+            return new OutputResult<object>(fields);
+        }
         public OutputResult<object> GeneralDictionary(DynamicEntityGeneralDicModel dynamicModel, int userNumber)
         {
             //获取该实体分类的字段
@@ -2200,6 +2211,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<DynamicEntityWebFieldMapper> GetWebFields(Guid typeId, DynamicProtocolOperateType operateType, int userNumber)
         {
             List<DynamicEntityWebFieldMapper> listColumns = _dynamicEntityRepository.GetWebFields(typeId, (int)operateType, userNumber);
+            CalcDefaultListViewColumnWidth(listColumns);
+            return listColumns;
+        }
+        public List<DynamicEntityWebFieldMapper> GetWebDynamicListFields(Guid typeId, DynamicProtocolOperateType operateType, int userNumber)
+        {
+            List<DynamicEntityWebFieldMapper> listColumns = _dynamicEntityRepository.GetWebDynamicListFields(typeId, (int)operateType, userNumber);
             CalcDefaultListViewColumnWidth(listColumns);
             return listColumns;
         }

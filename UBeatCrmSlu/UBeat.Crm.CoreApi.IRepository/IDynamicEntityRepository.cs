@@ -14,6 +14,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<DynamicEntityWebFieldMapper> GetWebFields(Guid entityId, int viewType, int userNumber);
 
+        List<DynamicEntityWebFieldMapper> GetWebDynamicListFields(Guid typeId, int operateType, int userNumber);
+
         List<DynamicEntityFieldSearch> GetSearchFields(Guid entityId, int userNumber);
         List<DynamicEntityFieldSearch> GetEntityFields(Guid entityId, int userNumber);
         OperateResult DynamicAdd(DbTransaction tran, Guid typeId, Dictionary<string, object> fieldData, Dictionary<string, object> extraData, int userNumber);

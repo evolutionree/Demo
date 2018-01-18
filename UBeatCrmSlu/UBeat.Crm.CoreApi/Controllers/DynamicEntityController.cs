@@ -60,6 +60,13 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("generaldynwebprotocol")]
+        public OutputResult<object> DynamicListViewColumns([FromBody] DynamicEntityGeneralModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.DynamicListViewColumns(dynamicModel, UserId);
+        }
+        [HttpPost]
         [Route("generaldic")]
         public OutputResult<object> GeneralDictionaryResult([FromBody] DynamicEntityGeneralDicModel dynamicModel = null)
         {

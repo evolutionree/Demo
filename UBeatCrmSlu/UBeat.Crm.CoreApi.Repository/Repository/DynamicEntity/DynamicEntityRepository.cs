@@ -841,6 +841,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return result;
         }
 
+        public List<DynamicEntityWebFieldMapper> GetWebDynamicListFields(Guid typeId, int operateType, int userNumber)
+        {
+
+            var procName = "SELECT crm_func_entity_protocol_type_fields_web_for_dynamiclist(@typeId,@operateType,@userNo)";
+
+            var param = new
+            {
+                TypeId = typeId,
+                OperateType = operateType,
+                UserNo = userNumber
+            };
+
+            var result = DataBaseHelper.QueryStoredProcCursor<DynamicEntityWebFieldMapper>(procName, param, CommandType.Text);
+
+            return result;
+        }
+
         public OperateResult IsHasPerssion(PermissionMapper entity, int userNumber)
         {
 
