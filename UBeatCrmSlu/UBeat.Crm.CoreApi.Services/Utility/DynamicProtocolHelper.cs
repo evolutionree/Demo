@@ -7,6 +7,8 @@ using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
+using UBeat.Crm.CoreApi.Core.Utility;
+using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -318,6 +320,22 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 //数字，时间这2种才有范围，其余的是文本ilike
                 switch ((DynamicProtocolControlType)field.NewType)
                 {
+                    case DynamicProtocolControlType.RelateControl:
+                        JObject jo = JObject.Parse(field.FieldConfig);
+                        if (jo["relentityid"] == null || jo["relfieldid"] == null)
+                            throw new Exception("关联对象信息配置异常");
+                        DynamicEntityRepository dynEntityRepository = new DynamicEntityRepository();
+                        var relEntityFields = dynEntityRepository.GetEntityFields(Guid.Parse(jo["relentityid"].ToString()), 0).Where(t => t.FieldId == Guid.Parse(jo["relfieldid"].ToString())).ToList();
+                        var reEntity = dynEntityRepository.getEntityBaseInfoById(Guid.Parse(jo["relentityid"].ToString()), 0);
+                        var relField = relEntityFields.FirstOrDefault();
+                        Dictionary<string, object> relFieldDatas = new Dictionary<string, object>();
+                        relFieldDatas.Add(relField.FieldName, fieldData);
+                        var validResults = RelateSimpleQuery(relEntityFields, relFieldDatas, reEntity);
+                        foreach (var tmp in validResults.Values)
+                        {
+                            result.FieldData = tmp.FieldData;
+                        }
+                        break;
                     case DynamicProtocolControlType.RecOnlive:
                     case DynamicProtocolControlType.RecCreated:
                     case DynamicProtocolControlType.RecUpdated:
@@ -653,7 +671,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                     result.FieldData = string.Join(" AND ", conditions.ToArray());
                                 }
                             }
-                            else {
+                            else
+                            {
                                 var conditions = new List<string>();
                                 if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
                                 {
@@ -885,7 +904,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         {
             var validResultDic = new Dictionary<string, DynamicProtocolValidResult>();
 
-
             foreach (var field in searchFields.Where(t => fieldDatas.Keys.Contains(t.FieldName)))
             {
 
@@ -908,6 +926,22 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 //数字，时间这2种才有范围，其余的是文本ilike
                 switch ((DynamicProtocolControlType)field.NewType)
                 {
+                    case DynamicProtocolControlType.RelateControl:
+                        JObject jo = JObject.Parse(field.FieldConfig);
+                        if (jo["relentityid"] == null || jo["relfieldid"] == null)
+                            throw new Exception("关联对象信息配置异常");
+                        DynamicEntityRepository dynEntityRepository = new DynamicEntityRepository();
+                        var relEntityFields = dynEntityRepository.GetEntityFields(Guid.Parse(jo["relentityid"].ToString()), 0).Where(t => t.FieldId == Guid.Parse(jo["relfieldid"].ToString())).ToList();
+                        var reEntity = dynEntityRepository.getEntityBaseInfoById(Guid.Parse(jo["relentityid"].ToString()), 0);
+                        var relField = relEntityFields.FirstOrDefault();
+                        Dictionary<string, object> relFieldDatas = new Dictionary<string, object>();
+                        relFieldDatas.Add(relField.FieldName, fieldData);
+                        var validResults = RelateSimpleQuery(relEntityFields, relFieldDatas, reEntity);
+                        foreach (var tmp in validResults.Values)
+                        {
+                            result.FieldData = tmp.FieldData;
+                        }
+                        break;
                     case DynamicProtocolControlType.RecName:
                     case DynamicProtocolControlType.Text:
                     case DynamicProtocolControlType.TextArea:
@@ -958,6 +992,93 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     default:
                         {
                             result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
+                            break;
+                        }
+                }
+
+                result.IsValid = true;
+                validResultDic.Add(field.FieldName, result);
+            }
+            return validResultDic;
+        }
+        private static Dictionary<string, DynamicProtocolValidResult> RelateSimpleQuery(
+List<DynamicEntityFieldSearch> searchFields, Dictionary<string, object> fieldDatas, Dictionary<string, object> entityDatas)
+        {
+            var validResultDic = new Dictionary<string, DynamicProtocolValidResult>();
+            if (entityDatas == null) return null;
+            string tableAlias = entityDatas["entitytable"].ToString() + "_t";
+            foreach (var field in searchFields.Where(t => fieldDatas.Keys.Contains(t.FieldName)))
+            {
+
+                var columnKey = field.FieldName;
+
+                object fieldData;
+                fieldDatas.TryGetValue(field.FieldName, out fieldData);
+
+                if (string.IsNullOrWhiteSpace(fieldData?.ToString().Trim()))
+                {
+                    continue;
+                }
+
+                var result = new DynamicProtocolValidResult();
+                result.FieldName = field.FieldName;
+
+                var dataStr = fieldData.ToString().Trim();
+
+                //根据控件处理不同的数据格式
+                //数字，时间这2种才有范围，其余的是文本ilike
+                switch ((DynamicProtocolControlType)field.NewType)
+                {
+                    case DynamicProtocolControlType.RecName:
+                    case DynamicProtocolControlType.Text:
+                    case DynamicProtocolControlType.TextArea:
+                        {
+                            result.FieldData = string.Format("{2}.{0} ilike '%{1}%'", columnKey, dataStr, tableAlias);
+                            break;
+                        }
+                    case DynamicProtocolControlType.Address:
+                    case DynamicProtocolControlType.Location:
+                        {
+                            result.FieldData = string.Format("jsonb_extract_path_text({2}.{0}, 'address') ilike '%{1}%'", columnKey, dataStr, tableAlias);
+                            break;
+                        }
+                    case DynamicProtocolControlType.RecCreator:
+                    case DynamicProtocolControlType.PersonSelectMulti:
+                    case DynamicProtocolControlType.PersonSelectSingle:
+                    case DynamicProtocolControlType.RecUpdator:
+                    case DynamicProtocolControlType.RecManager:
+                    case DynamicProtocolControlType.AreaRegion:
+                    case DynamicProtocolControlType.Department:
+                    case DynamicProtocolControlType.SelectSingle:
+                    case DynamicProtocolControlType.SelectMulti:
+                    case DynamicProtocolControlType.RecType:
+                    case DynamicProtocolControlType.DataSourceSingle:
+                    case DynamicProtocolControlType.DataSourceMulti:
+                    case DynamicProtocolControlType.Product:
+                    case DynamicProtocolControlType.ProductSet:
+                        {
+                            result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field, tableAlias), dataStr);
+                            break;
+                        }
+                    case DynamicProtocolControlType.QuoteControl:
+                        {
+                            if (columnKey == "deptgroup")
+                            {
+                                result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment({1}.recmanager) ilike '%{0}%'", dataStr, tableAlias);
+                            }
+                            else if (columnKey == "")
+                            {
+                                result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment({1}.recmanager) ilike '%{0}%'", dataStr, tableAlias);
+                            }
+                            else
+                            {
+                                result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field, tableAlias), dataStr);
+                            }
+                            break;
+                        }
+                    default:
+                        {
+                            result.FieldData = string.Format("{2}.{0} ilike '%{1}%'", columnKey, dataStr, tableAlias);
                             break;
                         }
                 }
@@ -1188,7 +1309,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             Decimal tmpResult = -1;
             foreach (IDictionary<string, object> data in datas)
             {
-                if (data.ContainsKey(fieldInfo.FieldName) == false  || data[fieldInfo.FieldName] == null) continue;
+                if (data.ContainsKey(fieldInfo.FieldName) == false || data[fieldInfo.FieldName] == null) continue;
                 if (Decimal.TryParse(data[fieldInfo.FieldName].ToString(), out tmpResult))
                 {
                     data[fieldInfo.FieldName] = String.Format("{0:N" + numCount.ToString() + "}", tmpResult);

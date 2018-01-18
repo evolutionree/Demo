@@ -133,6 +133,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// </summary>
         TreeMulti = 27,
         /// <summary>
+        /// 关联对象
+        /// </summary>
+        RelateControl = 30,
+        /// <summary>
         /// 引用控件
         /// </summary>
         QuoteControl = 31,
