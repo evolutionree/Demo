@@ -1459,7 +1459,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     else
                     {
                         nodeid = caseItemEntity.NodeNum == 0 ? freeFlowBeginNodeId : freeFlowNodeId;
-                        
+
                     }
                 }
                 else //固定流程
@@ -1550,7 +1550,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             nextnode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
             if (nextnode == null)
                 nextnode = flowNextNodeInfos.FirstOrDefault();
-            if(caseItemEntity.ChoiceStatus==3)//中止操作，需要获取结束节点
+            if (caseItemEntity.ChoiceStatus == 0 || caseItemEntity.ChoiceStatus == 3)//中止操作，需要获取结束节点
             {
                 var nodelist = _workFlowRepository.GetNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum);
                 nextnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
@@ -1993,7 +1993,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
                             var newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);
 
-                            
+
 
                             string dynamicFuncode = msg.FuncCode + "Dynamic";
                             var dynamicMsg = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, dynamicFuncode, userNumber, newMembers, null, msgpParam);
@@ -2017,7 +2017,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                             }
 
-                           
+
                         }
 
                         else MessageService.WriteMessage(tran, msg, userNumber);
