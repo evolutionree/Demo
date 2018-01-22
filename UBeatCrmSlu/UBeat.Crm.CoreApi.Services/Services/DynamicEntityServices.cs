@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
@@ -339,10 +340,44 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     funccode = "EntityDynamicAdd";
                     msgpParam = _dynamicRepository.GetDynamicTemplateData(bussinessId, entityInfotemp.EntityId, entityInfotemp.CategoryId, userNumber);
+                    detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
+                    if (detail["recrelateid"] == null)
+                        throw new Exception("动态实体缺少关联对象信息");
+                    if (entityInfotemp.RelEntityId.HasValue && entityInfotemp.RelFieldId.HasValue && !string.IsNullOrEmpty(entityInfotemp.RelFieldName))
+                    {
+                        var relDetail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
+                        {
+                            EntityId = entityInfotemp.RelEntityId.Value,
+                            NeedPower = 1,
+                            RecId = Guid.Parse(detail["recrelateid"].ToString())
+                        }, userNumber);
+                    }
+                    var relEntityField = _dynamicEntityRepository.GetEntityFields(entityInfotemp.RelEntityId.Value, userNumber).FirstOrDefault(t => t.FieldId == entityInfotemp.RelFieldId.Value);
+                    JObject jo = JObject.Parse(msgpParam);
+                    StringBuilder sb = new StringBuilder();
+                    JObject newJo = new JObject();
+                    foreach (var tmp in jo)
+                    {
+                        if (jo[tmp.Key] != null && tmp.Key== "recrelateid")
+                        {
+                            if (detail.ContainsKey(relEntityField.FieldName + "_name"))
+                            {
+                                newJo.Add(entityInfotemp.RelFieldName + "_name", JToken.FromObject(detail[relEntityField.FieldName + "_name"]));
+                            }
+                            else if (detail.ContainsKey(relEntityField.FieldName))
+                            {
+                                newJo.Add(entityInfotemp.RelFieldName, JToken.FromObject(detail[relEntityField.FieldName]));
+                            }
+                        }
+                        else
+                        {
+                            newJo.Add(tmp.Key, tmp.Value);
+                        }
+                    }
+                    msgpParam = newJo.ToString();
                     detailMapper.EntityId = entityInfotemp.RelEntityId.Value;
                     detailMapper.RecId = relbussinessId;
 
-                    detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
                     newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);
                 }
                 else
@@ -2011,6 +2046,46 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             var result = _dynamicEntityRepository.DetailMulti(dynamicEntity, userNumber);
+            var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(dynamicEntity.EntityId, userNumber);
+            if (entityInfo != null)
+            {
+                var modelType = Convert.ToInt32(entityInfo["modeltype"].ToString());
+                if (modelType == 3)
+                {
+                    if (entityInfo["relentityid"] == null || entityInfo["relfieldid"] == null)
+                        throw new Exception("动态列表配置异常");
+                    var detail = result["Detail"].FirstOrDefault();
+                    if (detail["recrelateid"] == null)
+                        throw new Exception("关联实体Id不能为空");
+
+                    var relResult = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
+                    {
+                        EntityId = Guid.Parse(entityInfo["relentityid"].ToString()),
+                        RecId = Guid.Parse(detail["recrelateid"].ToString()),
+                        NeedPower = 0
+                    }, userNumber);
+                    if (relResult != null)
+                    {
+                        var relEntityFields = _dynamicEntityRepository.GetEntityFields(Guid.Parse(entityInfo["relentityid"].ToString()), userNumber);
+                        var relField = relEntityFields.FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
+                        if (relResult[relField.FieldName] != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
+                        {
+                            if (!detail.ContainsKey(entityInfo["relfieldname"].ToString()))
+                            {
+                                detail.Add(entityInfo["relfieldname"].ToString(), relResult[relField.FieldName]);
+                                if (relResult.ContainsKey(relField.FieldName + "_name"))
+                                {
+                                    if (!detail.ContainsKey(entityInfo["relfieldname"].ToString() + "_name"))
+                                    {
+                                        detail.Add(entityInfo["relfieldname"].ToString() + "_name", relResult[relField.FieldName + "_name"]);
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
             //List<DynamicEntityFieldSearch>fieldsList =  _dynamicEntityRepository.GetEntityFields(dynamicEntity.EntityId, userNumber);
             //if (result.ContainsKey("Detail") && result["Detail"] != null) {
             //    foreach (DynamicEntityFieldSearch fieldInfo in fieldsList) {

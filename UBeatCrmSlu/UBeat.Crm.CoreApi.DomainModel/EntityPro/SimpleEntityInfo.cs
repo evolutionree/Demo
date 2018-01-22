@@ -38,6 +38,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         /// </summary>
         public Guid? RelEntityId { set; get; }
 
+        public Guid? RelFieldId { get; set; }
+        public string RelFieldName { get; set; }
         /// <summary>
         /// 关联实体名称
         /// </summary>

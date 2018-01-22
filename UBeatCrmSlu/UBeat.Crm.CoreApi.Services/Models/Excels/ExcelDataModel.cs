@@ -195,6 +195,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// 引用类型，如用户id，数据源等类型，取值时通过_name获取
         /// </summary>
         reference = 16,
+
+        Related=17
     }
 
     public class ImportSheetData
