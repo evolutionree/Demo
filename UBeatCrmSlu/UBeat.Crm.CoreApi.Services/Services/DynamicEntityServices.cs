@@ -341,40 +341,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     funccode = "EntityDynamicAdd";
                     msgpParam = _dynamicRepository.GetDynamicTemplateData(bussinessId, entityInfotemp.EntityId, entityInfotemp.CategoryId, userNumber);
                     detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
-                    if (detail["recrelateid"] == null)
-                        throw new Exception("动态实体缺少关联对象信息");
+
                     if (entityInfotemp.RelEntityId.HasValue && entityInfotemp.RelFieldId.HasValue && !string.IsNullOrEmpty(entityInfotemp.RelFieldName))
                     {
+                        if (detail["recrelateid"] == null)
+                            throw new Exception("动态实体缺少关联对象信息");
                         var relDetail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
                         {
                             EntityId = entityInfotemp.RelEntityId.Value,
                             NeedPower = 1,
                             RecId = Guid.Parse(detail["recrelateid"].ToString())
                         }, userNumber);
-                    }
-                    var relEntityField = _dynamicEntityRepository.GetEntityFields(entityInfotemp.RelEntityId.Value, userNumber).FirstOrDefault(t => t.FieldId == entityInfotemp.RelFieldId.Value);
-                    JObject jo = JObject.Parse(msgpParam);
-                    StringBuilder sb = new StringBuilder();
-                    JObject newJo = new JObject();
-                    foreach (var tmp in jo)
-                    {
-                        if (jo[tmp.Key] != null && tmp.Key== "recrelateid")
+                        var relEntityField = _dynamicEntityRepository.GetEntityFields(entityInfotemp.RelEntityId.Value, userNumber).FirstOrDefault(t => t.FieldId == entityInfotemp.RelFieldId.Value);
+                        JObject jo = JObject.Parse(msgpParam);
+                        StringBuilder sb = new StringBuilder();
+                        JObject newJo = new JObject();
+                        foreach (var tmp in jo)
                         {
-                            if (detail.ContainsKey(relEntityField.FieldName + "_name"))
+                            if (jo[tmp.Key] != null && tmp.Key == "recrelateid")
                             {
-                                newJo.Add(entityInfotemp.RelFieldName + "_name", JToken.FromObject(detail[relEntityField.FieldName + "_name"]));
+                                if (relDetail.ContainsKey(relEntityField.FieldName + "_name"))
+                                {
+                                    newJo.Add(entityInfotemp.RelFieldName + "_name", JToken.FromObject(relDetail[relEntityField.FieldName + "_name"]));
+                                }
+                                else if (relDetail.ContainsKey(relEntityField.FieldName))
+                                {
+                                    newJo.Add(entityInfotemp.RelFieldName, JToken.FromObject(relDetail[relEntityField.FieldName]));
+                                }
                             }
-                            else if (detail.ContainsKey(relEntityField.FieldName))
+                            else
                             {
-                                newJo.Add(entityInfotemp.RelFieldName, JToken.FromObject(detail[relEntityField.FieldName]));
+                                newJo.Add(tmp.Key, tmp.Value);
                             }
                         }
-                        else
-                        {
-                            newJo.Add(tmp.Key, tmp.Value);
-                        }
+                        msgpParam = newJo.ToString();
                     }
-                    msgpParam = newJo.ToString();
                     detailMapper.EntityId = entityInfotemp.RelEntityId.Value;
                     detailMapper.RecId = relbussinessId;
 
