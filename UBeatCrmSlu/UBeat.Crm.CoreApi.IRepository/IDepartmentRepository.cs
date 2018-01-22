@@ -11,6 +11,7 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
         OperateResult DeptAdd(DbTransaction tran, DepartmentAddMapper deptEntity, int userNumber);
 
-        OperateResult DeptEdit( DepartmentEditMapper deptEntity, int userNumber);
+        OperateResult EditDepartment( DepartmentEditMapper deptEntity, int userNumber);
+
     }
 }

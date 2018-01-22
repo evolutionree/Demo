@@ -51,7 +51,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var res= ExcuteAction((transaction, arg, userData) =>
             {
  
-                var result = _departmentRepository.DeptEdit(deptEntity, userNumber);
+                var result = _departmentRepository.EditDepartment(deptEntity, userNumber);
                 return HandleResult(result);
             }, deptEntity, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
