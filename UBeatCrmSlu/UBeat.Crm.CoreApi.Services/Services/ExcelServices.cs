@@ -718,8 +718,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //if (queryResult == null ) queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
                     var pageDataTemp = queryResult["PageData"];
 
-                    var tempFields = template.Headers.Where(o => o.FieldType == FieldType.Image 
-                                                            || o.FieldType == FieldType.Address 
+                    var tempFields = template.Headers.Where(o => o.FieldType == FieldType.Image
+                                                            || o.FieldType == FieldType.Address
                                                             || o.FieldType == FieldType.reference
                                                             || o.FieldType == FieldType.TimeDate
                                                             );
@@ -736,9 +736,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         {
                                             var values = mdata[item.FieldName];
                                             DateTime dt;
-                                            if (values != null&&DateTime.TryParse(values.ToString(),out dt))
+                                            if (values != null && DateTime.TryParse(values.ToString(), out dt))
                                             {
-                                                mdata[item.FieldName]= dt.ToString("yyyy-MM-dd");
+                                                mdata[item.FieldName] = dt.ToString("yyyy-MM-dd");
                                             }
                                         }
                                         break;
@@ -771,6 +771,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             else mdata.Add(item.FieldName, _namevalues);
                                         }
                                         break;
+                                    //case FieldType.Related:
+                                    //    var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(data.DynamicModel.EntityId, data.UserId);
+                                    //    if (entityInfo != null)
+                                    //    {
+                                    //        if (Convert.ToInt32(entityInfo["modeltype"].ToString()) == 3)
+                                    //        {
+
+                                    //        }
+                                    //    }
+                                    //    break;
                                 }
 
 
@@ -1109,6 +1119,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(entityId.ToString(), userNumber);
                 if (!typeVisibleFields.ContainsKey("FieldVisible"))
                     throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
+                var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(entityId, userNumber);
+                if (entityInfo == null)
+                    throw new Exception("实体信息不存在");
+                var modelType = Convert.ToInt32(entityInfo["modeltype"].ToString());
                 var typeFields = typeVisibleFields["FieldVisible"];
                 List<SimpleHeader> headers = new List<SimpleHeader>();
                 foreach (var field in typeFields)
@@ -1121,58 +1135,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var fieldname = field["fieldname"].ToString();
                     var controltype = field["controltype"].ToString();
                     FieldType fieldTypetemp = FieldType.Text;
-                    int controltypeInt = 0;
-                    int.TryParse(controltype, out controltypeInt);
-                    switch ((DynamicProtocolControlType)controltypeInt)
+                    if (modelType == 3 && field["fieldname"].ToString() == "recrelateid")//动态实体走别的逻辑
                     {
-                        case DynamicProtocolControlType.TimeDate:
-                            fieldTypetemp = FieldType.TimeDate;
-                            break;
-                        case DynamicProtocolControlType.TakePhoto:
-                            fieldTypetemp = FieldType.Image;
-                            break;
-                        case DynamicProtocolControlType.Address:
-                            fieldTypetemp = FieldType.Address;
-                            break;
-                        //case DynamicProtocolControlType.FileAttach:
-                        //    fieldTypetemp = FieldType.File;
-                        //    break;
-                        case DynamicProtocolControlType.SelectSingle:
-                        case DynamicProtocolControlType.SelectMulti:
-                        case DynamicProtocolControlType.Location:
-                        case DynamicProtocolControlType.AreaRegion:
-                        case DynamicProtocolControlType.Department:
-                        case DynamicProtocolControlType.DataSourceSingle:
-                        case DynamicProtocolControlType.DataSourceMulti:
-                        case DynamicProtocolControlType.TreeSingle:
-                        case DynamicProtocolControlType.PersonSelectSingle:
-                        case DynamicProtocolControlType.PersonSelectMulti:
-                        case DynamicProtocolControlType.TreeMulti:
-                        case DynamicProtocolControlType.RecCreator:
-                        case DynamicProtocolControlType.RecUpdator:
-                        case DynamicProtocolControlType.RecManager:
-                        case DynamicProtocolControlType.RecType:
-                        case DynamicProtocolControlType.RecAudits:
-                        case DynamicProtocolControlType.RecStatus:
-                        case DynamicProtocolControlType.QuoteControl:
-                        case DynamicProtocolControlType.Product:
-                        case DynamicProtocolControlType.ProductSet:
-                        case DynamicProtocolControlType.SalesStage:
-                            fieldTypetemp = FieldType.reference;
-                            break;
-                        case DynamicProtocolControlType.HeadPhoto:
-                        case DynamicProtocolControlType.AreaGroup:
-                        case DynamicProtocolControlType.TipText:
-                        case DynamicProtocolControlType.LinkeTable:
-                        case DynamicProtocolControlType.FileAttach:
-                            continue;
-                            //case DynamicProtocolControlType.RecId:
-                            //case DynamicProtocolControlType.RecItemid:
-                            //case DynamicProtocolControlType.RecStatus:
-                            //    continue;
-
+                        var relField = _dynamicEntityRepository.GetEntityFields(Guid.Parse(entityInfo["relentityid"].ToString()), userNumber).FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
+                        displayname = relField.DisplayName;
+                        fieldname = entityInfo["relfieldname"].ToString();
+                        controltype = relField.ControlType.ToString();
+                        ConstructField(controltype, out fieldTypetemp);
                     }
-
+                    else
+                    {
+                        ConstructField(controltype, out fieldTypetemp);
+                    }
                     headers.Add(new SimpleHeader() { FieldName = fieldname, HeaderText = displayname, Width = 150, FieldType = fieldTypetemp });
                 }
                 defines.Add(new SimpleSheetTemplate()
@@ -1188,6 +1162,65 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("生成动态模板失败", ex);
             }
             return defines;
+        }
+
+        private void ConstructField(string controlType, out FieldType fieldTypetemp)
+        {
+            fieldTypetemp = FieldType.Text;
+            int controltypeInt = 0;
+            int.TryParse(controlType, out controltypeInt);
+            switch ((DynamicProtocolControlType)controltypeInt)
+            {
+                case DynamicProtocolControlType.TimeDate:
+                    fieldTypetemp = FieldType.TimeDate;
+                    break;
+                case DynamicProtocolControlType.TakePhoto:
+                    fieldTypetemp = FieldType.Image;
+                    break;
+                case DynamicProtocolControlType.Address:
+                    fieldTypetemp = FieldType.Address;
+                    break;
+                //case DynamicProtocolControlType.FileAttach:
+                //    fieldTypetemp = FieldType.File;
+                //    break;
+                case DynamicProtocolControlType.SelectSingle:
+                case DynamicProtocolControlType.SelectMulti:
+                case DynamicProtocolControlType.Location:
+                case DynamicProtocolControlType.AreaRegion:
+                case DynamicProtocolControlType.Department:
+                case DynamicProtocolControlType.DataSourceSingle:
+                case DynamicProtocolControlType.DataSourceMulti:
+                case DynamicProtocolControlType.TreeSingle:
+                case DynamicProtocolControlType.PersonSelectSingle:
+                case DynamicProtocolControlType.PersonSelectMulti:
+                case DynamicProtocolControlType.TreeMulti:
+                case DynamicProtocolControlType.RecCreator:
+                case DynamicProtocolControlType.RecUpdator:
+                case DynamicProtocolControlType.RecManager:
+                case DynamicProtocolControlType.RecType:
+                case DynamicProtocolControlType.RecAudits:
+                case DynamicProtocolControlType.RecStatus:
+                case DynamicProtocolControlType.QuoteControl:
+                case DynamicProtocolControlType.Product:
+                case DynamicProtocolControlType.ProductSet:
+                case DynamicProtocolControlType.SalesStage:
+                    fieldTypetemp = FieldType.reference;
+                    break;
+                case DynamicProtocolControlType.RelateControl:
+                    fieldTypetemp = FieldType.Related;
+                    break;
+                case DynamicProtocolControlType.HeadPhoto:
+                case DynamicProtocolControlType.AreaGroup:
+                case DynamicProtocolControlType.TipText:
+                case DynamicProtocolControlType.LinkeTable:
+                case DynamicProtocolControlType.FileAttach:
+                    break;
+                    //case DynamicProtocolControlType.RecId:
+                    //case DynamicProtocolControlType.RecItemid:
+                    //case DynamicProtocolControlType.RecStatus:
+                    //    continue;
+
+            }
         }
         #endregion
 
@@ -1330,8 +1363,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             errorMsg = null;
             bool result = true;
             Guid typeId = Guid.Empty;
-        
-           
+
+
             if (sheetTemplate.DataObject is List<DynamicEntityDataFieldMapper>)
             {
                 var typeFields = sheetTemplate.DataObject as List<DynamicEntityDataFieldMapper>;
@@ -1380,7 +1413,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         var columnValue = data.ToString().Trim();
                         //处理特殊控件类型的数据以及实体没有配置验证方式的数据校验
-                        result = CheckFieldData(typeId,m, columnValue, rowdata, userno, out errorMsg);
+                        result = CheckFieldData(typeId, m, columnValue, rowdata, userno, out errorMsg);
                     }
 
                     //如果存在错误，则跳出循环
@@ -1569,7 +1602,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case DynamicProtocolControlType.SalesStage:
                     if (!string.IsNullOrEmpty(columnValue))
                     {
-                        var pid = _repository.GetSalesStageId(typeId,columnValue, out errorMsg);
+                        var pid = _repository.GetSalesStageId(typeId, columnValue, out errorMsg);
                         if (string.IsNullOrEmpty(errorMsg))
                         {
                             rowdata[typeField.FieldName] = pid;

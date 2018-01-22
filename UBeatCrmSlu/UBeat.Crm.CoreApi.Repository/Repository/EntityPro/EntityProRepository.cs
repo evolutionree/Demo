@@ -925,7 +925,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         {
             //插入操作
             //生成插入语句
-            var sql = @"SELECT e.entitytable,c.categoryid ,c.categoryname, e.entityid,e.entityname,e.modeltype,e.relentityid,re.entityname AS relentityname,e.relaudit,e.servicesjson 
+            var sql = @"SELECT e.relentityid,e.relfieldid,e.relfieldname,e.entitytable,c.categoryid ,c.categoryname, e.entityid,e.entityname,e.modeltype,e.relentityid,re.entityname AS relentityname,e.relaudit,e.servicesjson 
                         FROM crm_sys_entity_category AS c
                         INNER JOIN crm_sys_entity AS e ON e.entityid=c.entityid
                         LEFT JOIN crm_sys_entity AS re ON re.entityid=e.relentityid
