@@ -32,22 +32,83 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
             return result.FirstOrDefault();
         }
 
-        public OperateResult DeptEdit(DepartmentEditMapper deptEntity, int userNumber)
+    
+        public OperateResult EditDepartment(DepartmentEditMapper deptEntity, int userNumber)
         {
-            var sql = @"
-                SELECT * FROM crm_func_department_edit(@deptId,@deptName, @pdeptid, @userNo)
-            ";
-            var param = new
+            OperateResult res = new OperateResult();
+            if (string.IsNullOrEmpty(deptEntity.DeptName))
             {
-                DeptId = deptEntity.DeptId,
-                DeptName = deptEntity.DeptName,
-                PDeptId = deptEntity.PDeptId,
-                UserNo = userNumber
-            };
-            var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
-            return result;
-        }
+                throw new Exception("部门名称不能为空");
+            }
+            using (DbConnection conn = DBHelper.GetDbConnect())
+            {
+                conn.Open();
+                var tran = conn.BeginTransaction();
 
+                try
+                {
+                    var param = new DbParameter[]
+                    {
+                        new NpgsqlParameter("deptid", deptEntity.DeptId),
+                        new NpgsqlParameter("pdeptid", deptEntity.PDeptId),
+                        new NpgsqlParameter("deptname", deptEntity.DeptName),
+                        new NpgsqlParameter("recupdated", DateTime.Now),
+                        new NpgsqlParameter("recupdator", userNumber),
+                    };
+
+                    var check_sql = @"SELECT 1 FROM crm_sys_department where deptid<>@deptid AND pdeptid=@pdeptid AND deptname=@deptname LIMIT 1";
+                    var isExist = ExecuteScalar(check_sql, param, tran);
+                    if (isExist != null && isExist.ToString() == "1")
+                    {
+                        throw new Exception("同一级的部门名称不能重复");
+                    }
+                    var old_pdeptid_sql = @"SELECT pdeptid FROM crm_sys_department where deptid = @deptid;";
+                    var old_pdeptid_res = ExecuteScalar(old_pdeptid_sql, param, tran);
+                    Guid old_pdeptid;
+                    if (old_pdeptid_res != null && Guid.TryParse(old_pdeptid_res.ToString(), out old_pdeptid))
+                    {
+                        if (old_pdeptid != deptEntity.PDeptId)
+                        {
+                            var repair_sql = @" DELETE FROM crm_sys_department_treepaths WHERE descendant=@deptid;
+                                                INSERT INTO crm_sys_department_treepaths(ancestor,descendant,nodepath)
+					                                        SELECT t.ancestor,@deptid,nodepath+1
+					                                        FROM crm_sys_department_treepaths AS t
+					                                        WHERE t.descendant = @pdeptid
+					                                        UNION ALL
+					                                        SELECT @deptid,@deptid,0;";
+                            var repairParam = new DbParameter[]
+                            {
+                                new NpgsqlParameter("deptid", deptEntity.DeptId),
+                                new NpgsqlParameter("pdeptid", deptEntity.PDeptId)
+                            };
+                           ExecuteNonQuery(repair_sql, repairParam, tran);
+                        }
+                    }
+
+                    var sql = @" UPDATE crm_sys_department SET deptname = @deptname,pdeptid = @pdeptid,recupdated=@recupdated, recupdator=@recupdator WHERE deptid = @deptid;";
+
+                    var result = ExecuteNonQuery(sql, param, tran);
+                    if (result > 0)
+                    {
+                        res.Id = deptEntity.DeptId.ToString();
+                        res.Flag = 1;
+                    }
+                    else throw new Exception("修改保存失败！");
+                    tran.Commit();
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+                return res;
+            }
+        }
 
 
     }
