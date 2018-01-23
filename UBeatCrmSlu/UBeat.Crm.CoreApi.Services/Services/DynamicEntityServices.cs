@@ -361,12 +361,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (jo[tmp.Key] != null && tmp.Key == "recrelateid")
                             {
                                 object obj = "";
-                                if (relDetail.ContainsKey(relEntityField.FieldName + "_name"))
-                                {
-                                    if (relDetail[relEntityField.FieldName + "_name"] != null)
-                                        obj = relDetail[relEntityField.FieldName + "_name"];
-                                }
-                                else if (relDetail.ContainsKey(relEntityField.FieldName))
+                                if (relDetail.ContainsKey(relEntityField.FieldName))
                                 {
                                     if (relDetail[relEntityField.FieldName] != null)
                                         obj = relDetail[relEntityField.FieldName];
