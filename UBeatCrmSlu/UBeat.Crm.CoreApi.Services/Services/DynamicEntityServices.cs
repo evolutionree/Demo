@@ -360,14 +360,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             if (jo[tmp.Key] != null && tmp.Key == "recrelateid")
                             {
-                                if (relDetail.ContainsKey(relEntityField.FieldName + "_name"))
+                                object obj = "";
+                                if (relDetail.ContainsKey(relEntityField.FieldName))
                                 {
-                                    newJo.Add(entityInfotemp.RelFieldName + "_name", JToken.FromObject(relDetail[relEntityField.FieldName + "_name"]));
+                                    if (relDetail[relEntityField.FieldName] != null)
+                                        obj = relDetail[relEntityField.FieldName];
                                 }
-                                else if (relDetail.ContainsKey(relEntityField.FieldName))
-                                {
-                                    newJo.Add(entityInfotemp.RelFieldName, JToken.FromObject(relDetail[relEntityField.FieldName]));
-                                }
+                                newJo.Add(entityInfotemp.RelFieldName, JToken.FromObject(obj));
                             }
                             else
                             {
