@@ -85,6 +85,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             {
                 shareStringPart = workbookPart.AddNewPart<SharedStringTablePart>();
             }
+            
             // Insert the text into the SharedStringTablePart.
             int index = InsertSharedStringItem(text, shareStringPart);
 
