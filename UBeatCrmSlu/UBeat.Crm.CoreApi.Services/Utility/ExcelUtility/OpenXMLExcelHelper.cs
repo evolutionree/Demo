@@ -75,6 +75,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 
         public static Cell InsertText(WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, string text, Row row = null)
         {
+            Cell cell = InsertCellInWorksheet(columnIdex, rowIndex, worksheetPart, row);
+            cell.CellValue = new CellValue(text);
+            cell.DataType = new EnumValue<CellValues>(CellValues.String);
+            return cell;
+        }
+        public static Cell InsertSharedText(WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, string text, Row row = null)
+        {
             // Get the SharedStringTablePart. If it does not exist, create a new one.
             SharedStringTablePart shareStringPart;
             if (workbookPart.GetPartsOfType<SharedStringTablePart>().Count() > 0)
@@ -85,7 +92,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             {
                 shareStringPart = workbookPart.AddNewPart<SharedStringTablePart>();
             }
-            
+
             // Insert the text into the SharedStringTablePart.
             int index = InsertSharedStringItem(text, shareStringPart);
 
@@ -94,10 +101,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             // Set the value of cell A1.
             cell.CellValue = new CellValue(index.ToString());
             cell.DataType = new EnumValue<CellValues>(CellValues.SharedString);
-            workbookPart.Workbook.Save();
+            //workbookPart.Workbook.Save();
+
             return cell;
         }
-
 
         // Given text and a SharedStringTablePart, creates a SharedStringItem with the specified text 
         // and inserts it into the SharedStringTablePart. If the item already exists, returns its index.
@@ -109,6 +116,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 shareStringPart.SharedStringTable = new SharedStringTable();
             }
             int i = 0;
+       
             // Iterate through all the items in the SharedStringTable. If the text already exists, return its index.
             foreach (SharedStringItem item in shareStringPart.SharedStringTable.Elements<SharedStringItem>())
             {
@@ -120,7 +128,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             }
             // The text does not exist in the part. Create the SharedStringItem and return its index.
             shareStringPart.SharedStringTable.AppendChild(new SharedStringItem(new Text(text)));
-            shareStringPart.SharedStringTable.Save();
+            //shareStringPart.SharedStringTable.Save();
             return i;
         }
 
@@ -384,7 +392,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             {
                 worksheet.InsertAfter(mergeCells, worksheet.Elements<SheetData>().First());
             }
-            worksheet.Save();
+            //worksheet.Save();
         }
 
         public static void MergeTwoCells(Worksheet worksheet, string cell1Name, string cell2Name)
@@ -411,7 +419,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             // Create the merged cell and append it to the MergeCells collection. 
             MergeCell mergeCell = new MergeCell() { Reference = new StringValue(cell1Name + ":" + cell2Name) };
             mergeCells.Append(mergeCell);
-            worksheet.Save();
+            //worksheet.Save();
         }
 
         // Given a Worksheet and a cell name, verifies that the specified cell exists.
@@ -436,7 +444,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             {
                 cell = new Cell() { CellReference = cellName };
                 row.Append(cell);
-                worksheet.Save();
+                //worksheet.Save();
             }
             return cell;
         }

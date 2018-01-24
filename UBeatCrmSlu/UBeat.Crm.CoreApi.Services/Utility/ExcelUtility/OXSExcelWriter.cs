@@ -240,7 +240,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 			var sheets = rootbookpart.Workbook.AppendChild(new Sheets());
 			var stylesPart = rootbookpart.AddNewPart<WorkbookStylesPart>();
 			stylesPart.Stylesheet = new Stylesheet();
-			stylesPart.Stylesheet.Save();
+			//stylesPart.Stylesheet.Save();
 
 			//如果是从模板导出，则判断是否加载模板中的样式设计
 			if (sheetsData.FirstOrDefault().SheetDefines is SheetTemplate)
@@ -250,18 +250,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 				{
 					stylesPart.Stylesheet = new Stylesheet(sheetTemplate.StylesheetXml);
 
-					stylesPart.Stylesheet.Save();
+					//stylesPart.Stylesheet.Save();
 				}
 				else
 				{
 					stylesPart.Stylesheet = OpenXMLExcelHelper.GenerateStyleSheet();
-					stylesPart.Stylesheet.Save();
+					//stylesPart.Stylesheet.Save();
 				}
 			}
 			else
 			{
 				stylesPart.Stylesheet = OpenXMLExcelHelper.GenerateStyleSheet();
-				stylesPart.Stylesheet.Save();
+				//stylesPart.Stylesheet.Save();
 			}
 
 			foreach (var data in sheetsData)
@@ -368,7 +368,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 			if (columnMap != null && columnMap.Count > 0)
 				InsertRowsData(rootbookpart, worksheetPart, columnMap, data.DataRows, errorColumnName, data.RowErrors);
 
-			rootbookpart.Workbook.Save();
+			//rootbookpart.Workbook.Save();
 		}
 
 		#region --创建表格头部--
