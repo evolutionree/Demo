@@ -154,10 +154,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("error");
                 //excelData.Sheets.FirstOrDefault().Rows.Add()
 
-                foreach (var sheet in excelData.Sheets)
+                var sheet = excelData.Sheets.FirstOrDefault();
+                var cell = sheet.Rows[4].Cells.Find(m => m.ColumnName == "C");
+                cell.CellValue = "test";
+                cell.IsUpdated = true;
+                sheet.Rows[7].RowStatus = RowStatus.Deleted;
+                var rows = new List<ExcelRowInfo>();
+                var row1 = sheet.Rows.Find(m => m.RowIndex == 13);
+                var row2 = sheet.Rows.Find(m => m.RowIndex == 14);
+                rows.Add(row1);
+                rows.Add(row2);
+                rows.Add(row1);
+                rows.Add(row2);
+                string mergeCellReference;
+                if( ExcelHelper.IsMergeCell("B13", sheet.MergeCells, out mergeCellReference))
                 {
-                    //sheet.Rows.Add(sheet.Rows.Last())
+                    ExcelHelper.MergeTwoCells(sheet.MergeCells, "B15", "B16");
                 }
+               
+                sheet.Rows.InsertRange(14, rows);
+                var bytes= ExcelHelper.WrightExcel(excelData);
+
+                var fileID = Guid.NewGuid().ToString();
+                //上传文档到文件服务器
+                new FileServices().UploadFile(null, fileID, string.Format("test.xlsx"), bytes);
 
             }
 

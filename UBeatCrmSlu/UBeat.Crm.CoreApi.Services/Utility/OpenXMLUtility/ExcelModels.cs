@@ -34,7 +34,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// <summary>
         /// 行状态：0=已存在数据行，1=新增行，-1=删除行
         /// </summary>
-        public int RowStatus { set; get; }
+        public RowStatus RowStatus { set; get; }
     }
 
 
@@ -53,5 +53,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// </summary>
         public bool IsUpdated { set; get; }
 
+    }
+
+    public enum RowStatus
+    {
+        Normal=0,
+        Add=1,
+        Deleted=-1
     }
 }

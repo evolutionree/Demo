@@ -47,36 +47,32 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             {
                 var file = StreamHelper.BytesToStream(excel.ExcelFileBytes);
                 //创建文档对象
-                var document = SpreadsheetDocument.Create(file, SpreadsheetDocumentType.Workbook);
+                var document = SpreadsheetDocument.Open(file, true);
 
                 //创建Workbook（工作簿）
-                var rootbookpart = document.WorkbookPart ?? document.AddWorkbookPart();
-                rootbookpart.Workbook = rootbookpart.Workbook ?? new Workbook();
+
+                var rootbookpart = document.WorkbookPart;
                 //Add Sheets to the Workbook.
-                rootbookpart.Workbook.Sheets = rootbookpart.Workbook.Sheets ?? rootbookpart.Workbook.AppendChild(new Sheets());
-                var stylesPart = rootbookpart.WorkbookStylesPart ?? rootbookpart.AddNewPart<WorkbookStylesPart>();
-                if(stylesPart.Stylesheet==null)
-                    stylesPart.Stylesheet = new Stylesheet();
 
                 var sheets = rootbookpart.Workbook.Descendants<Sheet>();
-         
+
                 foreach (var sheetData in excel.Sheets)
                 {
                     var sheet = sheets.Where(m => m.Name.Value.ToLower().Equals(sheetData.SheetName.ToLower())).FirstOrDefault();
                     //如果找到匹配的sheet，则修改,反之，新增sheet
-                    if (sheet!=null)
+                    if (sheet != null)
                     {
                         var workSheet = ((WorksheetPart)rootbookpart.GetPartById(sheet.Id)).Worksheet;
                         UpdateSheet(sheetData, workSheet);
                     }
                     else
                     {
-                        sheet= InsertSheet(sheetData, rootbookpart);
+                        sheet = InsertSheet(sheetData, rootbookpart);
                         rootbookpart.Workbook.Sheets.AppendChild(sheet);
                     }
-                    
+
                 }
-                
+
 
                 rootbookpart.Workbook.Save();
                 document.Close();
@@ -94,41 +90,42 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         private static void UpdateSheet(ExcelSheetInfo data, Worksheet worksheet)
         {
             int rowIndex = 1;
-  
+
             var sheetData = worksheet.GetFirstChild<SheetData>();
 
             foreach (var rowdata in data.Rows)
             {
-               var temp = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowIndex);
-                if (rowdata.RowStatus==1)//新增行
+                var temp = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowdata.RowIndex);
+                if (rowdata.RowStatus == RowStatus.Add)//新增行
                 {
                     var newrow = new Row(rowdata.OuterXml);
-                    newrow.RowIndex = (uint)rowIndex;
-                    sheetData.InsertAt(newrow, rowIndex);
+                    newrow.RowIndex = rowdata.RowIndex+1;
+                    sheetData.InsertAt(newrow, (int)rowdata.RowIndex+1);
                 }
-                else if(rowdata.RowStatus==2)//删除行
+                else if (rowdata.RowStatus == RowStatus.Deleted)//删除行
                 {
-                    var deleteRow= sheetData.Elements<Row>().FirstOrDefault(m=>m.RowIndex== rowIndex);
+                    var deleteRow = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowdata.RowIndex);
                     sheetData.RemoveChild(deleteRow);
                     continue;
                 }
-               var temps = sheetData.Elements<Row>().Where(m => m.RowIndex == rowIndex);
+                //var temps = sheetData.Elements<Row>().Where(m => m.RowIndex == rowIndex);
                 //处理单元格
                 UpdateCells(rowdata.Cells, temp);
-
+                var ss = sheetData.Elements<Row>().ToList();
                 rowIndex++;
-
             }
+            var old_mergeCells = worksheet.Elements<MergeCells>().First();
+            worksheet.ReplaceChild(data.MergeCells, old_mergeCells);
         }
 
         public static void UpdateCells(List<ExcelCellInfo> celldatas, Row row)
         {
             var cells = row.Descendants<Cell>();
-            foreach(var celldata in celldatas)
+            foreach (var celldata in celldatas)
             {
-                var cell= cells.FirstOrDefault(m => m.CellReference.Equals(string.Format("{0}:{1}", celldata.ColumnName,row.RowIndex)));
-                if(celldata.IsUpdated&&cell!=null)
-                    cell.CellValue= new CellValue(celldata.CellValue);
+                var cell = cells.FirstOrDefault(m => m.CellReference.Equals(string.Format("{0}:{1}", celldata.ColumnName, row.RowIndex)));
+                if (celldata.IsUpdated && cell != null)
+                    cell.CellValue = new CellValue(celldata.CellValue);
             }
         }
 
@@ -142,13 +139,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         //}
         #endregion
         #region --检查是否是合并单元格--
-        public static bool IsMergeCell(string cellName, MergeCells mergeCells,out string mergeCellReference)
+        public static bool IsMergeCell(string cellName, MergeCells mergeCells, out string mergeCellReference)
         {
             mergeCellReference = null;
             var mergeCellList = mergeCells.Descendants<MergeCell>();
             foreach (var merge in mergeCellList)
             {
-                if(merge.Reference.Value.Contains(string.Format("{0}:",cellName)))
+                if (merge.Reference.Value.Contains(string.Format("{0}:", cellName)))
                 {
                     mergeCellReference = merge.Reference;
                     return true;
@@ -158,11 +155,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         }
         #endregion
         #region --合并单元格--
-        public static void MergeTwoCells(Worksheet worksheet, string cell1Name, string cell2Name)
+        public static void MergeTwoCells(MergeCells mergeCells, string cell1Name, string cell2Name)
         {
-            OpenXMLExcelHelper.MergeTwoCells(worksheet, cell1Name, cell2Name);
+            // Create the merged cell and append it to the MergeCells collection. 
+            MergeCell mergeCell = new MergeCell() { Reference = new StringValue(cell1Name + ":" + cell2Name) };
+            mergeCells.Append(mergeCell);
         }
-
 
         #endregion
 
