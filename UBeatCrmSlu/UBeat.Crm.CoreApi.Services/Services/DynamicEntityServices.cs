@@ -429,6 +429,52 @@ namespace UBeat.Crm.CoreApi.Services.Services
             });
         }
 
+        public void SavePersonalWebListColumnsSetting(SaveWebListColumnsForPersonalParamInfo paramInfo, int userId)
+        {
+            DbTransaction tran = null;
+            Dictionary<string,object> detail = this._dynamicEntityRepository.GetPersonalWebListColumnsSetting(paramInfo.EntityId, userId, tran);
+            if (detail == null || detail.ContainsKey("recid") == false || detail["recid"] == null)
+            {
+                this._dynamicEntityRepository.AddPersonalWebListColumnsSetting(paramInfo.EntityId, paramInfo.ViewConfig, userId, tran);
+                }
+            else {
+                this._dynamicEntityRepository.UpdatePersonalWebListColumnsSetting(Guid.Parse(detail["recid"].ToString()), paramInfo.ViewConfig, userId, tran);
+
+            }
+        }
+
+        /// <summary>
+        /// 获取实体的web列表字段的个人设置
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public WebListPersonalViewSettingInfo GetPersonalWebListColumnsSettting(WebListColumnsForPersonalParamInfo paramInfo, int userId)
+        {
+
+            WebListPersonalViewSettingInfo view = null;
+            DbTransaction tran = null;
+            Dictionary<string, object> detail = this._dynamicEntityRepository.GetPersonalWebListColumnsSetting(paramInfo.EntityId, userId, tran);
+            if (detail == null || detail.ContainsKey("viewconfig") == false || detail["viewconfig"] == null)
+            {
+                view= new WebListPersonalViewSettingInfo();
+                view.FixedColumnCount = 0;
+                view.Columns = new List<WebListPersonalViewColumnSettingInfo>();
+                return view;
+            }
+            try
+            {
+                view = Newtonsoft.Json.JsonConvert.DeserializeObject<WebListPersonalViewSettingInfo>(detail["viewconfig"].ToString());
+                return view;
+            }
+            catch (Exception ex) {
+                view = new WebListPersonalViewSettingInfo();
+                view.FixedColumnCount = 0;
+                view.Columns = new List<WebListPersonalViewColumnSettingInfo>();
+                return view;
+            }
+        }
+
 
 
         /// <summary>
