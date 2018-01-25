@@ -1223,5 +1223,65 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
         }
 
+       /// <summary>
+       /// 根据用户id和实体ID获取改用的该实体的自定义WEB列
+       /// </summary>
+       /// <param name="entityId"></param>
+       /// <param name="userId"></param>
+       /// <param name="tran"></param>
+       /// <returns></returns>
+        public Dictionary<string, object> GetPersonalWebListColumnsSetting(Guid entityId, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = "Select * from crm_sys_entity_personweblistconfig where userid=@userid and entityid=@entityid";
+                DbParameter[] param = new Npgsql.NpgsqlParameter[] {
+                    new Npgsql.NpgsqlParameter("@userid",userId),
+                    new Npgsql.NpgsqlParameter("@entityid",entityId)
+                };
+                return this.ExecuteQuery(strSQL, param, tran).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                return new Dictionary<string, object>();
+            }
+        }
+        /// <summary>
+        /// 更新某人的某实体的个性化web列表定义
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <param name="viewConfig"></param>
+        /// <param name="userId"></param>
+        /// <param name="tran"></param>
+        public void UpdatePersonalWebListColumnsSetting(Guid recid, WebListPersonalViewSettingInfo viewConfig, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_entity_personweblistconfig set viewconfig=@viewconfig where recid=@recid";
+                DbParameter[] param = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@recid",recid),
+                    new Npgsql.NpgsqlParameter("@viewconfig",Newtonsoft.Json.JsonConvert.SerializeObject(viewConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb}
+                };
+                this.ExecuteNonQuery(strSQL, param, tran);
+            }
+            catch (Exception ex) {
+            }
+        }
+
+        public void AddPersonalWebListColumnsSetting(Guid entityId, WebListPersonalViewSettingInfo viewConfig, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = "insert into crm_sys_entity_personweblistconfig(entityid,userid,viewconfig) values(@entityid,@userid,@viewconfig)";
+                DbParameter[] param = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@entityid",entityId),
+                    new Npgsql.NpgsqlParameter("@userid",userId),
+                    new Npgsql.NpgsqlParameter("@viewconfig",Newtonsoft.Json.JsonConvert.SerializeObject(viewConfig)){ NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb}
+                };
+                this.ExecuteNonQuery(strSQL, param, tran);
+            }
+            catch (Exception ex) {
+            }
+        }
     }
 }

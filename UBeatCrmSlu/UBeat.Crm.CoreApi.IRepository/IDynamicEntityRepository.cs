@@ -102,5 +102,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult MarkRecordComplete(Guid recId, int userNumber);
         EntityExtFunctionInfo getExtFunctionByFunctionName(Guid entityId, string functionname,DbTransaction tran = null);
         object  ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string [] recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null);
+        Dictionary<string, object> GetPersonalWebListColumnsSetting(Guid entityId, int userId, DbTransaction tran);
+        void UpdatePersonalWebListColumnsSetting(Guid entityId,WebListPersonalViewSettingInfo viewConfig, int userId, DbTransaction tran);
+        void AddPersonalWebListColumnsSetting(Guid entityId,WebListPersonalViewSettingInfo viewConfig, int userId, DbTransaction tran);
     }
 }

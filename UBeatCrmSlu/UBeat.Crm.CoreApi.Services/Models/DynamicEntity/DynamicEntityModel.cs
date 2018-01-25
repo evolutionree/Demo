@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 {
@@ -330,7 +331,19 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Guid RecId { get; set; }
        
     }
+    /// <summary>
+    /// 用于获取个人实体WEB列定义的详情的参数
+    /// </summary>
+    public class WebListColumnsForPersonalParamInfo {
+        public Guid EntityId { get; set; }
+    }
+    public class SaveWebListColumnsForPersonalParamInfo {
+        public Guid EntityId { get; set; }
+        public int UserId { get; set; }
+        public WebListPersonalViewSettingInfo ViewConfig { get; set; }
 
- 
+    }
+
+
 
 }
