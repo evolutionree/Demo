@@ -5,6 +5,7 @@ using System.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using UBeat.Crm.CoreApi.Services.Models.PrintForm;
+using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -148,7 +149,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("please upload a valid excel file of version 2007 and above");
                 }
-               
+                var excelData= ExcelHelper.ReadExcel(formData.Data.OpenReadStream());
+                if (excelData == null || excelData.Sheets == null || excelData.Sheets.Count == 0)
+                    throw new Exception("error");
+                //excelData.Sheets.FirstOrDefault().Rows.Add()
+
+                foreach (var sheet in excelData.Sheets)
+                {
+                    //sheet.Rows.Add(sheet.Rows.Last())
+                }
+
             }
 
             //ExcelHelper

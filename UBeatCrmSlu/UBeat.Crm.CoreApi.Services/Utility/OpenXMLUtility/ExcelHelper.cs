@@ -13,7 +13,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
     public class ExcelHelper
     {
         #region --读取Excel文件--
-        public static ExcelInfo ReadExcelList(Stream file)
+        public static ExcelInfo ReadExcel(Stream file)
         {
             var excel = new ExcelInfo();
 
@@ -39,6 +39,101 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             return excel;
         }
         #endregion
+
+        #region --写入Excel文件--
+        public static byte[] WrightExcel(ExcelInfo excel)
+        {
+            try
+            {
+                var file = StreamHelper.BytesToStream(excel.ExcelFileBytes);
+                //创建文档对象
+                var document = SpreadsheetDocument.Create(file, SpreadsheetDocumentType.Workbook);
+
+                //创建Workbook（工作簿）
+                var rootbookpart = document.WorkbookPart ?? document.AddWorkbookPart();
+                rootbookpart.Workbook = rootbookpart.Workbook ?? new Workbook();
+                //Add Sheets to the Workbook.
+                rootbookpart.Workbook.Sheets = rootbookpart.Workbook.Sheets ?? rootbookpart.Workbook.AppendChild(new Sheets());
+                var stylesPart = rootbookpart.WorkbookStylesPart ?? rootbookpart.AddNewPart<WorkbookStylesPart>();
+                if(stylesPart.Stylesheet==null)
+                    stylesPart.Stylesheet = new Stylesheet();
+
+                var sheets = rootbookpart.Workbook.Descendants<Sheet>();
+         
+                foreach (var sheetData in excel.Sheets)
+                {
+                    var sheet = sheets.Where(m => m.Name.Value.ToLower().Equals(sheetData.SheetName.ToLower())).FirstOrDefault();
+                    //如果找到匹配的sheet，则修改,反之，新增sheet
+                    if (sheet!=null)
+                    {
+                        var workSheet = ((WorksheetPart)rootbookpart.GetPartById(sheet.Id)).Worksheet;
+                        UpdateSheet(sheetData, workSheet);
+                    }
+                    else
+                    {
+                        sheet= InsertSheet(sheetData, rootbookpart);
+                        rootbookpart.Workbook.Sheets.AppendChild(sheet);
+                    }
+                    
+                }
+                
+
+                rootbookpart.Workbook.Save();
+                document.Close();
+                return StreamHelper.StreamToBytes(file);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        private static Sheet InsertSheet(ExcelSheetInfo sheetData, WorkbookPart workbookPart)
+        {
+            return new Sheet();
+        }
+        private static void UpdateSheet(ExcelSheetInfo data, Worksheet worksheet)
+        {
+            int rowIndex = 1;
+  
+            var sheetData = worksheet.GetFirstChild<SheetData>();
+
+            foreach (var rowdata in data.Rows)
+            {
+               var temp = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowIndex);
+                if (rowdata.RowStatus==1)//新增行
+                {
+                    var newrow = new Row(rowdata.OuterXml);
+                    newrow.RowIndex = (uint)rowIndex;
+                    sheetData.InsertAt(newrow, rowIndex);
+                }
+                else if(rowdata.RowStatus==2)//删除行
+                {
+                    var deleteRow= sheetData.Elements<Row>().FirstOrDefault(m=>m.RowIndex== rowIndex);
+                    sheetData.RemoveChild(deleteRow);
+                    continue;
+                }
+               var temps = sheetData.Elements<Row>().Where(m => m.RowIndex == rowIndex);
+                //处理单元格
+                UpdateCells(rowdata.Cells, temp);
+
+                rowIndex++;
+
+            }
+        }
+
+        public static void UpdateCells(List<ExcelCellInfo> celldatas, Row row)
+        {
+            var cells = row.Descendants<Cell>();
+            foreach(var celldata in celldatas)
+            {
+                var cell= cells.FirstOrDefault(m => m.CellReference.Equals(string.Format("{0}:{1}", celldata.ColumnName,row.RowIndex)));
+                if(celldata.IsUpdated&&cell!=null)
+                    cell.CellValue= new CellValue(celldata.CellValue);
+            }
+        }
+
+        #endregion
+
 
         #region --插入一行
         //public static void MergeTwoCells(Worksheet worksheet, string cell1Name, string cell2Name)
