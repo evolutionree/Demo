@@ -500,4 +500,23 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
             }
         }
     }
+
+    /// <summary>
+    /// 用于WEB列表字段个性化设置
+    /// </summary>
+    public class WebListPersonalViewSettingInfo
+    {
+        public int FixedColumnCount { get; set; }
+        public List<WebListPersonalViewColumnSettingInfo> Columns { get; set; }
+    }
+    /// <summary>
+    /// 用于WEB列表字段个性化设置
+    /// </summary>
+    public class WebListPersonalViewColumnSettingInfo
+    {
+        public int Seq { get; set; }
+        public Guid FieldId { get; set; }
+        public int Width { get; set; }
+        public int IsDisplay { get; set; }
+    }
 }
