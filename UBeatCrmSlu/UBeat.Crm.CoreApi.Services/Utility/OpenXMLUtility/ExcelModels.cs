@@ -1,52 +1,57 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 {
     public class ExcelInfo
     {
         /// <summary>
-        /// Excel样式定义
+        /// 解析Excel 的文件数据
         /// </summary>
-        public string StyleSheetXml { set; get; }
+        public byte[] ExcelFileBytes { set; get; }
         /// <summary>
-        /// 共享内容数据定义
+        /// 每个sheet表的数据
         /// </summary>
-        public string SharedStringsXml { set; get; }
-
-
-
-        List<ExcelSheetInfo> Sheets { set; get; }
+        public List<ExcelSheetInfo> Sheets { set; get; }
     }
 
     public class ExcelSheetInfo
     {
-        public uint SheetId { set; get; }
-
         public string SheetName { set; get; }
 
-        /// <summary>
-        /// sheet表中每列格式定义，如宽度
-        /// </summary>
-        public string ColumnsOuterXml { get; set; }
-
         public List<ExcelRowInfo> Rows { set; get; }
+
+        public MergeCells MergeCells { set; get; }
     }
 
     public class ExcelRowInfo
     {
-        public Row Row { set; get; }
+        public uint RowIndex { set; get; }
+        public string OuterXml { set; get; }
+
         public List<ExcelCellInfo> Cells { set; get; }
+
+        /// <summary>
+        /// 行状态：0=已存在数据行，1=新增行，-1=删除行
+        /// </summary>
+        public int RowStatus { set; get; }
     }
 
 
     public class ExcelCellInfo
     {
-        public object Data { set; get; }
+        /// <summary>
+        /// 列名称，如A,B,C等
+        /// </summary>
+        public string ColumnName { set; get; }
+        /// <summary>
+        /// 单元格值
+        /// </summary>
+        public string CellValue { set; get; }
+        /// <summary>
+        /// 是否被更新
+        /// </summary>
+        public bool IsUpdated { set; get; }
 
-        public bool IsOverWrighted { set; get; }
-        
     }
 }

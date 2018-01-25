@@ -4,6 +4,7 @@ using System.Text;
 using System.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using UBeat.Crm.CoreApi.Services.Models.PrintForm;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -135,5 +136,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (firstText != null) firstText.Text = replace;
         }
+
+
+
+        public byte[] GetOutputDocument(OutputDocumentParameter formData,out string fileName)
+        {
+            fileName = null;
+            if (formData.Data != null)
+            {
+                if (formData.Data.ContentType != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                {
+                    throw new Exception("please upload a valid excel file of version 2007 and above");
+                }
+               
+            }
+
+            //ExcelHelper
+            return null;
+        }
+
     }
 }
