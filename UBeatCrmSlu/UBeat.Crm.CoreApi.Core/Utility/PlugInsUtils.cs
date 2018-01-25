@@ -15,6 +15,7 @@ namespace UBeat.Crm.CoreApi.Core.Utility
         public List<string> PlugInFiles = new List<string>();
         public Dictionary<string, string> TypesInFile = new Dictionary<string, string>();
         private PlugInsUtils() {
+            init();
         }
         public System.Type getTypeWithName(string typename) {
             try
