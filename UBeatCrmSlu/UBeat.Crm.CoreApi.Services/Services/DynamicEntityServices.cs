@@ -366,11 +366,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     if (relDetail[relEntityField.FieldName] != null)
                                         obj = relDetail[relEntityField.FieldName];
                                 }
-                                newJo.Add("关联对象(" + entityInfotemp.RelFieldName + ")", JToken.FromObject(obj));
+                                newJo.Add(entityInfotemp.RelFieldName, JToken.FromObject(obj));
                             }
                             else
                             {
-                                newJo.Add("关联对象(" + entityInfotemp.RelFieldName + ")", tmp.Value);
+                                newJo.Add(tmp.Key, tmp.Value);
                             }
                         }
                         msgpParam = newJo.ToString();
