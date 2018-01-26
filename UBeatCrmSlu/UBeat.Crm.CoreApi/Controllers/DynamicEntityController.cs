@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -430,6 +431,51 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return null;
         }
+
+        #region 通用实体（独立实体、简单实体、动态实体）WEB列表中，显示字段的个人配置相关接口
+        /// <summary>
+        /// 获取实体的个人web列表定义
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("getweblistcolumnsforpersonal")]
+        public OutputResult<object> WebListColumnsForPersonal([FromBody] WebListColumnsForPersonalParamInfo paramInfo)
+        {
+            if (paramInfo == null
+                || paramInfo.EntityId == null
+                || paramInfo.EntityId.Equals(Guid.Empty))
+            {
+                return ResponseError<object>("参数异常");
+            }
+            WebListPersonalViewSettingInfo columnsSetting = this._dynamicEntityServices.GetPersonalWebListColumnsSettting(paramInfo, UserId);
+            return new OutputResult<object>(columnsSetting);
+        }
+        /// <summary>
+        /// 保存实体的个人web列表定义
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("saveweblistcolumnsforpersonal")]
+        public OutputResult<object> SaveWebListColumnsForPersonal([FromBody] SaveWebListColumnsForPersonalParamInfo paramInfo)
+        {
+            if (paramInfo == null
+                || paramInfo.EntityId == null
+                || paramInfo.EntityId.Equals(Guid.Empty))
+            {
+                return ResponseError<object>("参数异常");
+            }
+            try
+            {
+                this._dynamicEntityServices.SavePersonalWebListColumnsSetting(paramInfo, UserId);
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+            return new OutputResult<object>("success");
+        } 
+        #endregion
         [Route("sendtomule")]
 
         #region 用于测试安居宝，过后会删除

@@ -6,30 +6,29 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 {
     public class ExcelHelper
     {
         #region --读取Excel文件--
-        public static ExcelInfo ReadExcelList(Stream file)
+        public static ExcelInfo ReadExcel(Stream file)
         {
             var excel = new ExcelInfo();
-            var sheetList = new List<ExcelSheetInfo>();
-
-            WorkbookPart workbookPart;
 
             try
             {
-                //SpreadsheetDocument.creat(file, SpreadsheetDocumentType.)
+                excel.ExcelFileBytes = StreamHelper.StreamToBytes(file);
+                excel.Sheets = new List<ExcelSheetInfo>();
                 var document = SpreadsheetDocument.Open(file, false);
-                workbookPart = document.WorkbookPart;
-               
+                var workbookPart = document.WorkbookPart;
+
                 var sheets = workbookPart.Workbook.Descendants<Sheet>();
-                
+
                 foreach (var sheet in sheets)
                 {
-                    //sheetList.Add(ReadSheet(workbookPart, sheet));
+                    excel.Sheets.Add(ReadSheet(workbookPart, sheet));
                 }
             }
             catch (Exception ex)
@@ -41,91 +40,180 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         }
         #endregion
 
-        #region --读取一个Sheet表--
-        //private static ExcelSheetInfo ReadSheet(WorkbookPart workbookPart, Sheet sheet)
-        //{
-        //    var sheetInfo = new ExcelSheetInfo();
-        //    sheetInfo.SheetName = sheet.Name;
-        //    sheetInfo.SheetId = sheet.SheetId.Value;
-        //    var workSheet = ((WorksheetPart)workbookPart.GetPartById(sheet.Id)).Worksheet;
+        #region --写入Excel文件--
+        public static byte[] WrightExcel(ExcelInfo excel)
+        {
+            try
+            {
+                var file = StreamHelper.BytesToStream(excel.ExcelFileBytes);
+                //创建文档对象
+                var document = SpreadsheetDocument.Open(file, true);
 
-        //    var sheetData = workSheet.Elements<SheetData>().First();
-        //    //sheetInfo.Rows = sheetData.Elements<Row>().ToList();
-        //    sheetInfo.Rows.FirstOrDefault().Row.OuterXml
-        //    //int headerRowsCount = 1;
+                //创建Workbook（工作簿）
+
+                var rootbookpart = document.WorkbookPart;
+                //Add Sheets to the Workbook.
+
+                var sheets = rootbookpart.Workbook.Descendants<Sheet>();
+
+                foreach (var sheetData in excel.Sheets)
+                {
+                    var sheet = sheets.Where(m => m.Name.Value.ToLower().Equals(sheetData.SheetName.ToLower())).FirstOrDefault();
+                    //如果找到匹配的sheet，则修改,反之，新增sheet
+                    if (sheet != null)
+                    {
+                        var workSheet = ((WorksheetPart)rootbookpart.GetPartById(sheet.Id)).Worksheet;
+                        UpdateSheet(sheetData, workSheet);
+                    }
+                    else
+                    {
+                        sheet = InsertSheet(sheetData, rootbookpart);
+                        rootbookpart.Workbook.Sheets.AppendChild(sheet);
+                    }
+
+                }
 
 
-        //    //return sheetInfo;
-        //}
+                rootbookpart.Workbook.Save();
+                document.Close();
+                return StreamHelper.StreamToBytes(file);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        private static Sheet InsertSheet(ExcelSheetInfo sheetData, WorkbookPart workbookPart)
+        {
+            return new Sheet();
+        }
+        private static void UpdateSheet(ExcelSheetInfo data, Worksheet worksheet)
+        {
+            int rowIndex = 1;
+
+            var sheetData = worksheet.GetFirstChild<SheetData>();
+
+            foreach (var rowdata in data.Rows)
+            {
+                var temp = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowdata.RowIndex);
+                if (rowdata.RowStatus == RowStatus.Add)//新增行
+                {
+                    var newrow = new Row(rowdata.OuterXml);
+                    newrow.RowIndex = rowdata.RowIndex+1;
+                    sheetData.InsertAt(newrow, (int)rowdata.RowIndex+1);
+                }
+                else if (rowdata.RowStatus == RowStatus.Deleted)//删除行
+                {
+                    var deleteRow = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowdata.RowIndex);
+                    sheetData.RemoveChild(deleteRow);
+                    continue;
+                }
+                //var temps = sheetData.Elements<Row>().Where(m => m.RowIndex == rowIndex);
+                //处理单元格
+                UpdateCells(rowdata.Cells, temp);
+                var ss = sheetData.Elements<Row>().ToList();
+                rowIndex++;
+            }
+            var old_mergeCells = worksheet.Elements<MergeCells>().First();
+            worksheet.ReplaceChild(data.MergeCells, old_mergeCells);
+        }
+
+        public static void UpdateCells(List<ExcelCellInfo> celldatas, Row row)
+        {
+            var cells = row.Descendants<Cell>();
+            foreach (var celldata in celldatas)
+            {
+                var cell = cells.FirstOrDefault(m => m.CellReference.Equals(string.Format("{0}:{1}", celldata.ColumnName, row.RowIndex)));
+                if (celldata.IsUpdated && cell != null)
+                    cell.CellValue = new CellValue(celldata.CellValue);
+            }
+        }
+
         #endregion
 
 
-        public static bool IsEmptyRow(Row row, WorkbookPart workbookPart)
+        #region --插入一行
+        //public static void MergeTwoCells(Worksheet worksheet, string cell1Name, string cell2Name)
+        //{
+        //    OpenXMLExcelHelper.MergeTwoCells(worksheet, cell1Name, cell2Name);
+        //}
+        #endregion
+        #region --检查是否是合并单元格--
+        public static bool IsMergeCell(string cellName, MergeCells mergeCells, out string mergeCellReference)
         {
-            var rowData = ReadRowData(row, workbookPart);
-            return rowData.Count == 0 || rowData.All(m => m.Trim().Equals(string.Empty));
+            mergeCellReference = null;
+            var mergeCellList = mergeCells.Descendants<MergeCell>();
+            foreach (var merge in mergeCellList)
+            {
+                if (merge.Reference.Value.Contains(string.Format("{0}:", cellName)))
+                {
+                    mergeCellReference = merge.Reference;
+                    return true;
+                }
+            }
+            return false;
         }
+        #endregion
+        #region --合并单元格--
+        public static void MergeTwoCells(MergeCells mergeCells, string cell1Name, string cell2Name)
+        {
+            // Create the merged cell and append it to the MergeCells collection. 
+            MergeCell mergeCell = new MergeCell() { Reference = new StringValue(cell1Name + ":" + cell2Name) };
+            mergeCells.Append(mergeCell);
+        }
+
+        #endregion
+
+
+        #region --读取一个Sheet表--
+        private static ExcelSheetInfo ReadSheet(WorkbookPart workbookPart, Sheet sheet)
+        {
+            var sheetInfo = new ExcelSheetInfo();
+            sheetInfo.SheetName = sheet.Name;
+            sheetInfo.Rows = new List<ExcelRowInfo>();
+            var workSheet = ((WorksheetPart)workbookPart.GetPartById(sheet.Id)).Worksheet;
+
+            sheetInfo.MergeCells = workSheet.Elements<MergeCells>().FirstOrDefault();
+            var sheetData = workSheet.Elements<SheetData>().FirstOrDefault();
+            var rows = sheetData.Elements<Row>();
+
+            foreach (var row in rows)
+            {
+                var rowData = ReadRowData(row, workbookPart);
+                rowData.OuterXml = row.OuterXml;
+                sheetInfo.Rows.Add(rowData);
+            }
+
+            return sheetInfo;
+        }
+        #endregion
+
+        #region --读取行数据--
         /// <summary>
-        /// 读取
+        /// 读取行数据
         /// </summary>
         /// <param name="row"></param>
         /// <param name="workbookPart"></param>
         /// <returns></returns>
-        public static List<string> ReadRowData(Row row, WorkbookPart workbookPart)
+        private static ExcelRowInfo ReadRowData(Row row, WorkbookPart workbookPart)
         {
-            var dataRow = new List<string>();
-            var cellEnumerator = GetExcelCellEnumerator(row);
-
-            while (cellEnumerator.MoveNext())
+            var dataRow = new ExcelRowInfo();
+            dataRow.RowIndex = row.RowIndex;
+            dataRow.Cells = new List<ExcelCellInfo>();
+            var cells = row.Descendants<Cell>();
+            foreach (var cell in cells)
             {
-                var cell = cellEnumerator.Current;
-                //var text = ReadExcelCell(cell, workbookPart);
-                //dataRow.Add(text);
+                var celldata = new ExcelCellInfo();
+                celldata.IsUpdated = false;
+                celldata.ColumnName = OpenXMLExcelHelper.GetColumnName(cell.CellReference);
+                celldata.CellValue = GetCellValue(cell, workbookPart);
+                dataRow.Cells.Add(celldata);
             }
             return dataRow;
         }
-        private static IEnumerator<Cell> GetExcelCellEnumerator(Row row, int columnCnount = 0)
-        {
-            int currentCount = 0;
+        #endregion
 
-            //只有读取模板header时不需要检查，读取导入数据时，必须检查，保证解析后每行的字典数据完整
-            if (columnCnount > 0)
-            {
-                uint rowindex = row.RowIndex.Value;
-                //检查需要的每个列都有单元格数据，没有的话，则填空单元格，避免读取缺少Cell数量
-                for (uint i = 0; i < columnCnount; i++)
-                {
-                    //var columnLetter = OpenXMLExcelHelper.GetColumnName(i);
-                    //string cellReference = columnLetter + rowindex;
-                    //var cell = row.Elements<Cell>().Where(c => c.CellReference.Value == cellReference).FirstOrDefault();
-                    //if (cell == null)
-                    //{
-                    //    cell = new Cell() { CellReference = cellReference };
-                    //    row.Append(cell);
-                    //}
-                }
-            }
-            foreach (Cell cell in row.Descendants<Cell>())
-            {
-                //string columnName = OpenXMLExcelHelper.GetColumnName(cell.CellReference);
-
-                //var currentColumnIndex = OpenXMLExcelHelper.GetColumnIndex(columnName);
-
-                //for (; currentCount < currentColumnIndex; currentCount++)
-                //{
-                //    var emptycell = new Cell()
-                //    {
-                //        DataType = null,
-                //        CellValue = new CellValue(string.Empty)
-                //    };
-                //    yield return emptycell;
-                //}
-
-                //yield return cell;
-                //currentCount++;
-            }
-            return null;
-        }
+        #region --读取单元格数据--
         private static string GetCellValue(Cell cell, WorkbookPart workBookPart)
         {
             string cellValue = string.Empty;
@@ -137,7 +225,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             string cellRefId = cell.CellReference.InnerText;//获取引用相对位置
             string cellInnerText = cell.CellValue.InnerText;//获取Cell的InnerText
             cellValue = cellInnerText;//指定默认值(其实用来处理Excel中的数字)
-
 
             //获取WorkbookPart中共享String数据
             SharedStringTable sharedTable = workBookPart.SharedStringTablePart.SharedStringTable;
@@ -179,7 +266,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                         cf = workBookPart.WorkbookStylesPart.Stylesheet.CellFormats.Descendants<CellFormat>().ElementAt<CellFormat>(Convert.ToInt32(cell.StyleIndex.Value));
                     }
 
-
                     //获取WorkbookPart中NumberingFormats样式集合
                     List<string> dicStyles = GetNumberFormatsStyle(workBookPart);
                     if (dicStyles.Count > 0 && cell.StyleIndex != null)//对于数字,cell.StyleIndex==null
@@ -200,7 +286,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
                                     cellStyle = cellStyle.Remove(otherStart, otherEnd - otherStart + 1);
                                 }
-                                //double doubleDateTime = double.Parse(cellInnerText);
 
                                 double tmpValue = 0;
                                 if (double.TryParse(cellInnerText, out tmpValue))
@@ -237,18 +322,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                                 tmpValue -= 1;
                             var tmpDate = new DateTime(1899, 12, 31).AddDays(tmpValue);
                             cellValue = tmpDate.ToString("yyyy-MM-dd HH:mm:ss");
-
                         }
-
-                        //DateTime dt = new DateTime(1899, 12, 30).AddDays(double.Parse(cellInnerText));
-                        //cellValue = string.Format("{0:d}", dt);
                     }
                 }
             }
             catch (Exception exp)
             {
-                //string expMessage = string.Format("Excel中{0}位置数据有误,请确认填写正确！", cellRefId);
-                //throw new Exception(expMessage);
                 cellValue = "N/A";
             }
             return cellValue;
@@ -287,5 +366,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             }
             return dicStyle;
         }
+        #endregion
     }
 }

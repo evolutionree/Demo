@@ -4,6 +4,8 @@ using System.Text;
 using System.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using UBeat.Crm.CoreApi.Services.Models.PrintForm;
+using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -135,5 +137,53 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (firstText != null) firstText.Text = replace;
         }
+
+
+
+        public byte[] GetOutputDocument(OutputDocumentParameter formData,out string fileName)
+        {
+            fileName = null;
+            if (formData.Data != null)
+            {
+                if (formData.Data.ContentType != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                {
+                    throw new Exception("please upload a valid excel file of version 2007 and above");
+                }
+                var excelData= ExcelHelper.ReadExcel(formData.Data.OpenReadStream());
+                if (excelData == null || excelData.Sheets == null || excelData.Sheets.Count == 0)
+                    throw new Exception("error");
+                //excelData.Sheets.FirstOrDefault().Rows.Add()
+
+                var sheet = excelData.Sheets.FirstOrDefault();
+                var cell = sheet.Rows[4].Cells.Find(m => m.ColumnName == "C");
+                cell.CellValue = "test";
+                cell.IsUpdated = true;
+                sheet.Rows[7].RowStatus = RowStatus.Deleted;
+                var rows = new List<ExcelRowInfo>();
+                var row1 = sheet.Rows.Find(m => m.RowIndex == 13);
+                var row2 = sheet.Rows.Find(m => m.RowIndex == 14);
+                rows.Add(row1);
+                rows.Add(row2);
+                rows.Add(row1);
+                rows.Add(row2);
+                string mergeCellReference;
+                if( ExcelHelper.IsMergeCell("B13", sheet.MergeCells, out mergeCellReference))
+                {
+                    ExcelHelper.MergeTwoCells(sheet.MergeCells, "B15", "B16");
+                }
+               
+                sheet.Rows.InsertRange(14, rows);
+                var bytes= ExcelHelper.WrightExcel(excelData);
+
+                var fileID = Guid.NewGuid().ToString();
+                //上传文档到文件服务器
+                new FileServices().UploadFile(null, fileID, string.Format("test.xlsx"), bytes);
+
+            }
+
+            //ExcelHelper
+            return null;
+        }
+
     }
 }
