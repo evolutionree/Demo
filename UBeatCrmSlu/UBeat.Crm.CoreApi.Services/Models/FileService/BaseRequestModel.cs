@@ -13,5 +13,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.FileService
 
         [JsonProperty("fileid")]
         public string FileId { set; get; }
+
+        [JsonProperty("filetype")]
+        public int FileType { set; get; } = 0;
     }
 }
