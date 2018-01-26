@@ -90,6 +90,37 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
         /// <summary>
+        /// 获取图片文件的缩略图
+        /// </summary>
+        /// <param name="collectionName">文件集合的名称（数据库名称）</param>
+        /// <param name="fileid">文件id</param>
+        /// <param name="filetype">获取缩略图模式：0、原图 1、缩略图 2、聊天图 3、头像<br/>
+        /// <param name="thumbnailName">生成缩略图后，重新生成的文件名称，后缀统一都是jpg</param>
+        /// <returns></returns>
+        public byte[] GetImageFileThumbnail(string collectionName, string fileid, int fileType, out string thumbnailName)
+        {
+            var fileinfo = GetOneFileInfo(collectionName, fileid);
+            if (fileinfo == null)
+                throw new Exception(string.Format("文件【{0}】不存在", fileid));
+            thumbnailName = Path.GetFileNameWithoutExtension(fileinfo.FileName) + "_" + fileType + ".jpg";
+            string thumbnailFileName = Path.GetFileNameWithoutExtension(fileinfo.FileId) + "_" + fileType + ".jpg";
+            string fullRootPath = Path.Combine(Directory.GetCurrentDirectory(), "Thumbnail");
+            string fullPath = Path.Combine(fullRootPath, fileinfo.UploadDate.ToString("yyyyMMdd"));
+            string cachePath = Path.Combine(fullPath, thumbnailFileName);
+            if (File.Exists(cachePath))
+            {
+                return ThumbnailHelper.ImageToBytes(cachePath);
+            }
+            var bytes = GetFileData(collectionName, fileid);
+            if (bytes == null)
+            {
+                throw new Exception(string.Format("文件【{0}】数据为空", fileid));
+            }
+            bytes = ThumbnailHelper.CreateThumbnail(bytes, fileinfo, fileType, collectionName, out thumbnailName);
+            return bytes;
+        }
+
+        /// <summary>
         /// 获取一个文件的文件信息
         /// </summary>
         /// <param name="collectionName">文件集合的名称（数据库名称）</param>

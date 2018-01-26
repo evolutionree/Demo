@@ -49,9 +49,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <remarks>
         /// 若获取缩略图，必须传URL查询参数：<br/>
-        /// imagewidth：缩略图宽度（单位：Pixel）<br/>
-        /// imageheight：缩略图高度（单位：Pixel）<br/>
-        /// thumbmodel：获取缩略图模式：0=不变形，全部（缩略图），1=变形，全部填充（缩略图），2=不变形，截中间（缩略图），3=不变形，截中间（非缩略图）<br/>
+        /// <param name="filetype">获取缩略图模式：0、原图 1、缩略图 2、聊天图 3、头像<br/>
         /// </remarks>
         /// <param name="entityid">实体id（数据库名称）</param>
         /// <param name="fileid">文件ID</param>
@@ -80,17 +78,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             Response.Headers.Add("Content-Disposition", "inline; filename=" + filename);
             Response.Headers.Add("Content-Length", fileInfo.Length.ToString());//添加头文件，指定文件的大小，让浏览器显示文件下载的速度
             //获取缩略图
-            if (queryParam.IsValid)
+            if (queryParam.FileType==0)
             {
-                var bytes = _fileService.GetImageFileThumbnail(entityid, fileid, queryParam.ImageWidth, queryParam.ImageHeight, queryParam.Mode, out filename);
+                _fileService.GetFileData(entityid, fileid, Response.Body);
+            }
+            else
+            {
+                var bytes = _fileService.GetImageFileThumbnail(entityid, fileid, queryParam.FileType, out filename);
 
                 Response.Headers["Content-Disposition"] = "inline; filename=" + WebUtility.UrlEncode(filename);
                 Response.Headers["Content-Length"] = bytes.Length.ToString();
                 await Response.Body.WriteAsync(bytes, 0, bytes.Length);
-            }
-            else
-            {
-                _fileService.GetFileData(entityid, fileid, Response.Body);
             }
             return File(Response.Body, "application/octet-stream");
         }
