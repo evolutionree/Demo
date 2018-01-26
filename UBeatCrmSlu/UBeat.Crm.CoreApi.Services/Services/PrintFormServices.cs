@@ -6,6 +6,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using UBeat.Crm.CoreApi.Services.Models.PrintForm;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility;
+using System.IO;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -155,29 +156,50 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 //excelData.Sheets.FirstOrDefault().Rows.Add()
 
                 var sheet = excelData.Sheets.FirstOrDefault();
-                var cell = sheet.Rows[4].Cells.Find(m => m.ColumnName == "C");
-                cell.CellValue = "test";
-                cell.IsUpdated = true;
-                sheet.Rows[7].RowStatus = RowStatus.Deleted;
                 var rows = new List<ExcelRowInfo>();
-                var row1 = sheet.Rows.Find(m => m.RowIndex == 13);
-                var row2 = sheet.Rows.Find(m => m.RowIndex == 14);
-                rows.Add(row1);
-                rows.Add(row2);
-                rows.Add(row1);
-                rows.Add(row2);
-                string mergeCellReference;
-                if( ExcelHelper.IsMergeCell("B13", sheet.MergeCells, out mergeCellReference))
+                
+                foreach (var row in sheet.Rows)
                 {
-                    ExcelHelper.MergeTwoCells(sheet.MergeCells, "B15", "B16");
+                    rows.Add(row);
+                    switch (row.RowIndex)
+                    {
+                        case 4:
+                            var cell = row.Cells.Find(m => m.ColumnName == "C");
+                            cell.CellValue = "test";
+                            cell.IsUpdated = true;
+                            break;
+                        case 8:
+                        case 10:
+                        case 11:
+                        case 12:
+                        case 15:
+                        case 17:
+                            row.RowStatus = RowStatus.Deleted;
+                            break;
+                        case 14:
+                            {
+                                var row1 = sheet.Rows.Find(m => m.RowIndex == 13);
+                                row1.RowStatus = RowStatus.Add;
+                                var row2 = row;
+                                row2.RowStatus = RowStatus.Add;
+                                rows.Add(row1);
+                                rows.Add(row2);
+                                rows.Add(row1);
+                                rows.Add(row2);
+                            }
+                            break;
+                    }
+                        
                 }
-               
-                sheet.Rows.InsertRange(14, rows);
-                var bytes= ExcelHelper.WrightExcel(excelData);
 
-                var fileID = Guid.NewGuid().ToString();
+                sheet.Rows = rows;
+                var bytes= ExcelHelper.WrightExcel(excelData);
+                FileStream fs = new FileStream(string.Format( @"C:\Users\Administrator\Desktop\{0}.xlsx", Guid.NewGuid().ToString()), FileMode.Create);
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Dispose();
+                //var fileID = Guid.NewGuid().ToString();
                 //上传文档到文件服务器
-                new FileServices().UploadFile(null, fileID, string.Format("test.xlsx"), bytes);
+                //new FileServices().UploadFile(null, fileID, string.Format("test.xlsx"), bytes);
 
             }
 

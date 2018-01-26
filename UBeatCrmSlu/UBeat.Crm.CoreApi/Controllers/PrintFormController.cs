@@ -35,7 +35,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError("缺乏查询参数");
             string fileName;
             byte[] fileData= _printFormServices.GetOutputDocument(formData,out  fileName);
-            return File(fileData, "application/octet-stream", fileName ?? string.Format("{0:yyyyMMddHHmmssffff}.pdf", DateTime.Now));
+            return Ok();
+            //return File(fileData, "application/octet-stream", fileName ?? string.Format("{0:yyyyMMddHHmmssffff}.pdf", DateTime.Now));
         }
     }
 }

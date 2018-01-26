@@ -30,6 +30,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                 {
                     excel.Sheets.Add(ReadSheet(workbookPart, sheet));
                 }
+
             }
             catch (Exception ex)
             {
@@ -45,9 +46,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             try
             {
-                var file = StreamHelper.BytesToStream(excel.ExcelFileBytes);
+                var stream = new MemoryStream(excel.ExcelFileBytes);
                 //创建文档对象
-                var document = SpreadsheetDocument.Open(file, true);
+                //var document = SpreadsheetDocument.Open(file, true);
+                // 设置当前流的位置为流的开始
+                //stream.Seek(0, SeekOrigin.Begin);
+
+                var document = SpreadsheetDocument.Open(stream, true);
 
                 //创建Workbook（工作簿）
 
@@ -70,13 +75,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                         sheet = InsertSheet(sheetData, rootbookpart);
                         rootbookpart.Workbook.Sheets.AppendChild(sheet);
                     }
-
                 }
 
 
                 rootbookpart.Workbook.Save();
+                
                 document.Close();
-                return StreamHelper.StreamToBytes(file);
+                return stream.ToArray();
             }
             catch (Exception ex)
             {
@@ -89,46 +94,97 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         }
         private static void UpdateSheet(ExcelSheetInfo data, Worksheet worksheet)
         {
-            int rowIndex = 1;
-
+            
             var sheetData = worksheet.GetFirstChild<SheetData>();
+            var rows = sheetData.Elements<Row>();
+            List<Row> tempRows = new List<Row>();
+          
+            var mergeCells = worksheet.Elements<MergeCells>().FirstOrDefault();
+            
 
+            MergeCells newMergeCells = null;
+            var firstRowdata = data.Rows.FirstOrDefault();
             foreach (var rowdata in data.Rows)
             {
-                var temp = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowdata.RowIndex);
-                if (rowdata.RowStatus == RowStatus.Add)//新增行
+                Row temRow = new Row(rowdata.OuterXml);
+                if (rowdata.RowStatus == RowStatus.Deleted)//删除行
                 {
-                    var newrow = new Row(rowdata.OuterXml);
-                    newrow.RowIndex = rowdata.RowIndex+1;
-                    sheetData.InsertAt(newrow, (int)rowdata.RowIndex+1);
-                }
-                else if (rowdata.RowStatus == RowStatus.Deleted)//删除行
-                {
-                    var deleteRow = sheetData.Elements<Row>().FirstOrDefault(m => m.RowIndex == rowdata.RowIndex);
-                    sheetData.RemoveChild(deleteRow);
                     continue;
                 }
-                //var temps = sheetData.Elements<Row>().Where(m => m.RowIndex == rowIndex);
-                //处理单元格
-                UpdateCells(rowdata.Cells, temp);
-                var ss = sheetData.Elements<Row>().ToList();
-                rowIndex++;
-            }
-            var old_mergeCells = worksheet.Elements<MergeCells>().First();
-            worksheet.ReplaceChild(data.MergeCells, old_mergeCells);
-        }
+                uint rowIndex = firstRowdata.RowIndex + (uint)tempRows.Count;
+                tempRows.Add(temRow);
+   
+                if (mergeCells != null)
+                {
+                    var mergeCellList = mergeCells.Elements<MergeCell>();
+                    var tempMergeCells = GetMergeCells(temRow, mergeCellList);
+                    if (tempMergeCells != null && tempMergeCells.Count > 0)
+                    {
+                        foreach (var mergeCell in tempMergeCells)
+                        {
+                            var cellNames = mergeCell.Reference.Value.Split(':');
+                            var rowindex1 = OpenXMLExcelHelper.GetRowIndex(cellNames[0]);
+                            var colindex1 = OpenXMLExcelHelper.GetColumnName(cellNames[0]);
+                            var rowindex2 = OpenXMLExcelHelper.GetRowIndex(cellNames[1]);
+                            var colindex2 = OpenXMLExcelHelper.GetColumnName(cellNames[1]);
+                            var rowindex1_new = rowIndex;
+                            var rowindex2_new = rowIndex + (rowindex2 - rowindex1);
+                            if (newMergeCells == null)
+                                newMergeCells = new MergeCells();
+                            newMergeCells.Append(new MergeCell() { Reference = string.Format("{0}{1}:{2}{3}", colindex1, rowindex1_new, colindex2, rowindex2_new) });
+                        }
+                    }
+                }
 
-        public static void UpdateCells(List<ExcelCellInfo> celldatas, Row row)
+                temRow.RowIndex = rowIndex;
+                RefreshRow(temRow, rowdata.Cells);
+            }
+            sheetData.RemoveAllChildren<Row>();
+            sheetData.Append(tempRows);
+            if (mergeCells != null)
+            {
+                worksheet.RemoveAllChildren<MergeCells>();
+                OpenXMLExcelHelper.InsertMergeCells(worksheet, newMergeCells);
+            }
+
+        }
+        public static void RefreshRow(Row row, List<ExcelCellInfo> celldatas)
         {
             var cells = row.Descendants<Cell>();
-            foreach (var celldata in celldatas)
+            foreach (var cell in cells)
             {
-                var cell = cells.FirstOrDefault(m => m.CellReference.Equals(string.Format("{0}:{1}", celldata.ColumnName, row.RowIndex)));
-                if (celldata.IsUpdated && cell != null)
-                    cell.CellValue = new CellValue(celldata.CellValue);
+                if (cell.CellReference.HasValue)
+                {
+                    var columnName = OpenXMLExcelHelper.GetColumnName(cell.CellReference);
+                    cell.CellReference = string.Format("{0}{1}", columnName, row.RowIndex);
+                    var celldata = celldatas.Find(m => m.ColumnName == columnName);
+                    if (celldata != null && celldata.IsUpdated)
+                    {
+                        cell.CellValue = new CellValue(celldata.CellValue);
+                        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+                    }
+                }
             }
         }
+        private static List<MergeCell> GetMergeCells(Row row, IEnumerable<MergeCell> mergeCells)
+        {
+            List<MergeCell> mergeCellList = new List<MergeCell>();
+            var cells = row.Descendants<Cell>();
+            foreach (var cell in cells)
+            {
+                foreach (var merge in mergeCells)
+                {
+                    if (merge.Reference.Value.Contains(string.Format("{0}:", cell.CellReference.Value)))
+                    {
+                        mergeCellList.Add(merge);
+                        break;
+                    }
+                }
+            }
+            return mergeCellList;
+        }
 
+        
         #endregion
 
 
@@ -173,7 +229,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             sheetInfo.Rows = new List<ExcelRowInfo>();
             var workSheet = ((WorksheetPart)workbookPart.GetPartById(sheet.Id)).Worksheet;
 
-            sheetInfo.MergeCells = workSheet.Elements<MergeCells>().FirstOrDefault();
             var sheetData = workSheet.Elements<SheetData>().FirstOrDefault();
             var rows = sheetData.Elements<Row>();
 

@@ -21,12 +21,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
         public List<ExcelRowInfo> Rows { set; get; }
 
-        public MergeCells MergeCells { set; get; }
+       
     }
 
     public class ExcelRowInfo
     {
         public uint RowIndex { set; get; }
+
         public string OuterXml { set; get; }
 
         public List<ExcelCellInfo> Cells { set; get; }
