@@ -10,6 +10,7 @@ using UBeat.Crm.CoreApi.Services.Models.Contact;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.IRepository;
+using UBeat.Crm.CoreApi.DomainModel;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -46,6 +47,47 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var cardModel = CamCardHelper.VCardTransfer(cardInfo);
 
             return new OutputResult<object>(cardModel);
+        }
+
+        public PageDataInfo<LinkManMapper> GetFlagLinkman(LinkManModel model, int userNumber)
+        {
+            var linkManMapper = new LinkManMapper()
+            {
+                SearchKey=model.SearchKey,
+                PageIndex=model.PageIndex,
+                PageSize=model.PageSize
+            };
+            return _contactRepository.GetFlagLinkman(linkManMapper,userNumber);
+        }
+
+        public PageDataInfo<LinkManMapper> GetRecentCall(LinkManModel model, int userNumber)
+        {
+            var linkManMapper = new LinkManMapper()
+            {
+                SearchKey = model.SearchKey,
+                PageIndex = model.PageIndex,
+                PageSize = model.PageSize
+            };
+            return _contactRepository.GetRecentCall(linkManMapper, userNumber);
+        }
+
+        public OutputResult<object> FlagLinkman(LinkManModel model, int userNumber)
+        {
+            var linkManMapper = new LinkManMapper()
+            {
+                userid = model.userid,
+                flag = model.flag
+            };
+            return new OutputResult<object>(_contactRepository.FlagLinkman(linkManMapper, userNumber));
+        }
+
+        public OutputResult<object> AddRecentCall(LinkManModel model, int userNumber)
+        {
+            var linkManMapper = new LinkManMapper()
+            {
+                userid = model.userid
+            };
+            return new OutputResult<object>(_contactRepository.AddRecentCall(linkManMapper, userNumber));
         }
     }
 }

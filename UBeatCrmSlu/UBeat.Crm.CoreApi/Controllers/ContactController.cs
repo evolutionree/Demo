@@ -27,5 +27,37 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (vcardModel == null) return ResponseError<object>("参数格式错误");
             return _contactServices.VCardInfo(vcardModel, UserId);
         }
+
+        [HttpPost]
+        [Route("getflaglinkman")]
+        public OutputResult<object> GetFlagLinkman([FromBody] LinkManModel model = null)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return new OutputResult<object>(_contactServices.GetFlagLinkman(model, UserId));
+        }
+
+        [HttpPost]
+        [Route("getrecentcall")]
+        public OutputResult<object> GetRecentCall([FromBody] LinkManModel model = null)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return new OutputResult<object>(_contactServices.GetRecentCall(model, UserId));
+        }
+
+        [HttpPost]
+        [Route("flaglinkman")]
+        public OutputResult<object> FlagLinkman([FromBody] LinkManModel model = null)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _contactServices.FlagLinkman(model, UserId);
+        }
+
+        [HttpPost]
+        [Route("addrecentcall")]
+        public OutputResult<object> AddRecentCall([FromBody] LinkManModel model = null)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _contactServices.AddRecentCall(model, UserId);
+        }
     }
 }
