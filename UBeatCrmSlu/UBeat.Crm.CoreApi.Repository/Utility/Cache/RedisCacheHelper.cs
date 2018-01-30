@@ -21,7 +21,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
         {
             //实例ID.redis.rds.aliyuncs.com:6379,password=实例ID:密码
             _connection = ConnectionMultiplexer.Connect(options.Configuration);
-            _cache = _connection.GetDatabase(database);
+            _connection.PreserveAsyncOrder = false;
+             _cache = _connection.GetDatabase(database);
             _instance = options.InstanceName;
         }
 

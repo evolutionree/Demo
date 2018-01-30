@@ -336,10 +336,10 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         protected override void Dispose(bool disposing)
         {
-            if (CacheService != null && CacheService.Repository != null)
-            {
-                CacheService.Repository.Dispose();
-            }
+            //if (CacheService != null && CacheService.Repository != null)
+            //{
+            //    CacheService.Repository.Dispose();
+            //}
             base.Dispose(disposing);
         }
 

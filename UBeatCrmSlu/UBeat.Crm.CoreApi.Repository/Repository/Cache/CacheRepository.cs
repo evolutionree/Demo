@@ -8,10 +8,11 @@ using UBeat.Crm.CoreApi.Repository.Utility.Cache;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.Cache
 {
-    public class CacheRepository: ICacheRepository
+    public class CacheRepository : ICacheRepository
     {
+        static object instanceLock = new object();
         static CacheRepository instance;
-        ICacheHelper _helper ;
+        ICacheHelper _helper;
 
         private CacheRepository(RedisCacheOptions options, int database = 0)
         {
@@ -21,11 +22,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Cache
 
         public static CacheRepository GetInstance(RedisCacheOptions options, int database = 0)
         {
-            if(instance==null)
+
+            if (instance == null)
             {
-                instance = new CacheRepository(options, database);
+                lock (instanceLock)
+                {
+                    instance = new CacheRepository(options, database);
+                }
             }
             return instance;
+
         }
 
         #region ---验证缓存项是否存在---
@@ -70,7 +76,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Cache
         /// <returns></returns>
         public Task<bool> AddAsync(string key, object value)
         {
-           return _helper.AddAsync(key, value);
+            return _helper.AddAsync(key, value);
         }
 
         /// <summary>
