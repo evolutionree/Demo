@@ -51,43 +51,43 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public PageDataInfo<LinkManMapper> GetFlagLinkman(LinkManModel model, int userNumber)
         {
-            var linkManMapper = new LinkManMapper()
+            var contactMapper = new ContactMapper()
             {
                 SearchKey=model.SearchKey,
                 PageIndex=model.PageIndex,
                 PageSize=model.PageSize
             };
-            return _contactRepository.GetFlagLinkman(linkManMapper,userNumber);
+            return _contactRepository.GetFlagLinkman(contactMapper, userNumber);
         }
 
         public PageDataInfo<LinkManMapper> GetRecentCall(LinkManModel model, int userNumber)
         {
-            var linkManMapper = new LinkManMapper()
+            var contactMapper = new ContactMapper()
             {
                 SearchKey = model.SearchKey,
                 PageIndex = model.PageIndex,
                 PageSize = model.PageSize
             };
-            return _contactRepository.GetRecentCall(linkManMapper, userNumber);
+            return _contactRepository.GetRecentCall(contactMapper, userNumber);
         }
 
         public OutputResult<object> FlagLinkman(LinkManModel model, int userNumber)
         {
-            var linkManMapper = new LinkManMapper()
+            var contactMapper = new ContactMapper()
             {
                 userid = model.userid,
                 flag = model.flag
             };
-            return new OutputResult<object>(_contactRepository.FlagLinkman(linkManMapper, userNumber));
+            return new OutputResult<object>(_contactRepository.FlagLinkman(contactMapper, userNumber));
         }
 
         public OutputResult<object> AddRecentCall(LinkManModel model, int userNumber)
         {
-            var linkManMapper = new LinkManMapper()
+            var contactMapper = new ContactMapper()
             {
                 userid = model.userid
             };
-            return new OutputResult<object>(_contactRepository.AddRecentCall(linkManMapper, userNumber));
+            return new OutputResult<object>(_contactRepository.AddRecentCall(contactMapper, userNumber));
         }
     }
 }

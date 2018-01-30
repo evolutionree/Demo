@@ -16,7 +16,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
         {
 
         }
-        public PageDataInfo<LinkManMapper> GetFlagLinkman(LinkManMapper paramInfo, int userId)
+        public PageDataInfo<LinkManMapper> GetFlagLinkman(ContactMapper paramInfo, int userId)
         {
             string sql = @"SELECT u.userid,u.username,u.usericon,u.remark,u.joineddate,u.birthday,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
 			FROM crm_sys_flaglinkman f 
@@ -52,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
             return ExecuteQueryByPaging<LinkManMapper>(sql, param, paramInfo.PageSize, paramInfo.PageIndex);
         }
 
-        public PageDataInfo<LinkManMapper> GetRecentCall(LinkManMapper paramInfo, int userId)
+        public PageDataInfo<LinkManMapper> GetRecentCall(ContactMapper paramInfo, int userId)
         {
             string sql = @"SELECT COALESCE(f.userid,0)::BOOLEAN as flag,u.userid,u.username,u.usericon,u.remark,u.joineddate,u.birthday,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
 			FROM crm_sys_recentcall rc 
@@ -90,7 +90,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
             return ExecuteQueryByPaging<LinkManMapper>(sql, param, paramInfo.PageSize, paramInfo.PageIndex);
         }
 
-        public OperateResult FlagLinkman(LinkManMapper paramInfo, int userId)
+        public OperateResult FlagLinkman(ContactMapper paramInfo, int userId)
         {
             string sql = "";
             var param = new DbParameter[]
@@ -127,7 +127,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
             }
         }
 
-        public OperateResult AddRecentCall(LinkManMapper paramInfo, int userId)
+        public OperateResult AddRecentCall(ContactMapper paramInfo, int userId)
         {
             var param = new DbParameter[]
             {
