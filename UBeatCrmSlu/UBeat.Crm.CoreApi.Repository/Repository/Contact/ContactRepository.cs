@@ -31,7 +31,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
             }
             else
             {
-                sql += " and u.username like '%" + paramInfo.SearchKey + "%' order by f.reccreated desc ";
+                sql += " and u.username like '%" + paramInfo.SearchKey + "%' order by u.namepinyin ";
             }
 
             if (paramInfo.PageSize <= 0)
