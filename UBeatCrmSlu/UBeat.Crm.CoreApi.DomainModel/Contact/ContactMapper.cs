@@ -16,6 +16,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Contact
         public string deptname { get; set; }
         public string userphone { get; set; }
         public string usertel { get; set; }
+        public string useremail { get; set; }
+        public DateTime joineddate { get; set; }
+        public DateTime birthday { get; set; }
+        public string remark { get; set; }
         public string SearchKey { get; set; }
         /// <summary>
         /// 要查询的页码

@@ -18,7 +18,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
         }
         public PageDataInfo<LinkManMapper> GetFlagLinkman(LinkManMapper paramInfo, int userId)
         {
-            string sql = @"SELECT u.userid,u.username,u.usericon,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
+            string sql = @"SELECT u.userid,u.username,u.usericon,u.remark,u.joineddate,u.birthday,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
 			FROM crm_sys_flaglinkman f 
             inner join crm_sys_userinfo AS u on f.userid=u.userid
 			LEFT JOIN crm_sys_account_userinfo_relate AS r ON u.userid = r.userid AND r.recstatus = 1
@@ -54,7 +54,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
 
         public PageDataInfo<LinkManMapper> GetRecentCall(LinkManMapper paramInfo, int userId)
         {
-            string sql = @"SELECT COALESCE(f.userid,0)::BOOLEAN as flag,u.userid,u.username,u.usericon,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
+            string sql = @"SELECT COALESCE(f.userid,0)::BOOLEAN as flag,u.userid,u.username,u.usericon,u.remark,u.joineddate,u.birthday,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
 			FROM crm_sys_recentcall rc 
               inner join crm_sys_userinfo AS u on rc.userid=u.userid
               LEFT join crm_sys_flaglinkman f  on f.userid=rc.userid
