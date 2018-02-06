@@ -325,6 +325,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     WorkFlowNodeInfo firstNodeInfo = null;
                     var caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo);
                     tran.Commit();
+                    canWriteCaseMessage = true;
                     return new OutputResult<object>(caseid);
                 }
                 catch (Exception ex)
@@ -584,7 +585,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         private void WriteAddCaseMessage(SimpleEntityInfo entityInfo, Guid bussinessId, Guid relbussinessId, Guid flowId, Guid caseId, int userNumber, IDictionary<string, object> olddetail)
         {
-
+           
             //获取casedetail
             var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, caseId);
             if (caseInfo == null)
@@ -1500,6 +1501,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (conn != null)
                 {
                     tran.Commit();
+                    canWriteCaseMessage = true;
                 }
                 //写审批消息
                 WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId);
@@ -1836,6 +1838,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --写入添加流程的消息--
+
+        bool canWriteCaseMessage = false;
         /// <summary>
         /// 写入添加流程的消息
         /// </summary>
@@ -1846,6 +1850,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Task.Run(() =>
             {
+                while(!canWriteCaseMessage)
+                {
+                    System.Threading.Thread.Sleep(100);
+                }
                 using (var conn = GetDbConnect())
                 {
                     conn.Open();
