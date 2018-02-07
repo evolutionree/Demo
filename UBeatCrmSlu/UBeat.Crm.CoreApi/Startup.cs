@@ -20,6 +20,9 @@ using System.Collections.Generic;
 using System.Runtime.Loader;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using App.Metrics.Reporting.Interfaces;
+using App.Metrics.Extensions.Reporting.InfluxDB;
+using App.Metrics.Extensions.Reporting.InfluxDB.Client;
 
 namespace UBeat.Crm.CoreApi
 {
@@ -46,9 +49,11 @@ namespace UBeat.Crm.CoreApi
         public IContainer Container { get; set; }
 
 
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            ConfigureMetrics(services);
             //Add Json Web Token Auth
             services.AddAuthentication(options =>
             {
@@ -98,7 +103,7 @@ namespace UBeat.Crm.CoreApi
 
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IApplicationLifetime lifetime)
         {
 
 
@@ -112,7 +117,8 @@ namespace UBeat.Crm.CoreApi
 
             app.UseGlobalErrors(env, loggerFactory);
 
-
+            app.UseMetrics();
+            app.UseMetricsReporting(lifetime);
             //Add Json Web Token Auth
             //app.UseJwtBearerAuthentication(JwtAuth.GetJwtOptions());
 
@@ -127,26 +133,60 @@ namespace UBeat.Crm.CoreApi
             app.UseMvc();
         }
         /// <summary>
+        /// 配置监控程序Metric
+        /// </summary>
+        /// <param name="services"></param>
+        private void ConfigureMetrics(IServiceCollection services)
+        {
+            var database = "test";
+            var uri = new Uri("http://10.187.134.10:8086");
+
+            services.AddMetrics(options =>
+            {
+                options.GlobalTags.Add("app", "sample app");
+                options.GlobalTags.Add("env", "stage");
+            }).AddHealthChecks().AddReporting(
+                factory =>
+                {
+                    factory.AddInfluxDb(
+                        new InfluxDBReporterSettings
+                        {
+                            InfluxDbSettings = new InfluxDBSettings(database, uri)
+                            {
+                                 UserName= "test",
+                                 Password="root111111"
+                            },
+                            ReportInterval = TimeSpan.FromSeconds(5)
+                        });
+                }).AddMetricsMiddleware(options => options.IgnoredHttpStatusCodes = new[] { 404 });
+
+        }
+
+
+        /// <summary>
         /// 装载第三方（插件）的Controller
         /// </summary>
         /// <param name="mvcBuilder"></param>
-        public void LoadCustomerProjectAssembly(IMvcBuilder mvcBuilder) {
+        public void LoadCustomerProjectAssembly(IMvcBuilder mvcBuilder)
+        {
             var config = new ConfigurationBuilder()
               .SetBasePath(Directory.GetCurrentDirectory())
               .AddJsonFile("plugin.json")
               .Build();
             List<string> plugins = new List<string>();
             IEnumerator<IConfigurationSection> it = config.GetSection("PluginProjectList").GetChildren().GetEnumerator();
-            while (it.MoveNext()) {
+            while (it.MoveNext())
+            {
                 IConfigurationSection item = it.Current;
-                if (item.Value != null && item.Value.Length!= 0) {
+                if (item.Value != null && item.Value.Length != 0)
+                {
                     plugins.Add(item.Value);
                 }
             }
             dynamic type = this.GetType();
-            string currentDirectory =Path.GetDirectoryName(type.Assembly.Location);
+            string currentDirectory = Path.GetDirectoryName(type.Assembly.Location);
             DirectoryInfo d = new DirectoryInfo(currentDirectory);
-            
+
             string filesplite = "\\";
             string env = config.GetSection("Environment").Value;
             if (env == null) env = "";
@@ -156,13 +196,16 @@ namespace UBeat.Crm.CoreApi
                     && d.Parent != null
                     && d.Parent.Parent != null
                     && d.Parent.Parent.Parent != null
-                    && d.Parent.Parent.Parent.Parent != null) ){
+                    && d.Parent.Parent.Parent.Parent != null))
+                {
                     return;
                 }
                 currentDirectory = d.Parent.Parent.Parent.Parent.FullName;
-                foreach (string item in plugins) {
+                foreach (string item in plugins)
+                {
                     string filePath = "";
-                    if (item.EndsWith(".dll")) {
+                    if (item.EndsWith(".dll"))
+                    {
                         filePath = item;
                     }
                     else
@@ -194,7 +237,8 @@ namespace UBeat.Crm.CoreApi
         /// <param name="containerBuilder"></param>
         public void LoadCustomerProjectAssemblyForService(ContainerBuilder containerBuilder)
         {
-            foreach (string filePath in PlugInsUtils.getInstance().PlugInFiles) {
+            foreach (string filePath in PlugInsUtils.getInstance().PlugInFiles)
+            {
                 Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
                 string endWithName = "Services";
                 containerBuilder.RegisterAssemblyModules(assembly);
@@ -282,7 +326,7 @@ namespace UBeat.Crm.CoreApi
             //}
             //var assembly = Assembly.Load(new AssemblyName(fileInfo.FullName));
             //CoreApiRegistEngine.RegisterServices(containerBuilder, "UBeat.Crm.CoreApi.Services", "Services");
-            
+
         }
     }
 }
