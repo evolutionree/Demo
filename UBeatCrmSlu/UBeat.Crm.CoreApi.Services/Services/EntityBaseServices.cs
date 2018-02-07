@@ -160,6 +160,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                     if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0)
+                    Logger.Error("FinishActionExtModelList:" + Newtonsoft.Json.JsonConvert.SerializeObject(FinishActionExtModelList));
+                    Logger.Error("entityid=" + entityId);
+                    if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0&& outResult.Status==0)
                     {
                         var actionExtModel = FinishActionExtModelList.Where(m => m.entityid == entityId).FirstOrDefault();
                         if (actionExtModel != null)
