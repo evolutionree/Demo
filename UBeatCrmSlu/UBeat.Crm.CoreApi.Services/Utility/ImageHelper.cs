@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Drawing;
-using System.Drawing.Imaging;
+
 using System.IO;
+using System.DrawingCore.Imaging;
+using System.DrawingCore;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -55,7 +56,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         public static Image BytesToImage(byte[] buffer)
         {
             MemoryStream ms = new MemoryStream(buffer);
-            Image image = System.Drawing.Image.FromStream(ms);
+            Image image = Image.FromStream(ms);
             return image;
         }
 

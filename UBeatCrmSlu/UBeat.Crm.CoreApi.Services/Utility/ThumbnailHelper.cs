@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using System.DrawingCore;
+using System.DrawingCore.Imaging;
 using System.IO;
 using UBeat.Crm.CoreApi.DomainModel.FileService;
 
@@ -33,7 +32,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             thumbnailName = Path.GetFileNameWithoutExtension(filename) + ".jpg";
 
             Stream stream = new MemoryStream(sourcedata);
-            original_image = System.Drawing.Image.FromStream(stream);
+            original_image = Image.FromStream(stream);
             // Calculate the new width and height
             int original_paste_x = 0;
             int original_paste_y = 0;
@@ -88,14 +87,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 if (original_width > target_width1) original_width = target_width1;
             }
 
-            final_image = new System.Drawing.Bitmap(t_width, t_height);
-            graphic = System.Drawing.Graphics.FromImage(final_image);
+            final_image = new Bitmap(t_width, t_height);
+            graphic = Graphics.FromImage(final_image);
             try
             {
                 // graphic.FillRectangle(new System.Drawing.SolidBrush(System.Drawing.Color.White), new System.Drawing.Rectangle(0, 0, t_width, t_height));//背景颜色
 
-                graphic.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High; /* new way */
-                graphic.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                graphic.InterpolationMode = System.DrawingCore.Drawing2D.InterpolationMode.High; /* new way */
+                graphic.SmoothingMode = System.DrawingCore.Drawing2D.SmoothingMode.HighQuality;
                 graphic.Clear(Color.White);//背景
                 Rectangle SrcRec = new Rectangle(original_paste_x, original_paste_y, original_width, original_height);
                 Rectangle targetRec = new Rectangle(target_paste_x, target_paste_y, target_width1, target_height1);

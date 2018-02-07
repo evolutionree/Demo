@@ -8,7 +8,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using System.Text.RegularExpressions;
-using System.Drawing;
+using System.DrawingCore;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 {

@@ -58,7 +58,7 @@ namespace UBeat.Crm.CoreApi.Utility
             }
 
             // Validation passed. Return a valid AuthenticationTicket:
-            return new AuthenticationTicket(principal, new AuthenticationProperties(), "Cookie");
+            return new AuthenticationTicket(principal, new Microsoft.AspNetCore.Authentication.AuthenticationProperties(), "Cookie");
         }
 
         // This ISecureDataFormat implementation is decode-only

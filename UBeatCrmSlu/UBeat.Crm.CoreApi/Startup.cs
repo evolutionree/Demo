@@ -19,6 +19,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Runtime.Loader;
 using System.Reflection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace UBeat.Crm.CoreApi
 {
@@ -48,6 +49,14 @@ namespace UBeat.Crm.CoreApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            //Add Json Web Token Auth
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(o => JwtAuth.GetJwtOptions(o));
+
             //添加本地缓存
             services.AddMemoryCache();
             // Add framework services.
@@ -105,7 +114,7 @@ namespace UBeat.Crm.CoreApi
 
 
             //Add Json Web Token Auth
-            app.UseJwtBearerAuthentication(JwtAuth.GetJwtOptions());
+            //app.UseJwtBearerAuthentication(JwtAuth.GetJwtOptions());
 
 
             //Add Cross Domain

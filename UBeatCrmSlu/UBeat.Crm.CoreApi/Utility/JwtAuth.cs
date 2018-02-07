@@ -54,7 +54,33 @@ namespace UBeat.Crm.CoreApi.Utility
                 }
             };
         }
+        public static void GetJwtOptions(JwtBearerOptions o)
+        {
 
+            o.TokenValidationParameters = new TokenValidationParameters()
+            {
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = Issue,
+                IssuerSigningKey = SignKey,
+                ValidateLifetime = true,
+                ValidateIssuer = true,
+                ValidateAudience = false,
+                ClockSkew = TimeSpan.Zero
+            };
+            o.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = c =>
+                {
+                    return Task.Run(() =>
+                    {
+
+                        throw new UnauthorizedAccessException();
+                        //Auth Fail
+                    });
+                }
+            };
+
+        }
         public static string SignToken(IList<Claim> claims,out DateTime expiration)
         {
             var seconds = Config.GetValue<int>("Expiration");
