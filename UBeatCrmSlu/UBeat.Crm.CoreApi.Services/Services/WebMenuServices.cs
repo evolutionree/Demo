@@ -144,17 +144,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return _webMenuRepository.updateMenuInfo(item);
         }
 
-        private string getFunctionIDByEntity(Guid entityid, List<FunctionInfo> funcs)
+        private string getFunctionIDByEntity(Guid entityid, List<FunctionInfo> funcs, int modeltype = 1)
         {
             foreach (FunctionInfo fun in funcs)
             {
-                if (entityid.Equals(fun.EntityId) && (fun.RoutePath == null || fun.RoutePath.Length == 0) && fun.DeviceType == 0)
+                switch (modeltype)
                 {
-                    if (fun.RecType == FunctionType.Entity)
-                    {
-
-                        return fun.FuncId.ToString();
-                    }
+                    case 1:
+                        if (entityid.Equals(fun.EntityId) && (fun.RoutePath == null || fun.RoutePath.Length == 0) && fun.DeviceType == 0)
+                        {
+                            if (fun.RecType == FunctionType.Entity)
+                            {
+                                return fun.FuncId.ToString();
+                            }
+                        }
+                        break;
+                    case 3:
+                        if (entityid.Equals(fun.EntityId) && !string.IsNullOrEmpty(fun.RoutePath) && fun.DeviceType == 0)
+                        {
+                            if (fun.RecType == FunctionType.Function)
+                            {
+                                return fun.FuncId.ToString();
+                            }
+                        }
+                        break;
                 }
             }
             return null;
@@ -370,7 +383,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
             if (sysMenus.ContainsKey("DynamicEntity"))
-            {
+             {
                 List<IDictionary<string, object>> dynamicEntity = (List<IDictionary<string, object>>)sysMenus["DynamicEntity"];
                 var tmpLst = _entryProRepository.GetDynamicEntityList();
                 int index = 0;
@@ -403,7 +416,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         webSubMenu.Icon = "";
                         webSubMenu.IsDynamic = 1;
                         webSubMenu.path = "/entcomm-dynamic/" + subMenu.EntityId;
-                        webSubMenu.FuncID = getFunctionIDByEntity(Guid.Parse(subMenu.EntityId), allFunctions);
+                        webSubMenu.FuncID = getFunctionIDByEntity(Guid.Parse(subMenu.EntityId), allFunctions, 3);
                         _webMenuRepository.insertMennInfo(webSubMenu);
                         secIndex++;
                     }
