@@ -23,6 +23,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using App.Metrics.Reporting.Interfaces;
 using App.Metrics.Extensions.Reporting.InfluxDB;
 using App.Metrics.Extensions.Reporting.InfluxDB.Client;
+using App.Metrics;
+using UBeat.Crm.CoreApi.Models;
 
 namespace UBeat.Crm.CoreApi
 {
@@ -138,23 +140,39 @@ namespace UBeat.Crm.CoreApi
         /// <param name="services"></param>
         private void ConfigureMetrics(IServiceCollection services)
         {
-            var database = "test";
-            var uri = new Uri("http://10.187.134.10:8086");
-
+            var appMetrics = Configuration.GetSection("AppMetrics").Get<AppMetricsModel>();
             services.AddMetrics(options =>
             {
-                options.GlobalTags.Add("app", "sample app");
-                options.GlobalTags.Add("env", "stage");
-            }).AddHealthChecks().AddReporting(
+                options.GlobalTags.Add("app", appMetrics.AppName);
+                options.GlobalTags.Add("env", appMetrics.EnvName);
+            }).AddHealthChecks(
+                factory => {
+                    string phyMemoryHealthCheckName=null;
+                    if(appMetrics.PhysicalMemoryHealthCheck>=1024L*1024*1024)
+                    {
+                        phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024 * 1024 ) +"GB";
+                    }
+                    else if (appMetrics.PhysicalMemoryHealthCheck >= 1024L * 1024 )
+                    {
+                        phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024 ) + "MB";
+                    }
+                    else
+                    {
+                        phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024) + "KB";
+                    }
+                    factory.RegisterProcessPhysicalMemoryHealthCheck(string.Format("占用内存是否超过阀值({0})", phyMemoryHealthCheckName), appMetrics.PhysicalMemoryHealthCheck);
+                    
+                }
+                ).AddReporting(
                 factory =>
                 {
                     factory.AddInfluxDb(
                         new InfluxDBReporterSettings
                         {
-                            InfluxDbSettings = new InfluxDBSettings(database, uri)
+                            InfluxDbSettings = new InfluxDBSettings(appMetrics.DataBase, new Uri(appMetrics.Uri))
                             {
-                                 UserName= "test",
-                                 Password="root111111"
+                                 UserName= appMetrics.DbUserName,
+                                 Password= appMetrics.DbPassword
                             },
                             ReportInterval = TimeSpan.FromSeconds(5)
                         });

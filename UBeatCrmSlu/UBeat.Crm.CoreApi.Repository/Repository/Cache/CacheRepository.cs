@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Redis;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,10 +14,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Cache
         static object instanceLock = new object();
         static CacheRepository instance;
         ICacheHelper _helper;
+       public bool IsConnected { get { return _helper.Connection.IsConnected; } }
 
         private CacheRepository(RedisCacheOptions options, int database = 0)
         {
             _helper = new RedisCacheHelper(options, database);
+            
         }
 
 

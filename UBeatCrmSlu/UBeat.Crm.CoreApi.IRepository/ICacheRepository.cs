@@ -7,6 +7,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 {
     public interface ICacheRepository
     {
+        bool  IsConnected { get; }
+
         #region ---验证缓存项是否存在---
         /// <summary>
         /// 验证缓存项是否存在

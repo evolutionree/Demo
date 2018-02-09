@@ -15,6 +15,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
 
         private ConnectionMultiplexer _connection;
 
+        public ConnectionMultiplexer Connection { get { return _connection; } }
+
         private readonly string _instance;
 
         public RedisCacheHelper(RedisCacheOptions options, int database = 0)

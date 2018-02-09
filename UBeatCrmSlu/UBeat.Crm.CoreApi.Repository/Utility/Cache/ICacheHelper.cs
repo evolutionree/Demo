@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StackExchange.Redis;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,6 +8,9 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
 {
     public interface ICacheHelper: IDisposable
     {
+
+        ConnectionMultiplexer Connection { get; }
+
         #region ---验证缓存项是否存在---
         /// <summary>
         /// 验证缓存项是否存在
