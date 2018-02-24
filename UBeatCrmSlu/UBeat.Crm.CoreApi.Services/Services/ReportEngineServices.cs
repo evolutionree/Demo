@@ -10,6 +10,9 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.ReportDefine;
 using UBeat.Crm.CoreApi.DomainModel.Vocation;
 using UBeat.Crm.CoreApi.Services.Utility;
+using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
+using System.IO;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -76,6 +79,44 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// 保存数据到文件系统中
+        /// </summary>
+        /// <param name="listData"></param>
+        /// <param name="columns"></param>
+        /// <returns></returns>
+        public string ExportTable(List<Dictionary<string, object>> listData, List<TableColumnInfo> columns)
+        {
+            ExportSheetData sheetData = new ExportSheetData();
+            sheetData.DataRows = listData;
+            sheetData.SheetDefines = new SimpleSheetTemplate()
+            {
+                Headers = new List<SimpleHeader>() 
+            };
+            foreach (TableColumnInfo colInfo in columns) {
+                SimpleHeader hInfo = new SimpleHeader();
+                hInfo.FieldName = colInfo.FieldName;
+                hInfo.FieldType = FieldType.Text;
+                hInfo.HeaderText = colInfo.Title;
+                hInfo.Width = colInfo.Width;
+                ((SimpleSheetTemplate)sheetData.SheetDefines).Headers.Add(hInfo);
+            }
+            byte[] ExcelFile = OXSExcelWriter.GenerateExcel(sheetData);
+            string curDir = Directory.GetCurrentDirectory();
+            string tmppath = Path.Combine(curDir, "reportexports");
+            string tmpFile = Guid.NewGuid().ToString();
+            if (Directory.Exists(curDir))
+            {
+                Directory.CreateDirectory(tmppath);
+            }
+            string fileFullPath = Path.Combine(tmppath, tmpFile + ".xlsx");
+            FileStream fs = new FileStream(fileFullPath, FileMode.Create);
+            fs.Write(ExcelFile, 0, ExcelFile.Length);
+            fs.Dispose();
+
+            return tmpFile;
         }
 
         private void CalcMultiDefaultValueScheme(FilterControlInfo filterInfo, UserData userdata) {
