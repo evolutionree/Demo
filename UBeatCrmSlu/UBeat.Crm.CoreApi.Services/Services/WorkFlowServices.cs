@@ -176,8 +176,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     #endregion
 
-
-
                     var dynamicEntityServices = dynamicCreateService("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices", false) as DynamicEntityServices;
 
                     #region --获取 entitydetail--
@@ -482,19 +480,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #endregion
 
-        public OutputResult<object> AddCase(WorkFlowAddCaseModel caseModel, int userNumber)
-        {
-            //获取该实体分类的字段
-            var caseEntity = _mapper.Map<WorkFlowAddCaseModel, WorkFlowAddCaseMapper>(caseModel);
-            if (caseEntity == null || !caseEntity.IsValid())
-            {
-                return HandleValid(caseEntity);
-            }
-
-            var result = AddCase(null, caseEntity, userNumber);
-
-            return HandleResult(result);
-        }
+       
 
         public OutputResult<object> SaveWorkflowRule(WorkFlowRuleSaveParamInfo paramInfo, int userId)
         {
@@ -552,34 +538,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(retList);
         }
 
-        public OperateResult AddCase(DbTransaction tran, WorkFlowAddCaseMapper caseEntity, int userNumber)
-        {
-            var entityInfo = _entityProRepository.GetEntityInfo(caseEntity.EntityId);
-            var detailMapper = new DynamicEntityDetailtMapper()
-            {
-                EntityId = entityInfo.EntityId,
-                RecId = caseEntity.RecId,
-                NeedPower = 0
-            };
-
-            if (entityInfo.ModelType == EntityModelType.Dynamic)
-            {
-                detailMapper.EntityId = entityInfo.RelEntityId.GetValueOrDefault();
-                detailMapper.RecId = caseEntity.RelRecId.GetValueOrDefault();
-            }
-            var olddetail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
-            var result = _workFlowRepository.AddCase(tran, caseEntity, userNumber);
-            if (result.Flag == 1)
-            {
-                Task.Run(() =>
-                {
-                    var caseId = Guid.Parse(result.Id);
-                    WriteAddCaseMessage(entityInfo, caseEntity.RecId, caseEntity.RelRecId.GetValueOrDefault(), caseEntity.FlowId, caseId, userNumber, olddetail);
-                });
-            }
-
-            return result;
-        }
+        
         /// <summary>
         /// 写入添加流程的消息
         /// </summary>
@@ -624,26 +583,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 MessageService.WriteMessage(null, dynamicMsg, userNumber);
             }
-
-
         }
 
 
-        #region 旧代码
-        public OutputResult<object> NextNodeData(WorkFlowNextNodeModel caseModel, int userNumber)
-        {
-            //获取该实体分类的字段
-            if (caseModel?.CaseId == null)
-            {
-                return ShowError<object>("流程明细ID不能为空");
-            }
-
-            var result = _workFlowRepository.NextNodeData(caseModel.CaseId, userNumber);
-
-            return new OutputResult<object>(result);
-
-        }
-        #endregion
+        
 
         public OutputResult<object> GetNextNodeData(WorkFlowNextNodeModel caseModel, int userNumber)
         {
@@ -653,12 +596,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>("流程明细ID不能为空");
             }
             var result = new List<NextNodeDataModel>();
-
             //var users = new List<NextNodeApproverInfo>();
-
             NextNodeDataInfo nodetemp = new NextNodeDataInfo();
-
-
             using (var conn = GetDbConnect())
             {
                 conn.Open();
@@ -684,7 +623,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nodetemp.NodeNum = 1;
                         nodetemp.NodeState = 0;
                         //nodetemp.StepTypeId = NodeStepType.SelectByUser;
-
                         if (caseInfo.NodeNum == -1)//审批已经结束
                         {
                             nodetemp.NodeNum = -1;
@@ -697,7 +635,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             Approvers = users
                         });
                     }
-
                     else //固定流程
                     {
                         //获取当前审批的实例item
@@ -712,7 +649,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             throw new Exception("不存在有效节点");
                         }
-
                         nodetemp.NodeId = flowNodeInfo.NodeId;
                         nodetemp.FlowType = WorkFlowType.FixedFlow;
                         nodetemp.NodeName = flowNodeInfo.NodeName;
@@ -734,7 +670,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 nodetemp.NodeState = 1;
                             }
                         }
-
                         //检查下一点，获取下一节点信息
                         if (nodetemp.NodeState == 0)
                         {
@@ -778,315 +713,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     conn.Dispose();
                 }
             }
-
             return new OutputResult<object>(result);
         }
-
-        #region 旧代码
-        public OutputResult<object> AddCaseItem(WorkFlowAddCaseItemModel caseItemModel, int userNumber)
-        {
-            //获取该实体分类的字段
-            var caseItemEntity = _mapper.Map<WorkFlowAddCaseItemModel, WorkFlowAddCaseItemMapper>(caseItemModel);
-            if (caseItemEntity == null || !caseItemEntity.IsValid())
-            {
-                return HandleValid(caseItemEntity);
-            }
-
-            var result = _workFlowRepository.AddCaseItem(caseItemEntity, userNumber);
-            if (result.Flag == 1)
-            {
-                WriteCaseItemMessage(0, caseItemModel.CaseId, caseItemModel.NodeNum, userNumber);
-            }
-
-            return HandleResult(result);
-        }
-
-        /// <summary>
-        /// 写入添加流程的消息
-        /// </summary>
-        /// <param name="operateType">操作类型：0=选择下一审批人，1=审批当前节点</param>
-        /// <param name="caseId"></param>
-        /// <param name="nodeNum"></param>
-        /// <param name="userNumber"></param>
-        public void WriteCaseItemMessage(int operateType, Guid caseId, int nodeNum, int userNumber)
-        {
-            Task.Run(() =>
-            {
-                List<int> approvers = new List<int>();
-                List<int> copyusers = new List<int>();
-                List<int> completedApprovers = new List<int>(); //暂时未空，预留字段
-                string allApprovalSuggest = null;
-
-                //获取casedetail
-                var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, caseId);
-                if (caseInfo == null)
-                    return;
-                var workflowInfo = _workFlowRepository.GetWorkFlowInfo(null, caseInfo.FlowId);
-                if (workflowInfo == null)
-                    return;
-
-
-                var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(null, caseId, nodeNum);
-
-                if (caseitems == null || caseitems.Count == 0)
-                    return;
-                caseitems = caseitems.OrderByDescending(m => m.StepNum).ToList();
-
-                var caseItem = operateType == 0 ? caseitems.FirstOrDefault() : caseitems.FirstOrDefault(m => m.HandleUser == userNumber);
-                if (caseItem == null)
-                    return;
-
-                approvers = caseitems.Select(m => m.HandleUser).Distinct().ToList();
-                foreach (var item in caseitems)
-                {
-                    if (!string.IsNullOrEmpty(item.CopyUser))
-                    {
-                        var copyUserArray = item.CopyUser.Split(',');
-                        foreach (var u in copyUserArray)
-                        {
-                            copyusers.Add(int.Parse(u));
-                        }
-
-                    }
-                }
-                copyusers = copyusers.Distinct().ToList();
-
-                var entityInfotemp = _entityProRepository.GetEntityInfo(caseInfo.EntityId);
-                if (entityInfotemp == null)
-                    return;
-                var msg = new MessageParameter();
-                var nodeid = caseitems.FirstOrDefault().NodeId;
-                var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(null, nodeid);
-                WorkFlowNodeInfo previousFlowNodeInfo = null;//上一审批节点
-                if (nodeNum > 1 && flowNodeInfo != null)
-                    previousFlowNodeInfo = _workFlowRepository.GetPreviousWorkFlowNodeInfo(null, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-
-                bool isMultipleApproval = flowNodeInfo != null && flowNodeInfo.NodeType == NodeType.Joint;//是否会审（多人审批同一个节点）
-                if (!isMultipleApproval) //普通审批和自由流程
-                {
-
-                    allApprovalSuggest = caseItem.Suggest;
-                    switch (caseItem.ChoiceStatus)
-                    {
-                        case ChoiceStatusType.Edit:
-                            if (caseInfo.AuditStatus == AuditStatusType.Begin || caseInfo.AuditStatus == AuditStatusType.Approving)//编辑操作
-                            {
-                                msg.FuncCode = "WorkFlowLaunch";
-
-                            }
-                            break;
-                        case ChoiceStatusType.Approval://普通审批通过
-                            if (caseInfo.AuditStatus == AuditStatusType.Finished)//审批完成
-                            {
-                                msg.FuncCode = "WorkFlowNodeFinish";
-                            }
-                            else
-                            {
-                                //由于先阶段，审批和选人是分开步骤，因此该情况不处理消息
-                                return;
-                            }
-                            break;
-                        case ChoiceStatusType.Reback: //普通审批退回
-                            msg.FuncCode = "WorkFlowNodeFallback";
-                            break;
-                        case ChoiceStatusType.Refused://普通审批拒绝
-                            msg.FuncCode = "WorkFlowNodeReject";
-                            break;
-                        case ChoiceStatusType.Stop:
-                            msg.FuncCode = "WorkFlowNodeStop";
-                            break;
-                        case ChoiceStatusType.AddNode://选择下一步审批人时的消息
-                            if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
-                            {
-                                if (caseItem.StepNum == 1)
-                                {
-                                    msg.FuncCode = "WorkFlowLaunch";
-                                }
-                                else msg.FuncCode = "WorkFlowNodeApproval";
-                            }
-                            else
-                            {
-                                if (caseItem.NodeNum == 1)
-                                {
-                                    msg.FuncCode = "WorkFlowLaunch";
-                                }
-                                else if (previousFlowNodeInfo.NodeType == NodeType.Joint)
-                                    msg.FuncCode = "NextWorkFlowNodeJointApproval";
-                                else msg.FuncCode = "WorkFlowNodeApproval";
-                            }
-
-                            break;
-                        case ChoiceStatusType.EndPoint:
-                            msg.FuncCode = "WorkFlowNodeFinish";
-                            break;
-                    }
-                }
-                else //会审审批
-                {
-
-                    if (caseInfo.AuditStatus == AuditStatusType.Finished)//完成审批
-                    {
-                        msg.FuncCode = "WorkFlowNodeFinish";
-                    }
-
-                    allApprovalSuggest = string.Join(";", caseitems.Select(m => m.Suggest));
-                    //判断是否还有人未完成审批
-                    bool hasNotApprovalFinish = caseitems.Exists(m => m.CaseStatus == CaseStatusType.WaitApproval || m.CaseStatus == CaseStatusType.Readed);
-                    //会审审批通过的节点数
-                    var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
-
-                    switch (caseItem.ChoiceStatus)
-                    {
-                        case ChoiceStatusType.Edit:
-                            if (caseInfo.AuditStatus == AuditStatusType.Begin || caseInfo.AuditStatus == AuditStatusType.Approving)//编辑操作
-                            {
-                                msg.FuncCode = "WorkFlowLaunch";
-                            }
-                            break;
-                        case ChoiceStatusType.Approval://某个会审人审批通过
-                            if (aproval_success_count >= flowNodeInfo.AuditSucc)
-                            {
-
-                            }
-                            else
-                            {
-                                msg.FuncCode = "WorkFlowNodeJointApproval";
-                            }
-
-                            break;
-                        case ChoiceStatusType.Reback: //
-                            if (caseInfo.NodeNum == 0)
-                            {
-                                msg.FuncCode = "FinishWorkFlowNodeJointFallback";//退回发起人
-                            }
-                            else msg.FuncCode = "WorkFlowNodeJointFallback";//某个会审人审批退回
-                            break;
-                        case ChoiceStatusType.Refused://审批拒绝
-                            if (caseInfo.NodeNum == -1)
-                            {
-                                msg.FuncCode = "FinishWorkFlowNodeJointRejectk";//全部完成了，流程拒绝
-                            }
-                            else msg.FuncCode = "WorkFlowNodeJointReject";//其中有个会审人拒绝
-                            break;
-                        case ChoiceStatusType.Stop:
-                            msg.FuncCode = "WorkFlowNodeStop";
-                            break;
-                        case ChoiceStatusType.AddNode://选择下一步审批人时的消息
-                            if (caseItem.NodeNum == 1)
-                            {
-                                msg.FuncCode = "WorkFlowLaunch";
-                            }
-                            else if (previousFlowNodeInfo.NodeType == NodeType.Joint)
-                                msg.FuncCode = "NextWorkFlowNodeJointApproval";
-                            else msg.FuncCode = "WorkFlowNodeApproval";
-                            break;
-                        case ChoiceStatusType.EndPoint:
-                            msg.FuncCode = "WorkFlowNodeFinish";
-                            break;
-                    }
-                }
-
-                msg.EntityId = entityInfotemp.EntityId;
-                msg.EntityName = entityInfotemp.EntityName;
-                msg.TypeId = entityInfotemp.CategoryId;
-                msg.BusinessId = caseInfo.RecId;
-                msg.RelEntityId = entityInfotemp.RelEntityId;
-                msg.RelEntityName = entityInfotemp.RelEntityName;
-                msg.RelBusinessId = caseInfo.RelRecId;
-                msg.Receivers = MessageService.GetWorkFlowMessageReceivers(caseInfo.RecCreator, approvers, copyusers, completedApprovers);
-                var msgParamData = new Dictionary<string, object>();
-                msgParamData.Add("caseid", caseInfo.CaseId.ToString());
-                msg.ParamData = JsonConvert.SerializeObject(msgParamData);
-
-                var users = new List<int>();
-                users.Add(userNumber);
-                users.Add(caseInfo.RecCreator);
-                users.AddRange(approvers);
-                var userInfos = MessageService.GetUserInfoList(users.Distinct().ToList());
-
-                var paramData = new Dictionary<string, string>();
-                paramData.Add("operator", userInfos.FirstOrDefault(m => m.UserId == userNumber).UserName);
-                paramData.Add("launchUser", userInfos.FirstOrDefault(m => m.UserId == caseInfo.RecCreator).UserName);
-                paramData.Add("approvalUserNames", string.Join("、", userInfos.Where(m => approvers.Contains(m.UserId)).Select(m => m.UserName)));
-                paramData.Add("workflowName", workflowInfo.FlowName);
-                paramData.Add("reccode", caseInfo.RecCode);
-                paramData.Add("approvalSuggest", caseItem.Suggest);
-                paramData.Add("allApprovalSuggest", allApprovalSuggest);
-
-
-                msg.TemplateKeyValue = paramData;
-                msg.CopyUsers = copyusers;
-                msg.ApprovalUsers = approvers;
-                msg.FlowId = caseInfo.FlowId;
-                //如果是动态实体，则需要发动态，
-                //流程新增和结束时候需要发送动态
-
-                if ((entityInfotemp.ModelType == EntityModelType.Dynamic || entityInfotemp.ModelType == EntityModelType.Independent)
-                         && (msg.FuncCode == "WorkFlowLaunch" || caseInfo.AuditStatus != AuditStatusType.Approving))
-                {
-                    //先发流程的审批消息，再发关联动态的消息
-                    MessageService.WriteMessage(null, msg, userNumber);
-
-                    var detailMapper = new DynamicEntityDetailtMapper()
-                    {
-                        EntityId = msg.EntityId,
-                        RecId = msg.BusinessId,
-                        NeedPower = 0
-                    };
-
-                    string msgpParam = null;
-                    if (entityInfotemp.ModelType == EntityModelType.Dynamic)
-                    {
-                        detailMapper.EntityId = msg.RelEntityId.GetValueOrDefault();
-                        detailMapper.RecId = msg.RelBusinessId;
-                        msgpParam = _dynamicRepository.GetDynamicTemplateData(msg.BusinessId, msg.EntityId, msg.TypeId, userNumber);
-                    }
-
-                    var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
-                    var newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);
-
-                    if (entityInfotemp.ModelType == EntityModelType.Dynamic && msg.FuncCode == "WorkFlowLaunch")
-                    {
-                        // 发布关联动态实体的动态消息
-                        var dynamicMsgtemp = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, "EntityDynamicAdd", userNumber, newMembers, null, msgpParam);
-
-                        MessageService.WriteMessage(null, dynamicMsgtemp, userNumber, null);
-                    }
-
-                    string dynamicFuncode = msg.FuncCode + "Dynamic";
-                    var dynamicMsg = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, dynamicFuncode, userNumber, newMembers, null, msgpParam);
-
-                    dynamicMsg.TemplateKeyValue = dynamicMsg.TemplateKeyValue.Union(paramData).ToLookup(t => t.Key, t => t.Value).ToDictionary(m => m.Key, m => m.First());
-                    //发布审批消息到实体动态列表
-                    MessageService.WriteMessage(null, dynamicMsg, userNumber, null, 2);
-
-
-                }
-
-                else MessageService.WriteMessage(null, msg, userNumber);
-            });
-        }
-
-
-
-
-        public OutputResult<object> AuditCaseItem(WorkFlowAuditCaseItemModel caseItemModel, int userNumber)
-        {
-            //获取该实体分类的字段
-            var caseItemEntity = _mapper.Map<WorkFlowAuditCaseItemModel, WorkFlowAuditCaseItemMapper>(caseItemModel);
-            if (caseItemEntity == null || !caseItemEntity.IsValid())
-            {
-                return HandleValid(caseItemEntity);
-            }
-
-            var result = _workFlowRepository.AuditCaseItem(caseItemEntity, userNumber);
-            if (result.Flag == 1)
-            {
-                WriteCaseItemMessage(1, caseItemModel.CaseId, caseItemModel.NodeNum, userNumber);
-            }
-            return HandleResult(result);
-        }
-        #endregion
 
 
         #region --审批预处理--
@@ -1388,7 +1016,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
         #endregion
-
 
         #region --提交审批--
 
@@ -2263,21 +1890,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
-        #region --旧接口--
-        public OutputResult<object> NodeLinesConfig(WorkFlowNodeLinesConfigModel configModel, int userNumber)
-        {
-            //获取该实体分类的字段
-            var configEntity = _mapper.Map<WorkFlowNodeLinesConfigModel, WorkFlowNodeLinesConfigMapper>(configModel);
-            if (configEntity == null || !configEntity.IsValid())
-            {
-                return HandleValid(configEntity);
-            }
-
-            var result = _workFlowRepository.NodeLinesConfig(configEntity, userNumber);
-            IncreaseDataVersion(DataVersionType.FlowData, null);
-            return new OutputResult<object>("");
-        }
-        #endregion
+        
 
         public OutputResult<object> SaveNodeLinesConfig(WorkFlowNodeLinesConfigModel configModel, int userNumber)
         {
@@ -2349,7 +1962,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(pageParam);
             }
-
             var result = _workFlowRepository.FlowList(pageParam, listModel.FlowStatus, listModel.SearchName, userNumber);
             return new OutputResult<object>(result);
         }
@@ -2360,9 +1972,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("流程ID不能为空");
             }
-
             var result = _workFlowRepository.Detail(detailModel.FlowId, userNumber);
-
             return new OutputResult<object>(result);
         }
 
@@ -2374,9 +1984,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(flowEntity);
             }
-
             var result = _workFlowRepository.AddFlow(flowEntity, userNumber);
-
             RemoveCommonCache();
             RemoveAllUserCache();
             IncreaseDataVersion(DataVersionType.FlowData);
@@ -2392,7 +2000,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(flowEntity);
             }
-
             var result = _workFlowRepository.UpdateFlow(flowEntity, userNumber);
             IncreaseDataVersion(DataVersionType.FlowData, null);
             return HandleResult(result);
@@ -2426,124 +2033,122 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return _workFlowRepository.getWorkFlowCaseListByRecId(transaction, recid, userNumber);
         }
 
-        public OutputResult<object> AddMultipleCase(WorkFlowAddMultipleCaseModel caseModel, int userNumber)
-        {
-            var caseIds = new List<string>();
-            WorkFlowAddMultipleCaseMapper caseEntity = new WorkFlowAddMultipleCaseMapper()
-            {
-                FlowId = caseModel.FlowId,
-                EntityId = caseModel.EntityId,
-                RecId = caseModel.RecId,
-                RelEntityId = caseModel.RelEntityId,
-                RelRecId = caseModel.RelRecId,
-                CaseData = caseModel.CaseData
-            };
+        //public OutputResult<object> AddMultipleCase(WorkFlowAddMultipleCaseModel caseModel, int userNumber)
+        //{
+        //    var caseIds = new List<string>();
+        //    WorkFlowAddMultipleCaseMapper caseEntity = new WorkFlowAddMultipleCaseMapper()
+        //    {
+        //        FlowId = caseModel.FlowId,
+        //        EntityId = caseModel.EntityId,
+        //        RecId = caseModel.RecId,
+        //        RelEntityId = caseModel.RelEntityId,
+        //        RelRecId = caseModel.RelRecId,
+        //        CaseData = caseModel.CaseData
+        //    };
 
-            if (caseEntity == null || !caseEntity.IsValid())
-            {
-                return HandleValid(caseEntity);
-            }
+        //    if (caseEntity == null || !caseEntity.IsValid())
+        //    {
+        //        return HandleValid(caseEntity);
+        //    }
 
-            //添加多个case,返回第一个case的user数据，作为所有case的user数据
-            foreach (var id in caseEntity.RecId)
-            {
-                WorkFlowAddCaseModel caseMapper = new WorkFlowAddCaseModel()
-                {
-                    FlowId = caseEntity.FlowId,
-                    EntityId = caseEntity.EntityId,
-                    RecId = id,
-                    RelEntityId = caseEntity.RelEntityId,
-                    RelRecId = caseEntity.RelEntityId,
-                    CaseData = caseEntity.CaseData
-                };
+        //    //添加多个case,返回第一个case的user数据，作为所有case的user数据
+        //    foreach (var id in caseEntity.RecId)
+        //    {
+        //        WorkFlowAddCaseModel caseMapper = new WorkFlowAddCaseModel()
+        //        {
+        //            FlowId = caseEntity.FlowId,
+        //            EntityId = caseEntity.EntityId,
+        //            RecId = id,
+        //            RelEntityId = caseEntity.RelEntityId,
+        //            RelRecId = caseEntity.RelEntityId,
+        //            CaseData = caseEntity.CaseData
+        //        };
 
-                var restult = AddCase(caseMapper, userNumber);
+        //        var restult = AddCase(caseMapper, userNumber);
 
-                //记录caseid 
-                if (restult.Status == 0)
-                {
-                    caseIds.Add(restult.DataBody.ToString());
-                }
+        //        //记录caseid 
+        //        if (restult.Status == 0)
+        //        {
+        //            caseIds.Add(restult.DataBody.ToString());
+        //        }
 
-            }
+        //    }
 
-            if (caseIds.Count > 0)
-            {
+        //    if (caseIds.Count > 0)
+        //    {
 
-                //获取下一个node
-                var nextNodeResult = _workFlowRepository.NextNodeData(Guid.Parse(caseIds.FirstOrDefault()), userNumber);
+        //        //获取下一个node
+        //        var nextNodeResult = _workFlowRepository.NextNodeData(Guid.Parse(caseIds.FirstOrDefault()), userNumber);
 
-                var node = nextNodeResult["node"];
-                var user = nextNodeResult["user"];
+        //        var node = nextNodeResult["node"];
+        //        var user = nextNodeResult["user"];
 
-                var finalResult = new
-                {
-                    node,
-                    user,
-                    caseIds
-                };
-                return new OutputResult<object>(finalResult);
-            }
-            else
-            {
-                return new OutputResult<object>()
-                {
-                    Status = 1,//失败
-                    Message = "选择的数据有问题，请重新选择",
+        //        var finalResult = new
+        //        {
+        //            node,
+        //            user,
+        //            caseIds
+        //        };
+        //        return new OutputResult<object>(finalResult);
+        //    }
+        //    else
+        //    {
+        //        return new OutputResult<object>()
+        //        {
+        //            Status = 1,//失败
+        //            Message = "选择的数据有问题，请重新选择",
 
-                };
-
-
-            }
-        }
+        //        };
+        //    }
+        //}
 
 
 
-        /// <summary>
-        /// 添加多个case item
-        /// </summary>
-        /// <param name="caseModel"></param>
-        /// <param name="userNumber"></param>
-        /// <returns></returns>
-        public OutputResult<object> AddMultipleCaseItem(WorkFlowAddMultipleCaseItemModel caseModel, int userNumber)
-        {
-            WorkFlowAddMulpleCaseItemMapper _mapper = new WorkFlowAddMulpleCaseItemMapper()
-            {
-                CaseId = caseModel.CaseId,
-                NodeNum = caseModel.NodeNum,
-                HandleUser = caseModel.HandleUser,
-                CopyUser = caseModel.CopyUser,
-                Remark = caseModel.Remark,
-                CaseData = caseModel.CaseData
+        ///// <summary>
+        ///// 添加多个case item
+        ///// </summary>
+        ///// <param name="caseModel"></param>
+        ///// <param name="userNumber"></param>
+        ///// <returns></returns>
+        //public OutputResult<object> AddMultipleCaseItem(WorkFlowAddMultipleCaseItemModel caseModel, int userNumber)
+        //{
+        //    WorkFlowAddMulpleCaseItemMapper _mapper = new WorkFlowAddMulpleCaseItemMapper()
+        //    {
+        //        CaseId = caseModel.CaseId,
+        //        NodeNum = caseModel.NodeNum,
+        //        HandleUser = caseModel.HandleUser,
+        //        CopyUser = caseModel.CopyUser,
+        //        Remark = caseModel.Remark,
+        //        CaseData = caseModel.CaseData
 
-            };
+        //    };
 
-            if (_mapper == null || !_mapper.IsValid())
-            {
-                return HandleValid(_mapper);
-            }
+        //    if (_mapper == null || !_mapper.IsValid())
+        //    {
+        //        return HandleValid(_mapper);
+        //    }
 
-            foreach (var id in _mapper.CaseId)
-            {
-                WorkFlowAddCaseItemMapper caseItemEntity = new WorkFlowAddCaseItemMapper()
-                {
-                    CaseId = id,
-                    NodeNum = caseModel.NodeNum,
-                    HandleUser = caseModel.HandleUser,
-                    CopyUser = caseModel.CopyUser,
-                };
+        //    foreach (var id in _mapper.CaseId)
+        //    {
+        //        WorkFlowAddCaseItemMapper caseItemEntity = new WorkFlowAddCaseItemMapper()
+        //        {
+        //            CaseId = id,
+        //            NodeNum = caseModel.NodeNum,
+        //            HandleUser = caseModel.HandleUser,
+        //            CopyUser = caseModel.CopyUser,
+        //        };
 
-                var resultAddCaseItem = _workFlowRepository.AddCaseItem(caseItemEntity, userNumber);
-                if (resultAddCaseItem.Flag == 1)
-                {
-                    WriteCaseItemMessage(0, id, caseModel.NodeNum, userNumber);
-                }
-            }
+        //        var resultAddCaseItem = _workFlowRepository.AddCaseItem(caseItemEntity, userNumber);
+        //        if (resultAddCaseItem.Flag == 1)
+        //        {
+        //            WriteCaseItemMessage(0, id, caseModel.NodeNum, userNumber);
+        //        }
+        //    }
 
 
-            return HandleResult(new OperateResult() { Flag = 1 });
+        //    return HandleResult(new OperateResult() { Flag = 1 });
 
-        }
+        //}
 
     }
 }
