@@ -226,7 +226,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var pushMsg = new AccountsPushExtModel()
                     {
                         Accounts = receiverIds.Select(m => m.ToString()).ToList(),
-                        Title = configData.FuncName,
+                        Title = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.TitleTemplate),
                         Message = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.NotifyTemplate),
                         SendTime = DateTime.Now.AddYears(-1).ToString(),
                         CustomContent = pushCustomContent
