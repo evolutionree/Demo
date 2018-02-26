@@ -689,7 +689,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                             }
 
-
                             break;
                         }
                     case DynamicProtocolControlType.RecName:
