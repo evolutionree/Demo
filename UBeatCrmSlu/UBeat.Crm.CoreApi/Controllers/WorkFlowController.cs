@@ -55,14 +55,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
 
-        //获取下一个节点，以及节点选人数据
-        [HttpPost]
-        [Route("nextnodedata")]
-        public OutputResult<object> NextNodeData_old([FromBody] WorkFlowNextNodeModel caseModel = null)
-        {
-            if (caseModel == null) return ResponseError<object>("参数格式错误");
-            return _workFlowServices.NextNodeData(caseModel, UserId);
-        }
+        
         //获取下一个节点，以及节点选人数据
         [HttpPost]
         [Route("getnextnode")]
@@ -71,26 +64,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (caseModel == null) return ResponseError<object>("参数格式错误");
             return _workFlowServices.GetNextNodeData(caseModel, UserId);
         }
-
-        //选人之后，提交审批明细数据
-        [HttpPost]
-        [Route("addcaseitem")]
-        public OutputResult<object> AddCaseItem([FromBody] WorkFlowAddCaseItemModel caseItemModel = null)
-        {
-            if (caseItemModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("提交审批步骤数据", caseItemModel);
-            return _workFlowServices.AddCaseItem(caseItemModel, UserId);
-        }
-        //审批流程
-        [HttpPost]
-        [Route("auditcaseitem")]
-        public OutputResult<object> AuditCaseItem([FromBody] WorkFlowAuditCaseItemModel caseItemModel = null)
-        {
-            if (caseItemModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("提交审核意见", caseItemModel);
-            return _workFlowServices.AuditCaseItem(caseItemModel, UserId);
-        }
-
+        
         //提交审批预处理(新审批接口)
         [HttpPost]
         [Route("submitpreaudit")]
@@ -137,16 +111,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _workFlowServices.GetNodeLinesInfo(nodeLineModel, UserId);
         }
 
-        #region --旧代码--
-        [HttpPost]
-        [Route("nodelinesconfig")]
-        public OutputResult<object> NodeLinesConfig([FromBody] WorkFlowNodeLinesConfigModel configModel = null)
-        {
-            if (configModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("修改审批节点配置", configModel);
-            return _workFlowServices.NodeLinesConfig(configModel, UserId);
-        } 
-        #endregion
+        
 
         [HttpPost]
         [Route("savenodesconfig")]
@@ -227,30 +192,30 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
 
-        /// <summary>
-        /// 发起多个审批
-        /// </summary>
-        [HttpPost]
-        [Route("addmultiplecase")]
-        public OutputResult<object> AddMultipleCase([FromBody] WorkFlowAddMultipleCaseModel caseModel = null)
-        {
-            if (caseModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("提交审批数据", caseModel);
-            return _workFlowServices.AddMultipleCase(caseModel, UserId);
-        }
+        ///// <summary>
+        ///// 发起多个审批
+        ///// </summary>
+        //[HttpPost]
+        //[Route("addmultiplecase")]
+        //public OutputResult<object> AddMultipleCase([FromBody] WorkFlowAddMultipleCaseModel caseModel = null)
+        //{
+        //    if (caseModel == null) return ResponseError<object>("参数格式错误");
+        //    WriteOperateLog("提交审批数据", caseModel);
+        //    return _workFlowServices.AddMultipleCase(caseModel, UserId);
+        //}
 
 
-        /// <summary>
-        /// 发起多个审批
-        /// </summary>
-        [HttpPost]
-        [Route("addmultiplecaseitem")]
-        public OutputResult<object> AddMultipleCaseItem([FromBody] WorkFlowAddMultipleCaseItemModel caseModel = null)
-        {
-            if (caseModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("提交审批数据", caseModel);
-            return _workFlowServices.AddMultipleCaseItem(caseModel, UserId);
-        }
+        ///// <summary>
+        ///// 发起多个审批
+        ///// </summary>
+        //[HttpPost]
+        //[Route("addmultiplecaseitem")]
+        //public OutputResult<object> AddMultipleCaseItem([FromBody] WorkFlowAddMultipleCaseItemModel caseModel = null)
+        //{
+        //    if (caseModel == null) return ResponseError<object>("参数格式错误");
+        //    WriteOperateLog("提交审批数据", caseModel);
+        //    return _workFlowServices.AddMultipleCaseItem(caseModel, UserId);
+        //}
 
         /// <summary>
         /// 保存工作流Rule

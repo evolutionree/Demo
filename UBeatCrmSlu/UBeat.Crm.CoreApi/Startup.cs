@@ -141,6 +141,8 @@ namespace UBeat.Crm.CoreApi
         private void ConfigureMetrics(IServiceCollection services)
         {
             var appMetrics = Configuration.GetSection("AppMetrics").Get<AppMetricsModel>();
+            if (appMetrics == null|| appMetrics.IsEnable!=1)
+                return;
             services.AddMetrics(options =>
             {
                 options.GlobalTags.Add("app", appMetrics.AppName);

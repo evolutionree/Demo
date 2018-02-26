@@ -945,13 +945,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     case DynamicProtocolControlType.Text:
                     case DynamicProtocolControlType.TextArea:
                         {
-                            result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
+                            result.FieldData = string.Format("t.{0} ilike '%{1}%'", columnKey, dataStr);
                             break;
                         }
                     case DynamicProtocolControlType.Address:
                     case DynamicProtocolControlType.Location:
                         {
-                            result.FieldData = string.Format("jsonb_extract_path_text(e.{0}, 'address') ilike '%{1}%'", columnKey, dataStr);
+                            result.FieldData = string.Format("jsonb_extract_path_text(t.{0}, 'address') ilike '%{1}%'", columnKey, dataStr);
                             break;
                         }
                     case DynamicProtocolControlType.RecCreator:
@@ -990,7 +990,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         }
                     default:
                         {
-                            result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
+                            result.FieldData = string.Format("t.{0} ilike '%{1}%'", columnKey, dataStr);
                             break;
                         }
                 }

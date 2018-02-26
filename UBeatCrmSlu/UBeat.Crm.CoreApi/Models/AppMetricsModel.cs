@@ -7,6 +7,10 @@ namespace UBeat.Crm.CoreApi.Models
 {
     public class AppMetricsModel
     {
+        /// <summary>
+        /// 是否启用，1=启用，其他=关闭
+        /// </summary>
+        public int IsEnable { set; get; }
         public string DataBase { set; get; }
         public string DbUserName { set; get; }
 

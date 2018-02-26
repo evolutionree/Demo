@@ -7,6 +7,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.ReportDefine;
 using UBeat.Crm.CoreApi.DomainModel.Reports;
 using UBeat.Crm.CoreApi.Services.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -66,6 +67,53 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
 
+        /// <summary>
+        ///  导出表格数据(生成文件，并不下载)
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("export")]
+        public OutputResult<object> exportTableData([FromBody ]ReportTableQueryDataModel paramInfo) {
+            OutputResult<object> dataResult = null;
+            try
+            {
+                dataResult = this.queryDataForDataSource(paramInfo.DataQueryModel);
+            }
+            catch (Exception ex)
+            {
+            }
+            if (dataResult == null || dataResult.Status != 0)
+            {
+                return ResponseError<object>("获取数据异常");
+            }
+            Dictionary<string, object> dataDict = (Dictionary<string, object>)dataResult.DataBody;
+            List<Dictionary<string, object>> listData = null;
+            List<TableColumnInfo> Columns = paramInfo.Columns;
+            if (dataDict.ContainsKey("data") && dataDict["data"] != null)
+            {
+
+                listData = (List<Dictionary<string, object>>)dataDict["data"];
+            }
+            if (dataDict.ContainsKey("columns") && dataDict["columns"]!=null) {
+                string tmp = Newtonsoft.Json.JsonConvert.SerializeObject(dataDict["columns"]);
+                Columns = Newtonsoft.Json.JsonConvert.DeserializeObject<List<TableColumnInfo>>(tmp);
+            }
+            try
+            {
+                string filename = this._reportEngineService.ExportTable(listData, Columns);
+                return new OutputResult<object>(filename);
+            }
+            catch (Exception ex)
+            {
+                return ResponseError<object>("导出Excel异常：" + ex.Message);
+            }
+        }
+        [HttpGet("export")]
+        [AllowAnonymous]
+        public IActionResult DownloadExportFile([FromQuery] string fileid,[FromQuery]string  fileName = null) {
+            // return PhysicalFile(model.ExcelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", model.FileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
+            return null;
+        }
         /***
          * 提供给手机客户端获取报表列表
          * */
