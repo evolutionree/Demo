@@ -18,9 +18,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
         }
         public PageDataInfo<LinkManMapper> GetFlagLinkman(ContactMapper paramInfo, int userId)
         {
-            string sql = @"SELECT u.userid,u.username,u.usericon,u.remark,u.joineddate,u.birthday,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
+            string sql = @"SELECT TRUE flag,u.userid,u.username,u.usericon,u.remark,u.joineddate,u.birthday,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
 			FROM crm_sys_flaglinkman f 
-            inner join crm_sys_userinfo AS u on f.userid=u.userid
+            inner join crm_sys_userinfo AS u on f.userid=u.userid and u.recstatus=1
 			LEFT JOIN crm_sys_account_userinfo_relate AS r ON u.userid = r.userid AND r.recstatus = 1
 			LEFT JOIN crm_sys_account AS account ON account.accountid = r.accountid 
 			LEFT JOIN crm_sys_department AS d ON d.deptid = r.deptid where  1=1 and f.recmanager=@userId ";
@@ -38,9 +38,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
             {
                 paramInfo.PageSize = 1000000;
             }
-            if (paramInfo.PageIndex <= 1)
+            if (paramInfo.PageIndex <= 0)
             {
-                paramInfo.PageIndex = paramInfo.PageIndex - 1;
+                paramInfo.PageIndex = 1;
             }
 
             var param = new DbParameter[]
@@ -56,7 +56,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
         {
             string sql = @"SELECT COALESCE(f.userid,0)::BOOLEAN as flag,u.userid,u.username,u.usericon,u.remark,u.joineddate,u.birthday,u.userphone,u.userjob,u.usertel,u.usersex,u.workcode,u.useremail,r.deptid,d.deptname
 			FROM crm_sys_recentcall rc 
-              inner join crm_sys_userinfo AS u on rc.userid=u.userid
+              inner join crm_sys_userinfo AS u on rc.userid=u.userid and u.recstatus=1
               LEFT join crm_sys_flaglinkman f  on f.userid=rc.userid and  f.recmanager=@userId
 			        LEFT JOIN crm_sys_account_userinfo_relate AS r ON u.userid = r.userid AND r.recstatus = 1
 			        LEFT JOIN crm_sys_account AS account ON account.accountid = r.accountid 
@@ -76,9 +76,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Contact
             {
                 paramInfo.PageSize = 1000000;
             }
-            if (paramInfo.PageIndex <= 1)
+            if (paramInfo.PageIndex <= 0)
             {
-                paramInfo.PageIndex = paramInfo.PageIndex - 1;
+                paramInfo.PageIndex = 1;
             }
 
             var param = new DbParameter[]
