@@ -24,20 +24,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.PrintForm
         /// </summary>
         public DataSourceType DataSourceType { set; get; }
         /// <summary>
-        /// 数据源处理接口:数据库函数名
+        /// 数据源处理接口:数据库函数名或者内部服务接口的命名空间
         /// </summary>
         public string DataSourceFunc { set; get; }
-
-        /// <summary>
-        /// 如果使用内部服务接口时，需要指定使用的程序集dll名称，如XXXX，目前版本不要包含dll后缀，其他方式再根据实际情况改加载dll的逻辑
-        /// </summary>
-        public string AssemblyName { set; get; }
-        /// <summary>
-        /// 如果使用内部服务接口时，需要指定具体的类名称，填写完整的命名空间和类型名称
-        /// </summary>
-        public string ClassTypeName { set; get; }
-
-
         /// <summary>
         /// 数据源扩展处理JS
         /// </summary>
@@ -79,14 +68,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.PrintForm
         /// 修改人
         /// </summary>
         public int RecUpdator { set; get; }
-        /// <summary>
-        /// 创建人
-        /// </summary>
-        public string RecCreator_Name { set; get; }
-        /// <summary>
-        /// 修改人
-        /// </summary>
-        public string RecUpdator_Name { set; get; }
         /// <summary>
         /// 记录版本,系统自动生成
         /// </summary>

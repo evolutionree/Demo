@@ -18,34 +18,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
         [JsonProperty("data")]
         public IFormFile Data { set; get; }
     }
-
-    public class PrintEntity1
-    {
-        public string Formula { set; get; }
-        public string Startat { set; get; }
-
-    }
-
-    public class EntityRecTempModel
-    {
-        public Guid EntityId { set; get; }
-
-
-        public Guid RecId { set; get; }
-
-       
-
-    }
-
     public class PrintEntityModel
     {
         public Guid EntityId { set; get; }
 
         public Guid TemplateId { set; get; }
 
-        public Guid RecId { set; get; }
-
-        public int OutputType { set; get; }
+        public List<Guid> RecIds { set; get; }
 
     }
 
@@ -60,12 +39,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
         public List<Guid> RecIds { set; get; }
         public int RecStatus { set; get; }
     }
-    public class DeleteTemplatesModel
-    {
-        public List<Guid> RecIds { set; get; }
-       
-    }
 
+    
 
     public class TemplateInfoModel
     {
@@ -88,19 +63,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
         /// </summary>
         public DataSourceType DataSourceType { set; get; }
         /// <summary>
-        /// 数据源处理接口:数据库函数名
+        /// 数据源处理接口:数据库函数名或者内部服务接口的命名空间
         /// </summary>
         public string DataSourceFunc { set; get; }
-
-        /// <summary>
-        /// 如果使用内部服务接口时，需要指定使用的程序集dll名称，如XXXX，目前版本不要包含dll后缀，其他方式再根据实际情况改加载dll的逻辑
-        /// </summary>
-        public string AssemblyName { set; get; }
-        /// <summary>
-        /// 如果使用内部服务接口时，需要指定具体的类名称，填写完整的命名空间和类型名称
-        /// </summary>
-        public string ClassTypeName { set; get; }
-
         /// <summary>
         /// 数据源扩展处理JS
         /// </summary>

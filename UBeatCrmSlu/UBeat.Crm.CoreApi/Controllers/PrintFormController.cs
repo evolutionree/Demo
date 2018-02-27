@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -40,14 +39,6 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (data == null) return ResponseError<object>("参数格式错误");
             return _printFormServices.SetTemplatesStatus(data, UserId);
         }
-
-        [HttpPost("deletetemplate")]
-        public OutputResult<object> DeleteTemplates([FromBody] DeleteTemplatesModel data = null)
-        {
-            if (data == null) return ResponseError<object>("参数格式错误");
-            return _printFormServices.DeleteTemplates(data, UserId);
-        }
-
         [HttpPost("updatetemplate")]
         public OutputResult<object> UpdateTemplate([FromBody] TemplateInfoModel data = null)
         {
@@ -62,55 +53,11 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         #endregion
 
-        #region ---获取某条数据拥有的模板列表---
-        [HttpPost("getrectemplatelist")]
-        public OutputResult<object> GetRecDataTemplateList([FromBody] EntityRecTempModel data = null)
-        {
-            if (data == null) return ResponseError<object>("参数格式错误");
-            return _printFormServices.GetRecDataTemplateList(data, UserId);
-        } 
-        #endregion
-
-
-
-        [HttpPost("testformula")]
-        [AllowAnonymous]
-        public OutputResult<object> PrintEntity1([FromBody] PrintEntity1 data = null)
-        {
-            //System.Data.DataTable dt = new System.Data.DataTable();
-            //var really_data = dt.Compute(data.Formula, null).ToString() ;
-            //bool re = false;
-            //bool.TryParse(really_data, out re);
-           // string Key_FieldPath = @"(=*\S+(\(){1}\s*\S+\s*(\)){1})*";
-           // var really_data = System.Text.RegularExpressions.Regex.Matches(data.Formula, data.Startat);
-           //var ss= data.Formula.Split(new char[] { '/', '*', '+', '-' });
-
-            Services.Utility.OpenXMLUtility.KeywordHelper.GetLanguageData(data.Formula);
-            //var really_datass = System.Text.RegularExpressions.Regex.Split(data.Formula, Key_FieldPath, System.Text.RegularExpressions.RegexOptions.Multiline);
-            return new OutputResult<object>("");
-        }
-       
-
         [HttpPost("printentity")]
         public OutputResult<object> PrintEntity([FromBody] PrintEntityModel data = null)
         {
             if (data == null) return ResponseError<object>("参数格式错误");
             return _printFormServices.PrintEntity(data, UserId);
-
-        }
-        [HttpGet("exportfile")]
-        [AllowAnonymous]
-        public IActionResult DownloadExportFile([FromQuery] string fileid, [FromQuery]string fileName = null)
-        {
-            string curDir = Directory.GetCurrentDirectory();
-            string tmppath = Path.Combine(curDir, "reportexports");
-            string tmpFile = fileid;
-            if (Directory.Exists(curDir))
-            {
-                Directory.CreateDirectory(tmppath);
-            }
-            string fileFullPath = Path.Combine(tmppath, tmpFile + ".xlsx");
-            return PhysicalFile(fileFullPath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
         }
 
 
