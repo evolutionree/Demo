@@ -26,6 +26,41 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>("ok");
         }
 
+        #region ---套打模板管理---
+        [HttpPost("inserttemplate")]
+        public OutputResult<object> InsertTemplate([FromBody] TemplateInfoModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _printFormServices.InsertTemplate(data, UserId);
+        }
+        [HttpPost("settemplatestatus")]
+        public OutputResult<object> SetTemplatesStatus([FromBody] TemplatesStatusModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _printFormServices.SetTemplatesStatus(data, UserId);
+        }
+        [HttpPost("updatetemplate")]
+        public OutputResult<object> UpdateTemplate([FromBody] TemplateInfoModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _printFormServices.UpdateTemplate(data, UserId);
+        }
+        [HttpPost("gettemplatelist")]
+        public OutputResult<object> GetTemplateList([FromBody] TemplateListModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _printFormServices.GetTemplateList(data, UserId);
+        }
+        #endregion
+
+        [HttpPost("printentity")]
+        public OutputResult<object> PrintEntity([FromBody] PrintEntityModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _printFormServices.PrintEntity(data, UserId);
+        }
+
+
         [AllowAnonymous]
         [HttpPost]
         [Route("getoutputdoc")]

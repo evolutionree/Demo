@@ -431,5 +431,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
             ExecuteNonQuery(sql, new DbParameter[] { }, tran);
         }
+
+
+        /// <summary>
+        /// 获取企业信息
+        /// </summary>
+        /// <returns></returns>
+        public EnterpriseInfo GetEnterpriseInfo()
+        {
+            var sql = @"SELECT * FROM crm_sys_enterprise LIMIT 1";
+
+           
+            return ExecuteQuery<EnterpriseInfo>(sql, null).FirstOrDefault();
+        }
     }
 }

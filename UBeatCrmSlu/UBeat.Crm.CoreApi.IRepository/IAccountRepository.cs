@@ -57,5 +57,11 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         UserInfo GetUserInfoById(int userid);
         void UpdateSoftwareVersion(DbTransaction tran, string apkName, int iMainVersion, int iSubVersion, int iBuildCode,string serverUrl, int userNum);
+
+        /// <summary>
+        /// 获取企业信息
+        /// </summary>
+        /// <returns></returns>
+        EnterpriseInfo GetEnterpriseInfo();
     }
 }
