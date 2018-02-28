@@ -1192,7 +1192,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             int stepnum = caseitem.StepNum + 1;
             string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum,nodeid) 
                                          VALUES (@caseid, 0 , 4,@handleuser,  0, @userno,@userno,@stepnum,@nodeid);
-                                         UPDATE crm_sys_workflow_case SET nodenum = 0,recupdator = @userno WHERE caseid = @caseid;");
+                                         UPDATE crm_sys_workflow_case SET nodenum = 0,recupdator = @userno,recupdated=@recupdated WHERE caseid = @caseid;");
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("caseid", caseitem.CaseId));
@@ -1200,7 +1200,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             sqlParameters.Add(new NpgsqlParameter("nodeid", nodeid));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
             sqlParameters.Add(new NpgsqlParameter("stepnum", stepnum));
-
+            sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
 
             var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
 
@@ -1217,13 +1217,12 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             var sqlParameters = new List<DbParameter>();
             if (caseitem.NodeNum == 0 && caseitem.StepNum == 0)
             {
-                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casestatus = 2,recupdator = @userno 
+                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casestatus = 2,recupdator = @userno ,recupdated=@recupdated
                                           WHERE caseitemid = @caseitemid;");
             }
             else
             {
-                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casedata = @casedata, casestatus = 2,recupdator = @userno 
-                                          WHERE caseitemid = @caseitemid;");
+                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casedata = @casedata, casestatus = 2,recupdator = @userno ,recupdated=@recupdated WHERE caseitemid = @caseitemid;");
                 sqlParameters.Add(new NpgsqlParameter("casedata", JsonConvert.SerializeObject(auditdata.CaseData)) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
             }
 
@@ -1231,7 +1230,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             sqlParameters.Add(new NpgsqlParameter("suggest", auditdata.Suggest ?? ""));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
             sqlParameters.Add(new NpgsqlParameter("caseitemid", caseitem.CaseItemId));
-
+            sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
             var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
 
             return result > 0;
@@ -1242,14 +1241,14 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         /// </summary>
         public bool AuditWorkFlowCase(Guid caseid, AuditStatusType auditstatus, int nodenum, int userNumber, DbTransaction trans = null)
         {
-            string sql = string.Format(@" UPDATE crm_sys_workflow_case SET auditstatus = @auditstatus,nodenum = @nodenum,recupdator = @userno WHERE caseid = @caseid;");
+            string sql = string.Format(@" UPDATE crm_sys_workflow_case SET auditstatus = @auditstatus,nodenum = @nodenum,recupdator = @userno,recupdated=@recupdated WHERE caseid = @caseid;");
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("auditstatus", (int)auditstatus));
             sqlParameters.Add(new NpgsqlParameter("nodenum", nodenum));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
             sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
-
+            sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
 
             var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
 
@@ -1262,14 +1261,14 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         /// </summary>
         public bool ReOpenWorkFlowCase(Guid caseid, Guid caseitemid, int userNumber, DbTransaction trans = null)
         {
-            string sql = string.Format(@" UPDATE crm_sys_workflow_case SET nodenum = 0,recupdator = @userno,auditstatus=3 WHERE caseid = @caseid;
-                                          UPDATE crm_sys_workflow_case_item SET choicestatus = 4,casestatus = 1 WHERE caseitemid = @caseitemid;");
+            string sql = string.Format(@" UPDATE crm_sys_workflow_case SET nodenum = 0,recupdator = @userno,auditstatus=3,recupdated=@recupdated WHERE caseid = @caseid;
+                                          UPDATE crm_sys_workflow_case_item SET choicestatus = 4,casestatus = 1,recupdated=@recupdated WHERE caseitemid = @caseitemid;");
 
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("caseitemid", caseitemid));
             sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
-
+            sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
 
             var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
 
