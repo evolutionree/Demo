@@ -8,6 +8,7 @@ using UBeat.Crm.CoreApi.Services.Models.ReportDefine;
 using UBeat.Crm.CoreApi.DomainModel.Reports;
 using UBeat.Crm.CoreApi.Services.Services;
 using Microsoft.AspNetCore.Authorization;
+using System.IO;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -108,11 +109,18 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("导出Excel异常：" + ex.Message);
             }
         }
-        [HttpGet("export")]
+        [HttpGet("export2file")]
         [AllowAnonymous]
         public IActionResult DownloadExportFile([FromQuery] string fileid,[FromQuery]string  fileName = null) {
-            // return PhysicalFile(model.ExcelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", model.FileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
-            return null;
+            string curDir = Directory.GetCurrentDirectory();
+            string tmppath = Path.Combine(curDir, "reportexports");
+            string tmpFile = fileid;
+            if (Directory.Exists(curDir))
+            {
+                Directory.CreateDirectory(tmppath);
+            }
+            string fileFullPath = Path.Combine(tmppath, tmpFile + ".xlsx");
+            return PhysicalFile(fileFullPath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
         }
         /***
          * 提供给手机客户端获取报表列表
