@@ -33,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         public List<ExcelCellInfo> Cells { set; get; }
 
         /// <summary>
-        /// 行状态：0=已存在数据行，1=新增行，-1=删除行
+        /// 行状态：0=未修改，1=新增,2=已编辑，-1=删除
         /// </summary>
         public RowStatus RowStatus { set; get; }
     }
@@ -58,8 +58,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
     public enum RowStatus
     {
-        Normal=0,
+        Deleted = -1,
+        Normal =0,
         Add=1,
-        Deleted=-1
+        Edit=2
     }
 }

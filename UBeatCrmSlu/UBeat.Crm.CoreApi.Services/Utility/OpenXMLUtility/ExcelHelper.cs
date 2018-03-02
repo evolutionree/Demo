@@ -254,6 +254,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             var dataRow = new ExcelRowInfo();
             dataRow.RowIndex = row.RowIndex;
+            dataRow.RowStatus = RowStatus.Normal;
             dataRow.Cells = new List<ExcelCellInfo>();
             var cells = row.Descendants<Cell>();
             foreach (var cell in cells)

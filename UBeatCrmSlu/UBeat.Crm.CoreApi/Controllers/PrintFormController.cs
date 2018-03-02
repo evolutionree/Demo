@@ -52,6 +52,21 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _printFormServices.GetTemplateList(data, UserId);
         }
         #endregion
+        [HttpPost("testformula")]
+        [AllowAnonymous]
+        public OutputResult<object> PrintEntity1([FromBody] PrintEntity1 data = null)
+        {
+            System.Data.DataTable dt = new System.Data.DataTable();
+            var really_data = dt.Compute(data.Formula, null).ToString() ;
+            bool re = false;
+            bool.TryParse(really_data, out re);
+            //string Key_FieldPath = @"【#\s*\S+\s*#】";
+            //var really_data = System.Text.RegularExpressions.Regex.Matches(data.Formula, Key_FieldPath);
+
+            //var really_datass = System.Text.RegularExpressions.Regex.Split(data.Formula, Key_FieldPath, System.Text.RegularExpressions.RegexOptions.Multiline);
+            return new OutputResult<object>(really_data);
+        }
+       
 
         [HttpPost("printentity")]
         public OutputResult<object> PrintEntity([FromBody] PrintEntityModel data = null)

@@ -41,6 +41,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
         public const string Key_IF = @"^=IF\(\S+\)$";
         public const string Key_ElseIF = @"^=ElseIF\(\S+\)$";
+        public const string Key_Else = @"^=Else$";
         public const string Key_EndIF = "=EndIF()";
         public const string Key_Loop = @"^=Loop\(\S+\)$";
         public const string Key_EndLoop = "=EndLoop()";
@@ -48,6 +49,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         public const string Key_Sum = @"^=sum\(\S+\)$";
         public const string Key_Concat = @"^=Concat\(\S+\)$";
         public const string Key_Count = @"^=count\(\S+\)$";
+
+        public const string Key_FieldPath = @"【#\s*\S+\s*#】";
 
         #endregion
 
@@ -168,6 +171,17 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             return Regex.IsMatch(input, Key_ElseIF);
         }
         /// <summary>
+        /// 是否是Else关键字
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static bool IsKey_Else(string input )
+        {
+            if (string.IsNullOrEmpty(input))
+                return false;
+            return IsEquals(input, Key_Else);
+        }
+        /// <summary>
         /// 是否是EndIF关键字
         /// </summary>
         /// <param name="input"></param>
@@ -252,7 +266,30 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         }
         #endregion
 
+        public static string[] GetFieldNames(string input)
+        {
+            return input.ToLower().Replace("【#", "").Replace("#】", "").Trim().Split('.', StringSplitOptions.RemoveEmptyEntries);
+        }
 
-        
+        /// <summary>
+        /// 解析表达式内容
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="fieldnames">返回表达式中包含的变量列表</param>
+        /// <returns>源表达式</returns>
+        public static string ParsingFormula(string input, out List<string> fieldList)
+        {
+            fieldList = null;
+            if (string.IsNullOrEmpty(input))
+                return null;
+            fieldList = new List<string>();
+            var matcheFieldnames = Regex.Matches(input, Key_FieldPath);
+            foreach(Match match in matcheFieldnames)
+            {
+                fieldList.Add(match.Value);
+            }
+            return input;
+        }
+
     }
 }

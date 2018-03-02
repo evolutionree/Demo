@@ -11,6 +11,7 @@ using System.Net;
 using System.ComponentModel.DataAnnotations;
 using UBeat.Crm.CoreApi.Services.Models;
 using Newtonsoft.Json;
+using StackExchange.Redis;
 
 namespace UBeat.Crm.CoreApi.Utility
 {
@@ -85,6 +86,10 @@ namespace UBeat.Crm.CoreApi.Utility
             else if(exceptionType==typeof(TimeoutException))
             {
                 outputResult = new OutputResult<object>(string.Format("服务繁忙，请稍后再试", (int)HttpStatusCode.InternalServerError), ex.Message, 1);
+            }
+            else if(exceptionType==typeof(RedisConnectionException))
+            {
+                outputResult = new OutputResult<object>(string.Format("Redis服务连接失败，请稍后再试", (int)HttpStatusCode.InternalServerError), ex.Message, 1);
             }
             else
             {
