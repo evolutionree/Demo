@@ -308,6 +308,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     public class TableComponentInfo {
         public int FixedX { get; set; }
         public int FixedY { get; set; }
+        /// <summary>
+        /// 是否显示导出按钮
+        /// </summary>
+        public int ShowExport { get; set; }
 
         public List<TableColumnInfo> Columns { get; set; }
     }
