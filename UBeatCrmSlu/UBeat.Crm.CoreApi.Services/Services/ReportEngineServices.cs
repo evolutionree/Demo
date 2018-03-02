@@ -81,6 +81,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+
+        private List<MultiHeader> createMultiHeader(List<TableColumnInfo> columns) {
+            List<MultiHeader> ret = new List<MultiHeader>();
+            foreach (TableColumnInfo item in columns) {
+                MultiHeader header = new MultiHeader()
+                {
+                    FieldName = item.FieldName,
+                    FieldType = FieldType.Text,
+                    HeaderText = item.Title,
+                    Width = item.Width,
+                    HeaderType = 1
+                };
+                if (item.IsColumnGroup == 1)
+                {
+                    header.HeaderType = 2;
+                    header.SubHeaders = createMultiHeader(item.SubColumns);
+                }
+                ret.Add(header);
+
+
+            }
+            return ret;
+        }
         /// <summary>
         /// 保存数据到文件系统中
         /// </summary>
@@ -89,20 +112,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>
         public string ExportTable(List<Dictionary<string, object>> listData, List<TableColumnInfo> columns)
         {
+            MultiHeaderSheetTemplate sheetTemplate = new MultiHeaderSheetTemplate();
+            sheetTemplate.Headers = createMultiHeader(columns);
+
             ExportSheetData sheetData = new ExportSheetData();
             sheetData.DataRows = listData;
-            sheetData.SheetDefines = new SimpleSheetTemplate()
-            {
-                Headers = new List<SimpleHeader>() 
-            };
-            foreach (TableColumnInfo colInfo in columns) {
-                SimpleHeader hInfo = new SimpleHeader();
-                hInfo.FieldName = colInfo.FieldName;
-                hInfo.FieldType = FieldType.Text;
-                hInfo.HeaderText = colInfo.Title;
-                hInfo.Width = colInfo.Width;
-                ((SimpleSheetTemplate)sheetData.SheetDefines).Headers.Add(hInfo);
-            }
+            sheetData.SheetDefines = sheetTemplate;
+            
             byte[] ExcelFile = OXSExcelWriter.GenerateExcel(sheetData);
             string curDir = Directory.GetCurrentDirectory();
             string tmppath = Path.Combine(curDir, "reportexports");

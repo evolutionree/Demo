@@ -325,31 +325,39 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 			sheets.AppendChild(sheet);
 			//列映射关系
 			var columnMap = new List<ColumnMapModel>();
-			// Add header
-			if (data.SheetDefines is SimpleSheetTemplate)
-			{
-				var sheetTemplate = data.SheetDefines as SimpleSheetTemplate;
-				if (sheetTemplate.Headers != null && sheetTemplate.Headers.Count > 0)
-				{
-					columnMap = CreateHeaders(rootbookpart, worksheetPart, sheetTemplate.Headers);
-					worksheetPart.Worksheet.InsertAfter(GetColumns(sheetTemplate.Headers), worksheetPart.Worksheet.SheetFormatProperties);
-				}
-			}
-			else
-			{
-				var sheetTemplate = data.SheetDefines as SheetTemplate;
-				columnMap = new List<ColumnMapModel>(sheetTemplate.ColumnMap);
-				if (sheetTemplate.HeadersTemplate != null)
-				{
-					CreateHeaders(rootbookpart, worksheetPart, sheetTemplate.HeadersTemplate);
-				}
-				// Add the column configuration if available
-				if (sheetTemplate.ColumnsOuterXml != null)
-				{
-					var columns = new Columns(sheetTemplate.ColumnsOuterXml);
-					worksheetPart.Worksheet.InsertAfter(columns, worksheetPart.Worksheet.SheetFormatProperties);
-				}
-			}
+            // Add header
+            if (data.SheetDefines is SimpleSheetTemplate)
+            {
+                var sheetTemplate = data.SheetDefines as SimpleSheetTemplate;
+                if (sheetTemplate.Headers != null && sheetTemplate.Headers.Count > 0)
+                {
+                    columnMap = CreateHeaders(rootbookpart, worksheetPart, sheetTemplate.Headers);
+                    worksheetPart.Worksheet.InsertAfter(GetColumns(sheetTemplate.Headers), worksheetPart.Worksheet.SheetFormatProperties);
+                }
+            }
+            else if (data.SheetDefines is MultiHeaderSheetTemplate) {
+                //多表头的处理
+                var sheetTemplate = data.SheetDefines as MultiHeaderSheetTemplate;
+                if (sheetTemplate.Headers != null && sheetTemplate.Headers.Count > 0) {
+                    columnMap = CreateHeaders(rootbookpart, worksheetPart, sheetTemplate.Headers);
+                    worksheetPart.Worksheet.InsertAfter(GetColumns(columnMap), worksheetPart.Worksheet.SheetFormatProperties);
+                }
+            }
+            else
+            {
+                var sheetTemplate = data.SheetDefines as SheetTemplate;
+                columnMap = new List<ColumnMapModel>(sheetTemplate.ColumnMap);
+                if (sheetTemplate.HeadersTemplate != null)
+                {
+                    CreateHeaders(rootbookpart, worksheetPart, sheetTemplate.HeadersTemplate);
+                }
+                // Add the column configuration if available
+                if (sheetTemplate.ColumnsOuterXml != null)
+                {
+                    var columns = new Columns(sheetTemplate.ColumnsOuterXml);
+                    worksheetPart.Worksheet.InsertAfter(columns, worksheetPart.Worksheet.SheetFormatProperties);
+                }
+            }
 
 			//如果有错误提示内容，则在最后创建一列错误提示列
 			var errorColumnName = Guid.NewGuid().ToString();
@@ -371,8 +379,129 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 			//rootbookpart.Workbook.Save();
 		}
 
-		#region --创建表格头部--
-		private static List<ColumnMapModel> CreateHeaders(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<SimpleHeader> headers)
+        #region --创建表格头部--
+        #region 处理多表头
+        /// <summary>
+        /// 自定义多表头导出时，计算每个单元格的rowIndex和colIndex，以及span信息
+        /// </summary>
+        /// <param name="headers"></param>
+        /// <param name="curRowIndex"></param>
+        /// <param name="curColIndex"></param>
+        /// <param name="MaxRowCount"></param>
+        /// <returns></returns>
+        private static int CalcMultiHeaderSpan(List<MultiHeader> headers, int curRowIndex, int curColIndex ,ref int MaxRowCount) {
+            if (MaxRowCount < curRowIndex) MaxRowCount = curRowIndex;
+            for (int i = 0; i < headers.Count; i++) {
+                if (headers[i].HeaderType == 1)
+                {
+                    headers[i].RowIndex = curRowIndex;
+                    headers[i].ColIndex = curColIndex;
+                    curColIndex++;
+                    headers[i].ColSpan = 1;
+                    headers[i].RowSpan = MaxRowCount-curRowIndex+1;
+                }
+                else {
+
+                    int endColIndex = CalcMultiHeaderSpan(headers[i].SubHeaders, curRowIndex + 1, curColIndex, ref MaxRowCount);
+                    headers[i].RowIndex = curRowIndex;
+                    headers[i].ColIndex = curColIndex;
+                    headers[i].ColSpan = endColIndex - curColIndex;
+                    headers[i].RowSpan =  1;
+                    curColIndex = endColIndex;
+                }
+            }
+            return curColIndex;
+        }
+        /// <summary>
+        /// 修复非分组表头的RowSpan
+        /// </summary>
+        /// <param name="headers"></param>
+        /// <param name="maxRowCount"></param>
+        private static void AfterCalcMultiHeaderSpan(List<MultiHeader> headers, int maxRowCount) {
+            foreach (MultiHeader item in headers) {
+                if (item.HeaderType == 1) {
+                    item.RowSpan = maxRowCount - item.RowIndex + 1;
+                }
+            }
+        }
+        /// <summary>
+        /// 根据行和列获取单元格名称
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <param name="colIndex"></param>
+        /// <returns></returns>
+        private static string  getCellName(int rowIndex, int colIndex) {
+            return OpenXMLExcelHelper.GetColumnName((uint)colIndex) + rowIndex.ToString();
+        }
+        /// <summary>
+        /// 生成表头，以及生成ColumnMap
+        /// </summary>
+        /// <param name="workbookPart"></param>
+        /// <param name="worksheetPart"></param>
+        /// <param name="headers"></param>
+        /// <param name="columnMap"></param>
+        private static void CalcMultiHeaderColumns(WorkbookPart workbookPart, WorksheetPart worksheetPart,
+            List<MultiHeader> headers, List<ColumnMapModel> columnMap) {
+            foreach (MultiHeader item in headers) {
+                string headerText = item.HeaderText;
+                for (int r = 0; r < item.RowSpan; r++) {
+                    for (int c = 0; c < item.ColSpan; c++) {
+                        var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, (uint)(item.ColIndex+c), (uint)(item.RowIndex+r), headerText);
+                        cell.StyleIndex = 6;
+                        headerText = "";
+                    }
+                }
+                if (item.ColSpan > 1 || item.RowSpan > 1) {
+                    string FirstCellName = getCellName(item.RowIndex, item.ColIndex);
+                    string SecondCellName = getCellName(item.RowIndex + item.RowSpan - 1, item.ColIndex + item.ColSpan - 1);
+                    OpenXMLExcelHelper.MergeTwoCells(worksheetPart.Worksheet, FirstCellName, SecondCellName);
+                }
+                if (item.HeaderType == 1)
+                {
+                    //普通
+                    columnMap.Add(new ColumnMapModel() {
+                        Index = (int)item.ColIndex,
+                        FieldName = item.FieldName,
+                        IsNotEmpty = item.IsNotEmpty ,
+                        Width = item.Width,
+                        HeaderText = item.HeaderText
+                    });
+
+                }
+                else {
+                    CalcMultiHeaderColumns(workbookPart, worksheetPart, item.SubHeaders, columnMap);
+                }
+            }
+        }
+        /// <summary>
+        /// 创建多行表头
+        /// </summary>
+        /// <param name="workbookPart"></param>
+        /// <param name="worksheetPart"></param>
+        /// <param name="headers"></param>
+        /// <returns></returns>
+        private static List<ColumnMapModel> CreateHeaders(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<MultiHeader> headers)
+        {
+            try
+            {
+                
+                List<ColumnMapModel> columnMap = new List<ColumnMapModel>();
+                Worksheet worksheet = worksheetPart.Worksheet;
+                if (headers == null || headers.Count <= 0)
+                    throw new Exception("Excel 必须包含Header数据");
+                int MaxRowCount = 0;
+                CalcMultiHeaderSpan(headers, 1, 0, ref MaxRowCount);
+                AfterCalcMultiHeaderSpan(headers, MaxRowCount);
+                CalcMultiHeaderColumns(workbookPart, worksheetPart, headers, columnMap);
+                return columnMap;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+        private static List<ColumnMapModel> CreateHeaders(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<SimpleHeader> headers)
 		{
 			try
 			{
@@ -401,7 +530,36 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 				throw ex;
 			}
 		}
-		private static void CreateHeaders(WorkbookPart workbookPart, WorksheetPart worksheetPart, HeadersTemplate template)
+        private static List<ColumnMapModel> CreateHeaders2(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<MultiHeader> headers)
+        {
+            try
+            {
+                List<ColumnMapModel> columnMap = new List<ColumnMapModel>();
+                Worksheet worksheet = worksheetPart.Worksheet;
+                if (headers == null || headers.Count <= 0)
+                    throw new Exception("Excel 必须包含Header数据");
+                uint columnIndex = 0;
+                foreach (var m in headers)
+                {
+
+                    var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIndex, 1, m.HeaderText ?? "");
+                    if (m.IsNotEmpty)
+                    {
+                        cell.StyleIndex = 5;
+                    }
+                    else cell.StyleIndex = 4;
+
+                    columnMap.Add(new ColumnMapModel() { Index = (int)columnIndex, FieldName = m.FieldName, IsNotEmpty = m.IsNotEmpty });
+                    columnIndex++;
+                }
+                return columnMap;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        private static void CreateHeaders(WorkbookPart workbookPart, WorksheetPart worksheetPart, HeadersTemplate template)
 		{
 			Worksheet worksheet = worksheetPart.Worksheet;
 			if (template == null || template.RowCellsTemplate == null)
@@ -556,6 +714,33 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 		}
 		#endregion
 
+        private static Columns GetColumns(List<ColumnMapModel> columnsMap)
+        {
+            double colWidth = 0;
+            Columns columns = new Columns();
+
+            double maxWidth = 7;
+            int index = 0;
+            foreach (var column in columnsMap)
+            {
+                double width = 0;
+                if (column.Width <= 0)
+                {
+                    colWidth = column.HeaderText.Length;
+                }
+                else
+                {
+                    //double charWidth = Math.Truncate((pixels - 5) / maxWidth * 100 + 0.5) / 100;
+                    colWidth = Math.Truncate((column.Width - 5) / maxWidth * 100 + 0.5) / 100;
+                }
+                width = Math.Truncate((colWidth * maxWidth + 5) / maxWidth * 256) / 256;
+                //单位转换公式地址 https://msdn.microsoft.com/en-us/library/documentformat.openxml.spreadsheet.column
+                Column col = new Column() { BestFit = true, Min = (UInt32)(index + 1), Max = (UInt32)(index + 1), CustomWidth = true, Width = width };
+                index++;
+                columns.Append(col);
+            }
+            return columns;
+        }
 
 		private static Columns GetColumns(List<SimpleHeader> headers)
 		{

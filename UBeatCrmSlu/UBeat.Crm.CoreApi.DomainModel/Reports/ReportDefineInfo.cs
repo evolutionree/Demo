@@ -312,7 +312,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 是否显示导出按钮
         /// </summary>
         public int ShowExport { get; set; }
-
         public List<TableColumnInfo> Columns { get; set; }
     }
     public class TableColumnInfo {
@@ -327,6 +326,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public int ControlType { get; set; }//控件类型
         public string FormatStr { get; set; }//显示方式
         public bool IsDataSourceMulti { get; set; }//是否数据源多选
+        public int IsColumnGroup { get; set; }//是否表头分组
+        public List<TableColumnInfo> SubColumns { get; set; }//子Columns
 
     }
     /***

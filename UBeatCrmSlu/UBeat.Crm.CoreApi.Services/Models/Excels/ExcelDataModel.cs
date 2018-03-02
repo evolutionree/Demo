@@ -41,6 +41,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// </summary>
         public object DataObject { set; get; }
     }
+
     public class SimpleHeader
     {
         public string HeaderText { set; get; }
@@ -66,7 +67,35 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
 
     }
 
-    
+    /// <summary>
+    /// 多表头定义
+    /// </summary>
+    public class MultiHeaderSheetTemplate : SheetDefine
+    {
+        /// <summary>
+        /// 表头的文本列表，按顺序排列
+        /// </summary>
+        public List<MultiHeader> Headers { set; get; }
+
+        /// <summary>
+        /// 预留字段，根据需要使用
+        /// </summary>
+        public object DataObject { set; get; }
+    }
+    public class MultiHeader : SimpleHeader {
+        public int HeaderType { get; set; }
+        public List<MultiHeader> SubHeaders { get; set; }
+        /// <summary>
+        /// 用于计算导出头部使用，不用赋值，仅用于计算过程
+        /// </summary>
+        public int RowSpan { get; set; }
+        /// <summary>
+        /// 用于计算导出头部使用，不用赋值，仅用于计算过程
+        /// </summary>
+        public int ColSpan { get; set; }
+        public int RowIndex { get; set; }
+        public int ColIndex { get; set; }
+    }
 
     public class ExcelTemplate
     {
@@ -132,6 +161,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// 样式的id
         /// </summary>
         public uint StyleIndex { set; get; }
+        /// <summary>
+        /// 列宽
+        /// </summary>
+        public int Width { get; set; }
+        public string HeaderText { get; set; }
     }
 
     public enum FieldType
