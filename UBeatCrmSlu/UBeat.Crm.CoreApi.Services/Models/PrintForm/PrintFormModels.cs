@@ -18,13 +18,20 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
         [JsonProperty("data")]
         public IFormFile Data { set; get; }
     }
+
+    public class PrintEntity1
+    {
+        public string Formula { set; get; }
+        
+    }
+
     public class PrintEntityModel
     {
         public Guid EntityId { set; get; }
 
         public Guid TemplateId { set; get; }
 
-        public List<Guid> RecIds { set; get; }
+        public Guid RecId { set; get; }
 
     }
 

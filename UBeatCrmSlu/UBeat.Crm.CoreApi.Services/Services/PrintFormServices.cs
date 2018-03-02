@@ -14,20 +14,30 @@ using UBeat.Crm.CoreApi.Services.Models.Account;
 using UBeat.Crm.CoreApi.Repository.Repository.Account;
 using UBeat.Crm.CoreApi.Core.Utility;
 using Microsoft.Extensions.Configuration;
+using System.Data;
+using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
+using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
+using UBeat.Crm.CoreApi.DomainModel.Account;
+using UBeat.Crm.CoreApi.DomainModel.EntityPro;
+using Newtonsoft.Json.Linq;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class PrintFormServices : BaseServices
     {
         private readonly IPrintFormRepository _repository;
-        private readonly IAccountRepository _accountRepository ;
-
+        private readonly IAccountRepository _accountRepository;
+        private readonly IEntityProRepository _entityProRepository;
+        private readonly DynamicEntityServices _entityServices;
+        //
         FileServices _fileServices;
-        public PrintFormServices(IPrintFormRepository repository, IAccountRepository accountRepository)
+        public PrintFormServices(IPrintFormRepository repository, IAccountRepository accountRepository, IEntityProRepository entityProRepository, DynamicEntityServices entityServices)
         {
             _repository = repository;
             _fileServices = new FileServices();
             _accountRepository = accountRepository;
+            _entityProRepository = entityProRepository;
+            _entityServices = entityServices;
         }
 
         #region ---套打模板管理---
@@ -111,139 +121,363 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (data == null)
                 throw new Exception("参数不可为空");
             var templateInfo = _repository.GetTemplateInfo(data.TemplateId);
-            if(templateInfo==null)
+            if (templateInfo == null)
                 throw new Exception("输出模板不正确，请重新选择模板");
-            if (!templateInfo.FileId.HasValue|| templateInfo.FileId.Value==Guid.Empty)
+            if (!templateInfo.FileId.HasValue || templateInfo.FileId.Value == Guid.Empty)
                 throw new Exception("未上传输出模板文件，请先上传输出模板文件");
-            
-            var fileData= _fileServices.GetFileData(null, templateInfo.FileId.ToString());
+
+            var fileData = _fileServices.GetFileData(null, templateInfo.FileId.ToString());
             Stream fileStream = new MemoryStream(fileData);
             var excelData = ExcelHelper.ReadExcel(fileStream);
             if (excelData == null || excelData.Sheets == null || excelData.Sheets.Count == 0)
                 throw new Exception("输出模板文件解析错误，请检查模板文件格式并上传Office 2007以上版本模板文件");
 
-            Dictionary<string, object> detailData = new Dictionary<string, object>();
-
+            IDictionary<string, object> detailData = GetDetailData(data.EntityId, data.RecId, templateInfo, usernumber);
+            var fields = _entityProRepository.EntityFieldProQuery(data.EntityId.ToString(), usernumber).FirstOrDefault().Value;
+            var userinfo = _accountRepository.GetAccountUserInfo(usernumber);
             foreach (var sheet in excelData.Sheets)
             {
                 var newRows = new List<ExcelRowInfo>();
                 foreach (var row in sheet.Rows)
                 {
-                    if (row.RowStatus == RowStatus.Deleted) continue;
+                    if (row.RowStatus != RowStatus.Normal) continue;
+                    row.RowStatus = RowStatus.Edit;
                     foreach (var cell in row.Cells)
                     {
-                        //是否固定变量
-                        CheckFixVariableCellValue(cell, usernumber);
-                        //是否IF控制函数
-                        newRows.AddRange(CheckIFCtlCellValue(sheet, row, cell, detailData, usernumber));
-                        //是否Loop控制函数
-                        newRows.AddRange(CheckLoopCtlCellValue(sheet, row, cell, detailData, usernumber));
-                        
-                        //是否值函数
+                        var newRowsTemp = ParsingData(sheet, row, cell, fields, detailData, userinfo);
+                        if (newRowsTemp != null && newRowsTemp.Count > 0)
+                            newRows.AddRange(newRowsTemp);
                     }
                 }
-                foreach(var row in newRows)
+                foreach (var row in newRows)
                 {
                     var rowIndex = sheet.Rows.FindLastIndex(m => m.RowIndex == row.RowIndex);
-                    sheet.Rows.Insert(rowIndex+1, row);
+                    sheet.Rows.Insert(rowIndex + 1, row);
                 }
             }
             var bytes = ExcelHelper.WrightExcel(excelData);
             //documentBytes.Add(bytes);
-            return new OutputResult<object> ();
+            return new OutputResult<object>();
         }
 
-
-        #region --解析是否固定变量，并用真实值替换变量名--
-        private void CheckFixVariableCellValue(ExcelCellInfo cell, int usernumber)
+        #region --获取实体详情数据--
+        private IDictionary<string, object> GetDetailData(Guid entityId, Guid recId, CrmSysEntityPrintTemplate templateInfo, int usernumber)
         {
-            var userinfo = _accountRepository.GetAccountUserInfo(usernumber);
-            if (KeywordHelper.IsCurUserName(cell.CellValue))
+            IDictionary<string, object> detailData = null;
+            if (templateInfo.DataSourceType == DataSourceType.EntityDetail)
             {
-                cell.CellValue = userinfo.UserName.ToString();
-                cell.IsUpdated = true;
+                var paramData = new DynamicEntityDetailtMapper()
+                {
+                    EntityId = entityId,
+                    RecId = recId,
+                    NeedPower = 0
+                };
+                detailData = _entityServices.Detail(paramData, usernumber)["Detail"].FirstOrDefault();
             }
-            else if (KeywordHelper.IsCurUserId(cell.CellValue))
+            else if (templateInfo.DataSourceType == DataSourceType.DbFunction)
             {
-                cell.CellValue = userinfo.UserId.ToString();
-                cell.IsUpdated = true;
+
             }
-            else if (KeywordHelper.IsCurDate(cell.CellValue))
+            else if (templateInfo.DataSourceType == DataSourceType.InternalMethor)
             {
-                cell.CellValue = DateTime.Now.ToString("yyyy-MM-dd");
-                cell.IsUpdated = true;
+
             }
-            else if (KeywordHelper.IsCurTime(cell.CellValue))
+
+            return detailData;
+        }
+        #endregion
+
+        #region --解析每行每个单元格的数据--
+        private List<ExcelRowInfo> ParsingData(ExcelSheetInfo sheet, ExcelRowInfo row, ExcelCellInfo cell, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields=null, IDictionary<string, object> linkTableDetailData=null)
+        {
+            var newRows = new List<ExcelRowInfo>();
+            //是否IF控制函数
+            var newRowsTemp = CheckIFCtlCellValue(sheet, row, cell, fields, detailData, userinfo);
+            if (newRowsTemp != null && newRowsTemp.Count > 0)
+                newRows.AddRange(newRowsTemp);
+            //是否Loop控制函数
+            newRowsTemp = CheckLoopCtlCellValue(sheet, row, cell, fields, detailData, userinfo);
+            if (newRowsTemp != null && newRowsTemp.Count > 0)
+                newRows.AddRange(newRowsTemp);
+            //是否值函数
+            //解析变量，并用真实值替换变量名
+            CheckVariableCellValue(cell, fields, detailData, userinfo);
+            //解析嵌套实体变量，并用真实值替换变量名
+            if (linkTableFields != null && linkTableDetailData != null && linkTableDetailData.Count > 0)
+                ParsingLinkTableVariable(cell, fields, linkTableDetailData, userinfo);
+
+            return newRows;
+        }
+        #endregion
+
+        #region --解析变量，并用真实值替换变量名--
+        /// <summary>
+        /// 解析变量，并用真实值替换变量名
+        /// </summary>
+        /// <param name="cell">当前单元格</param>
+        /// <param name="fields">实体字段定义</param>
+        /// <param name="detailData">实体详情数据</param>
+        /// <param name="linkTableDetailData">实体表格嵌套实体的字段数据，仅在用到表格控件时使用</param>
+        /// <param name="userinfo"></param>
+        private void CheckVariableCellValue(ExcelCellInfo cell, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo)
+        {
+            var formula = ParsingVariable(cell.CellValue, fields, detailData, userinfo);
+            if (cell.CellValue != formula)
             {
-                cell.CellValue = DateTime.Now.ToString("yyyy-MM-dd HH:mm:SS");
                 cell.IsUpdated = true;
+                cell.CellValue = formula;
             }
-            else if (KeywordHelper.IsCurDeptName(cell.CellValue))
+        }
+        private string ParsingVariable(string formulaArg, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo)
+        {
+            List<string> fieldList = null;
+            var formula = KeywordHelper.ParsingFormula(formulaArg, out fieldList);
+            if (fieldList != null && fieldList.Count > 0)
             {
-                
-                cell.CellValue = userinfo.DepartmentName.ToString();
-                cell.IsUpdated = true;
+                foreach (var fieldFormat in fieldList)
+                {
+                    if (KeywordHelper.IsCurUserName(fieldFormat))
+                    {
+                        formula = formula.Replace(fieldFormat, userinfo.UserName.ToString());
+                    }
+                    else if (KeywordHelper.IsCurUserId(fieldFormat))
+                    {
+                        formula = formula.Replace(fieldFormat, userinfo.UserId.ToString());
+                    }
+                    else if (KeywordHelper.IsCurDate(fieldFormat))
+                    {
+                        formula = formula.Replace(fieldFormat, DateTime.Now.ToString("yyyy-MM-dd"));
+                    }
+                    else if (KeywordHelper.IsCurTime(fieldFormat))
+                    {
+                        formula = formula.Replace(fieldFormat, DateTime.Now.ToString("yyyy-MM-dd HH:mm:SS"));
+                    }
+                    else if (KeywordHelper.IsCurDeptName(fieldFormat))
+                    {
+                        formula = formula.Replace(fieldFormat, userinfo.DepartmentName.ToString());
+                    }
+                    else if (KeywordHelper.IsCurDeptId(fieldFormat))
+                    {
+                        formula = formula.Replace(fieldFormat, userinfo.DepartmentId.ToString());
+                    }
+                    else if (KeywordHelper.IsEnterpriseName(fieldFormat))
+                    {
+                        var enterpriseInfo = _accountRepository.GetEnterpriseInfo();
+                        formula = formula.Replace(fieldFormat, enterpriseInfo.EnterpriseName);
+                    }
+                    else
+                    {
+                        var fieldnames = KeywordHelper.GetFieldNames(fieldFormat);
+                        if (fieldnames.Length == 1)//实体的普通字段
+                        {
+                            var tempfield = fieldnames[0].Trim();
+                            //获取实体字段名称
+                            var entityfieldname = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]))["fieldname"].ToString();
+                            var entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
+                            formula = formula.Replace(fieldFormat, entityfieldvalue);
+                        }
+
+                    }
+                }
+
             }
-            else if (KeywordHelper.IsCurDeptId(cell.CellValue))
+            return formula;
+
+        }
+        /// <summary>
+        /// 解析嵌套表格控件的变量
+        /// </summary>
+        /// <param name="formulaArg">单元格内的表达式内容</param>
+        /// <param name="tableFields">嵌套实体的字段定义</param>
+        /// <param name="tableDetailData">嵌套实体的数据详情</param>
+        /// <param name="userinfo"></param>
+        /// <returns></returns>
+        private void ParsingLinkTableVariable(ExcelCellInfo cell, List<IDictionary<string, object>> tableFields, IDictionary<string, object> tableDetailData, AccountUserInfo userinfo)
+        {
+            List<string> fieldList = null;
+            var formula = KeywordHelper.ParsingFormula(cell.CellValue, out fieldList);
+            if (fieldList != null && fieldList.Count > 0)
             {
-                cell.CellValue = userinfo.DepartmentId.ToString();
-                cell.IsUpdated = true;
+                foreach (var fieldFormat in fieldList)
+                {
+                    var fieldnames = KeywordHelper.GetFieldNames(fieldFormat);
+                    if (fieldnames.Length == 2)//实体表格控件，此时数据由参数linkTableDetailData提供
+                    {
+                        var tempfield = fieldnames[1].Trim();
+
+                        //获取实体字段名称
+                        var entityfieldname = tableFields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]))["fieldname"].ToString();
+                        var entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
+                        formula = formula.Replace(fieldFormat, entityfieldvalue);
+                    }
+                }
+
             }
-            else if (KeywordHelper.IsEnterpriseName(cell.CellValue))
+            if (cell.CellValue != formula)
             {
-                var enterpriseInfo = _accountRepository.GetEnterpriseInfo();
-                cell.CellValue = enterpriseInfo.EnterpriseName;
                 cell.IsUpdated = true;
+                cell.CellValue = formula;
             }
         }
         #endregion
 
-        private List<ExcelRowInfo> CheckIFCtlCellValue(ExcelSheetInfo sheet,ExcelRowInfo row,ExcelCellInfo cell, Dictionary<string, object> detailData, int usernumber)
+        #region --检查IF代码块的逻辑--
+        private List<ExcelRowInfo> CheckIFCtlCellValue(ExcelSheetInfo sheet, ExcelRowInfo row, ExcelCellInfo cell, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo)
         {
             List<ExcelRowInfo> newRows = new List<ExcelRowInfo>();
             string formula = null;
-            bool is_in_if = false;
-            if (KeywordHelper.IsKey_IF(cell.CellValue,out formula))
+            int checkRegion = -1;//标识当前检查区域，-1=未进入if 0=if,1=elseif,2=else,3=endif
+            if (KeywordHelper.IsKey_IF(cell.CellValue, out formula))
             {
-                is_in_if = true;
+                checkRegion = 0;
                 row.RowStatus = RowStatus.Deleted;
-            }
-            else if(KeywordHelper.IsKey_ElseIF(cell.CellValue, out formula))
-            {
-                if (!is_in_if)
-                    throw new Exception("IF函数格式错误");
-                row.RowStatus = RowStatus.Deleted;
-            }
-            else if (KeywordHelper.IsKey_EndIF(cell.CellValue))
-            {
-                if (!is_in_if)
-                    throw new Exception("IF函数格式错误");
-                is_in_if = false;
-                row.RowStatus = RowStatus.Deleted;
+                var formulaResult = ParsingVariable(formula, fields, detailData, userinfo);
+                DataTable dt = new DataTable();
+                var computeResult = dt.Compute(formulaResult, null);
+                bool ifValue = false;
+                if (computeResult == null || !bool.TryParse(computeResult.ToString(), out ifValue))
+                {
+                    throw new Exception("IF函数条件格式错误");
+                }
+                var rowIndex = sheet.Rows.IndexOf(row);
+                for (int i = rowIndex + 1; i < sheet.Rows.Count; i++)
+                {
+                    if (sheet.Rows[i].RowStatus != RowStatus.Normal) continue;
+                    sheet.Rows[i].RowStatus = RowStatus.Edit;
+                    foreach (var celltemp in sheet.Rows[i].Cells)
+                    {
+                        //判断同层的elseif逻辑
+                        if (KeywordHelper.IsKey_ElseIF(celltemp.CellValue, out formula))
+                        {
+                            checkRegion = 1;
+                            sheet.Rows[i].RowStatus = RowStatus.Deleted;
+                            var formulaResultTemp = ParsingVariable(formula, fields, detailData, userinfo);
+                            DataTable dtTemp = new DataTable();
+                            var computeResultTemp = dtTemp.Compute(formulaResultTemp, null);
+                            bool ifValueTemp = false;
+                            if (computeResultTemp == null || !bool.TryParse(computeResultTemp.ToString(), out ifValueTemp))
+                            {
+                                throw new Exception("ElseIF函数条件格式错误");
+                            }
+                            if (ifValueTemp)//如果条件为true，则继续解析里边的每行数据格式和内容
+                            {
+                                var newrowTemp = ParsingData(sheet, sheet.Rows[i + 1], celltemp, fields, detailData, userinfo);
+                                if (newrowTemp != null && newrowTemp.Count > 0)
+                                    newRows.AddRange(newrowTemp);
+
+                            }
+                        }
+                        //判断同层的else逻辑
+                        else if (KeywordHelper.IsKey_Else(celltemp.CellValue))
+                        {
+                            checkRegion = 2;
+                            sheet.Rows[i].RowStatus = RowStatus.Deleted;
+                            var newrowTemp = ParsingData(sheet, sheet.Rows[i + 1], celltemp, fields, detailData, userinfo);
+                            if (newrowTemp != null && newrowTemp.Count > 0)
+                                newRows.AddRange(newrowTemp);
+                        }
+                        //结束if模块
+                        else if (KeywordHelper.IsKey_EndIF(celltemp.CellValue))
+                        {
+                            checkRegion = 3;
+                            sheet.Rows[i].RowStatus = RowStatus.Deleted;
+                            break;//完成if块的逻辑处理，跳出循环
+                        }
+                        else //if范围内的数据
+                        {
+                            var newrowTemp = ParsingData(sheet, sheet.Rows[i], celltemp, fields, detailData, userinfo);
+                            if (newrowTemp != null && newrowTemp.Count > 0)
+                                newRows.AddRange(newrowTemp);
+                        }
+                    }
+                }
+                if (checkRegion != 3)
+                {
+                    throw new Exception("IF函数必须由ENDIF结束，请检查模板定义");
+                }
+
             }
 
             return newRows;
         }
-        private List<ExcelRowInfo> CheckLoopCtlCellValue(ExcelSheetInfo sheet, ExcelRowInfo row, ExcelCellInfo cell, Dictionary<string, object> detailData, int usernumber)
+        #endregion
+
+        #region --处理Loop代码块的逻辑--
+        private List<ExcelRowInfo> CheckLoopCtlCellValue(ExcelSheetInfo sheet, ExcelRowInfo row, ExcelCellInfo cell, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo)
         {
             List<ExcelRowInfo> newRows = new List<ExcelRowInfo>();
             string formula = null;
-            bool is_in_loop = false;
-            
+            int checkRegion = -1;//标识当前检查区域，-1=未进入Loop, 0=Loop, 1=EndLoop
+
             if (KeywordHelper.IsKey_Loop(cell.CellValue, out formula))
             {
-                is_in_loop = true;
+                checkRegion = 0;
                 row.RowStatus = RowStatus.Deleted;
+                var rowIndex = sheet.Rows.IndexOf(row);
+                List<ExcelRowInfo> templateRows = new List<ExcelRowInfo>();
+                for (int i = rowIndex + 1; i < sheet.Rows.Count; i++)
+                {
+                    if (KeywordHelper.IsKey_EndLoop(cell.CellValue))
+                    {
+                        checkRegion = 1;
+                        row.RowStatus = RowStatus.Deleted;
+                        break;
+                    }
+                    else templateRows.Add(sheet.Rows[i]);
+                }
+
+
+                var fieldFormat = ParsingVariable(formula, fields, detailData, userinfo);
+                var fieldnames = KeywordHelper.GetFieldNames(fieldFormat);
+                if (fieldnames.Length != 1)
+                {
+                    throw new Exception("Loop的字段只能是一个表格控件的字段名称");
+                }
+                else //表格控件
+                {
+                    var tempfield = fieldnames[0].Trim();
+                    //获取实体字段名称
+                    var entityfield = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
+                    if ((EntityFieldControlType)entityfield["controltype"] != EntityFieldControlType.LinkeTable)
+                    {
+                        throw new Exception("Loop的字段必须为表格控件");
+                    }
+                    var fieldconfig = entityfield["fieldconfig"].ToString();
+                    var linkTabelEntityId = JObject.Parse(fieldconfig)["entityId"].ToString();
+                    List<IDictionary<string, object>> linkTableFields = _entityProRepository.EntityFieldProQuery(linkTabelEntityId, userinfo.UserId).FirstOrDefault().Value;
+
+                    var entityfieldname = entityfield["fieldname"].ToString();
+                    //获取表格控件的数据
+                    var entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname] as List<IDictionary<string, object>> : null;
+                    if (entityfieldvalue != null)
+                    {
+                        foreach (var itemDic in entityfieldvalue)
+                        {
+                            var rows = new ExcelRowInfo[templateRows.Count];
+                            templateRows.CopyTo(rows);
+                            foreach (var rowItem in rows)
+                            {
+                                foreach (var celltemp in rowItem.Cells)
+                                {
+                                    var newrowTemp = ParsingData(sheet, rowItem, celltemp, fields, detailData, userinfo, linkTableFields, itemDic);
+                                    if (newrowTemp != null && newrowTemp.Count > 0)
+                                        newRows.AddRange(newrowTemp);
+                                }
+                            }
+                            newRows.AddRange(rows);
+                        }
+                    }
+                }
+
+                if (checkRegion != 1)
+                {
+                    throw new Exception("Loop函数必须由ENDLoop结束，请检查模板定义");
+                }
             }
-            else if (KeywordHelper.IsKey_EndLoop(cell.CellValue))
-            {
-                if (!is_in_loop)
-                    throw new Exception("Loop函数格式错误");
-                is_in_loop = false;
-                row.RowStatus = RowStatus.Deleted;
-            }
+
             return newRows;
         }
+        #endregion
 
 
         public void TetSaveDoc(string myname)
