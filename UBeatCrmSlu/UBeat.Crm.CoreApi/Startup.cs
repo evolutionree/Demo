@@ -118,9 +118,12 @@ namespace UBeat.Crm.CoreApi
 
 
             app.UseGlobalErrors(env, loggerFactory);
-
-            app.UseMetrics();
-            app.UseMetricsReporting(lifetime);
+            var appMetrics = Configuration.GetSection("AppMetrics").Get<AppMetricsModel>();
+            if (appMetrics != null && appMetrics.IsEnable == 1)
+            {
+                app.UseMetrics();
+                app.UseMetricsReporting(lifetime);
+            }
             //Add Json Web Token Auth
             //app.UseJwtBearerAuthentication(JwtAuth.GetJwtOptions());
 
