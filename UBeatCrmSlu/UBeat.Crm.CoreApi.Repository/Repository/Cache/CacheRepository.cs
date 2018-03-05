@@ -36,6 +36,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Cache
             return instance;
 
         }
+        /// <summary>
+        /// 获取Redis的状态
+        /// </summary>
+        /// <returns></returns>
+        public string getRedisStatus() {
+            if (this._helper == null) return "未初始化";
+            else if (_helper is RedisCacheHelper)
+            {
+
+                return ((RedisCacheHelper)_helper).getRedisStatus();
+            }
+            else {
+                return "未支持的功能";
+            }
+        }
 
         #region ---验证缓存项是否存在---
 
