@@ -22,7 +22,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
     public class PrintEntity1
     {
         public string Formula { set; get; }
-        
+        public string Startat { set; get; }
+
     }
 
     public class PrintEntityModel

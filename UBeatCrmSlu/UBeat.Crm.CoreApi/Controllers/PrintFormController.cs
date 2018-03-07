@@ -56,15 +56,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         [AllowAnonymous]
         public OutputResult<object> PrintEntity1([FromBody] PrintEntity1 data = null)
         {
-            System.Data.DataTable dt = new System.Data.DataTable();
-            var really_data = dt.Compute(data.Formula, null).ToString() ;
-            bool re = false;
-            bool.TryParse(really_data, out re);
-            //string Key_FieldPath = @"【#\s*\S+\s*#】";
-            //var really_data = System.Text.RegularExpressions.Regex.Matches(data.Formula, Key_FieldPath);
+            //System.Data.DataTable dt = new System.Data.DataTable();
+            //var really_data = dt.Compute(data.Formula, null).ToString() ;
+            //bool re = false;
+            //bool.TryParse(really_data, out re);
+           // string Key_FieldPath = @"(=*\S+(\(){1}\s*\S+\s*(\)){1})*";
+           // var really_data = System.Text.RegularExpressions.Regex.Matches(data.Formula, data.Startat);
+           //var ss= data.Formula.Split(new char[] { '/', '*', '+', '-' });
 
+            Services.Utility.OpenXMLUtility.KeywordHelper.GetLanguageData(data.Formula);
             //var really_datass = System.Text.RegularExpressions.Regex.Split(data.Formula, Key_FieldPath, System.Text.RegularExpressions.RegexOptions.Multiline);
-            return new OutputResult<object>(really_data);
+            return new OutputResult<object>("");
         }
        
 

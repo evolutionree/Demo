@@ -36,6 +36,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// 行状态：0=未修改，1=新增,2=已编辑，-1=删除
         /// </summary>
         public RowStatus RowStatus { set; get; }
+
+        public ExcelRowInfo Clone()
+        {
+            return this.MemberwiseClone() as ExcelRowInfo;
+        }
     }
 
 
