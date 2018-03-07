@@ -32,6 +32,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             
         }
+        /// <summary>
+        /// 获取Redis服务状态
+        /// </summary>
+        /// <returns></returns>
+        public string RedisServerStatus() {
+            return ((CacheRepository)Repository).getRedisStatus();
+        }
         
         public IMemoryCache MemoryCache { get; } = new MemoryCache(new MemoryCacheOptions());
     }

@@ -27,6 +27,19 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
              _cache = _connection.GetDatabase(database);
             _instance = options.InstanceName;
         }
+        public string getRedisStatus() {
+            if (_connection == null)
+            {
+                return "未初始化";
+            }
+            else if (_connection.IsConnected == false)
+            {
+                return "未连接";
+            }
+            else {
+                return _connection.GetStatus();
+            }
+        }
 
         public string GetKeyForRedis(string key)
         {
