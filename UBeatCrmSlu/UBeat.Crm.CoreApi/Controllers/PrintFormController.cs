@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -73,6 +74,21 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (data == null) return ResponseError<object>("参数格式错误");
             return _printFormServices.PrintEntity(data, UserId);
+
+        }
+        [HttpGet("exportfile")]
+        [AllowAnonymous]
+        public IActionResult DownloadExportFile([FromQuery] string fileid, [FromQuery]string fileName = null)
+        {
+            string curDir = Directory.GetCurrentDirectory();
+            string tmppath = Path.Combine(curDir, "reportexports");
+            string tmpFile = fileid;
+            if (Directory.Exists(curDir))
+            {
+                Directory.CreateDirectory(tmppath);
+            }
+            string fileFullPath = Path.Combine(tmppath, tmpFile + ".xlsx");
+            return PhysicalFile(fileFullPath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
         }
 
 

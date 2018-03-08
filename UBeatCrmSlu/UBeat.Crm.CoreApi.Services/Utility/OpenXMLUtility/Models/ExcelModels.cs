@@ -1,6 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using System.Collections.Generic;
-using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 {
@@ -71,17 +70,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             return this.MemberwiseClone() as ExcelCellInfo;
         }
-        public bool IsImageCell { set; get; }
-        public ImageData ImageInfo { set; get; }
-    }
 
-    public class ImageData
-    {
-        public List<byte[]> Images { set; get; }
-
-        public int Width { set; get; }
-
-        public int Height { set; get; }
     }
 
     public enum RowStatus

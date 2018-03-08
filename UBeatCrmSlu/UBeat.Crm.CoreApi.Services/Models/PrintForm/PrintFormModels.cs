@@ -33,6 +33,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
 
         public Guid RecId { set; get; }
 
+        public int OutputType { set; get; }
+
     }
 
     public class TemplateListModel
