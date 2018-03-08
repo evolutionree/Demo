@@ -18,12 +18,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             number.DefaultIntTypes = new TypeCode[] { TypeCode.Int16, TypeCode.Int32, TypeCode.Int64 };
             number.DefaultFloatType = TypeCode.Single;
 
-            var stringLiteral = new StringLiteral("String", "\"");
-            var field = new IdentifierTerminal("Field", "#】", "【#");
-          
+            var stringLiteral = new RegexBasedTerminal("String", "\"\\s*\\S+\\s*\"");
+            //var field = new IdentifierTerminal("Field", "#】", "【#");
+
             var identifier = new IdentifierTerminal("Identifier");
             var funcName = new IdentifierTerminal("FuncName");
-
+            var fieldterm = new RegexBasedTerminal("Field", @"【#\s*[^\s|(【#)]+\s*#】");
 
             // 2. Non-terminals
             var expr = new NonTerminal("Expression");
@@ -31,7 +31,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             var binOp = new NonTerminal("BinaryOperator", "operator");
             var parExpr = new NonTerminal("ParenthesisExpression");
             var binExpr = new NonTerminal("BinaryExpression", typeof(BinaryOperationNode));
-            var boolExpr = new NonTerminal("BoolenExpression",typeof(IfNode));
+            var boolExpr = new NonTerminal("BoolenExpression", typeof(IfNode));
             var childBoolExprs = new NonTerminal("ChildBoolExpression");
             var boolOp = new NonTerminal("BoolenOperator");
 
@@ -43,16 +43,20 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             var Program = new NonTerminal("Program", typeof(StatementListNode));
 
             // 3. BNF rules
-            expr.Rule = term | parExpr | binExpr | funcDefExpr | boolExpr; 
-            term.Rule = number | stringLiteral | identifier | field ;
+            expr.Rule = term | funcDefExpr  | parExpr | binExpr | boolExpr  ; 
+            term.Rule = number | stringLiteral | identifier  | fieldterm;
+
+            
+
+
 
             boolExpr.Rule= expr + boolOp + expr;
             boolOp.Rule= ToTerm("==") | ">" | "<" | ">=" | "<=" | "!=";
             //childBoolExprs.Rule = ToTerm("(") + MakePlusRule(childBoolExprs, ToTerm("&&")|"||", argExpr) + ")";
 
-            funcDefExpr.Rule = funcName + ToTerm("(") + funcArgsExpr + ")";
+            funcDefExpr.Rule = (funcName + ToTerm("(") + funcArgsExpr + ")") ;
             funcArgsExpr.Rule =  MakePlusRule(funcArgsExpr, ToTerm(","), argExpr) ;
-            argExpr.Rule = number | stringLiteral | identifier | field | funcDefExpr;
+            argExpr.Rule = number | stringLiteral | identifier | fieldterm | expr;
 
 
 
@@ -66,7 +70,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
 
             MarkPunctuation("(", ")");//标点符号
             RegisterBracePair("(", ")");//注册组合对象
-            MarkTransient(expr, term, binOp, parExpr);
+            MarkTransient(expr, term, binOp, parExpr, boolOp);
 
             this.Root = expr;
         }

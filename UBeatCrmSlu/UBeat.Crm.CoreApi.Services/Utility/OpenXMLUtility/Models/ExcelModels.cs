@@ -39,7 +39,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
         public ExcelRowInfo Clone()
         {
-            return this.MemberwiseClone() as ExcelRowInfo;
+            var newboj= this.MemberwiseClone() as ExcelRowInfo;
+            newboj.Cells = new List<ExcelCellInfo>();
+            foreach (var cells in this.Cells)
+            {
+                newboj.Cells.Add(cells.Clone());
+            }
+
+            return newboj;
         }
     }
 
@@ -58,6 +65,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// 是否被更新
         /// </summary>
         public bool IsUpdated { set; get; }
+
+        public ExcelCellInfo Clone()
+        {
+            return this.MemberwiseClone() as ExcelCellInfo;
+        }
 
     }
 

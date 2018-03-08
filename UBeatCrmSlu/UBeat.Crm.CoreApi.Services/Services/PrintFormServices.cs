@@ -120,7 +120,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> PrintEntity(PrintEntityModel data, int usernumber)
         {
-            List<byte[]> documentBytes = new List<byte[]>();
             if (data == null)
                 throw new Exception("参数不可为空");
             var templateInfo = _repository.GetTemplateInfo(data.TemplateId);
@@ -159,11 +158,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
             var bytes = ExcelHelper.WrightExcel(excelData);
-            FileStream fs = new FileStream(string.Format(@"C:\Users\Administrator\Desktop\{0}.xlsx", Guid.NewGuid().ToString()), FileMode.Create);
+            var fileID = Guid.NewGuid().ToString();
+            string curDir = Directory.GetCurrentDirectory();
+            string tmppath = Path.Combine(curDir, "reportexports");
+         
+            if (Directory.Exists(curDir))
+            {
+                Directory.CreateDirectory(tmppath);
+            }
+            string fileFullPath = Path.Combine(tmppath, fileID + ".xlsx");
+            FileStream fs = new FileStream(fileFullPath, FileMode.Create);
             fs.Write(bytes, 0, bytes.Length);
             fs.Dispose();
-            //documentBytes.Add(bytes);
-            return new OutputResult<object>();
+            return new OutputResult<object>(new { FileId= fileID, FileName= string.Format("{0}.xlsx", templateInfo.TemplateName)});
         }
 
         #region --获取实体详情数据--
@@ -195,7 +202,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public string GetExpressionValue(string input, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
         {
-            var language = new LanguageData(new ExpressionGrammar());
+
+            var grammar = new ExpressionGrammar();
+            var language = new LanguageData(grammar);
             var parser = new Parser(language);
             var syntaxTree = parser.Parse(input);
             if (syntaxTree.Root == null)
@@ -205,7 +214,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var res = PerformEvaluate(syntaxTree.Root, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
             if (res == null)
                 return input;
-            return res.Value == null ? null : res.Value.ToString();
+            var valueResult = res.Value == null ? null : res.Value.ToString();
+
+            return valueResult;
         }
 
         public Evaluation PerformEvaluate(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
@@ -216,17 +227,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return ParsingBinaryExpression(node, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                 case "Number":
                     return ParsingNumberExpression(node);
+                case "String":
+                    return  new ConstantEvaluation(node.Token.Text.Trim().Trim('"'));
                 case "Field":
                     return ParsingFieldExpression(node, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                 case "FuncDefExpression":
                     return ParsingFuncNameExpression(node, fields, detailData, userinfo);
-                case "ChildBoolExpression":
+                case "BoolenExpression":
                     return ParsingBoolExpression(node, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
+                case "Arg":
+                    return ParsingArgExpression(node, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
+                case "Term":
+                    return ParsingTermExpression(node, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                 default: break;
             }
 
             throw new InvalidOperationException($"Unrecognizable term {node.Term.Name}.");
         }
+
 
         #region --解析字段占位符--
         private Evaluation ParsingFieldExpression(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
@@ -236,7 +254,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new ConstantEvaluation(null);
             }
             var formula = node.Token.Text;
-            var isLinkTabelField = formula.Split(',').Length > 1;//判断是否是嵌套表格控件中的字段
+            var isLinkTabelField = formula.Split('.').Length > 1;//判断是否是嵌套表格控件中的字段
             string formulaValue = null;
             if (isLinkTabelField)
             {
@@ -268,12 +286,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 case "count":
                     {
-                        formulaResult = ExcuteCount(node, fields, detailData, argsExpressionNode);
+                        formulaResult = ExcuteCount(argsExpressionNode, fields, detailData, userinfo);
                     }
                     break;
                 case "columnsum":
                     {
-                        formulaResult = ExcuteColumnSum(node, fields, detailData, userinfo, argsExpressionNode);
+                        formulaResult = ExcuteColumnSum(argsExpressionNode, fields, detailData, userinfo);
                     }
                     break;
                 case "concat":
@@ -291,17 +309,48 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return new ConstantEvaluation(formulaResult);
-        } 
+        }
+        #endregion
+
+        #region --解析函数参数--
+        private Evaluation ParsingTermExpression(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
+        {
+            if (node.ChildNodes.Count == 0)
+            {
+                return new ConstantEvaluation(null);
+            }
+            return PerformEvaluate(node.ChildNodes[0], fields, detailData, userinfo, linkTableFields, linkTableDetailData);
+
+        }
+        #endregion
+
+        #region --解析函数参数--
+        private Evaluation ParsingArgExpression(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
+        {
+            if (node.ChildNodes.Count == 0)
+            {
+                return new ConstantEvaluation(null);
+            }
+            return PerformEvaluate(node.ChildNodes[0], fields, detailData, userinfo, linkTableFields, linkTableDetailData);
+
+        }
         #endregion
 
         #region --执行columnsum函数--
-        private double ExcuteColumnSum(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, ParseTreeNode argsExpressionNode)
+        private double ExcuteColumnSum(ParseTreeNode argsExpressionNode, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo)
         {
             if (argsExpressionNode.ChildNodes.Count != 1)
             {
                 throw new Exception("columnsum函数定义错误");
             }
-            var formula = node.Token.Text;
+            var argNode = argsExpressionNode.ChildNodes.FirstOrDefault();
+            if(argNode.ChildNodes.Count!=1)
+            {
+                throw new Exception("参数格式错误");
+            }
+            var fieldDef = argNode.ChildNodes.FirstOrDefault();
+          
+            var formula = fieldDef.Token == null ? string.Empty : fieldDef.Token.Text.ToString();
             var fieldnames = KeywordHelper.GetFieldNames(formula);
             if (fieldnames.Length != 2)
             {
@@ -323,10 +372,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entityfieldvalue != null)
             {
                 var tempfield = fieldnames[1].Trim();//嵌套实体的字段
+                var fieldname = linkTableFields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]))["fieldname"].ToString(); ;
                 return entityfieldvalue.Sum(m =>
                 {
                     double tempvalue = 0;
-                    double.TryParse(m[tempfield] == null ? "0" : m[tempfield].ToString(), out tempvalue);
+                    double.TryParse(m[fieldname] == null ? "0" : m[fieldname].ToString(), out tempvalue);
                     return tempvalue;
                 }
                 );
@@ -337,13 +387,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --执行count函数--
-        private static int ExcuteCount(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, ParseTreeNode argsExpressionNode)
+        private int ExcuteCount(ParseTreeNode argsExpressionNode, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo)
         {
             if (argsExpressionNode.ChildNodes.Count != 1)
             {
                 throw new Exception("count函数定义错误");
             }
-            var formula = node.Token.Text;
+
+            var argNode = argsExpressionNode.ChildNodes.FirstOrDefault();
+            if (argNode.ChildNodes.Count != 1)
+            {
+                throw new Exception("参数格式错误");
+            }
+            var fieldDef = argNode.ChildNodes.FirstOrDefault();
+
+            var formula = fieldDef.Token == null ? string.Empty : fieldDef.Token.Text.ToString();
+
             var fieldnames = KeywordHelper.GetFieldNames(formula);
             if (fieldnames.Length != 1)
             {
@@ -444,14 +503,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var newRows = new List<ExcelRowInfo>();
             bool isKey_IF = false;
             //是否IF控制函数
-            var newRowsTemp = CheckIFCtlCellValue(sheet, row, cell, fields, detailData, userinfo,out isKey_IF, linkTableFields, linkTableDetailData);
+            var newRowsTemp = CheckIFCtlCellValue(sheet, row, cell, fields, detailData, userinfo, out isKey_IF, linkTableFields, linkTableDetailData);
             if (newRowsTemp != null && newRowsTemp.Count > 0)
                 newRows.AddRange(newRowsTemp);
             if (isKey_IF)
                 return newRows;
             bool isLoop = false;
             //是否Loop控制函数
-            newRowsTemp = CheckLoopCtlCellValue(sheet, row, cell, fields, detailData, userinfo,out isLoop);
+            newRowsTemp = CheckLoopCtlCellValue(sheet, row, cell, fields, detailData, userinfo, out isLoop);
             if (newRowsTemp != null && newRowsTemp.Count > 0)
                 newRows.AddRange(newRowsTemp);
             if (isLoop)
@@ -515,6 +574,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (fieldnames.Length == 1)//实体的普通字段
                         {
                             var tempfield = fieldnames[0].Trim();
+                            bool isId = tempfield.ToLower().EndsWith("_id");//判断是否是取id的值，如果不是，则取对应的 _name 字段
+
                             //获取实体字段名称
                             var fieldobj = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
                             if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
@@ -523,7 +584,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 if ((EntityFieldControlType)fieldobj["controltype"] != EntityFieldControlType.LinkeTable)
                                 {
                                     var entityfieldname = fieldobj["fieldname"].ToString();
-                                    var entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
+                                    var entityfieldvalue = string.Empty;
+                                    if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
+                                    {
+                                        var entityfieldkey = entityfieldname + "_name";
+                                        entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
+                                    }
+                                    else entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
                                     formula = formula.Replace(fieldFormat, entityfieldvalue);
                                 }
 
@@ -574,14 +641,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (fieldnames.Length == 2)//实体表格控件，此时数据由参数linkTableDetailData提供
                     {
                         var tempfield = fieldnames[1].Trim();
-
+                        bool isId = tempfield.ToLower().EndsWith("_id");//判断是否是取id的值，如果不是，则取对应的 _name 字段
                         //获取实体字段名称
                         var fieldobj = tableFields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
                         if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
                         {
                             //获取实体字段名称
                             var entityfieldname = fieldobj["fieldname"].ToString();
-                            var entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
+                            var entityfieldvalue = string.Empty;
+                            if (!isId && tableDetailData.ContainsKey(entityfieldname + "_name"))
+                            {
+                                var nameFeild = entityfieldname + "_name";
+                                entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
+                            }
+                            else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
                             formula = formula.Replace(fieldFormat, entityfieldvalue);
                         }
                     }
@@ -636,6 +709,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (!ifValue)
                             {
                                 sheet.Rows[i].RowStatus = RowStatus.Deleted;
+
                             }
                             else
                             {
@@ -660,7 +734,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --处理Loop代码块的逻辑--
-        private List<ExcelRowInfo> CheckLoopCtlCellValue(ExcelSheetInfo sheet, ExcelRowInfo row, ExcelCellInfo cell, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo,out bool isLoop)
+        private List<ExcelRowInfo> CheckLoopCtlCellValue(ExcelSheetInfo sheet, ExcelRowInfo row, ExcelCellInfo cell, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, out bool isLoop)
         {
             isLoop = false;
             List<ExcelRowInfo> newRows = new List<ExcelRowInfo>();
@@ -721,11 +795,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname] as List<IDictionary<string, object>> : null;
                     if (entityfieldvalue != null)
                     {
+                        //获取循环模板行中最大的RowIndex属性，用于精确定位新增的循环行数据在整个excel中的位置
+                        var templateRowsMaxIndex = templateRows.Last().RowIndex;
+                        //循环表格控件的数据集合，每行为一组，对templateRows进行解析
                         foreach (var itemDic in entityfieldvalue)
                         {
-                            var rows = new ExcelRowInfo[templateRows.Count];
-
-
                             foreach (var rowItem in templateRows)
                             {
                                 var rowItemTemp = rowItem.Clone();
@@ -735,9 +809,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     if (newrowTemp != null && newrowTemp.Count > 0)
                                         newRows.AddRange(newrowTemp);
                                 }
+                                rowItemTemp.RowStatus = RowStatus.Add;
+                                rowItemTemp.RowIndex = templateRowsMaxIndex;
                                 newRows.Add(rowItemTemp);
                             }
-
+                        }
+                        //遍历了所有表格控件的行数据后，把原有excel模板中的模板行标记为deleted状态
+                        foreach (var rowItem in templateRows)
+                        {
+                            rowItem.RowStatus = RowStatus.Deleted;
                         }
                     }
                 }
