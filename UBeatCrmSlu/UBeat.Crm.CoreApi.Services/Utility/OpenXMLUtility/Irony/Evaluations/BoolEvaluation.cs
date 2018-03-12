@@ -32,8 +32,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations
                 var rightFloatValue = 0F;
                 DateTime leftDateTimeValue;
                 DateTime rightDateTimeValue;
-                bool leftboolValue;
-                bool rightboolValue;
                 //数字的比较
                 if (float.TryParse(this.left.Value.ToString(), out leftFloatValue) && float.TryParse(this.right.Value.ToString(), out rightFloatValue))
                 {
@@ -72,18 +70,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations
                         case BoolOperation.NotEqual:
                             return leftDateTimeValue != rightDateTimeValue;
                         default: throw new Exception("日期比较运算符格式错误，只能使用==,>,>=,<,<=,!=");
-                    }
-                }
-                else if (bool.TryParse(this.left.Value.ToString(), out leftboolValue) && bool.TryParse(this.right.Value.ToString(), out rightboolValue))
-                {
-                    switch (oper)
-                    {
-                        case BoolOperation.And:
-                            return leftboolValue && rightboolValue;
-                        case BoolOperation.OR:
-                            return leftboolValue || rightboolValue;
-                      
-                        default: throw new Exception("比较运算符格式错误，只能使用 && 或 ||");
                     }
                 }
                 //其他情况，一律当做字符串比较
