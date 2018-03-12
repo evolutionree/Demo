@@ -206,8 +206,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         public static void GetLanguageData(string input)
         {
             var grammar = new ExpressionGrammar();
-
-            grammar.DefaultCulture = new System.Globalization.CultureInfo("zh-CN");
             var language = new LanguageData(grammar);
             var parser = new Parser(language);
             var syntaxTree = parser.Parse(input);

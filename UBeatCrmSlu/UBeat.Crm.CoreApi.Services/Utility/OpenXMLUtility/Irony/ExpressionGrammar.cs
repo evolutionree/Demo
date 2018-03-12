@@ -34,6 +34,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             var boolExpr = new NonTerminal("BoolenExpression", typeof(IfNode));
             var childBoolExprs = new NonTerminal("ChildBoolExpression");
             var boolOp = new NonTerminal("BoolenOperator");
+            
 
             var funcDefExpr = new NonTerminal("FuncDefExpression", typeof(FunctionDefNode));
             var funcArgsExpr = new NonTerminal("FuncArgsExpression");
@@ -43,21 +44,23 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             var Program = new NonTerminal("Program", typeof(StatementListNode));
 
             // 3. BNF rules
-            expr.Rule = term | funcDefExpr  | parExpr | binExpr | boolExpr  ; 
+            expr.Rule = term | funcDefExpr  | parExpr | binExpr | boolExpr | childBoolExprs; 
             term.Rule = number | stringLiteral | identifier  | fieldterm;
 
-            
+
+            //boolExpr.Rule = expr + boolOp + expr;
+            //boolOp.Rule = ToTerm("==") | ">" | "<" | ">=" | "<=" | "!=";
+            //childBoolExprs.Rule = ToTerm("(") + MakePlusRule(childBoolExprs, ToTerm("&&") | "||", boolExpr) + ")";
 
 
-
-            boolExpr.Rule= expr + boolOp + expr;
-            boolOp.Rule= ToTerm("==") | ">" | "<" | ">=" | "<=" | "!=";
-            //childBoolExprs.Rule = ToTerm("(") + MakePlusRule(childBoolExprs, ToTerm("&&")|"||", argExpr) + ")";
+            boolExpr.Rule= childBoolExprs;
+            boolOp.Rule= ToTerm("==") | ">" | "<" | ">=" | "<=" | "!=" ; ;
+            childBoolExprs.Rule =  MakePlusRule(childBoolExprs, ToTerm("&&") | "||", expr + boolOp + expr) 
+                   | ToTerm("(") + MakePlusRule(childBoolExprs, ToTerm("&&") | "||", expr + boolOp + expr) + ")";
 
             funcDefExpr.Rule = (funcName + ToTerm("(") + funcArgsExpr + ")") ;
             funcArgsExpr.Rule =  MakePlusRule(funcArgsExpr, ToTerm(","), argExpr) ;
             argExpr.Rule = number | stringLiteral | identifier | fieldterm | expr;
-
 
 
             parExpr.Rule = "(" + expr + ")";
