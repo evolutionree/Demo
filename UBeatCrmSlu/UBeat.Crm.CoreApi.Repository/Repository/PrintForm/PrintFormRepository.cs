@@ -132,5 +132,30 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
 
             return ExecuteQuery<CrmSysEntityPrintTemplate>(sql, param, tran);
         }
+
+        public List<CrmSysEntityPrintTemplate> GetRecDataTemplateList(Guid entityid,Guid businessid, DbTransaction tran = null)
+        {
+            string tableSql = @"SELECT entitytable FROM crm_sys_entity WHERE entityid=@entityid";
+            var tableParam = new DbParameter[]
+            {
+                 new NpgsqlParameter("entityid", entityid),
+            };
+            object tableobj = ExecuteScalar(tableSql, tableParam, tran);
+            if(tableobj==null|| string.IsNullOrEmpty(tableobj.ToString()))
+            {
+                throw new Exception("找不到实体id对应的表名");
+            }
+            string entityTableName = tableobj.ToString();
+
+            string sql =  @" SELECT * FROM crm_sys_entity_print_template WHERE entityid=@entityid AND recstatus=1 ORDER BY recversion DESC; ";
+            
+            var param = new DbParameter[]
+            {
+                 new NpgsqlParameter("entityid", entityid),
+            };
+
+            return ExecuteQuery<CrmSysEntityPrintTemplate>(sql, param, tran);
+        }
+
     }
 }
