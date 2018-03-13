@@ -17,5 +17,11 @@ namespace UBeat.Crm.CoreApi.IRepository
         CrmSysEntityPrintTemplate GetTemplateInfo(Guid recid, DbTransaction tran = null);
 
         List<CrmSysEntityPrintTemplate> GetTemplateList(Guid entityid, int recstate, DbTransaction tran = null);
+
+        /// <summary>
+        /// 获取某条记录可以关联的所有模板文件
+        /// </summary>
+        List<CrmSysEntityPrintTemplate> GetRecDataTemplateList(Guid entityid, Guid businessid, int userno, DbTransaction tran = null);
+
     }
 }

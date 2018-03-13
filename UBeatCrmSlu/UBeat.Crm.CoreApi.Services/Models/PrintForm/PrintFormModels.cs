@@ -26,6 +26,17 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
 
     }
 
+    public class EntityRecTempModel
+    {
+        public Guid EntityId { set; get; }
+
+
+        public Guid RecId { set; get; }
+
+       
+
+    }
+
     public class PrintEntityModel
     {
         public Guid EntityId { set; get; }

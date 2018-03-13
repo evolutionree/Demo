@@ -133,7 +133,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
             return ExecuteQuery<CrmSysEntityPrintTemplate>(sql, param, tran);
         }
 
-        public List<CrmSysEntityPrintTemplate> GetRecDataTemplateList(Guid entityid,Guid businessid, DbTransaction tran = null)
+        /// <summary>
+        /// 获取某条记录可以关联的所有模板文件
+        /// </summary>
+        public List<CrmSysEntityPrintTemplate> GetRecDataTemplateList(Guid entityid,Guid businessid,int userno, DbTransaction tran = null)
         {
             string tableSql = @"SELECT entitytable FROM crm_sys_entity WHERE entityid=@entityid";
             var tableParam = new DbParameter[]
@@ -147,11 +150,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
             }
             string entityTableName = tableobj.ToString();
 
-            string sql =  @" SELECT * FROM crm_sys_entity_print_template WHERE entityid=@entityid AND recstatus=1 ORDER BY recversion DESC; ";
+            string sql = string.Format(@" SELECT pt.* FROM crm_sys_entity_print_template pt 
+                            INNER JOIN {0} e ON e.recid=@businessid
+                            LEFT JOIN crm_sys_rule AS r ON r.ruleid=pt.ruleid 
+                            WHERE pt.entityid=@entityid AND pt.recstatus=1 AND  crm_func_printtemplate_rule_check(@entitytablename,e.recid,r.rulesql,@userno)
+                            ORDER BY pt.recversion DESC; ", entityTableName);
             
             var param = new DbParameter[]
             {
                  new NpgsqlParameter("entityid", entityid),
+                 new NpgsqlParameter("businessid", businessid),
+                 new NpgsqlParameter("entitytablename", entityTableName),
+                 new NpgsqlParameter("userno", userno),
             };
 
             return ExecuteQuery<CrmSysEntityPrintTemplate>(sql, param, tran);

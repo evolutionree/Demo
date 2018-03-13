@@ -118,7 +118,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #endregion
 
-    
+        #region --获取某条数据拥有的模板列表--
+        public OutputResult<object> GetRecDataTemplateList(EntityRecTempModel data, int userNumber)
+        {
+            if (data == null)
+                throw new Exception("参数不可为空");
+            return new OutputResult<object>(_repository.GetRecDataTemplateList(data.EntityId, data.RecId, userNumber));
+        } 
+        #endregion
+
         #region --生成打印文档--
         public OutputResult<object> PrintEntity(PrintEntityModel data, int usernumber)
         {
