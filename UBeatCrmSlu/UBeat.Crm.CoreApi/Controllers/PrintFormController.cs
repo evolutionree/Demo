@@ -61,6 +61,18 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _printFormServices.GetTemplateList(data, UserId);
         }
         #endregion
+
+        #region ---获取某条数据拥有的模板列表---
+        [HttpPost("getrectemplatelist")]
+        public OutputResult<object> GetRecDataTemplateList([FromBody] EntityRecTempModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _printFormServices.GetRecDataTemplateList(data, UserId);
+        } 
+        #endregion
+
+
+
         [HttpPost("testformula")]
         [AllowAnonymous]
         public OutputResult<object> PrintEntity1([FromBody] PrintEntity1 data = null)
