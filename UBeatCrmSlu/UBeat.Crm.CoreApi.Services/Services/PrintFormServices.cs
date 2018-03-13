@@ -271,6 +271,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case "Arg":
                     return ParsingArgExpression(node, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                 case "Term":
+                case "Expression":
                     return ParsingTermExpression(node, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                 default: break;
             }
@@ -525,6 +526,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     break;
                 case "!=":
                     op = BoolOperation.NotEqual;
+                    break;
+                case "&&":
+                    op = BoolOperation.And; break;
+                case "||":
+                    op = BoolOperation.OR;
                     break;
             }
             return new BoolEvaluation(left, right, op);

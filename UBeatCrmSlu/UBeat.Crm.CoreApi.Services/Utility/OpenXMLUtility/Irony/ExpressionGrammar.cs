@@ -33,6 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             var binExpr = new NonTerminal("BinaryExpression", typeof(BinaryOperationNode));
             var boolExpr = new NonTerminal("BoolenExpression", typeof(IfNode));
             var childBoolExprs = new NonTerminal("ChildBoolExpression");
+            //var and_or_Op = new NonTerminal("AndOrExpression");
             var boolOp = new NonTerminal("BoolenOperator");
             
 
@@ -44,7 +45,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             var Program = new NonTerminal("Program", typeof(StatementListNode));
 
             // 3. BNF rules
-            expr.Rule = term | funcDefExpr  | parExpr | binExpr | boolExpr | childBoolExprs; 
+            expr.Rule = term | funcDefExpr  | parExpr | binExpr | boolExpr | childBoolExprs ; 
             term.Rule = number | stringLiteral | identifier  | fieldterm;
 
 
@@ -53,10 +54,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             //childBoolExprs.Rule = ToTerm("(") + MakePlusRule(childBoolExprs, ToTerm("&&") | "||", boolExpr) + ")";
 
 
-            boolExpr.Rule= childBoolExprs;
-            boolOp.Rule= ToTerm("==") | ">" | "<" | ">=" | "<=" | "!=" ; ;
-            childBoolExprs.Rule =  MakePlusRule(childBoolExprs, ToTerm("&&") | "||", expr + boolOp + expr) 
-                   | ToTerm("(") + MakePlusRule(childBoolExprs, ToTerm("&&") | "||", expr + boolOp + expr) + ")";
+            boolExpr.Rule= expr + boolOp + expr;
+            boolOp.Rule= ToTerm("==") | ">" | "<" | ">=" | "<=" | "!=" | "&&" | "||";
+            //and_or_Op.Rule = ToTerm("&&") | "||";
+            childBoolExprs.Rule =  MakePlusRule(childBoolExprs, ToTerm("&&") | "||", boolExpr) 
+                   | ToTerm("(") + MakePlusRule(childBoolExprs, ToTerm("&&") | "||", boolExpr) + ")";
 
             funcDefExpr.Rule = (funcName + ToTerm("(") + funcArgsExpr + ")") ;
             funcArgsExpr.Rule =  MakePlusRule(funcArgsExpr, ToTerm(","), argExpr) ;
@@ -68,8 +70,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             binExpr.Rule = expr + binOp + expr;
             binOp.Rule = ToTerm("+") | "-" | "*" | "/";
 
-            RegisterOperators(10, "+", "-");
-            RegisterOperators(20, "*", "/");
+
+            RegisterOperators(15,  "&&", "||");
+            RegisterOperators(20, "==", "<", "<=", ">", ">=", "!=");
+            RegisterOperators(30, "+", "-");
+            RegisterOperators(40, "*", "/");
 
             MarkPunctuation("(", ")");//标点符号
             RegisterBracePair("(", ")");//注册组合对象

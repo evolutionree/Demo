@@ -30,5 +30,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations
         /// 等于
         /// </summary>
         NotEqual,
+
+        And,
+
+        OR
     }
 }
