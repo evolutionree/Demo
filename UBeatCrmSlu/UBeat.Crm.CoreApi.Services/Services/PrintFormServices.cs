@@ -593,28 +593,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var fieldnames = KeywordHelper.GetFieldNames(fieldFormat);
                         if (fieldnames.Length == 1)//实体的普通字段
                         {
+
                             var tempfield = fieldnames[0].Trim();
                             bool isId = tempfield.ToLower().EndsWith("_id");//判断是否是取id的值，如果不是，则取对应的 _name 字段
-
-                            //获取实体字段名称
-                            var fieldobj = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
-                            if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
+                            var entityfieldvalue = string.Empty;
+                            if (detailData.ContainsKey(tempfield)) //先匹配key，如果不存在，再解析实体字段定义，拿到字段名称再查询字典数据
                             {
-                                //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
-                                if ((EntityFieldControlType)fieldobj["controltype"] != EntityFieldControlType.LinkeTable)
-                                {
-                                    var entityfieldname = fieldobj["fieldname"].ToString();
-                                    var entityfieldvalue = string.Empty;
-                                    if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
-                                    {
-                                        var entityfieldkey = entityfieldname + "_name";
-                                        entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
-                                    }
-                                    else entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
-                                    formula = formula.Replace(fieldFormat, entityfieldvalue);
-                                }
-
+                                entityfieldvalue = detailData[tempfield] != null ? detailData[tempfield].ToString() : string.Empty;
+                                formula = formula.Replace(fieldFormat, entityfieldvalue);
                             }
+                            else
+                            {
+                                if(isId)
+                                {
+                                    tempfield = tempfield.Remove(tempfield.ToLower().LastIndexOf("_id"));
+                                }
+                                //获取实体字段名称
+                                var fieldobj = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
+                                if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
+                                {
+                                    //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
+                                    if ((EntityFieldControlType)fieldobj["controltype"] != EntityFieldControlType.LinkeTable)
+                                    {
+                                        var entityfieldname = fieldobj["fieldname"].ToString();
+
+                                        if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
+                                        {
+                                            var entityfieldkey = entityfieldname + "_name";
+                                            entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
+                                        }
+                                        else entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
+                                        formula = formula.Replace(fieldFormat, entityfieldvalue);
+                                    }
+
+                                }
+                            }
+                            
                         }
 
                     }
@@ -648,21 +662,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         var tempfield = fieldnames[1].Trim();
                         bool isId = tempfield.ToLower().EndsWith("_id");//判断是否是取id的值，如果不是，则取对应的 _name 字段
-                        //获取实体字段名称
-                        var fieldobj = tableFields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
-                        if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
+                        var entityfieldvalue = string.Empty;
+                        if (tableDetailData.ContainsKey(tempfield)) //先匹配key，如果不存在，再解析实体字段定义，拿到字段名称再查询字典数据
                         {
-                            //获取实体字段名称
-                            var entityfieldname = fieldobj["fieldname"].ToString();
-                            var entityfieldvalue = string.Empty;
-                            if (!isId && tableDetailData.ContainsKey(entityfieldname + "_name"))
-                            {
-                                var nameFeild = entityfieldname + "_name";
-                                entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
-                            }
-                            else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
-                            formula = formula.Replace(fieldFormat, entityfieldvalue);
+                            entityfieldvalue = tableDetailData[tempfield] != null ? tableDetailData[tempfield].ToString() : string.Empty;
                         }
+                        else
+                        {
+                            if (isId)
+                            {
+                                tempfield = tempfield.Remove(tempfield.ToLower().LastIndexOf("_id"));
+                            }
+                            //获取实体字段名称
+                            var fieldobj = tableFields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
+                            if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
+                            {
+                                //获取实体字段名称
+                                var entityfieldname = fieldobj["fieldname"].ToString();
+                                if (!isId && tableDetailData.ContainsKey(entityfieldname + "_name"))
+                                {
+                                    var nameFeild = entityfieldname + "_name";
+                                    entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
+                                }
+                                else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
+                            }
+                        }
+                        formula = formula.Replace(fieldFormat, entityfieldvalue);
                     }
                 }
 
