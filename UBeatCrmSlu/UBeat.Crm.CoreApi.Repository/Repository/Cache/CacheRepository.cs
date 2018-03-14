@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Redis;
+﻿
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;

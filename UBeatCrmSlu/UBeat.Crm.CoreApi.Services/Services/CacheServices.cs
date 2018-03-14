@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Caching.Redis;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -7,6 +6,7 @@ using System.Text;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository.Cache;
+using UBeat.Crm.CoreApi.Repository.Utility.Cache;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {

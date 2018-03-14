@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Redis;
+﻿
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
