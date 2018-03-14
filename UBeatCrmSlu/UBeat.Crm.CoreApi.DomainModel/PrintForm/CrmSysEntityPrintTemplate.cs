@@ -24,9 +24,20 @@ namespace UBeat.Crm.CoreApi.DomainModel.PrintForm
         /// </summary>
         public DataSourceType DataSourceType { set; get; }
         /// <summary>
-        /// 数据源处理接口:数据库函数名或者内部服务接口的命名空间
+        /// 数据源处理接口:数据库函数名或者内部服务接口的方法名
         /// </summary>
         public string DataSourceFunc { set; get; }
+
+        /// <summary>
+        /// 如果使用内部服务接口时，需要指定使用的程序集dll名称，如XXXX.dll
+        /// </summary>
+        public string AssemblyName { set; get; }
+        /// <summary>
+        /// 如果使用内部服务接口时，需要指定具体的类名称，填写完整的命名空间和类型名称
+        /// </summary>
+        public string ClassTypeName { set; get; }
+
+
         /// <summary>
         /// 数据源扩展处理JS
         /// </summary>

@@ -23,10 +23,25 @@ using Newtonsoft.Json.Linq;
 using Irony.Parsing;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony;
+using System.Reflection;
+using System.Data.Common;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
-    public class PrintFormServices : BaseServices
+    public interface IPrintServices
+    {
+        /// <summary>
+        /// 获取打印数据源
+        /// </summary>
+        /// <param name="tran">数据库事务，打开和关闭由调用方处理，实现方不需进行这两个操作，只需处理好业务逻辑即可</param>
+        /// <param name="entityId">实体id</param>
+        /// <param name="recId">记录id</param>
+        /// <param name="usernumber">当前操作人</param>
+        /// <returns>返回数据已字典形式，如果不是实体中的字段，字典中的key必须和模板定义的字段匹配上</returns>
+        IDictionary<string, object> GetPrintDetailData(DbTransaction tran,Guid entityId, Guid recId, int usernumber);
+    }
+
+    public class PrintFormServices : BaseServices, IPrintServices
     {
         private readonly IPrintFormRepository _repository;
         private readonly IAccountRepository _accountRepository;
@@ -43,6 +58,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _entityServices = entityServices;
         }
 
+        public PrintFormServices()
+        {
+        }
         #region ---套打模板管理---
         public OutputResult<object> InsertTemplate(TemplateInfoModel data, int userNumber)
         {
@@ -179,6 +197,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --获取实体详情数据--
         private IDictionary<string, object> GetDetailData(Guid entityId, Guid recId, CrmSysEntityPrintTemplate templateInfo, int usernumber)
         {
+
+            templateInfo.DataSourceType = DataSourceType.InternalMethor;
             IDictionary<string, object> detailData = null;
             if (templateInfo.DataSourceType == DataSourceType.EntityDetail)
             {
@@ -190,17 +210,76 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 };
                 detailData = _entityServices.Detail(paramData, usernumber)["Detail"].FirstOrDefault();
             }
-            else if (templateInfo.DataSourceType == DataSourceType.DbFunction)
+            else if (templateInfo.DataSourceType == DataSourceType.DbFunction) //数据库函数方式实现
             {
 
+                //var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData, null, null, userData.UserId);
+               
             }
-            else if (templateInfo.DataSourceType == DataSourceType.InternalMethor)
+            else if (templateInfo.DataSourceType == DataSourceType.InternalMethor) 
             {
+                var assemblyName = templateInfo.AssemblyName;
+                var classTypeName = templateInfo.ClassTypeName;
+                var mehtodName = templateInfo.DataSourceFunc;
+            
+                string tmppath = Path.Combine(Environment.CurrentDirectory, "UBeat.Crm.CoreApi.Services.dll");
 
+                assemblyName = "UBeat.Crm.CoreApi.Services";
+                classTypeName = "UBeat.Crm.CoreApi.Services.Services.PrintFormServices";
+
+
+                var assembly = Assembly.Load(new AssemblyName(assemblyName));
+                Type type = assembly.GetType(classTypeName);//用类型的命名空间和名称获得类型
+                object obj = null;
+                try
+                {
+                     obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
+                }
+                catch
+                {
+                    throw new Exception(string.Format("创建类{0}出错，请检查是否包含默认无参构造函数",classTypeName));
+                }
+                if (obj is IPrintServices)
+                {
+                    using (var conn = GetDbConnect())
+                    {
+                        try
+                        {
+                            conn.Open();
+                            var tran = conn.BeginTransaction();
+                            detailData = (obj as IPrintServices).GetPrintDetailData(tran, entityId, recId, usernumber);
+                            tran.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception( "数据库执行连接失败");
+  
+                        }
+                        finally
+                        {
+                            conn.Close();
+                            conn.Dispose();
+                        }
+                    }
+                   
+                }
+                else
+                {
+                    throw new Exception("数据库调用方法必须实现IPrintServices接口");
+                }
+                //MethodInfo mi = type.GetMethod(mehtodName);//通过方法名称获得方法
+                //var result = mi.Invoke(obj, new object[] { entityId, recId, usernumber });//根据参数直线方法,返回值就是原方法的返回值
+                
             }
-
+           
             return detailData;
         }
+
+        public IDictionary<string, object> GetPrintDetailData(DbTransaction tran, Guid entityId, Guid recId, int usernumber)
+        {
+            return null;
+        }
+
         #endregion
 
         #region --解析excel每个单元格的数据，并得到结果--
