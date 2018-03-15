@@ -80,7 +80,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
             {
                 var sql = @"UPDATE crm_sys_entity_print_template 
                         SET templatename = @templatename, templatetype = @templatetype, datasourcetype = @datasourcetype,
-                        datasourcefunc = @datasourcefunc, datasourcefunc = @datasourcefunc,assemblyname = @assemblyname,extjs = @extjs, fileid = @fileid, ruleid = @ruleid, ruledesc = @ruledesc,
+                        datasourcefunc = @datasourcefunc, assemblyname = @assemblyname,classtypename = @classtypename,extjs = @extjs, fileid = @fileid, ruleid = @ruleid, ruledesc = @ruledesc,
                         description = @description, recupdated = @recupdated, recupdator = @recupdator
                         WHERE recid = @recid";
 
