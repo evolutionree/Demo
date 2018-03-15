@@ -13,31 +13,72 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
     {
         protected IDatabase _cache;
 
-        private ConnectionMultiplexer _connection;
+        //private ConnectionMultiplexer _connection;
 
-        public ConnectionMultiplexer Connection { get { return _connection; } }
+        public static int POOL_SIZE = 100;
+        private static readonly Object lockPookRoundRobin = new Object();
+        private static Lazy<ConnectionMultiplexer>[] lazyConnection = null;
 
         private readonly string _instance;
 
         public RedisCacheHelper(RedisCacheOptions options, int database = 0)
         {
+            InitConnectionPool(options);
             //实例ID.redis.rds.aliyuncs.com:6379,password=实例ID:密码
-            _connection = ConnectionMultiplexer.Connect(options.Configuration);
-            _connection.PreserveAsyncOrder = false;
-             _cache = _connection.GetDatabase(database);
+            //_connection = ConnectionMultiplexer.Connect(options.Configuration);
+            //_connection.PreserveAsyncOrder = false;
+            _cache = Connection.GetDatabase(database);
             _instance = options.InstanceName;
         }
-        public string getRedisStatus() {
-            if (_connection == null)
+
+        private static void InitConnectionPool(RedisCacheOptions options)
+        {
+            lock (lockPookRoundRobin)
+            {
+                if (lazyConnection == null)
+                {
+                    lazyConnection = new Lazy<ConnectionMultiplexer>[POOL_SIZE];
+                    for (int i = 0; i < POOL_SIZE; i++)
+                    {
+                        if (lazyConnection[i] == null)
+                            lazyConnection[i] = new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(options.Configuration));
+                    }
+                }
+                
+            }
+        }
+        private static ConnectionMultiplexer GetLeastLoadedConnection()
+        {
+            //choose the least loaded connection from the pool
+            var minValue = lazyConnection.Min((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding);
+            var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).First();
+            return lazyContext.Value;
+        }
+
+        public ConnectionMultiplexer Connection
+        {
+            get
+            {
+                lock (lockPookRoundRobin)
+                {
+                    return GetLeastLoadedConnection();
+                }
+            }
+        }
+
+        public string getRedisStatus()
+        {
+            if (Connection == null)
             {
                 return "未初始化";
             }
-            else if (_connection.IsConnected == false)
+            else if (Connection.IsConnected == false)
             {
                 return "未连接";
             }
-            else {
-                return _connection.GetStatus();
+            else
+            {
+                return Connection.GetStatus();
             }
         }
 
@@ -191,7 +232,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            
+
             return _cache.KeyDelete(GetKeyForRedis(key));
         }
         /// <summary>
@@ -394,7 +435,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
         /// <returns></returns>
         public Task<bool> ReplaceAsync(string key, object value)
         {
-            return Task.Run<bool>(() => {
+            return Task.Run<bool>(() =>
+            {
                 return Replace(key, value);
             });
         }
@@ -471,8 +513,14 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
 
         public void Dispose()
         {
-            if (_connection != null)
-                _connection.Dispose();
+            for (int i = 0; i < POOL_SIZE; i++)
+            {
+
+                if (lazyConnection[i] != null && lazyConnection[i].IsValueCreated)
+                    lazyConnection[i].Value.Dispose();
+            }
+
+
             GC.SuppressFinalize(this);
         }
     }
