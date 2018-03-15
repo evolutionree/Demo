@@ -302,7 +302,8 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         public override void OnActionExecuted(ActionExecutedContext context)
         {
-
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start(); // 开始监视代码
             var header = GetAnalyseHeader();
             var device = header.Device.ToUpper();
             if (device != "WEB")
@@ -322,6 +323,11 @@ namespace UBeat.Crm.CoreApi.Controllers
                     }
                 }
             }
+            stopwatch.Stop(); // 停止监视
+            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
+            //System.Console.WriteLine("ValidLimitTime:" + seconds);
+            stopwatchDic.Add("GetVersionData", seconds);
+
             //打印响应数据
             WriteResponseLog(context);
 
