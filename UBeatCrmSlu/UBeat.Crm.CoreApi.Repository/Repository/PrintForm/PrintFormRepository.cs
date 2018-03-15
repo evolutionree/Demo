@@ -15,8 +15,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
         {
             Guid recid = Guid.NewGuid();
             var sql = @"INSERT INTO crm_sys_entity_print_template 
-                        (recid,entityid,templatename,templatetype,datasourcetype,datasourcefunc,extjs,fileid,ruleid,ruledesc,description,reccreated,recupdated,reccreator,recupdator)
-                        VALUES(@recid,@entityid,@templatename,@templatetype,@datasourcetype,@datasourcefunc,@extjs,@fileid,@ruleid,@ruledesc,@description,@reccreated,@recupdated,@reccreator,@recupdator)";
+                        (recid,entityid,templatename,templatetype,datasourcetype,datasourcefunc,assemblyname,classtypename,extjs,fileid,ruleid,ruledesc,description,reccreated,recupdated,reccreator,recupdator)
+                        VALUES(@recid,@entityid,@templatename,@templatetype,@datasourcetype,@datasourcefunc,@assemblyname,@classtypename,@extjs,@fileid,@ruleid,@ruledesc,@description,@reccreated,@recupdated,@reccreator,@recupdator)";
 
             var param = new DbParameter[]
             {
@@ -26,6 +26,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
                 new NpgsqlParameter("templatetype", (int)model.TemplateType),
                 new NpgsqlParameter("datasourcetype", (int)model.DataSourceType),
                 new NpgsqlParameter("datasourcefunc", model.DataSourceFunc),
+                new NpgsqlParameter("assemblyname", model.AssemblyName),
+                new NpgsqlParameter("classtypename", model.ClassTypeName),
                 new NpgsqlParameter("extjs", model.ExtJs),
                 new NpgsqlParameter("fileid", model.FileId),
                 new NpgsqlParameter("ruleid", model.RuleId),
@@ -76,9 +78,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
             }
             else//否则更新模板信息数据
             {
-                var sql =@"UPDATE crm_sys_entity_print_template 
+                var sql = @"UPDATE crm_sys_entity_print_template 
                         SET templatename = @templatename, templatetype = @templatetype, datasourcetype = @datasourcetype,
-                        datasourcefunc = @datasourcefunc, extjs = @extjs, fileid = @fileid, ruleid = @ruleid, ruledesc = @ruledesc,
+                        datasourcefunc = @datasourcefunc, datasourcefunc = @datasourcefunc,assemblyname = @assemblyname,extjs = @extjs, fileid = @fileid, ruleid = @ruleid, ruledesc = @ruledesc,
                         description = @description, recupdated = @recupdated, recupdator = @recupdator
                         WHERE recid = @recid";
 
@@ -88,6 +90,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
                     new NpgsqlParameter("templatetype", (int)model.TemplateType),
                     new NpgsqlParameter("datasourcetype", (int)model.DataSourceType),
                     new NpgsqlParameter("datasourcefunc", model.DataSourceFunc),
+                    new NpgsqlParameter("assemblyname", model.AssemblyName),
+                    new NpgsqlParameter("classtypename", model.ClassTypeName),
                     new NpgsqlParameter("extjs", model.ExtJs),
                     new NpgsqlParameter("fileid", model.FileId),
                     new NpgsqlParameter("ruleid", model.RuleId),
@@ -165,6 +169,34 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
             };
 
             return ExecuteQuery<CrmSysEntityPrintTemplate>(sql, param, tran);
+        }
+
+
+        /// <summary>
+        /// 获取打印数据源（通过函数处理）
+        /// </summary>
+        /// <param name="entityId">实体id</param>
+        /// <param name="recId">记录id</param>
+        /// <param name="dbFunction">函数名称</param>
+        /// <param name="usernumber">当前操作人</param>
+        /// <returns>返回数据已字典形式，如果不是实体中的字段，字典中的key必须和模板定义的字段匹配上</returns>
+        public IDictionary<string, object> GetPrintDetailDataByProc(Guid entityId, Guid recId,string dbFunction, int usernumber)
+        {
+            string sql = string.Format(@"SELECT * FROM {0}(@entityid,@recId,@usernumber)", dbFunction);
+            var param = new DbParameter[]
+            {
+                 new NpgsqlParameter("entityid", entityId),
+                 new NpgsqlParameter("recid", recId),
+                 new NpgsqlParameter("usernumber", usernumber),
+            };
+            var res = ExecuteQueryRefCursor(sql, param);
+            if (res.Count != 1)
+                throw new Exception("返回结果集格式错误");
+            var datalist = res.FirstOrDefault().Value;
+            if (datalist == null || datalist.Count == 0)
+                throw new Exception("不存在该业务数据记录");
+
+            return datalist.FirstOrDefault();
         }
 
     }
