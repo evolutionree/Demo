@@ -73,6 +73,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 TemplateType = data.TemplateType,
                 DataSourceType = data.DataSourceType,
                 DataSourceFunc = data.DataSourceFunc,
+                AssemblyName=data.AssemblyName,
+                ClassTypeName=data.ClassTypeName,
                 ExtJs = data.ExtJs,
                 FileId = data.FileId,
                 RuleId = data.RuleId,
@@ -112,6 +114,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 TemplateType = data.TemplateType,
                 DataSourceType = data.DataSourceType,
                 DataSourceFunc = data.DataSourceFunc,
+                AssemblyName=data.AssemblyName,
+                ClassTypeName=data.ClassTypeName,
                 ExtJs = data.ExtJs,
                 FileId = data.FileId,
                 RuleId = data.RuleId,
@@ -197,8 +201,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --获取实体详情数据--
         private IDictionary<string, object> GetDetailData(Guid entityId, Guid recId, CrmSysEntityPrintTemplate templateInfo, int usernumber)
         {
-
-            templateInfo.DataSourceType = DataSourceType.InternalMethor;
             IDictionary<string, object> detailData = null;
             if (templateInfo.DataSourceType == DataSourceType.EntityDetail)
             {
@@ -212,23 +214,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else if (templateInfo.DataSourceType == DataSourceType.DbFunction) //数据库函数方式实现
             {
-
-                //var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData, null, null, userData.UserId);
-               
+                if (string.IsNullOrEmpty(templateInfo.DataSourceFunc))
+                    throw new Exception("数据库函数方式获取数据时，函数名称不可为空");
+                detailData = _repository.GetPrintDetailDataByProc(entityId, recId, templateInfo.DataSourceFunc, usernumber);
             }
             else if (templateInfo.DataSourceType == DataSourceType.InternalMethor) 
             {
-                var assemblyName = templateInfo.AssemblyName;
-                var classTypeName = templateInfo.ClassTypeName;
-                var mehtodName = templateInfo.DataSourceFunc;
-            
-                string tmppath = Path.Combine(Environment.CurrentDirectory, "UBeat.Crm.CoreApi.Services.dll");
+                if (string.IsNullOrEmpty(templateInfo.AssemblyName))
+                    throw new Exception("代码函数方式获取数据时，程序集名称不可为空");
+                if (string.IsNullOrEmpty(templateInfo.ClassTypeName))
+                    throw new Exception("代码函数方式获取数据时，类名称不可为空");
+                var assemblyName = templateInfo.AssemblyName; //如：UBeat.Crm.CoreApi.Services
+                var classTypeName = templateInfo.ClassTypeName; //如：UBeat.Crm.CoreApi.Services.Services.PrintFormServices
 
-                assemblyName = "UBeat.Crm.CoreApi.Services";
-                classTypeName = "UBeat.Crm.CoreApi.Services.Services.PrintFormServices";
+                Assembly assembly;
+                if(templateInfo.AssemblyName.EndsWith(".dll"))
+                {
+                    string currentDirectory = Path.GetDirectoryName(typeof(PrintFormServices).Assembly.Location);
+                    var assemblyFile = Path.Combine(currentDirectory, templateInfo.AssemblyName);
+                    assembly = Assembly.LoadFrom(assemblyFile);
+                }
+                else
+                {
+                    assembly = Assembly.Load(new AssemblyName(assemblyName));
+                }
 
-
-                var assembly = Assembly.Load(new AssemblyName(assemblyName));
                 Type type = assembly.GetType(classTypeName);//用类型的命名空间和名称获得类型
                 object obj = null;
                 try
@@ -243,17 +253,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     using (var conn = GetDbConnect())
                     {
+                        conn.Open();
+                        var tran = conn.BeginTransaction();
                         try
                         {
-                            conn.Open();
-                            var tran = conn.BeginTransaction();
                             detailData = (obj as IPrintServices).GetPrintDetailData(tran, entityId, recId, usernumber);
                             tran.Commit();
                         }
                         catch (Exception ex)
                         {
-                            throw new Exception( "数据库执行连接失败");
-  
+                            tran.Rollback();
+                            throw new Exception( "数据库执行失败");
                         }
                         finally
                         {
@@ -261,14 +271,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             conn.Dispose();
                         }
                     }
-                   
                 }
                 else
                 {
                     throw new Exception("数据库调用方法必须实现IPrintServices接口");
                 }
-                //MethodInfo mi = type.GetMethod(mehtodName);//通过方法名称获得方法
-                //var result = mi.Invoke(obj, new object[] { entityId, recId, usernumber });//根据参数直线方法,返回值就是原方法的返回值
                 
             }
            
