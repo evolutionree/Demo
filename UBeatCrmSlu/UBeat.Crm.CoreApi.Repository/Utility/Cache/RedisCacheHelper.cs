@@ -52,6 +52,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             //choose the least loaded connection from the pool
             var minValue = lazyConnection.Min((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding);
             var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).First();
+            if (lazyContext == null)
+                lazyContext = lazyConnection.Last();
             return lazyContext.Value;
         }
 
