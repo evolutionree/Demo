@@ -18,6 +18,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
         public static int POOL_SIZE = 100;
         private static readonly Object lockPookRoundRobin = new Object();
         private static Lazy<ConnectionMultiplexer>[] lazyConnection = null;
+        private static int index = 0;
 
         private readonly string _instance;
 
@@ -44,17 +45,21 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
                             lazyConnection[i] = new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(options.Configuration));
                     }
                 }
-                
+
             }
         }
         private static ConnectionMultiplexer GetLeastLoadedConnection()
         {
             //choose the least loaded connection from the pool
-            var minValue = lazyConnection.Min((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding);
-            var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).First();
-            if (lazyContext == null)
-                lazyContext = lazyConnection.Last();
-            return lazyContext.Value;
+            //var minValue = lazyConnection.Min((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding);
+            //var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).First();
+            //if (lazyContext == null)
+            //    lazyContext = lazyConnection.Last();
+            //return lazyContext.Value;
+            if (index >= POOL_SIZE || index < 0)
+                index = 0;
+            return lazyConnection[index++].Value;
+
         }
 
         public ConnectionMultiplexer Connection
