@@ -38,7 +38,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="recId">记录id</param>
         /// <param name="usernumber">当前操作人</param>
         /// <returns>返回数据已字典形式，如果不是实体中的字段，字典中的key必须和模板定义的字段匹配上</returns>
-        IDictionary<string, object> GetPrintDetailData(DbTransaction tran,Guid entityId, Guid recId, int usernumber);
+        IDictionary<string, object> GetPrintDetailData(DbTransaction tran, Guid entityId, Guid recId, int usernumber);
     }
 
     public class PrintFormServices : BaseServices, IPrintServices
@@ -73,8 +73,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 TemplateType = data.TemplateType,
                 DataSourceType = data.DataSourceType,
                 DataSourceFunc = data.DataSourceFunc,
-                AssemblyName=data.AssemblyName,
-                ClassTypeName=data.ClassTypeName,
+                AssemblyName = data.AssemblyName,
+                ClassTypeName = data.ClassTypeName,
                 ExtJs = data.ExtJs,
                 FileId = data.FileId,
                 RuleId = data.RuleId,
@@ -105,7 +105,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("参数不可为空");
             if (data.RecIds == null || data.RecIds.Count == 0)
                 throw new Exception("参数recids不可为空");
-           
+
             _repository.DeleteTemplates(data.RecIds, usernumber);
             return new OutputResult<object>("OK");
         }
@@ -124,8 +124,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 TemplateType = data.TemplateType,
                 DataSourceType = data.DataSourceType,
                 DataSourceFunc = data.DataSourceFunc,
-                AssemblyName=data.AssemblyName,
-                ClassTypeName=data.ClassTypeName,
+                AssemblyName = data.AssemblyName,
+                ClassTypeName = data.ClassTypeName,
                 ExtJs = data.ExtJs,
                 FileId = data.FileId,
                 RuleId = data.RuleId,
@@ -156,7 +156,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (data == null)
                 throw new Exception("参数不可为空");
             return new OutputResult<object>(_repository.GetRecDataTemplateList(data.EntityId, data.RecId, userNumber));
-        } 
+        }
         #endregion
 
         #region --生成打印文档--
@@ -213,7 +213,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             fs.Write(bytes, 0, bytes.Length);
             fs.Dispose();
             return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName) });
-        } 
+        }
         #endregion
 
         #region --获取实体详情数据--
@@ -236,7 +236,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("数据库函数方式获取数据时，函数名称不可为空");
                 detailData = _repository.GetPrintDetailDataByProc(entityId, recId, templateInfo.DataSourceFunc, usernumber);
             }
-            else if (templateInfo.DataSourceType == DataSourceType.InternalMethor) 
+            else if (templateInfo.DataSourceType == DataSourceType.InternalMethor)
             {
                 if (string.IsNullOrEmpty(templateInfo.AssemblyName))
                     throw new Exception("代码函数方式获取数据时，程序集名称不可为空");
@@ -246,7 +246,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var classTypeName = templateInfo.ClassTypeName; //如：UBeat.Crm.CoreApi.Services.Services.PrintFormServices
 
                 Assembly assembly;
-                if(templateInfo.AssemblyName.EndsWith(".dll"))
+                if (templateInfo.AssemblyName.EndsWith(".dll"))
                 {
                     string currentDirectory = Path.GetDirectoryName(typeof(PrintFormServices).Assembly.Location);
                     var assemblyFile = Path.Combine(currentDirectory, templateInfo.AssemblyName);
@@ -261,11 +261,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 object obj = null;
                 try
                 {
-                     obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
+                    obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
                 }
                 catch
                 {
-                    throw new Exception(string.Format("创建类{0}出错，请检查是否包含默认无参构造函数",classTypeName));
+                    throw new Exception(string.Format("创建类{0}出错，请检查是否包含默认无参构造函数", classTypeName));
                 }
                 if (obj is IPrintServices)
                 {
@@ -281,7 +281,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         catch (Exception ex)
                         {
                             tran.Rollback();
-                            throw new Exception( "数据库执行失败");
+                            throw new Exception("数据库执行失败");
                         }
                         finally
                         {
@@ -294,9 +294,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("数据库调用方法必须实现IPrintServices接口");
                 }
-                
+
             }
-           
+
             return detailData;
         }
 
@@ -700,7 +700,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             else
                             {
-                                if(isId)
+                                if (isId)
                                 {
                                     tempfield = tempfield.Remove(tempfield.ToLower().LastIndexOf("_id"));
                                 }
@@ -708,23 +708,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 var fieldobj = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
                                 if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
                                 {
-                                    //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
-                                    if ((EntityFieldControlType)fieldobj["controltype"] != EntityFieldControlType.LinkeTable)
+                                    switch ((EntityFieldControlType)fieldobj["controltype"])
                                     {
-                                        var entityfieldname = fieldobj["fieldname"].ToString();
+                                        case EntityFieldControlType.AreaGroup:
+                                        case EntityFieldControlType.FileAttach:
+                                        case EntityFieldControlType.HeadPhoto:
+                                        case EntityFieldControlType.TreeSingle:
+                                        case EntityFieldControlType.TakePhoto:
+                                        case EntityFieldControlType.TreeMulti:
+                                        case EntityFieldControlType.LinkeTable:
+                                            break;
+                                        default:
+                                            { //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
+                                                var entityfieldname = fieldobj["fieldname"].ToString();
 
-                                        if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
-                                        {
-                                            var entityfieldkey = entityfieldname + "_name";
-                                            entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
-                                        }
-                                        else entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
-                                        formula = formula.Replace(fieldFormat, entityfieldvalue);
+                                                if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
+                                                {
+                                                    var entityfieldkey = entityfieldname + "_name";
+                                                    entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
+                                                }
+                                                else entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
+                                                formula = formula.Replace(fieldFormat, entityfieldvalue);
+                                            }
+                                            break;
+
                                     }
+
 
                                 }
                             }
-                            
+
                         }
 
                     }
@@ -773,14 +786,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var fieldobj = tableFields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
                             if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
                             {
-                                //获取实体字段名称
-                                var entityfieldname = fieldobj["fieldname"].ToString();
-                                if (!isId && tableDetailData.ContainsKey(entityfieldname + "_name"))
+                                switch ((EntityFieldControlType)fieldobj["controltype"])
                                 {
-                                    var nameFeild = entityfieldname + "_name";
-                                    entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
+                                    case EntityFieldControlType.AreaGroup:
+                                    case EntityFieldControlType.FileAttach:
+                                    case EntityFieldControlType.HeadPhoto:
+                                    case EntityFieldControlType.TreeSingle:
+                                    case EntityFieldControlType.TakePhoto:
+                                    case EntityFieldControlType.TreeMulti:
+                                    case EntityFieldControlType.LinkeTable:
+                                        break;
+                                    default:
+                                        {
+                                            //获取实体字段名称
+                                            var entityfieldname = fieldobj["fieldname"].ToString();
+                                            if (!isId && tableDetailData.ContainsKey(entityfieldname + "_name"))
+                                            {
+                                                var nameFeild = entityfieldname + "_name";
+                                                entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
+                                            }
+                                            else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
+                                        }
+                                        break;
                                 }
-                                else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
                             }
                         }
                         formula = formula.Replace(fieldFormat, entityfieldvalue);
@@ -790,9 +818,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return formula;
 
-        } 
+        }
         #endregion
-        
+
         #endregion
 
         #region --处理IF代码块的逻辑--
@@ -958,7 +986,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
 
-        
+
 
         public void TetSaveDoc(string myname)
         {
