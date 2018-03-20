@@ -99,6 +99,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _repository.SetTemplatesStatus(data.RecIds, data.RecStatus, usernumber);
             return new OutputResult<object>("OK");
         }
+        public OutputResult<object> DeleteTemplates(DeleteTemplatesModel data, int usernumber)
+        {
+            if (data == null)
+                throw new Exception("参数不可为空");
+            if (data.RecIds == null || data.RecIds.Count == 0)
+                throw new Exception("参数recids不可为空");
+           
+            _repository.DeleteTemplates(data.RecIds, usernumber);
+            return new OutputResult<object>("OK");
+        }
 
         public OutputResult<object> UpdateTemplate(TemplateInfoModel data, int userNumber)
         {

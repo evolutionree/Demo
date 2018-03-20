@@ -48,8 +48,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
         public List<Guid> RecIds { set; get; }
         public int RecStatus { set; get; }
     }
+    public class DeleteTemplatesModel
+    {
+        public List<Guid> RecIds { set; get; }
+       
+    }
 
-    
 
     public class TemplateInfoModel
     {
