@@ -40,6 +40,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (data == null) return ResponseError<object>("参数格式错误");
             return _printFormServices.SetTemplatesStatus(data, UserId);
         }
+
+        [HttpPost("deletetemplate")]
+        public OutputResult<object> DeleteTemplates([FromBody] DeleteTemplatesModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _printFormServices.DeleteTemplates(data, UserId);
+        }
+
         [HttpPost("updatetemplate")]
         public OutputResult<object> UpdateTemplate([FromBody] TemplateInfoModel data = null)
         {

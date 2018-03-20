@@ -45,7 +45,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
             return recid;
         }
 
-
+        public void DeleteTemplates(List<Guid> recids, int usernumber, DbTransaction tran = null)
+        {
+            var sql = "DELETE FROM crm_sys_entity_print_template  WHERE recid= ANY(@recids);";
+            var param = new DbParameter[]
+            {
+                    new NpgsqlParameter("recids", recids.ToArray())
+            };
+            var rowscount = ExecuteNonQuery(sql, param, tran);
+        }
 
         public void SetTemplatesStatus(List<Guid> recids, int recstatus, int usernumber, DbTransaction tran = null)
         {
