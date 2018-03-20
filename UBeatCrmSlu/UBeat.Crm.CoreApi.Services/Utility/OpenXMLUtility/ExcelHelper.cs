@@ -46,7 +46,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             try
             {
-                var stream = new MemoryStream(excel.ExcelFileBytes);
+                var stream = new MemoryStream();
+                stream.Write(excel.ExcelFileBytes,0,excel.ExcelFileBytes.Length);
                 //创建文档对象
                 //var document = SpreadsheetDocument.Open(file, true);
                 // 设置当前流的位置为流的开始
