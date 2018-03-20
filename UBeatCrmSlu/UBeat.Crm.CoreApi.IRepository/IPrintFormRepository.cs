@@ -12,6 +12,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         void SetTemplatesStatus(List<Guid> recids, int recstatus, int usernumber, DbTransaction tran = null);
 
+        void DeleteTemplates(List<Guid> recids, int usernumber, DbTransaction tran = null);
+
         void UpdateTemplate(CrmSysEntityPrintTemplate model, DbTransaction tran = null);
 
         CrmSysEntityPrintTemplate GetTemplateInfo(Guid recid, DbTransaction tran = null);
