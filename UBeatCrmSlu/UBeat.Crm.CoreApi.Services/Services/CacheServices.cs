@@ -25,10 +25,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
-        public ICacheRepository Repository
+        public ICacheRepositoryHelper Repository
         {
             get {
-                return CacheRepository.GetInstance(_option);
+                return CacheRepositoryHelper.GetInstance(_option);
             }
             
         }
@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         /// <returns></returns>
         public string RedisServerStatus() {
-            return ((CacheRepository)Repository).getRedisStatus();
+            return ((CacheRepositoryHelper)Repository).getRedisStatus();
         }
         
         public IMemoryCache MemoryCache { get; } = new MemoryCache(new MemoryCacheOptions());

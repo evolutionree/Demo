@@ -17,7 +17,7 @@ namespace UBeat.Crm.CoreApi.Controllers
     [Route("api/[controller]")]
     public class RedisTest1Controller : DynamicEntityController
     {
-        private readonly ICacheRepository _cacheRepository;
+        private readonly ICacheRepositoryHelper _cacheRepository;
         private readonly DynamicEntityServices _dynamicEntityServices;
 
         public RedisTest1Controller(CacheServices cacheService, DynamicEntityServices dynamicEntityServices) :base(dynamicEntityServices)

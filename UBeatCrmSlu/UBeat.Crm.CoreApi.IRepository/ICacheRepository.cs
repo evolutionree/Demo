@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace UBeat.Crm.CoreApi.IRepository
 {
-    public interface ICacheRepository
+    public interface ICacheRepositoryHelper
     {
         bool  IsConnected { get; }
 

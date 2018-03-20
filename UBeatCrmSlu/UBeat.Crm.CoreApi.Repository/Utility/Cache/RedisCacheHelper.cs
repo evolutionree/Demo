@@ -11,28 +11,30 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
 {
     public class RedisCacheHelper : ICacheHelper
     {
-        protected IDatabase _cache;
 
         //private ConnectionMultiplexer _connection;
 
-        public static int POOL_SIZE = 100;
-        private static readonly Object lockPookRoundRobin = new Object();
-        private static Lazy<ConnectionMultiplexer>[] lazyConnection = null;
-        private static int index = 0;
+        public  int POOL_SIZE = 100;
+        private  readonly Object lockPookRoundRobin = new Object();
+        private  Lazy<ConnectionMultiplexer>[] lazyConnection = null;
+        //private  int index = 0;
 
         private readonly string _instance;
+        private readonly int _database = 0;
 
         public RedisCacheHelper(RedisCacheOptions options, int database = 0)
         {
+            _database = database;
             InitConnectionPool(options);
-            //实例ID.redis.rds.aliyuncs.com:6379,password=实例ID:密码
-            //_connection = ConnectionMultiplexer.Connect(options.Configuration);
-            //_connection.PreserveAsyncOrder = false;
-            _cache = Connection.GetDatabase(database);
             _instance = options.InstanceName;
         }
 
-        private static void InitConnectionPool(RedisCacheOptions options)
+        private IDatabase GetDatabase()
+        {
+            return Connection.GetDatabase(_database); 
+        }
+
+        private  void InitConnectionPool(RedisCacheOptions options)
         {
             lock (lockPookRoundRobin)
             {
@@ -45,20 +47,19 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
                             lazyConnection[i] = new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(options.Configuration));
                     }
                 }
-
             }
         }
-        private static ConnectionMultiplexer GetLeastLoadedConnection()
+        private  ConnectionMultiplexer GetLeastLoadedConnection()
         {
             //choose the least loaded connection from the pool
-            //var minValue = lazyConnection.Min((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding);
-            //var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).First();
-            //if (lazyContext == null)
-            //    lazyContext = lazyConnection.Last();
-            //return lazyContext.Value;
-            if (index >= POOL_SIZE || index < 0)
-                index = 0;
-            return lazyConnection[index++].Value;
+            var minValue = lazyConnection.Min((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding);
+            var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).First();
+            if (lazyContext == null)
+                lazyContext = lazyConnection.Last();
+            return lazyContext.Value;
+            //if (index >= POOL_SIZE || index < 0)
+            //    index = 0;
+            //return lazyConnection[index++].Value;
 
         }
 
@@ -107,7 +108,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            return _cache.KeyExists(GetKeyForRedis(key));
+            return GetDatabase().KeyExists(GetKeyForRedis(key));
         }
 
         /// <summary>
@@ -121,7 +122,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            return _cache.KeyExistsAsync(GetKeyForRedis(key));
+            return GetDatabase().KeyExistsAsync(GetKeyForRedis(key));
         }
         #endregion
 
@@ -138,7 +139,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            return _cache.StringSet(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)));
+            return GetDatabase().StringSet(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)));
         }
         /// <summary>
         /// 添加缓存（异步方式）
@@ -152,7 +153,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            return _cache.StringSetAsync(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)));
+            return GetDatabase().StringSetAsync(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)));
         }
 
         /// <summary>
@@ -169,7 +170,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            return _cache.StringSet(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiressAbsoulte);
+            return GetDatabase().StringSet(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiressAbsoulte);
         }
         /// <summary>
         /// 添加缓存（异步方式）
@@ -185,7 +186,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            return _cache.StringSetAsync(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiressAbsoulte);
+            return GetDatabase().StringSetAsync(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiressAbsoulte);
         }
 
         /// <summary>
@@ -204,7 +205,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             }
 
 
-            return _cache.StringSet(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiresIn);
+            return GetDatabase().StringSet(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiresIn);
         }
 
         /// <summary>
@@ -223,7 +224,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             }
 
 
-            return _cache.StringSetAsync(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiresIn);
+            return GetDatabase().StringSetAsync(GetKeyForRedis(key), Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)), expiresIn);
         }
         #endregion
 
@@ -240,7 +241,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
                 throw new ArgumentNullException(nameof(key));
             }
 
-            return _cache.KeyDelete(GetKeyForRedis(key));
+            return GetDatabase().KeyDelete(GetKeyForRedis(key));
         }
         /// <summary>
         /// 删除缓存（异步方式）
@@ -253,7 +254,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            return _cache.KeyDeleteAsync(GetKeyForRedis(key));
+            return GetDatabase().KeyDeleteAsync(GetKeyForRedis(key));
         }
 
         /// <summary>
@@ -272,7 +273,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 keylist.Add(GetKeyForRedis(k));
             }
-            _cache.KeyDelete(keylist.ToArray());
+            GetDatabase().KeyDelete(keylist.ToArray());
         }
 
         /// <summary>
@@ -291,7 +292,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
             {
                 keylist.Add(GetKeyForRedis(k));
             }
-            return _cache.KeyDeleteAsync(keylist.ToArray());
+            return GetDatabase().KeyDeleteAsync(keylist.ToArray());
         }
         #endregion
 
@@ -308,7 +309,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
                 throw new ArgumentNullException(nameof(key));
             }
 
-            var value = _cache.StringGet(GetKeyForRedis(key));
+            var value = GetDatabase().StringGet(GetKeyForRedis(key));
 
             if (!value.HasValue)
             {
@@ -329,7 +330,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
                 throw new ArgumentNullException(nameof(key));
             }
 
-            var valuetask = _cache.StringGetAsync(GetKeyForRedis(key));
+            var valuetask = GetDatabase().StringGetAsync(GetKeyForRedis(key));
             valuetask.Wait();
             return Task.Run<T>(() =>
             {
@@ -354,7 +355,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
                 throw new ArgumentNullException(nameof(key));
             }
 
-            var value = _cache.StringGet(GetKeyForRedis(key));
+            var value = GetDatabase().StringGet(GetKeyForRedis(key));
 
             if (!value.HasValue)
             {
@@ -522,11 +523,9 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
         {
             for (int i = 0; i < POOL_SIZE; i++)
             {
-
                 if (lazyConnection[i] != null && lazyConnection[i].IsValueCreated)
                     lazyConnection[i].Value.Dispose();
             }
-
 
             GC.SuppressFinalize(this);
         }
