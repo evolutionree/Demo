@@ -25,7 +25,6 @@ using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony;
 using System.Reflection;
 using System.Data.Common;
-using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -39,7 +38,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="recId">记录id</param>
         /// <param name="usernumber">当前操作人</param>
         /// <returns>返回数据已字典形式，如果不是实体中的字段，字典中的key必须和模板定义的字段匹配上</returns>
-        IDictionary<string, object> GetPrintDetailData(DbTransaction tran, Guid entityId, Guid recId, int usernumber);
+        IDictionary<string, object> GetPrintDetailData(DbTransaction tran,Guid entityId, Guid recId, int usernumber);
     }
 
     public class PrintFormServices : BaseServices, IPrintServices
@@ -74,8 +73,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 TemplateType = data.TemplateType,
                 DataSourceType = data.DataSourceType,
                 DataSourceFunc = data.DataSourceFunc,
-                AssemblyName = data.AssemblyName,
-                ClassTypeName = data.ClassTypeName,
+                AssemblyName=data.AssemblyName,
+                ClassTypeName=data.ClassTypeName,
                 ExtJs = data.ExtJs,
                 FileId = data.FileId,
                 RuleId = data.RuleId,
@@ -106,7 +105,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("参数不可为空");
             if (data.RecIds == null || data.RecIds.Count == 0)
                 throw new Exception("参数recids不可为空");
-
+           
             _repository.DeleteTemplates(data.RecIds, usernumber);
             return new OutputResult<object>("OK");
         }
@@ -125,8 +124,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 TemplateType = data.TemplateType,
                 DataSourceType = data.DataSourceType,
                 DataSourceFunc = data.DataSourceFunc,
-                AssemblyName = data.AssemblyName,
-                ClassTypeName = data.ClassTypeName,
+                AssemblyName=data.AssemblyName,
+                ClassTypeName=data.ClassTypeName,
                 ExtJs = data.ExtJs,
                 FileId = data.FileId,
                 RuleId = data.RuleId,
@@ -157,7 +156,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (data == null)
                 throw new Exception("参数不可为空");
             return new OutputResult<object>(_repository.GetRecDataTemplateList(data.EntityId, data.RecId, userNumber));
-        }
+        } 
         #endregion
 
         #region --生成打印文档--
@@ -214,7 +213,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             fs.Write(bytes, 0, bytes.Length);
             fs.Dispose();
             return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName) });
-        }
+        } 
         #endregion
 
         #region --获取实体详情数据--
@@ -237,7 +236,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("数据库函数方式获取数据时，函数名称不可为空");
                 detailData = _repository.GetPrintDetailDataByProc(entityId, recId, templateInfo.DataSourceFunc, usernumber);
             }
-            else if (templateInfo.DataSourceType == DataSourceType.InternalMethor)
+            else if (templateInfo.DataSourceType == DataSourceType.InternalMethor) 
             {
                 if (string.IsNullOrEmpty(templateInfo.AssemblyName))
                     throw new Exception("代码函数方式获取数据时，程序集名称不可为空");
@@ -247,7 +246,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var classTypeName = templateInfo.ClassTypeName; //如：UBeat.Crm.CoreApi.Services.Services.PrintFormServices
 
                 Assembly assembly;
-                if (templateInfo.AssemblyName.EndsWith(".dll"))
+                if(templateInfo.AssemblyName.EndsWith(".dll"))
                 {
                     string currentDirectory = Path.GetDirectoryName(typeof(PrintFormServices).Assembly.Location);
                     var assemblyFile = Path.Combine(currentDirectory, templateInfo.AssemblyName);
@@ -262,11 +261,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 object obj = null;
                 try
                 {
-                    obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
+                     obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
                 }
                 catch
                 {
-                    throw new Exception(string.Format("创建类{0}出错，请检查是否包含默认无参构造函数", classTypeName));
+                    throw new Exception(string.Format("创建类{0}出错，请检查是否包含默认无参构造函数",classTypeName));
                 }
                 if (obj is IPrintServices)
                 {
@@ -282,7 +281,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         catch (Exception ex)
                         {
                             tran.Rollback();
-                            throw new Exception("数据库执行失败");
+                            throw new Exception( "数据库执行失败");
                         }
                         finally
                         {
@@ -295,9 +294,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("数据库调用方法必须实现IPrintServices接口");
                 }
-
+                
             }
-
+           
             return detailData;
         }
 
@@ -327,27 +326,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (isLoop)
                 return newRows;
             //解析表达式的值，得到最后的表达式字符串
-            bool isImage = false;
-            var formula = GetExpressionValue(cell.CellValue.ToString(), fields, detailData, userinfo, out isImage, linkTableFields, linkTableDetailData);
-            if (formula != null && cell.CellValue.ToString() != formula.ToString())
+            var formula = GetExpressionValue(cell.CellValue, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
+            if (cell.CellValue != formula)
             {
                 cell.IsUpdated = true;
-                if (formula is ImageData)
-                {
-                    cell.IsImageCell = true;
-                    cell.ImageInfo = formula as ImageData;
-                }
-                else cell.CellValue = formula.ToString();
-
+                cell.CellValue = formula;
             }
             return newRows;
         }
         #endregion
 
         #region --获取表达式的值，使用词法分析，并计算该表达式的最终数据--
-        public object GetExpressionValue(string input, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, out bool isImage, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
+        public string GetExpressionValue(string input, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
         {
-            isImage = false;
+
             var grammar = new ExpressionGrammar();
             var language = new LanguageData(grammar);
             var parser = new Parser(language);
@@ -356,10 +348,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return input;
             }
-            var res = PerformEvaluate(syntaxTree.Root, fields, detailData, userinfo,  linkTableFields, linkTableDetailData);
+            var res = PerformEvaluate(syntaxTree.Root, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
             if (res == null)
                 return input;
-            return res.Value;
+            var valueResult = res.Value == null ? null : res.Value.ToString();
+
+            return valueResult;
         }
 
         public Evaluation PerformEvaluate(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
@@ -400,7 +394,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --解析实体字段节点的表达式--
-        private Evaluation ParsingFieldExpression(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo,  List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
+        private Evaluation ParsingFieldExpression(ParseTreeNode node, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
         {
             if (node.Token == null || string.IsNullOrEmpty(node.Token.Text))
             {
@@ -409,7 +403,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var formula = node.Token.Text;
             var isLinkTabelField = formula.Split('.').Length > 1;//判断是否是嵌套表格控件中的字段
             string formulaValue = null;
-
             if (isLinkTabelField)
             {
                 formulaValue = ParsingLinkTableVariable(formula, linkTableFields, linkTableDetailData, userinfo);
@@ -453,15 +446,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         StringBuilder argvalues = new StringBuilder();
                         foreach (var argExpr in argsExpressionNode.ChildNodes)
                         {
-                            var argEvaluate = PerformEvaluate(argExpr, fields, detailData, userinfo,  linkTableFields, linkTableDetailData);
+                            var argEvaluate = PerformEvaluate(argExpr, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                             argvalues.Append(argEvaluate.Value == null ? string.Empty : argEvaluate.Value.ToString());
                         }
                         formulaResult = argvalues.ToString();
-                    }
-                    break;
-                case "image":
-                    {
-                        formulaResult = ExcuteImage(argsExpressionNode, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                     }
                     break;
 
@@ -560,31 +548,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
 
-        #region --执行image函数--
-        private ImageData ExcuteImage(ParseTreeNode argsExpressionNode, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo, List<IDictionary<string, object>> linkTableFields = null, IDictionary<string, object> linkTableDetailData = null)
-        {
-            if (argsExpressionNode.ChildNodes.Count != 3)
-            {
-                throw new Exception("image函数定义错误");
-            }
-            ImageData data = new ImageData();
-            var fieldArgEvaluate = PerformEvaluate(argsExpressionNode.ChildNodes[0], fields, detailData, userinfo, linkTableFields, linkTableDetailData);
-            var widthArgEvaluate = PerformEvaluate(argsExpressionNode.ChildNodes[1], fields, detailData, userinfo, linkTableFields, linkTableDetailData);
-            var heightArgEvaluate = PerformEvaluate(argsExpressionNode.ChildNodes[2], fields, detailData, userinfo, linkTableFields, linkTableDetailData);
-
-            data.Width = int.Parse(widthArgEvaluate.Value.ToString());
-            data.Height = int.Parse(heightArgEvaluate.Value.ToString());
-            data.Images = new List<byte[]>();
-            var fileidArray = fieldArgEvaluate.Value.ToString().Split(',');
-            foreach(var fileid in fileidArray)
-            {
-                data.Images.Add(_fileServices.GetFileData(null,fileid));
-            }
-            //data.Width = width * fileidArray.Length + fileidArray.Length;//计算图片单元格的总宽度
-            return data;
-        }
-        #endregion
-
         #endregion
 
         #region --解析函数参数节点表达式--
@@ -594,7 +557,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return new ConstantEvaluation(null);
             }
-            return PerformEvaluate(node.ChildNodes[0], fields, detailData, userinfo,  linkTableFields, linkTableDetailData);
+            return PerformEvaluate(node.ChildNodes[0], fields, detailData, userinfo, linkTableFields, linkTableDetailData);
 
         }
         #endregion
@@ -606,7 +569,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return new ConstantEvaluation(null);
             }
-            return PerformEvaluate(node.ChildNodes[0], fields, detailData, userinfo , linkTableFields, linkTableDetailData);
+            return PerformEvaluate(node.ChildNodes[0], fields, detailData, userinfo, linkTableFields, linkTableDetailData);
 
         }
         #endregion
@@ -617,8 +580,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var leftNode = node.ChildNodes[0];
             var opNode = node.ChildNodes[1];
             var rightNode = node.ChildNodes[2];
-
-            Evaluation left = PerformEvaluate(leftNode, fields, detailData, userinfo , linkTableFields, linkTableDetailData);
+            Evaluation left = PerformEvaluate(leftNode, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
             Evaluation right = PerformEvaluate(rightNode, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
             BinaryOperation op = BinaryOperation.Add;
             switch (opNode.Term.Name)
@@ -646,7 +608,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var leftNode = node.ChildNodes[0];
             var opNode = node.ChildNodes[1];
             var rightNode = node.ChildNodes[2];
-
             Evaluation left = PerformEvaluate(leftNode, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
             Evaluation right = PerformEvaluate(rightNode, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
             BoolOperation op = BoolOperation.Equal;
@@ -739,7 +700,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             else
                             {
-                                if (isId)
+                                if(isId)
                                 {
                                     tempfield = tempfield.Remove(tempfield.ToLower().LastIndexOf("_id"));
                                 }
@@ -747,42 +708,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 var fieldobj = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
                                 if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
                                 {
-                                    switch ((EntityFieldControlType)fieldobj["controltype"])
+                                    //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
+                                    if ((EntityFieldControlType)fieldobj["controltype"] != EntityFieldControlType.LinkeTable)
                                     {
-                                        case EntityFieldControlType.AreaGroup:
-                                        case EntityFieldControlType.FileAttach:
-                                        case EntityFieldControlType.TreeSingle:
-                                        case EntityFieldControlType.TreeMulti:
-                                        case EntityFieldControlType.LinkeTable:
-                                            break;
-                                        case EntityFieldControlType.HeadPhoto:
-                                        case EntityFieldControlType.TakePhoto:
-                                            {   //把文件id赋值给变量
-                                                var entityfieldname = fieldobj["fieldname"].ToString();
-                                                entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
-                                                formula = formula.Replace(fieldFormat, entityfieldvalue);
-                                            }
-                                            break;
-                                        default:
-                                            { //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
-                                                var entityfieldname = fieldobj["fieldname"].ToString();
+                                        var entityfieldname = fieldobj["fieldname"].ToString();
 
-                                                if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
-                                                {
-                                                    var entityfieldkey = entityfieldname + "_name";
-                                                    entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
-                                                }
-                                                else entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
-                                                formula = formula.Replace(fieldFormat, entityfieldvalue);
-                                            }
-                                            break;
-
+                                        if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
+                                        {
+                                            var entityfieldkey = entityfieldname + "_name";
+                                            entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
+                                        }
+                                        else entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
+                                        formula = formula.Replace(fieldFormat, entityfieldvalue);
                                     }
-
 
                                 }
                             }
-
+                            
                         }
 
                     }
@@ -831,48 +773,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var fieldobj = tableFields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
                             if (fieldobj != null && fieldobj.ContainsKey("fieldname") && fieldobj["fieldname"] != null)
                             {
-                                switch ((EntityFieldControlType)fieldobj["controltype"])
+                                //获取实体字段名称
+                                var entityfieldname = fieldobj["fieldname"].ToString();
+                                if (!isId && tableDetailData.ContainsKey(entityfieldname + "_name"))
                                 {
-                                    case EntityFieldControlType.AreaGroup:
-                                    case EntityFieldControlType.FileAttach:
-                                    case EntityFieldControlType.TreeSingle:
-                                    case EntityFieldControlType.TreeMulti:
-                                    case EntityFieldControlType.LinkeTable:
-                                        break;
-                                    case EntityFieldControlType.HeadPhoto:
-                                    case EntityFieldControlType.TakePhoto:
-                                        {   //把文件id赋值给变量
-                                            var entityfieldname = fieldobj["fieldname"].ToString();
-                                            entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
-                                            formula = formula.Replace(fieldFormat, entityfieldvalue);
-                                        }
-                                        break;
-                                    default:
-                                        {
-                                            //获取实体字段名称
-                                            var entityfieldname = fieldobj["fieldname"].ToString();
-                                            if (!isId && tableDetailData.ContainsKey(entityfieldname + "_name"))
-                                            {
-                                                var nameFeild = entityfieldname + "_name";
-                                                entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
-                                            }
-                                            else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
-                                            formula = formula.Replace(fieldFormat, entityfieldvalue);
-                                        }
-                                        break;
+                                    var nameFeild = entityfieldname + "_name";
+                                    entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
                                 }
+                                else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
                             }
                         }
-
+                        formula = formula.Replace(fieldFormat, entityfieldvalue);
                     }
                 }
 
             }
             return formula;
 
-        }
+        } 
         #endregion
-
+        
         #endregion
 
         #region --处理IF代码块的逻辑--
@@ -882,14 +802,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<ExcelRowInfo> newRows = new List<ExcelRowInfo>();
             string formula = null;
             int checkRegion = -1;//标识当前检查区域，-1=未进入if 0=if,1=endif
-            if (KeywordHelper.IsKey_IF(cell.CellValue.ToString(), out formula))
+            if (KeywordHelper.IsKey_IF(cell.CellValue, out formula))
             {
                 isKey_IF = true;
                 checkRegion = 0;
                 row.RowStatus = RowStatus.Deleted;
                 //解析表达式，得到最终的表达式字符串
-                var isImage = false;
-                var formulaResult = GetExpressionValue(formula, fields, detailData, userinfo, out isImage, linkTableFields, linkTableDetailData);
+                var formulaResult = GetExpressionValue(formula, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
                 //处理比较操作符
                 //formulaResult = formulaResult.Replace("==", "=");
 
@@ -908,7 +827,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     foreach (var celltemp in sheet.Rows[i].Cells)
                     {
                         //结束if模块
-                        if (KeywordHelper.IsKey_EndIF(celltemp.CellValue.ToString()))
+                        if (KeywordHelper.IsKey_EndIF(celltemp.CellValue))
                         {
                             checkRegion = 1;
                             sheet.Rows[i].RowStatus = RowStatus.Deleted;
@@ -951,7 +870,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string formula = null;
             int checkRegion = -1;//标识当前检查区域，-1=未进入Loop, 0=Loop, 1=EndLoop
 
-            if (KeywordHelper.IsKey_Loop(cell.CellValue.ToString(), out formula))
+            if (KeywordHelper.IsKey_Loop(cell.CellValue, out formula))
             {
                 isLoop = true;
                 checkRegion = 0;
@@ -962,7 +881,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     foreach (var celltemp in sheet.Rows[i].Cells)
                     {
-                        if (KeywordHelper.IsKey_EndLoop(celltemp.CellValue.ToString()))
+                        if (KeywordHelper.IsKey_EndLoop(celltemp.CellValue))
                         {
                             checkRegion = 1;
                             row.RowStatus = RowStatus.Deleted;
@@ -981,7 +900,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("Loop函数必须由ENDLoop结束，请检查模板定义");
                 }
 
-                var fieldFormat = ParsingVariable(formula, fields, detailData, userinfo );
+                var fieldFormat = ParsingVariable(formula, fields, detailData, userinfo);
                 var fieldnames = KeywordHelper.GetFieldNames(fieldFormat);
                 if (fieldnames.Length != 1)
                 {
@@ -1039,7 +958,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
 
-
+        
 
         public void TetSaveDoc(string myname)
         {
