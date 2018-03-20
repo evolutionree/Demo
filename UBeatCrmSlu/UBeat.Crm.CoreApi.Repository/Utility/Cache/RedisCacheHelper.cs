@@ -17,7 +17,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
         public  int POOL_SIZE = 100;
         private  readonly Object lockPookRoundRobin = new Object();
         private  Lazy<ConnectionMultiplexer>[] lazyConnection = null;
-        //private  int index = 0;
+        private  int index = 0;
 
         private readonly string _instance;
         private readonly int _database = 0;
@@ -53,13 +53,15 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
         {
             //choose the least loaded connection from the pool
             var minValue = lazyConnection.Min((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding);
-            var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).First();
+            var lazyContext = lazyConnection.Where((lazyCtx) => lazyCtx.Value.GetCounters().TotalOutstanding == minValue).FirstOrDefault();
             if (lazyContext == null)
-                lazyContext = lazyConnection.Last();
+            {
+                if (index >= POOL_SIZE || index < 0)
+                    index = 0;
+                lazyContext= lazyConnection[index++];
+            }
             return lazyContext.Value;
-            //if (index >= POOL_SIZE || index < 0)
-            //    index = 0;
-            //return lazyConnection[index++].Value;
+            
 
         }
 
