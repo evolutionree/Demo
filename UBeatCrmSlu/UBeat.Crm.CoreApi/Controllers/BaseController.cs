@@ -217,13 +217,13 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         Dictionary<string, double> stopwatchDic = new Dictionary<string, double>();
 
-        Stopwatch stopwatch;
+
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             stopwatchDic.Clear();
             //打印日志
             WriteRequestLog(context);
-            stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start(); // 开始监视代码
         
             //检查系统是否超出许可日期
@@ -291,18 +291,19 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             stopwatch.Reset();
             stopwatch.Restart();
+
             base.OnActionExecuting(context);
+
+            stopwatch.Stop(); // 停止监视
+            seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
+
+            stopwatchDic.Add("ExcuteAction", seconds);
         }
-        
 
         public override void OnActionExecuted(ActionExecutedContext context)
         {
-            stopwatch.Stop(); // 停止监视
-            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
-            stopwatchDic.Add("ExcuteAction", seconds);
-            stopwatch.Reset();
-            stopwatch.Restart();
-            
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start(); // 开始监视代码
             var header = GetAnalyseHeader();
             var device = header.Device.ToUpper();
             if (device != "WEB")
@@ -323,10 +324,10 @@ namespace UBeat.Crm.CoreApi.Controllers
                 }
             }
             stopwatch.Stop(); // 停止监视
-            seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
+            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
             //System.Console.WriteLine("ValidLimitTime:" + seconds);
             stopwatchDic.Add("GetVersionData", seconds);
-            stopwatch = null;
+
             //打印响应数据
             WriteResponseLog(context);
 
