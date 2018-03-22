@@ -15,6 +15,20 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
         /// </summary>
         public int EncryptType { set; get; }
 
+
+        /// <summary>
+        /// 设备型号：iPhone 6s
+        /// </summary>
+        public string DeviceModel { get; set; }
+        /// <summary>
+        /// 设备系统版本
+        /// </summary>
+        public string OsVersion { get; set; }
+        /// <summary>
+        /// 设备型唯一标识符
+        /// </summary>
+        public string UniqueId { get; set; }
+
     }
 
     public class AccountLoginOutModel

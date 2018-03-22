@@ -77,6 +77,16 @@ namespace UBeat.Crm.CoreApi.Controllers
             //登录成功才写入操作日志
             WriteOperateLog("登录系统", loginModel, userInfo.UserId);
 
+            //设备绑定
+            if (isMobile)
+            {
+                var hadBinded = _accountServices.checkHadBinded(loginModel, userInfo.UserId);
+                if (!(hadBinded.DataBody is bool))
+                {
+                    return hadBinded;
+                }
+            }
+
             //login finished
             DateTime expiration;
             List<Claim> claims = new List<Claim>();
@@ -132,6 +142,24 @@ namespace UBeat.Crm.CoreApi.Controllers
             };
             //清理旧缓存，且获取个人用户数据到缓存中
             _accountServices.GetUserData(userInfo.UserId, true);
+            return new OutputResult<object>(response);
+        }
+
+        /// <summary>
+        /// 解除设备绑定
+        /// </summary>
+        /// <param name="registModel"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("UnBind")]
+        public OutputResult<object> UnBind([FromBody] DeviceBindInfo bindInfo)
+        {
+            var unBind = _accountServices.UnDeviceBind(bindInfo.RecId, UserId);
+            bool result = (bool)unBind.DataBody;
+            var response = new
+            {
+                value = result
+            };
             return new OutputResult<object>(response);
         }
 

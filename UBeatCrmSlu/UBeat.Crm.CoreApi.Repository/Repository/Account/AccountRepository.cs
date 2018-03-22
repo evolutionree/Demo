@@ -44,10 +44,47 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         /// <returns></returns>
         public int GetUserCount()
         {
-            var sql = @"select count(1) nums from crm_sys_userinfo
-            ";
+            var sql = @"select count(1) nums from crm_sys_userinfo";
             var count = DataBaseHelper.QuerySingle<int>(sql);
             return count;
+        }
+
+        public bool CheckDeviceHadBind(string uniqueId, int userNumber)
+        {
+            var sql = @"select exists(select recid from crm_sys_device_bind where userid = @userid and uniqueid != @uniqueid and recstatus = 1)";
+            var param = new
+            {
+                userid = userNumber,
+                uniqueid = uniqueId,
+            };
+            var isBinded = DataBaseHelper.QuerySingle<bool>(sql, param);
+            return isBinded;
+        }
+
+        public void AddDeviceBind(string deviceModel,string osVersion, string uniqueId, int userNumber)
+        {
+            var sql = @"select * from add_device_bind(@devicemodel, @osversion, @uniqueid, @userid)";
+
+            var param = new
+            {
+                devicemodel = deviceModel,
+                osversion = osVersion,
+                uniqueid = uniqueId,
+                userid = userNumber
+            };
+             DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+        }
+
+        public bool UnDeviceBind(Guid recordId, int userNumber)
+        {
+            var sql = @"update crm_sys_device_bind set recstatus = 0 where recid = @recordId and recstatus = 1 and userid = @userid";
+            var param = new
+            {
+                recordId = recordId,
+                userid = userNumber,
+            };
+            DataBaseHelper.QuerySingle<int>(sql, param);
+            return true;
         }
 
         public OperateResult RegistUser(AccountUserRegistMapper registEntity, int userNumber)

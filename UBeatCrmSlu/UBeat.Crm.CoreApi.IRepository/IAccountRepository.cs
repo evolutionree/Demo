@@ -11,6 +11,12 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
          int GetUserCount();
 
+        bool CheckDeviceHadBind(string uniqueId, int userNumber);
+
+        void AddDeviceBind(string deviceModel, string osVersion, string uniqueId, int userNumber);
+
+        bool UnDeviceBind(Guid recordId, int userNumber);
+
         AccountUserMapper GetUserInfo(string accountName);
 
         OperateResult RegistUser(AccountUserRegistMapper registEntity, int userNumber);

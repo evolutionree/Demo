@@ -57,6 +57,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 });
         }
 
+        public OutputResult<object> checkHadBinded(AccountLoginModel loginModel, int userNumber)
+        {
+            if (loginModel.DeviceModel == null || loginModel.UniqueId == null || loginModel.OsVersion == null)
+            {
+                return ShowError<object>("获取设备信息失败");
+            }
+
+            bool hadBinded = _accountRepository.CheckDeviceHadBind(loginModel.UniqueId, userNumber);
+            if (hadBinded)
+            {
+                return ShowError<object>("请使用绑定的设备进行登录");
+            }
+            else {
+                //绑定设备
+                _accountRepository.AddDeviceBind(loginModel.DeviceModel, loginModel.OsVersion, loginModel.UniqueId, userNumber);
+                return new OutputResult<object>(!hadBinded);
+            }
+        }
+
+        public OutputResult<object> UnDeviceBind(Guid recordId, int userNumber)
+        {
+            bool unBind = _accountRepository.UnDeviceBind(recordId, userNumber);
+            return new OutputResult<object>(unBind);
+        }
+
         public OutputResult<object> Login(AccountLoginModel loginModel, AnalyseHeader header)
         {
 
