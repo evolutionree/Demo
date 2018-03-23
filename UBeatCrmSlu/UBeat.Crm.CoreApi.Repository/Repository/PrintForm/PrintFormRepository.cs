@@ -130,13 +130,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
 
             if (recstate == 0)
             {
-                sql = @" SELECT * FROM crm_sys_entity_print_template WHERE entityid=@entityid AND recstatus=0 ORDER BY recversion DESC; ";
+                sql = @"SELECT pt.*,u.username AS reccreator_name,u2.username AS recupdator_name FROM crm_sys_entity_print_template pt
+                        LEFT JOIN crm_sys_userinfo u ON u.userid=pt.reccreator
+                        LEFT JOIN crm_sys_userinfo u2 on u2.userid=pt.recupdator
+                        WHERE pt.entityid=@entityid AND pt.recstatus=0 ORDER BY recversion DESC;  ";
             }
             else if (recstate == 1)
             {
-                sql = @" SELECT * FROM crm_sys_entity_print_template WHERE entityid=@entityid AND recstatus=1 ORDER BY recversion DESC; ";
+                sql = @"SELECT pt.*,u.username AS reccreator_name,u2.username AS recupdator_name FROM crm_sys_entity_print_template pt
+                        LEFT JOIN crm_sys_userinfo u ON u.userid=pt.reccreator
+                        LEFT JOIN crm_sys_userinfo u2 on u2.userid=pt.recupdator
+                        WHERE pt.entityid=@entityid AND pt.recstatus=1 ORDER BY recversion DESC;  ";
             }
-            else sql = @"SELECT * FROM crm_sys_entity_print_template WHERE entityid=@entityid ORDER BY recversion DESC";
+            else sql = @"SELECT pt.*,u.username AS reccreator_name,u2.username AS recupdator_name FROM crm_sys_entity_print_template pt
+                        LEFT JOIN crm_sys_userinfo u ON u.userid=pt.reccreator
+                        LEFT JOIN crm_sys_userinfo u2 on u2.userid=pt.recupdator
+                        WHERE pt.entityid=@entityid ORDER BY recversion DESC;  ";
             var param = new DbParameter[]
             {
                  new NpgsqlParameter("entityid", entityid),
