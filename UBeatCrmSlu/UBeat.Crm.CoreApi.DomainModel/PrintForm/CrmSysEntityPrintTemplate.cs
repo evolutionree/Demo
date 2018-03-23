@@ -80,6 +80,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.PrintForm
         /// </summary>
         public int RecUpdator { set; get; }
         /// <summary>
+        /// 创建人
+        /// </summary>
+        public string RecCreator_Name { set; get; }
+        /// <summary>
+        /// 修改人
+        /// </summary>
+        public string RecUpdator_Name { set; get; }
+        /// <summary>
         /// 记录版本,系统自动生成
         /// </summary>
         public long RecVersion { set; get; }
