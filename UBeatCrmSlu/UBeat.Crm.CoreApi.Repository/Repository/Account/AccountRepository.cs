@@ -87,6 +87,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             return true;
         }
 
+        public Dictionary<string, List<IDictionary<string, object>>> DeviceBindList(DeviceBindInfo deviceBindQuery, int userNumber)
+        {
+            var procName ="SELECT crm_func_devicebind_list(@devicemodel, @osversion, @uniqueid, @username, @status, @pageindex, @pagesize, @userno)";
+
+            var dataNames = new List<string> { "PageData", "PageCount" };
+            var param = new
+            {
+                DeviceModel = deviceBindQuery.DeviceModel,
+                OsVersion = deviceBindQuery.OsVersion,
+                UniqueId = deviceBindQuery.UniqueId,
+                UserName = deviceBindQuery.UserName,
+                Status = deviceBindQuery.RecStatus,
+                PageIndex = deviceBindQuery.PageIndex,
+                PageSize = deviceBindQuery.PageSize,
+                UserNo = userNumber
+            };
+
+            var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
+            return result;
+        }
+
         public OperateResult RegistUser(AccountUserRegistMapper registEntity, int userNumber)
         {
             var sql = @"

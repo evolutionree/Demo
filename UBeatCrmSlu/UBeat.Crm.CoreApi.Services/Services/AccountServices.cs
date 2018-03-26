@@ -82,6 +82,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(unBind);
         }
 
+        public OutputResult<object> DeviceBindList(DeviceBindInfo deviceBindQuery, int userNumber)
+        {
+            return new OutputResult<object>(_accountRepository.DeviceBindList(deviceBindQuery, userNumber));
+        }
+
         public OutputResult<object> Login(AccountLoginModel loginModel, AnalyseHeader header)
         {
 

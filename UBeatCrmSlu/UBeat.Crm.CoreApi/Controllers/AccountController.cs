@@ -164,6 +164,20 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         /// <summary>
+        /// 设备绑定信息列表
+        /// </summary>
+        /// <param name="bindInfo"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("DeviceBindList")]
+        public OutputResult<object> DeviceBindList([FromBody] DeviceBindInfo bindInfo)
+        {
+            if (bindInfo == null) return ResponseError<object>("参数格式错误");
+
+            return _accountServices.DeviceBindList(bindInfo, UserId);
+        }
+
+        /// <summary>
         /// 验证请求时间戳是否合法
         /// </summary>
         /// <param name="requestTimeStamp"></param>

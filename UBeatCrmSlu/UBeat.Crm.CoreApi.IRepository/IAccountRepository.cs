@@ -17,6 +17,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         bool UnDeviceBind(Guid recordId, int userNumber);
 
+        Dictionary<string, List<IDictionary<string, object>>> DeviceBindList(DeviceBindInfo deviceBindQuery, int userNumber);
+
         AccountUserMapper GetUserInfo(string accountName);
 
         OperateResult RegistUser(AccountUserRegistMapper registEntity, int userNumber);
