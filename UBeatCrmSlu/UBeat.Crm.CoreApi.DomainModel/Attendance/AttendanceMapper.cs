@@ -17,6 +17,28 @@ namespace UBeat.Crm.CoreApi.DomainModel.Attendance
         }
     }
 
+    public class GroupUserMapper : BaseEntity
+    {
+        public string DeptId { get; set; }
+
+        public string UserName { get; set; }
+
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new GroupUserMapperValidator();
+        }
+        class GroupUserMapperValidator : AbstractValidator<GroupUserMapper>
+        {
+            public GroupUserMapperValidator()
+            {
+                RuleFor(d => d.DeptId).NotNull().NotEmpty().WithMessage("部门Id不能为空");
+            }
+        }
+    }
+
     public class AttendanceSignMapperValidator : AbstractValidator<AttendanceSignMapper>
     {
         public AttendanceSignMapperValidator()

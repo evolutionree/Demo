@@ -14,6 +14,17 @@ namespace UBeat.Crm.CoreApi.Services.Models.Attendance
         public string SignTime { get; set; }
     }
 
+    public class GroupUserModel
+    {
+        public string DeptId { get; set; }
+
+        public string UserName { get; set; }
+
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+    }
+
     public class AttendanceSignListModel
     {
         public int MonthType { get; set; }

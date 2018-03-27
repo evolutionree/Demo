@@ -36,6 +36,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
         }
 
+        public OutputResult<object> GroupUserQuery(GroupUserModel settingList, int userNumber)
+        {
+            var entity = new GroupUserMapper
+            {
+                DeptId= settingList.DeptId,
+                UserName=settingList.UserName,
+                PageIndex=settingList.PageIndex,
+                PageSize=settingList.PageSize
+            };
+            if (entity == null || !entity.IsValid())
+            {
+                return HandleValid(entity);
+            }
+            return new OutputResult<object>(_attendanceRepository.GroupUserQuery(entity, userNumber)) ;
+        }
+
         public OutputResult<object> SignList(AttendanceSignListModel listModel, int userNumber)
         {
             var listEntity = _mapper.Map<AttendanceSignListModel, AttendanceSignListMapper>(listModel);
