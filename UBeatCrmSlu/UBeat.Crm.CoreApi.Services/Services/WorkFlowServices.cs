@@ -1642,8 +1642,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                             string dynamicFuncode = msg.FuncCode + "Dynamic";
                             var dynamicMsg = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, dynamicFuncode, userNumber, newMembers, null, msgpParam);
+                            foreach(var dmsg in dynamicMsg.TemplateKeyValue)
+                            {
+                                if(!paramData.ContainsKey(dmsg.Key))
+                                {
+                                    paramData.Add(dmsg.Key, dmsg.Value);
+                                }
+                            }
 
-                            dynamicMsg.TemplateKeyValue = dynamicMsg.TemplateKeyValue.Union(paramData).ToLookup(t => t.Key, t => t.Value).ToDictionary(m => m.Key, m => m.First());
+                            dynamicMsg.TemplateKeyValue = paramData;
                             //发布审批消息到实体动态列表
                             MessageService.WriteMessage(tran, dynamicMsg, userNumber, null, 2);
 
