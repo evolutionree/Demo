@@ -62,6 +62,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     case DataVersionType.ProductData:
                         dataList = GetProductData(m.VersionKey, m.RecVersion, userNumber, out maxVersion, out hasMoreData);
                         break;
+                    case DataVersionType.TrackSettingData:
+                        dataList = GetTrackSettingData(m.VersionKey, m.RecVersion, userNumber, out maxVersion, out hasMoreData);
+                        break;
                 }
                 if (hasMoreData)
                     result.HasMoreData.Add(m.VersionKey);
@@ -109,6 +112,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             dic.Add("vocationfunctionsync", "个人职能数据(职能功能表配置)");
             dic.Add("productsync", "产品信息");
             dic.Add("productserialsync", "产品系列");
+            dic.Add("tracksettingsync","定位策略");
 
             if (dic.ContainsKey(versionKey))
                 return dic[versionKey];
@@ -343,6 +347,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return resutl;
+        }
+
+        private List<Dictionary<string, Object>> GetTrackSettingData(string versionKey, long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
+        {
+            List<Dictionary<string, object>> resut = new List<Dictionary<string, object>>();
+            maxVersion = 0;
+            hasMoreData = false;
+            var dynamicService = (TrackConfigurationServices)dynamicCreateService(typeof(TrackConfigurationServices).FullName, true);
+            var trackStrategyData = dynamicService.GetUserTrackStrategy(userNumber);
+            switch (versionKey)
+            {
+                case "tracksettingsync"://定位策略
+
+                    if (trackStrategyData != null)
+                    {
+                        var func = new Dictionary<string, object>();
+                        func.Add("RecId", trackStrategyData.RecId);
+                        func.Add("RecName", trackStrategyData.RecName);
+                        func.Add("LocationInterval", trackStrategyData.LocationInterval);
+                        func.Add("LocationTimeRange", trackStrategyData.LocationTimeRange);
+                        func.Add("LocationCycle", trackStrategyData.LocationCycle);
+                        func.Add("WarningInterval", trackStrategyData.WarningInterval);
+                        func.Add("Remark", trackStrategyData.Remark);
+                        func.Add("RecStatus", trackStrategyData.RecStatus);
+
+                        resut.Add(func);
+                    }
+                    break;
+            }
+            return resut;
         }
 
     }

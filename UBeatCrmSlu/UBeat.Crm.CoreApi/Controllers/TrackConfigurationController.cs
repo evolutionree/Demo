@@ -69,6 +69,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>(response);
         }
 
+        [HttpPost]
+        [Route("Disable")]
+        public OutputResult<object> DisableTrackConfiguration([FromBody] TrackConfigurationDel deQuery)
+        {
+            if (deQuery == null) return ResponseError<object>("参数格式错误");
+
+            return _trackConfigurationServices.DeleteTrackConfiguration(deQuery, UserId);
+        }
+
+
+
         /// <summary>
         /// 人员定位策略列表
         /// </summary>
@@ -83,7 +94,6 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _trackConfigurationServices.AllocationList(trackConfigurationAllocationListQuery, UserId);
         }
 
-
         [HttpPost]
         [Route("AddAllocation")]
         public OutputResult<object> AddAllocation([FromBody] TrackConfigurationAllocation addQuery)
@@ -94,15 +104,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         /// <summary>
-        /// 取消人员定位策略
+        /// 删除人员定位策略
         /// </summary>
         /// <param name="trackConfigurationAllocationListQuery"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("CancelAllocation")]
-        public OutputResult<object> CancelAllocation([FromBody] TrackConfigurationAllocationDel delQuery)
+        [Route("DelAllocation")]
+        public OutputResult<object> DelAllocation([FromBody] TrackConfigurationAllocation delQuery)
         {
-            var addConfiguration = _trackConfigurationServices.CancelAllocation(delQuery);
+            var addConfiguration = _trackConfigurationServices.DelAllocation(delQuery);
             bool result = (bool)addConfiguration.DataBody;
             var response = new
             {

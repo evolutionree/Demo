@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Version
     }
 
     /// <summary>
-    /// 数据总版本号类型：1=基础数据，2=字典数据，3=产品数据，4=实体数据，5=审批流程，6=权限配置，7=消息 
+    /// 数据总版本号类型：1=基础数据，2=字典数据，3=产品数据，4=实体数据，5=审批流程，6=权限配置，7=消息, 8=定位策略配置 
     /// </summary>
     public enum DataVersionType
     {
@@ -26,5 +26,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Version
         FlowData=5,
         PowerData=6,
         MsgData=7,
+        TrackSettingData=8,
     }
 }

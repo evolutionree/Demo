@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Track;
 using System.Data.Common;
 
@@ -14,10 +15,14 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         bool UpdateTrackConfiguration(TrackConfigurationInfo trackConfigurationQuery, DbTransaction tran = null);
 
+        OperateResult DeleteTrackConfiguration(TrackConfigurationDel delquery, int userNumber);
+
         Dictionary<string, List<IDictionary<string, object>>> AllocationList(TrackConfigurationAllocationList trackConfigurationAllocationListQuery, int userNumber);
 
-        bool CancelAllocation(TrackConfigurationAllocationDel delQuery, DbTransaction tran = null);
+        OperateResult AddAllocation(TrackConfigurationAllocation trackConfigurationAllocationListQuery, int userNumber);
 
-        bool AddAllocation(TrackConfigurationAllocation trackConfigurationAllocationListQuery, DbTransaction tran = null);
+        bool DelAllocation(TrackConfigurationAllocation delQuery, DbTransaction tran = null);
+
+        TrackConfigurationInfo GetUserTrackStrategy(int userNumber);
     }
 }

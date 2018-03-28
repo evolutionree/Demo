@@ -667,8 +667,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         }
         #endregion
 
-       
+        #region 定位策略信息
+        /// <summary>
+        /// 根据版本获取定位策略信息
+        /// </summary>
+        /// <param name="recVersion"></param>
+        /// <param name="userNumber"></param>
+        /// <param name="maxVersion"></param>
+        /// <param name="hasMoreData"></param>
+        /// <returns></returns>
+        public List<Dictionary<string, object>> GetTrackSettingData(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
+        {
 
-
+            //var selectFields = "comptid,entityid,comptname,comptaction,icon,recorder,recstatus ";
+            return GetDatasByVersion("crm_sys_track_strategy_allocation", null, recVersion, userNumber, out maxVersion, out hasMoreData);
+        }
+        #endregion
     }
 }

@@ -63,7 +63,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
         public void AddDeviceBind(string deviceModel,string osVersion, string uniqueId, int userNumber)
         {
-            var sql = @"select * from add_device_bind(@devicemodel, @osversion, @uniqueid, @userid)";
+            var sql = @"select * from crm_sys_device_bind(@devicemodel, @osversion, @uniqueid, @userid)";
 
             var param = new
             {

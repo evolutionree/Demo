@@ -46,5 +46,11 @@ namespace UBeat.Crm.CoreApi.Services.Models
         /// </summary>
         [JsonProperty("msgdata")]
         public long MsgData { set; get; } = 1;
+
+        /// <summary>
+        /// 定位策略配置数据
+        /// </summary>
+        [JsonProperty("tracksettingdata")]
+        public long TrackSettingData { set; get; } = 1;
     }
 }

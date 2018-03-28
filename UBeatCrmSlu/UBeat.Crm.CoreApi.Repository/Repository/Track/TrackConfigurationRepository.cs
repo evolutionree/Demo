@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Common;
 using Npgsql;
 using System.Linq;
+using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Track;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
@@ -55,8 +56,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
 
         public bool UpdateTrackConfiguration(TrackConfigurationInfo trackConfigurationInfo, DbTransaction tran = null)
         {
-            var sql = @"
-                         update public.crm_sys_track_strategy_configuare set recname = @recname, locationinterval = @locationinterval, locationtimerange = @locationtimerange, locationcycle = @locationcycle, warninginterval = @warninginterval, remark = @remark, recstatus = @recstatus, updatetime = now() where recid = @recid;";
+            var sql = @" update public.crm_sys_track_strategy_configuare set recname = @recname, locationinterval = @locationinterval, locationtimerange = @locationtimerange, locationcycle = @locationcycle, warninginterval = @warninginterval, remark = @remark, updatetime = now() where recid = @recid;";
 
             var param = new DbParameter[]
             {
@@ -67,12 +67,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
                 new NpgsqlParameter("warninginterval", trackConfigurationInfo.WarningInterval),
                 new NpgsqlParameter("remark", trackConfigurationInfo.Remark),
                 new NpgsqlParameter("recid", trackConfigurationInfo.RecId),
-                new NpgsqlParameter("recstatus", trackConfigurationInfo.RecStatus),
+                //new NpgsqlParameter("recstatus", trackConfigurationInfo.RecStatus),
             };
             var rowcount = ExecuteNonQuery(sql, param, tran);
             if (rowcount > 0)
                 return true;
             return false;
+        }
+
+        public OperateResult DeleteTrackConfiguration(TrackConfigurationDel delquery, int userNumber)
+        {
+            var sql = @"SELECT * FROM crm_sys_track_strategy_configuare_del(@strategyids, @status, @userno)";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("strategyids",delquery.StrategyIds),
+                new NpgsqlParameter("status",delquery.Status),
+                new NpgsqlParameter("userno", userNumber)
+            };
+            var result = DBHelper.ExecuteQuery<OperateResult>("", sql, param);
+
+            return result.FirstOrDefault();
         }
 
         public Dictionary<string, List<IDictionary<string, object>>> AllocationList(TrackConfigurationAllocationList trackConfigurationAllocationListQuery, int userNumber)
@@ -92,24 +107,52 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
             return result;
         }
 
-        public bool AddAllocation(TrackConfigurationAllocation trackConfigurationAllocationListQuery, DbTransaction tran = null)
+        public OperateResult AddAllocation(TrackConfigurationAllocation addQuery, int userNo)
         {
-
-            return false;
-        }
-
-        public bool CancelAllocation(TrackConfigurationAllocationDel delQuery, DbTransaction tran = null)
-        {
-            var sql = @"delete from crm_sys_track_strategy_allocation where position(recid in @recids) > 0";
+             var sql = @"
+                SELECT * FROM crm_sys_track_strategy_allocation_add(@strategyid, @userids, @userno)
+            ";
 
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("recids", delQuery.StrategyIds),
+                new NpgsqlParameter("strategyid",addQuery.StrategyId),
+                new NpgsqlParameter("userids",addQuery.UserIds),
+                 new NpgsqlParameter("userno", userNo)
+            };
+            var result = DBHelper.ExecuteQuery<OperateResult>("", sql, param);
+
+            return result.FirstOrDefault();
+        }
+
+        public bool DelAllocation(TrackConfigurationAllocation delQuery, DbTransaction tran = null)
+        {
+            var sql = @"delete from crm_sys_track_strategy_allocation where position(userid::text in @userids) > 0";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("userids", delQuery.UserIds),
             };
             var rowcount = ExecuteNonQuery(sql, param, tran);
             if (rowcount > 0)
                 return true;
             return false;
+        }
+
+        public TrackConfigurationInfo GetUserTrackStrategy(int userNumber)
+        {
+            var sql = @"select sc.recid, sc.recname, sc.locationinterval, sc.locationtimerange, sc.locationcycle, 
+                                                sc.remark, sc.recstatus, sc.updatetime, sc.warninginterval 
+                        from crm_sys_track_strategy_configuare sc
+                        left join crm_sys_track_strategy_allocation sa on sc.recid = sa.strategyid
+                        where sa.userid = @userid and sa.recstatus = 1 and sc.recstatus = 1";
+
+            var param = new DbParameter[]
+                    {
+                        new NpgsqlParameter("userid", userNumber),
+                    };
+
+            var result = DBHelper.ExecuteQuery<TrackConfigurationInfo>("", sql, param);
+            return result == null ? null : result.FirstOrDefault();
         }
     }
 }

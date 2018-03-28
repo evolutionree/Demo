@@ -286,5 +286,16 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="maxVersion"></param>
         /// <returns></returns>
         List<Dictionary<string, object>> GetMailboxDataByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData);
+
+        /// <summary>
+        /// 通过版本号获取定位策略信息
+        /// </summary>
+        /// <param name="versionKey"></param>
+        /// <param name="recVersion"></param>
+        /// <param name="userNumber"></param>
+        /// <param name="maxVersion"></param>
+        /// <param name="hasMoreData"></param>
+        /// <returns></returns>
+        List<Dictionary<string, object>> GetTrackSettingData(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData);
     }
 }

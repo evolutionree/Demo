@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Data.Common;
+using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.DomainModel.Track;
@@ -34,6 +35,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+        public OutputResult<object> DeleteTrackConfiguration(TrackConfigurationDel delQuery, int userNumber)
+        {
+            var result = _tackConfigurationRepository.DeleteTrackConfiguration(delQuery, userNumber);
+            return HandleResult(result);
+        }
+
         public OutputResult<object> AllocationList(TrackConfigurationAllocationList trackConfigurationAllocationListQuery, int userNumber)
         {
             return new OutputResult<object>(_tackConfigurationRepository.AllocationList(trackConfigurationAllocationListQuery, userNumber));
@@ -41,14 +48,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> AddAllocation(TrackConfigurationAllocation addQuery, int userNumber)
         {
-            bool result = _tackConfigurationRepository.AddAllocation(addQuery);
+            var result = _tackConfigurationRepository.AddAllocation(addQuery, userNumber);
+            IncreaseDataVersion(DataVersionType.TrackSettingData, null);
+            return HandleResult(result);
+        }
+
+        public OutputResult<object> DelAllocation(TrackConfigurationAllocation delQuery)
+        {
+            bool result = _tackConfigurationRepository.DelAllocation(delQuery);
+            IncreaseDataVersion(DataVersionType.TrackSettingData, null);
             return new OutputResult<object>(result);
         }
 
-        public OutputResult<object> CancelAllocation(TrackConfigurationAllocationDel delQuery)
+        public TrackConfigurationInfo GetUserTrackStrategy(int userNumber)
         {
-            bool result = _tackConfigurationRepository.CancelAllocation(delQuery);
-            return new OutputResult<object>(result);
+            return _tackConfigurationRepository.GetUserTrackStrategy(userNumber);
         }
     }
 }

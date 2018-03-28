@@ -70,6 +70,9 @@ namespace UBeat.Crm.CoreApi.Services.Models
                     case DataVersionType.ProductData:
                         versionData.ProductData = m.MaxVersion;
                         break;
+                    case DataVersionType.TrackSettingData:
+                        versionData.TrackSettingData = m.MaxVersion;
+                        break;
                 }
             }
             return versionData;

@@ -27,17 +27,18 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public int PageSize { get; set; }
     }
 
+    public class TrackConfigurationDel
+    {
+        public string StrategyIds { get; set; }
+        public int Status { get; set; }
+    }
+
 
     public class TrackConfigurationAllocation
     {
-        public Guid StrategyId { get; set; }
+        public string StrategyId { get; set; }
 
         public string UserIds { get; set; }
-    }
-
-    public class TrackConfigurationAllocationDel
-    {
-        public string StrategyIds { get; set; }
     }
 
     public class TrackConfigurationAllocationList
