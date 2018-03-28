@@ -33,6 +33,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("querygroupuser")]
+        public OutputResult<object> GroupUserQuery([FromBody]GroupUserModel settingList = null)
+        {
+            if (settingList == null) return ResponseError<object>("参数格式错误");
+
+            return _attendanceServices.GroupUserQuery(settingList, UserId);
+        }
+
+        [HttpPost]
         [Route("signlist")]
         public OutputResult<object> SignList([FromBody] AttendanceSignListModel listModel = null)
         {

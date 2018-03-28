@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using Dapper;
+using Npgsql;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -30,6 +31,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Attendance
                 UserNo = userNumber
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+            return result;
+        }
+
+        public Dictionary<string, List<IDictionary<string, object>>> GroupUserQuery(GroupUserMapper groupUser, int userNumber)
+        {
+            var procName =
+                "SELECT crm_func_schedule_user_list(@deptid,@username,@pageindex,@pagesize,@userno)";
+
+            var dataNames = new List<string> { "Page", "PageCount" };
+            var param = new DynamicParameters();
+            param.Add("deptid", groupUser.DeptId);
+            param.Add("username", groupUser.UserName);
+            param.Add("pageindex", groupUser.PageIndex);
+            param.Add("pagesize", groupUser.PageSize);
+            param.Add("userno", userNumber);
+            var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
             return result;
         }
 
