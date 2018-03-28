@@ -31,7 +31,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations
                 if (!float.TryParse(this.left.Value.ToString(), out leftValue) ||
                     !float.TryParse(this.right.Value.ToString(), out rightValue))
                 {
-                    throw new InvalidOperationException("Either left or right value of the binary evaluation cannot be evaluated as a float value.");
+                    return this.ToString();
                 }
                 switch (oper)
                 {
