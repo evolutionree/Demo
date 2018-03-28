@@ -806,12 +806,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                 entityfieldvalue = tableDetailData.ContainsKey(nameFeild) && tableDetailData[nameFeild] != null ? tableDetailData[nameFeild].ToString() : string.Empty;
                                             }
                                             else entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
+                                            formula = formula.Replace(fieldFormat, entityfieldvalue);
                                         }
                                         break;
                                 }
                             }
                         }
-                        formula = formula.Replace(fieldFormat, entityfieldvalue);
+                        
                     }
                 }
 
