@@ -36,7 +36,7 @@ namespace UBeat.Crm.CoreApi
                 .UseStartup<Startup>()
                 .Build();
 
-
+            ServerFingerPrintUtils.getInstance().checkAndAddFingerPrint();//检查服务器指纹
             StartScheduler();//启动主Scheler
 
             host.Run();
