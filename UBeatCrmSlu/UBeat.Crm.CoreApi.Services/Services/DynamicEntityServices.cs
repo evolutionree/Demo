@@ -1985,7 +1985,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
 
 
-                var validResults = isAdvanceQuery ? DynamicProtocolHelper.AdvanceQuery2(searchFields, dynamicModel.SearchData) : DynamicProtocolHelper.SimpleQuery(searchFields, dynamicModel.SearchData);
+                var validResults = isAdvanceQuery ? DynamicProtocolHelper.AdvanceQuery2(searchFields, dynamicModel.SearchData) : DynamicProtocolHelper.SimpleQuery2(searchFields, dynamicModel.SearchData);
                 if (SpecFuncName != null)
                 {
                     validResults = isAdvanceQuery ? DynamicProtocolHelper.AdvanceQuery(searchFields, dynamicModel.SearchData) : DynamicProtocolHelper.SimpleQuery(searchFields, dynamicModel.SearchData);
