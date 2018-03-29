@@ -1,0 +1,35 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using UBeat.Crm.CoreApi.Services.Services;
+using UBeat.Crm.CoreApi.Services.Models;
+using UBeat.Crm.CoreApi.DomainModel.Track;
+
+namespace UBeat.Crm.CoreApi.Controllers
+{
+    [Route("api/[controller]")]
+    public class BaiduTrackController : BaseController
+    {
+        private readonly BaiduTrackServices _baiduTrackServices;
+
+        public BaiduTrackController(BaiduTrackServices baiduTrackServices) : base(baiduTrackServices)
+        {
+            _baiduTrackServices = baiduTrackServices;
+        }
+
+        /// <summary>
+        /// 实时定位信息
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("recentlocation")]
+        public OutputResult<object> RecentLocationByUserIds([FromBody] LocationSearchInfo searchQuery)
+        {
+            if (searchQuery == null) return ResponseError<object>("参数格式错误");
+
+            return _baiduTrackServices.GetRecentLocationByUserIds(searchQuery, UserId);
+        }
+    }
+}

@@ -64,5 +64,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return _tackConfigurationRepository.GetUserTrackStrategy(userNumber);
         }
+
+        public string FilterHadBindTrackStrategyUser(string userIds)
+        {
+            return _tackConfigurationRepository.FilterHadBindTrackStrategyUser(userIds);
+        }
     }
 }

@@ -24,5 +24,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         bool DelAllocation(TrackConfigurationAllocation delQuery, DbTransaction tran = null);
 
         TrackConfigurationInfo GetUserTrackStrategy(int userNumber);
+
+        string FilterHadBindTrackStrategyUser(string userIds);
     }
 }

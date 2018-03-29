@@ -100,6 +100,30 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
         }
 
+        public static string Get(string url)
+        {
+            try
+            {
+                Stopwatch watch = new Stopwatch();
+                watch.Start();
+                HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
+
+                req.ContentType = "application/json;charset=utf-8;";
+                req.Method = "GET";
+                req.Headers["Accept"] = "application/json;";
+
+                var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
+                var result = GetResponseAsString(rsp, Encoding.UTF8);
+                watch.Stop();
+                Logger.Error("获取实时定位信息:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "获取实时定位信息异常");
+                return string.Empty;
+            }
+        }
 
         public static string GetResponseAsString(HttpWebResponse rsp, Encoding encoding)
         {

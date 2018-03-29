@@ -154,5 +154,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
             var result = DBHelper.ExecuteQuery<TrackConfigurationInfo>("", sql, param);
             return result == null ? null : result.FirstOrDefault();
         }
+
+        public string FilterHadBindTrackStrategyUser(string userIds)
+        {
+            var sql = @"select string_agg(userid::text, ',') as  userids from crm_sys_track_strategy_allocation where recstatus = 1 and position(userid::text in @userids) > 0";
+            var param = new DbParameter[]{
+                        new NpgsqlParameter("userids", userIds),
+            };
+            Dictionary<string,object> result = DBHelper.ExecuteQuery("", sql, param).FirstOrDefault();
+            if (result["userids"] == null) {
+                return string.Empty;
+            }
+            return result["userids"].ToString();
+        }
     }
 }
