@@ -34,6 +34,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Attendance
             return result;
         }
 
+
+        /// <summary>
+        /// 检查是否存在该用户的班组绑定
+        /// </summary>
+        /// <typeparam name="selectUser">查询的用户</typeparam>
+        public int ExistGroupUser(string selectUser) {
+            var existSql = @"select count(1) from crm_sys_attendance_setting where person=@selectuser ";
+            var param = new
+            {
+                selectuser = selectUser
+            };
+            var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
+            return existCount;
+        }
+
         public Dictionary<string, List<IDictionary<string, object>>> GroupUserQuery(GroupUserMapper groupUser, int userNumber)
         {
             var procName =

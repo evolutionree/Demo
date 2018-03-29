@@ -12,6 +12,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         Dictionary<string, List<IDictionary<string, object>>> GroupUserQuery(GroupUserMapper groupUser, int userNumber);
 
+        int ExistGroupUser(string selectUser);
+
         Dictionary<string, List<Dictionary<string, object>>> SignList(PageParam pageParam, AttendanceSignListMapper searchParm, int userNumber);
     }
 }
