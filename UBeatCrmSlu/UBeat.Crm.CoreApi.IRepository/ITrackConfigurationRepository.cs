@@ -25,6 +25,6 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         TrackConfigurationInfo GetUserTrackStrategy(int userNumber);
 
-        string FilterHadBindTrackStrategyUser(string userIds);
+        List<UserTrackStrategyInfo> FilterHadBindTrackStrategyUser(string userIds);
     }
 }

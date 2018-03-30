@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Core.Utility;
+using UBeat.Crm.CoreApi.DomainModel.Track;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -11,6 +12,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         private static readonly string AK;
         private static readonly string SK;
         private static readonly string ServiceId;
+        private static readonly int PageSize;
 
         static BaiduTrackHelper()
         {
@@ -18,6 +20,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             AK = config.GetValue<string>("AK");
             SK = config.GetValue<string>("SK");
             ServiceId = config.GetValue<string>("ServiceId");
+            PageSize = config.GetValue<int>("PageSize");
         }
 
         private static string MD5(string password)
@@ -78,8 +81,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return MD5(str);
         }
 
-        public static string LocationSearch(string url, IDictionary<string, string> querystring_arrays)
+        public static List<LocationDetailInfo> LocationSearch(string url, IDictionary<string, string> querystring_arrays)
         {
+            querystring_arrays.Add("sortby", "loc_time:desc");
+            querystring_arrays.Add("coord_type_output", "bd09ll");//该字段在国外无效，国外均返回 wgs84坐标
+            querystring_arrays.Add("page_index", "1");
+            querystring_arrays.Add("page_size", PageSize.ToString());
             querystring_arrays.Add("ak", AK);
             querystring_arrays.Add("service_id", ServiceId);
             StringBuilder sb = new StringBuilder();
@@ -95,7 +102,27 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
             var response = HttpLib.Get(url);
 
-            return response;
+            var searchResult = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
+            if (searchResult["status"].ToString() == "0")
+            {
+                return ((Newtonsoft.Json.Linq.JArray)searchResult["entities"]).ToObject<List<LocationDetailInfo>>();
+            }
+            return new List<LocationDetailInfo>();
+        }
+
+        public static string SearchAddressByLocationPoint(double latitude, double longitude)
+        {
+            string address = string.Empty;
+            string url = "http://api.map.baidu.com/geocoder/v2/?callback=renderReverse&location={0},{1}&output=json&pois=1&ak={2}";
+            url = string.Format(url, latitude, longitude, AK);
+            var response = HttpLib.Get(url);
+            var responseData = response.Substring(response.IndexOf("{"), response.LastIndexOf("}") - response.IndexOf("{") + 1);
+            var result = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
+            if(result["status"].ToString() == "0")
+            {
+                address = ((Newtonsoft.Json.Linq.JObject)result["result"])["formatted_address"].ToString();
+            }
+            return address;
         }
     }
 }

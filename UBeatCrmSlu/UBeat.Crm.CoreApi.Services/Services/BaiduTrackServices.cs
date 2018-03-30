@@ -16,48 +16,74 @@ namespace UBeat.Crm.CoreApi.Services.Services
     {
         static string locationSearchURL = "http://yingyan.baidu.com/api/v3/entity/search";
 
+        private readonly IBaiduTrackRepository _repository;
+        private readonly IAccountRepository _accountRepository;
+
+        public BaiduTrackServices(IBaiduTrackRepository repository, IAccountRepository accountRepository)
+        {
+            _repository = repository;
+            _accountRepository = accountRepository;
+        }
 
         public OutputResult<object> GetRecentLocationByUserIds(LocationSearchInfo searchQuery, int userNumber)
         {
             //过滤掉没有分配定位策略的人员
-            var dynamicService = (TrackConfigurationServices)dynamicCreateService(typeof(TrackConfigurationServices).FullName, true);
-            var hadBindUserIds = dynamicService.FilterHadBindTrackStrategyUser(searchQuery.UserIds);
+            var dynamicTrackService = (TrackConfigurationServices)dynamicCreateService(typeof(TrackConfigurationServices).FullName, true);
+            var hadBindUserInfo = dynamicTrackService.FilterHadBindTrackStrategyUser(searchQuery.UserIds);
+            var hadBindUserIdsArr = hadBindUserInfo.Select(x => x.UserId.ToString()).ToArray();
+            string hadBindUserIdsStr = string.Join(',', hadBindUserIdsArr);
 
             //没有绑定定位策略的人员，固定返回“未定位,未分配策略”
-            List<object> locationDetailList = new List<object>() { };
+            List<LocationDetailInfo> locationDetailList = new List<LocationDetailInfo>() { };
             var wholeUserIdsArr = searchQuery.UserIds.Split(",");
-            var hadBindUserIdsArr = hadBindUserIds.Split(",");
             if (wholeUserIdsArr.Length != hadBindUserIdsArr.Length) {
                 foreach (var userid in wholeUserIdsArr) {
-                    if (!hadBindUserIds.Contains(userid)) {
-                        var detail = new
-                        {
-                            UserId = int.Parse(userid),
-                            UserName = "",
-                        };
+                    if (!hadBindUserIdsArr.Contains(userid)) {
+                        var userinfo = _accountRepository.GetAccountUserInfo(int.Parse(userid));
+                        var detail = new LocationDetailInfo { entity_name = int.Parse(userid), entity_desc = userinfo.UserName, Status = 2};
+                        locationDetailList.Add(detail);
+                    }
+                }
+            }
+            //查询百度鹰眼接口
+            Dictionary<string, string> queryDic = new Dictionary<string, string>() { };
+            if (!string.IsNullOrEmpty(hadBindUserIdsStr)) {
+                queryDic.Add("filter", "entity_names:" + hadBindUserIdsStr);
+            }
+            List<LocationDetailInfo> searchResult = BaiduTrackHelper.LocationSearch(locationSearchURL, queryDic);
+            foreach(var item in searchResult)
+            {
+                System.DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1));
+                DateTime dt = startTime.AddSeconds(item.latest_location.loc_time);
+                item.latest_location.loc_time_format = dt;
+                foreach (var userInfo in hadBindUserInfo) {
+                    if (userInfo.UserId == item.entity_name) {
+                        item.entity_desc = userInfo.UserName;
+                        TimeSpan sp = DateTime.Now.Subtract(dt);
+                        item.Status = sp.Minutes > userInfo.WarnningInterval ? 3 : 1;
+                        item.WarnningInterVal = userInfo.WarnningInterval;
+                        item.latest_location.lot_address = BaiduTrackHelper.SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
+                    }
+                }
+            }
+
+            //绑定定位策略但未有任何定位信息
+            if (searchResult.Count < hadBindUserIdsArr.Length)
+            {
+                var hadLocationUserIds = searchResult.Select(x => x.entity_name.ToString()).ToArray();
+                foreach (var userid in hadBindUserIdsArr)
+                {
+                    if (!hadLocationUserIds.Contains(userid))
+                    {
+                        UserTrackStrategyInfo userinfo = hadBindUserInfo.Where(x => x.UserId.ToString() == userid).FirstOrDefault();
+                        var detail = new LocationDetailInfo { entity_name = int.Parse(userid), entity_desc = userinfo.UserName, Status = 3, WarnningInterVal = userinfo.WarnningInterval };
                         locationDetailList.Add(detail);
                     }
                 }
             }
 
-            //不做分页，size前端传一个大数
-            Dictionary<string, string> queryDic = new Dictionary<string, string>() { };
-            if (!string.IsNullOrEmpty(hadBindUserIds)) {
-                queryDic.Add("filter", "entity_names:" + hadBindUserIds);
-                queryDic.Add("sortby", "loc_time:desc");
-                queryDic.Add("coord_type_output", "bd09ll");//该字段在国外无效，国外均返回 wgs84坐标
-                queryDic.Add("page_index", searchQuery.PageIndex.ToString());
-                queryDic.Add("page_size", searchQuery.PageSize.ToString());
-            }
-            var result = BaiduTrackHelper.LocationSearch(locationSearchURL, queryDic);
-            var searchResult = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
-            //searchResult["entities"].
-
-
-            Dictionary<string, object> data = new Dictionary<string, object>();
-            data.Add("data1", locationDetailList);
-            data.Add("data2", result);
-            return new OutputResult<object>(data);
+            locationDetailList.AddRange(searchResult);
+            return new OutputResult<object>(locationDetailList);
         }
     }
 }

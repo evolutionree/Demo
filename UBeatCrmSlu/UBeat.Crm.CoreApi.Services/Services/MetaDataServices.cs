@@ -314,7 +314,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return resutl;
         }
 
-
         private List<Dictionary<string, object>> GetProductData(string versionKey, long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
             List<Dictionary<string, object>> resutl = null;

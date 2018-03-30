@@ -92,12 +92,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
 
         public Dictionary<string, List<IDictionary<string, object>>> AllocationList(TrackConfigurationAllocationList trackConfigurationAllocationListQuery, int userNumber)
         {
-            var procName = "SELECT crm_func_strategyallocation_list(@recname, @pageindex, @pagesize, @userno)";
+            var procName = "SELECT crm_func_strategyallocation_list(@recname, @username, @pageindex, @pagesize, @userno)";
 
             var dataNames = new List<string> { "PageData", "PageCount" };
             var param = new
             {
                 recname = trackConfigurationAllocationListQuery.StrategyName,
+                username = trackConfigurationAllocationListQuery.UserName,
                 PageIndex = trackConfigurationAllocationListQuery.PageIndex,
                 PageSize = trackConfigurationAllocationListQuery.PageSize,
                 UserNo = userNumber
@@ -155,17 +156,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
             return result == null ? null : result.FirstOrDefault();
         }
 
-        public string FilterHadBindTrackStrategyUser(string userIds)
+        public List<UserTrackStrategyInfo> FilterHadBindTrackStrategyUser(string userIds)
         {
-            var sql = @"select string_agg(userid::text, ',') as  userids from crm_sys_track_strategy_allocation where recstatus = 1 and position(userid::text in @userids) > 0";
+            Dictionary<string, string> bindUserInfo = new Dictionary<string, string>();
+            var sql = @"select sa.userid,  u.username, sc.warninginterval
+from crm_sys_track_strategy_allocation sa
+left join crm_sys_track_strategy_configuare sc on sa.strategyid = sc.recid
+left join crm_sys_userinfo u on sa.userid = u.userid
+where sa.recstatus = 1 and position(sa.userid::text in @userids) > 0
+and sc.recstatus = 1";
             var param = new DbParameter[]{
                         new NpgsqlParameter("userids", userIds),
             };
-            Dictionary<string,object> result = DBHelper.ExecuteQuery("", sql, param).FirstOrDefault();
-            if (result["userids"] == null) {
-                return string.Empty;
-            }
-            return result["userids"].ToString();
+            return DBHelper.ExecuteQuery<UserTrackStrategyInfo>("", sql, param);
         }
     }
 }
