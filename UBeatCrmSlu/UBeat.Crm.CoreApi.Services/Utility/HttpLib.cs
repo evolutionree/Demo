@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using NLog;
 
@@ -104,19 +105,25 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         {
             try
             {
-                Stopwatch watch = new Stopwatch();
-                watch.Start();
-                HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
+                //Stopwatch watch = new Stopwatch();
+                //watch.Start();
+                //HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
 
-                req.ContentType = "application/json;charset=utf-8;";
-                req.Method = "GET";
-                req.Headers["Accept"] = "application/json;";
+                //req.ContentType = "application/json;charset=utf-8;";
+                //req.Method = "GET";
+                //req.Headers["Accept"] = "application/json;";
 
-                var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
-                var result = GetResponseAsString(rsp, Encoding.UTF8);
-                watch.Stop();
-                Logger.Error("获取实时定位信息:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
-                return result;
+                //var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
+                //var result = GetResponseAsString(rsp, Encoding.UTF8);
+                //watch.Stop();
+                //Logger.Error("获取实时定位信息:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
+                //return result;
+
+                using (HttpClient client = new HttpClient())
+                {
+                    Byte[] resultBytes = client.GetByteArrayAsync(url).Result;
+                    return Encoding.UTF8.GetString(resultBytes);
+                }
             }
             catch (Exception ex)
             {

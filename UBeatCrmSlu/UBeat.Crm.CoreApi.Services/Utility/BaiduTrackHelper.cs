@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using NLog;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Track;
 
@@ -9,12 +10,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 {
     public class BaiduTrackHelper
     {
-        private static readonly string AK;
-        private static readonly string SK;
-        private static readonly string ServiceId;
-        private static readonly int PageSize;
+        private readonly string AK;
+        private readonly string SK;
+        private readonly string ServiceId;
+        private readonly int PageSize;
 
-        static BaiduTrackHelper()
+        public BaiduTrackHelper()
         {
             var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("BaiduTrackConfig");
             AK = config.GetValue<string>("AK");
@@ -23,7 +24,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             PageSize = config.GetValue<int>("PageSize");
         }
 
-        private static string MD5(string password)
+        private string MD5(string password)
         {
             byte[] textBytes = System.Text.Encoding.UTF8.GetBytes(password);
             try
@@ -44,7 +45,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
         }
 
-        private static string UrlEncode(string str)
+        private string UrlEncode(string str)
         {
             str = System.Web.HttpUtility.UrlEncode(str, Encoding.UTF8);
             byte[] buf = Encoding.ASCII.GetBytes(str);//等同于Encoding.ASCII.GetBytes(str)
@@ -58,7 +59,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return Encoding.ASCII.GetString(buf);//同上，等同于Encoding.ASCII.GetString(buf)
         }
 
-        private static string HttpBuildQuery(IDictionary<string, string> querystring_arrays)
+        private string HttpBuildQuery(IDictionary<string, string> querystring_arrays)
         {
             StringBuilder sb = new StringBuilder();
             foreach (var item in querystring_arrays)
@@ -72,7 +73,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return sb.ToString();
         }
 
-        public static string CaculateAKSN(string url, IDictionary<string, string> querystring_arrays)
+        public string CaculateAKSN(string url, IDictionary<string, string> querystring_arrays)
         {
             var queryString = HttpBuildQuery(querystring_arrays);
 
@@ -81,12 +82,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return MD5(str);
         }
 
-        public static List<LocationDetailInfo> LocationSearch(string url, IDictionary<string, string> querystring_arrays)
+        public List<LocationDetailInfo> LocationSearch(string url, IDictionary<string, string> querystring_arrays)
         {
+            //var _logger = LogManager.GetLogger(typeof(BaiduTrackHelper).FullName);
+
             querystring_arrays.Add("sortby", "loc_time:desc");
             querystring_arrays.Add("coord_type_output", "bd09ll");//该字段在国外无效，国外均返回 wgs84坐标
             querystring_arrays.Add("page_index", "1");
-            querystring_arrays.Add("page_size", PageSize.ToString());
+            querystring_arrays.Add("page_size", "1000");
             querystring_arrays.Add("ak", AK);
             querystring_arrays.Add("service_id", ServiceId);
             StringBuilder sb = new StringBuilder();
@@ -99,18 +102,20 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             sb.Remove(sb.Length - 1, 1);
             url = string.Format("{0}?{1}", url, sb.ToString());
+            //_logger.Log(LogLevel.Error, "LocationSearch.url:" + url);
 
             var response = HttpLib.Get(url);
-
             var searchResult = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
-            if (searchResult["status"].ToString() == "0")
+            
+           
+            if (searchResult.ContainsKey("status") && searchResult["status"].ToString() == "0")
             {
                 return ((Newtonsoft.Json.Linq.JArray)searchResult["entities"]).ToObject<List<LocationDetailInfo>>();
             }
             return new List<LocationDetailInfo>();
         }
 
-        public static string SearchAddressByLocationPoint(double latitude, double longitude)
+        public string SearchAddressByLocationPoint(double latitude, double longitude)
         {
             string address = string.Empty;
             string url = "http://api.map.baidu.com/geocoder/v2/?callback=renderReverse&location={0},{1}&output=json&pois=1&ak={2}";

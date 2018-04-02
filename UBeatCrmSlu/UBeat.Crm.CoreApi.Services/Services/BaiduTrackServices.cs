@@ -50,7 +50,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (!string.IsNullOrEmpty(hadBindUserIdsStr)) {
                 queryDic.Add("filter", "entity_names:" + hadBindUserIdsStr);
             }
-            List<LocationDetailInfo> searchResult = BaiduTrackHelper.LocationSearch(locationSearchURL, queryDic);
+            List<LocationDetailInfo> searchResult =  new BaiduTrackHelper().LocationSearch(locationSearchURL, queryDic);
             foreach(var item in searchResult)
             {
                 System.DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1));
@@ -62,7 +62,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         TimeSpan sp = DateTime.Now.Subtract(dt);
                         item.Status = sp.Minutes > userInfo.WarnningInterval ? 3 : 1;
                         item.WarnningInterVal = userInfo.WarnningInterval;
-                        item.latest_location.lot_address = BaiduTrackHelper.SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
+                        item.latest_location.lot_address =  new BaiduTrackHelper().SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
                     }
                 }
             }
