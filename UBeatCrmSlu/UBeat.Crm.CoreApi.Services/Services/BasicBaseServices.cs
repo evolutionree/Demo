@@ -106,11 +106,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     outResult = func.Invoke(tran, arg, userData);
                     actionResult = outResult.DataBody;
-                    if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0)
+                    
+                    if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0 && outResult.Status == 0)
                     {
                         //执行预处理逻辑，返回值必须与func返回值一致，参数为func参数的json对象和func执行结果数据的json
-                        outResult = ActionExtService.ExcuteFinishAction(tran, arg, preActionResult, actionResult, userData, FinishActionExtModelList.First());
-
+                        var tmp = ActionExtService.ExcuteFinishAction(tran, arg, preActionResult, actionResult, userData, FinishActionExtModelList.First());
                     }
                     tran.Commit();
                 }

@@ -1726,6 +1726,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return false;
                 }
                 var ruleSql = recDic["rulesql"].ToString().Trim();
+                ruleSql = ruleSql.Replace(",{querydata}", ",'{querydata}'");
                 ruleSql = _roleRepository.FormatRoleRule(ruleSql, userno);
                 object datainfo = null;
                 if ((DynamicProtocolControlType)typeField.ControlType == DynamicProtocolControlType.DataSourceSingle)

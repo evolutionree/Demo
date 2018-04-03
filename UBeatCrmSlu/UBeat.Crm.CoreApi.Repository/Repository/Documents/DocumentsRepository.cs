@@ -150,6 +150,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Documents
                 dbParameters.Add(new NpgsqlParameter("recversion", data.RecVersion));
             }
 
+            var _search_sql = string.Empty;
+            if (!string.IsNullOrEmpty( data.SearchKey))
+            {
+                _search_sql = " AND d.filename like @filename";
+                dbParameters.Add(new NpgsqlParameter("filename",string.Format("%{0}%", data.SearchKey)));
+            }
             var _folder_sql = string.Empty;
 
             if (!data.IsAllDocuments && string.IsNullOrEmpty(data.FolderId) && Guid.TryParse(data.FolderId, out folderId))
@@ -168,7 +174,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Documents
 				            FROM public.crm_sys_documents AS d 
 					        LEFT JOIN crm_sys_userinfo AS u ON u.userid=d.reccreator 
 					        LEFT JOIN crm_sys_documents_folder AS f ON f.folderid=d.folderid 
-					        WHERE d.entityid=@entityid AND d.businessid=@businessid {0} {1} {2}  ORDER BY d.recversion DESC", _folder_sql, _recstatus_sql, _recversion_sql);
+					        WHERE d.entityid=@entityid AND d.businessid=@businessid {0} {1} {2} {3} ORDER BY d.recversion DESC", _folder_sql, _recstatus_sql, _recversion_sql, _search_sql);
 
             //if (!string.IsNullOrEmpty(ruleSql))
             //{

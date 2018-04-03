@@ -46,7 +46,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             try
             {
-                var stream = new MemoryStream(excel.ExcelFileBytes);
+                var stream = new MemoryStream();
+                stream.Write(excel.ExcelFileBytes,0,excel.ExcelFileBytes.Length);
                 //创建文档对象
                 //var document = SpreadsheetDocument.Open(file, true);
                 // 设置当前流的位置为流的开始
@@ -68,7 +69,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                     if (sheet != null)
                     {
                         var workSheet = ((WorksheetPart)rootbookpart.GetPartById(sheet.Id)).Worksheet;
-                        UpdateSheet(sheetData, workSheet);
+                        var workbookStylesPart = rootbookpart.GetPartsOfType<WorkbookStylesPart>();
+
+                        UpdateSheet(sheetData, workSheet, workbookStylesPart.FirstOrDefault());
                     }
                     else
                     {
@@ -79,7 +82,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
 
                 rootbookpart.Workbook.Save();
-                
+
                 document.Close();
                 return stream.ToArray();
             }
@@ -92,15 +95,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             return new Sheet();
         }
-        private static void UpdateSheet(ExcelSheetInfo data, Worksheet worksheet)
+        private static void UpdateSheet(ExcelSheetInfo data, Worksheet worksheet, WorkbookStylesPart workbookStylesPart)
         {
-            
+
             var sheetData = worksheet.GetFirstChild<SheetData>();
             var rows = sheetData.Elements<Row>();
             List<Row> tempRows = new List<Row>();
-          
+
             var mergeCells = worksheet.Elements<MergeCells>().FirstOrDefault();
-            
+
 
             MergeCells newMergeCells = null;
             var firstRowdata = data.Rows.FirstOrDefault();
@@ -113,7 +116,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                 }
                 uint rowIndex = firstRowdata.RowIndex + (uint)tempRows.Count;
                 tempRows.Add(temRow);
-   
+
                 if (mergeCells != null)
                 {
                     var mergeCellList = mergeCells.Elements<MergeCell>();
@@ -137,7 +140,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                 }
 
                 temRow.RowIndex = rowIndex;
-                RefreshRow(temRow, rowdata.Cells);
+                RefreshRow(temRow, rowdata.Cells, workbookStylesPart);
             }
             sheetData.RemoveAllChildren<Row>();
             sheetData.Append(tempRows);
@@ -148,8 +151,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             }
 
         }
-        public static void RefreshRow(Row row, List<ExcelCellInfo> celldatas)
+
+        public static void RefreshRow(Row row, List<ExcelCellInfo> celldatas, WorkbookStylesPart workbookStylesPart)
         {
+            var stylesheet = workbookStylesPart.Stylesheet;
+            var styleNumberingFormats = stylesheet.NumberingFormats;
+
+
             var cells = row.Descendants<Cell>();
             foreach (var cell in cells)
             {
@@ -161,8 +169,27 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                     if (celldata != null && celldata.IsUpdated)
                     {
                         cell.CellValue = new CellValue(celldata.CellValue);
-                        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+                        var styleIndex = (int)cell.StyleIndex.Value;
+                        var cellFormat = stylesheet.CellFormats.ChildElements[styleIndex] as CellFormat;
+
+                        CellValues cellValues = CellValues.String;
+                        if (styleNumberingFormats != null && styleNumberingFormats.ChildElements != null)
+                        {
+                            var numberingFormatList = styleNumberingFormats.ChildElements.Cast<NumberingFormat>();
+                            if (numberingFormatList != null && numberingFormatList.Count() > 0
+                                && numberingFormatList.Where(m => m.NumberFormatId.HasValue && cellFormat.NumberFormatId.HasValue && m.NumberFormatId.Value == cellFormat.NumberFormatId.Value).Count() > 0)
+                            {
+                                double num = 0;
+                                if (double.TryParse(celldata.CellValue, out num))
+                                {
+                                    cellValues = CellValues.Number;
+                                }
+                            }
+                        }
+
+                        cell.DataType = new EnumValue<CellValues>(cellValues);
                     }
+
                 }
             }
         }
@@ -184,7 +211,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             return mergeCellList;
         }
 
-        
+
         #endregion
 
 

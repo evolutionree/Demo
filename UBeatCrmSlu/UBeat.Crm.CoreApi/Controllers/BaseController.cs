@@ -215,36 +215,25 @@ namespace UBeat.Crm.CoreApi.Controllers
             return Json(new OutputResult<string>(null, errorMsg, 1));
         }
 
-
+        Dictionary<string, double> stopwatchDic = new Dictionary<string, double>();
 
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start(); // 开始监视代码
-
-
+            stopwatchDic.Clear();
             //打印日志
             WriteRequestLog(context);
-
-
-            stopwatch.Stop(); // 停止监视
-            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
-            System.Console.WriteLine("WriteRequestLog:" + seconds);
-            stopwatch.Reset();
-            stopwatch.Restart();
-
-
-
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start(); // 开始监视代码
+        
             //检查系统是否超出许可日期
             bool isPass = ValidLimitTime(context);
 
 
-
             stopwatch.Stop(); // 停止监视
-            seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
-            System.Console.WriteLine("ValidLimitTime:" + seconds);
+            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
+            //System.Console.WriteLine("ValidLimitTime:" + seconds);
+            stopwatchDic.Add("ValidLimitTime", seconds);
             stopwatch.Reset();
             stopwatch.Restart();
 
@@ -255,10 +244,9 @@ namespace UBeat.Crm.CoreApi.Controllers
                 CheckAuthorization(context);
             }
 
-
             stopwatch.Stop(); // 停止监视
             seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
-            System.Console.WriteLine("CheckAuthorization:" + seconds);
+            stopwatchDic.Add("CheckAuthorization", seconds);
             stopwatch.Reset();
             stopwatch.Restart();
 
@@ -299,16 +287,23 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             stopwatch.Stop(); // 停止监视
             seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
-            System.Console.WriteLine("ActionExtService:" + seconds);
+            stopwatchDic.Add("InitActionExtService", seconds);
+
             stopwatch.Reset();
             stopwatch.Restart();
 
             base.OnActionExecuting(context);
+
+            stopwatch.Stop(); // 停止监视
+            seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
+
+            stopwatchDic.Add("ExcuteAction", seconds);
         }
 
         public override void OnActionExecuted(ActionExecutedContext context)
         {
-
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start(); // 开始监视代码
             var header = GetAnalyseHeader();
             var device = header.Device.ToUpper();
             if (device != "WEB")
@@ -328,8 +323,13 @@ namespace UBeat.Crm.CoreApi.Controllers
                     }
                 }
             }
+            stopwatch.Stop(); // 停止监视
+            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
+            //System.Console.WriteLine("ValidLimitTime:" + seconds);
+            stopwatchDic.Add("GetVersionData", seconds);
+
             //打印响应数据
-            //WriteResponseLog(context);
+            WriteResponseLog(context);
 
             base.OnActionExecuted(context);
         }
@@ -579,19 +579,28 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (_logger != null && _logger.IsTraceEnabled)
             {
-                string jsonResult = null;
-                if (context.Result is ObjectResult)
+                StringBuilder resultBuilder = new StringBuilder();
+                double totalTime = 0;
+                foreach(var item in stopwatchDic)
                 {
-                    jsonResult = JsonConvert.SerializeObject((context.Result as ObjectResult).Value);
+                    resultBuilder.Append(string.Format("{0}:{1}s    ", item.Key, item.Value));
+                    totalTime += item.Value;
                 }
-                else if (context.Result is JsonResult)
-                {
-                    jsonResult = JsonConvert.SerializeObject((context.Result as JsonResult).Value);
-                }
-                if (jsonResult != null)
-                {
-                    _logger.Trace(string.Format("Response TraceId[{0}] \n响应数据：\n{1}", _traceId, jsonResult));
-                }
+                resultBuilder.Append(string.Format("总共:{0}s", totalTime));
+                _logger.Trace(string.Format("Response TraceId[{0}] \n响应时间数据：\n{1}", _traceId, resultBuilder.ToString()));
+                //string jsonResult = null;
+                //if (context.Result is ObjectResult)
+                //{
+                //    jsonResult = JsonConvert.SerializeObject((context.Result as ObjectResult).Value);
+                //}
+                //else if (context.Result is JsonResult)
+                //{
+                //    jsonResult = JsonConvert.SerializeObject((context.Result as JsonResult).Value);
+                //}
+                //if (jsonResult != null)
+                //{
+                //    _logger.Trace(string.Format("Response TraceId[{0}] \n响应数据：\n{1}", _traceId, jsonResult));
+                //}
             }
         }
         #endregion

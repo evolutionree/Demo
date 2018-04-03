@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 {
     [Route("api/[controller]")]
     public class AccountController : BaseController
-    {  
+    {
         private readonly AccountServices _accountServices;
         private readonly SalesTargetServices _salesTargetServices;
 
@@ -31,6 +31,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             _salesTargetServices = salesTargetServices;
         }
 
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("redisstatus")]
+        public OutputResult<object> GetRedisStatus() {
+            string status = CacheService.RedisServerStatus();
+            return new OutputResult<object>(status);
+        }
         [AllowAnonymous]
         [HttpPost]
         [Route("getpublickey")]

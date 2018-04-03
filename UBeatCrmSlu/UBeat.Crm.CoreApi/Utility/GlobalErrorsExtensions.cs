@@ -87,10 +87,8 @@ namespace UBeat.Crm.CoreApi.Utility
             {
                 outputResult = new OutputResult<object>(string.Format("服务繁忙，请稍后再试", (int)HttpStatusCode.InternalServerError), ex.Message, 1);
             }
-            else if(exceptionType==typeof(RedisConnectionException))
-            {
-                outputResult = new OutputResult<object>(string.Format("Redis服务连接失败，请稍后再试", (int)HttpStatusCode.InternalServerError), ex.Message, 1);
-            }
+            
+          
             else
             {
                 //context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;

@@ -36,6 +36,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// 行状态：0=未修改，1=新增,2=已编辑，-1=删除
         /// </summary>
         public RowStatus RowStatus { set; get; }
+
+        public ExcelRowInfo Clone()
+        {
+            var newboj= this.MemberwiseClone() as ExcelRowInfo;
+            newboj.Cells = new List<ExcelCellInfo>();
+            foreach (var cells in this.Cells)
+            {
+                newboj.Cells.Add(cells.Clone());
+            }
+
+            return newboj;
+        }
     }
 
 
@@ -53,6 +65,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// 是否被更新
         /// </summary>
         public bool IsUpdated { set; get; }
+
+        public ExcelCellInfo Clone()
+        {
+            return this.MemberwiseClone() as ExcelCellInfo;
+        }
 
     }
 

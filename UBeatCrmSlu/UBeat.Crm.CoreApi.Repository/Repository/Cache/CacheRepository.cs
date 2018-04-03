@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Redis;
+﻿
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -9,32 +9,46 @@ using UBeat.Crm.CoreApi.Repository.Utility.Cache;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.Cache
 {
-    public class CacheRepository : ICacheRepository
+    public class CacheRepositoryHelper : ICacheRepositoryHelper
     {
         static object instanceLock = new object();
-        static CacheRepository instance;
+        static CacheRepositoryHelper instance;
         ICacheHelper _helper;
        public bool IsConnected { get { return _helper.Connection.IsConnected; } }
 
-        private CacheRepository(RedisCacheOptions options, int database = 0)
+        private CacheRepositoryHelper(RedisCacheOptions options )
         {
-            _helper = new RedisCacheHelper(options, database);
-            
+            _helper = new RedisCacheHelper(options, 0);
         }
 
 
-        public static CacheRepository GetInstance(RedisCacheOptions options, int database = 0)
+        public static CacheRepositoryHelper GetInstance(RedisCacheOptions options)
         {
 
             if (instance == null)
             {
                 lock (instanceLock)
                 {
-                    instance = new CacheRepository(options, database);
+                    instance = new CacheRepositoryHelper(options);
                 }
             }
             return instance;
 
+        }
+        /// <summary>
+        /// 获取Redis的状态
+        /// </summary>
+        /// <returns></returns>
+        public string getRedisStatus() {
+            if (this._helper == null) return "未初始化";
+            else if (_helper is RedisCacheHelper)
+            {
+
+                return ((RedisCacheHelper)_helper).getRedisStatus();
+            }
+            else {
+                return "未支持的功能";
+            }
         }
 
         #region ---验证缓存项是否存在---

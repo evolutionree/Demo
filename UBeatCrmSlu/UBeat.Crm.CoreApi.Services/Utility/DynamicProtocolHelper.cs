@@ -976,11 +976,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         {
                             if (columnKey == "deptgroup")
                             {
-                                result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(e.recmanager) ilike '%{0}%'", dataStr);
+                                result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(t.recmanager) ilike '%{0}%'", dataStr);
                             }
                             else if (columnKey == "")
                             {
-                                result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(e.recmanager) ilike '%{0}%'", dataStr);
+                                result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(t.recmanager) ilike '%{0}%'", dataStr);
                             }
                             else
                             {
@@ -991,6 +991,108 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     default:
                         {
                             result.FieldData = string.Format("t.{0} ilike '%{1}%'", columnKey, dataStr);
+                            break;
+                        }
+                }
+
+                result.IsValid = true;
+                validResultDic.Add(field.FieldName, result);
+            }
+            return validResultDic;
+        }
+        public static Dictionary<string, DynamicProtocolValidResult> SimpleQuery2(
+    List<DynamicEntityFieldSearch> searchFields, Dictionary<string, object> fieldDatas)
+        {
+            var validResultDic = new Dictionary<string, DynamicProtocolValidResult>();
+
+            foreach (var field in searchFields.Where(t => fieldDatas.Keys.Contains(t.FieldName)))
+            {
+
+                var columnKey = field.FieldName;
+
+                object fieldData;
+                fieldDatas.TryGetValue(field.FieldName, out fieldData);
+
+                if (string.IsNullOrWhiteSpace(fieldData?.ToString().Trim()))
+                {
+                    continue;
+                }
+
+                var result = new DynamicProtocolValidResult();
+                result.FieldName = field.FieldName;
+
+                var dataStr = fieldData.ToString().Trim();
+
+                //根据控件处理不同的数据格式
+                //数字，时间这2种才有范围，其余的是文本ilike
+                switch ((DynamicProtocolControlType)field.NewType)
+                {
+                    case DynamicProtocolControlType.RelateControl:
+                        JObject jo = JObject.Parse(field.FieldConfig);
+                        if (jo["relentityid"] == null || jo["relfieldid"] == null)
+                            throw new Exception("关联对象信息配置异常");
+                        DynamicEntityRepository dynEntityRepository = new DynamicEntityRepository();
+                        var relEntityFields = dynEntityRepository.GetEntityFields(Guid.Parse(jo["relentityid"].ToString()), 0).Where(t => t.FieldId == Guid.Parse(jo["relfieldid"].ToString())).ToList();
+                        var reEntity = dynEntityRepository.getEntityBaseInfoById(Guid.Parse(jo["relentityid"].ToString()), 0);
+                        var relField = relEntityFields.FirstOrDefault();
+                        Dictionary<string, object> relFieldDatas = new Dictionary<string, object>();
+                        relFieldDatas.Add(relField.FieldName, fieldData);
+                        var validResults = RelateSimpleQuery(relEntityFields, relFieldDatas, reEntity);
+                        foreach (var tmp in validResults.Values)
+                        {
+                            result.FieldData = tmp.FieldData;
+                        }
+                        break;
+                    case DynamicProtocolControlType.RecName:
+                    case DynamicProtocolControlType.Text:
+                    case DynamicProtocolControlType.TextArea:
+                        {
+                            result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
+                            break;
+                        }
+                    case DynamicProtocolControlType.Address:
+                    case DynamicProtocolControlType.Location:
+                        {
+                            result.FieldData = string.Format("jsonb_extract_path_text(e.{0}, 'address') ilike '%{1}%'", columnKey, dataStr);
+                            break;
+                        }
+                    case DynamicProtocolControlType.RecCreator:
+                    case DynamicProtocolControlType.PersonSelectMulti:
+                    case DynamicProtocolControlType.PersonSelectSingle:
+                    case DynamicProtocolControlType.RecUpdator:
+                    case DynamicProtocolControlType.RecManager:
+                    case DynamicProtocolControlType.AreaRegion:
+                    case DynamicProtocolControlType.Department:
+                    case DynamicProtocolControlType.SelectSingle:
+                    case DynamicProtocolControlType.SelectMulti:
+                    case DynamicProtocolControlType.RecType:
+                    case DynamicProtocolControlType.DataSourceSingle:
+                    case DynamicProtocolControlType.DataSourceMulti:
+                    case DynamicProtocolControlType.Product:
+                    case DynamicProtocolControlType.ProductSet:
+                        {
+                            result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field,"e"), dataStr);
+                            break;
+                        }
+                    case DynamicProtocolControlType.QuoteControl:
+                        {
+                            if (columnKey == "deptgroup")
+                            {
+                                result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(e.recmanager) ilike '%{0}%'", dataStr);
+                            }
+                            else if (columnKey == "")
+                            {
+                                result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(e.recmanager) ilike '%{0}%'", dataStr);
+                            }
+                            else
+                            {
+                                result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field,"t"), dataStr);
+                            }
+                            break;
+                        }
+                    default:
+                        {
+                            result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
                             break;
                         }
                 }

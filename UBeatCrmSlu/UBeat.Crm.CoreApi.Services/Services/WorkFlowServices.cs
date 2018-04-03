@@ -452,6 +452,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     Task.Run(() =>
                     {
+                        while (!canWriteCaseMessage)
+                        {
+                            System.Threading.Thread.Sleep(100);
+                        }
                         var entityInfo = _entityProRepository.GetEntityInfo(caseEntity.EntityId);
                         var detailMapper = new DynamicEntityDetailtMapper()
                         {
@@ -467,6 +471,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         var olddetail = _dynamicEntityRepository.Detail(detailMapper, userinfo.UserId);
                         WriteAddCaseMessage(entityInfo, caseEntity.RecId, caseEntity.RelRecId.GetValueOrDefault(), caseEntity.FlowId, newcaseid, userinfo.UserId, olddetail);
+                        canWriteCaseMessage = false;
                     });
                 }
             }
@@ -1066,7 +1071,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
 
                 stepnum = caseitems.FirstOrDefault().StepNum;
-
+                WorkFlowEventInfo eventInfo;
 
                 if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
                 {
@@ -1087,7 +1092,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     else
                     {
                         nodeid = caseItemEntity.NodeNum == 0 ? freeFlowBeginNodeId : freeFlowNodeId;
-
+                       
                     }
                 }
                 else //固定流程
@@ -1097,11 +1102,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, out nextnode, out canAddNextNode);
                     if (casefinish)
                         lastNodeId = nextnode.NodeId;
-                }
-                //判断是否有附加函数_event_func
-                var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
-                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
 
+                }
+                //如果不是自由流程，或者自由流程的第一个节点，需要验证是否有附加函数
+                if (workflowInfo.FlowType != WorkFlowType.FreeFlow || nodeid == freeFlowBeginNodeId)
+                {
+                    //判断是否有附加函数_event_func
+                    eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
+                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+
+                }
                 //流程审批过程修改实体字段时，更新关联实体的字段数据
                 _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
 
@@ -1179,7 +1189,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             nextnode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
             if (nextnode == null)
                 nextnode = flowNextNodeInfos.FirstOrDefault();
-            if (caseItemEntity.ChoiceStatus == 0 || caseItemEntity.ChoiceStatus == 3)//中止操作，需要获取结束节点
+            if(caseItemEntity.ChoiceStatus==0|| caseItemEntity.ChoiceStatus == 3)//中止操作，需要获取结束节点
             {
                 var nodelist = _workFlowRepository.GetNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum);
                 nextnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
@@ -1628,12 +1638,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
                             var newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);
 
-
+                            
 
                             string dynamicFuncode = msg.FuncCode + "Dynamic";
                             var dynamicMsg = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, dynamicFuncode, userNumber, newMembers, null, msgpParam);
+                            foreach(var dmsg in dynamicMsg.TemplateKeyValue)
+                            {
+                                if(!paramData.ContainsKey(dmsg.Key))
+                                {
+                                    paramData.Add(dmsg.Key, dmsg.Value);
+                                }
+                            }
 
-                            dynamicMsg.TemplateKeyValue = dynamicMsg.TemplateKeyValue.Union(paramData).ToLookup(t => t.Key, t => t.Value).ToDictionary(m => m.Key, m => m.First());
+                            dynamicMsg.TemplateKeyValue = paramData;
                             //发布审批消息到实体动态列表
                             MessageService.WriteMessage(tran, dynamicMsg, userNumber, null, 2);
 
@@ -1652,7 +1669,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                             }
 
-
+                           
                         }
 
                         else MessageService.WriteMessage(tran, msg, userNumber);
@@ -1670,6 +1687,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         conn.Dispose();
                     }
                 }
+                canWriteCaseMessage = false;
             });
         }
         #endregion

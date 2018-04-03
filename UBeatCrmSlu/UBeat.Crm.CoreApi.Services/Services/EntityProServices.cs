@@ -11,7 +11,6 @@ using UBeat.Crm.CoreApi.Services.Models;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Core.Utility;
-using Microsoft.Extensions.Caching.Redis;
 using UBeat.Crm.CoreApi.Repository.Repository.Cache;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.DomainModel.Version;

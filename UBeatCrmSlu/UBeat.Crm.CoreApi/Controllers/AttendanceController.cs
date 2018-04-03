@@ -33,6 +33,24 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("addgroupuser")]
+        public OutputResult<object> AddGroupUser([FromBody] AddGroupUserModel settingList = null)
+        {
+            if (settingList == null) return ResponseError<object>("参数格式错误");
+            var header = GetAnalyseHeader();
+            return _attendanceServices.AddGroupUser(settingList, header,UserId);
+        }
+
+        [HttpPost]
+        [Route("querygroupuser")]
+        public OutputResult<object> GroupUserQuery([FromBody]GroupUserModel settingList = null)
+        {
+            if (settingList == null) return ResponseError<object>("参数格式错误");
+            var header = GetAnalyseHeader();
+            return _attendanceServices.GroupUserQuery(settingList, UserId);
+        }
+
+        [HttpPost]
         [Route("signlist")]
         public OutputResult<object> SignList([FromBody] AttendanceSignListModel listModel = null)
         {

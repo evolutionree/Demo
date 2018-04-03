@@ -169,9 +169,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             //执行预处理逻辑，返回值必须与func返回值一致，参数为func参数的json对象和func执行结果数据的json
                             var tmp = ActionExtService.ExcuteFinishAction(tran, arg, preActionResult, actionResult, userData, actionExtModel);
-                            if (tmp != null&& tmp.DataBody != null ) {
-                                outResult = tmp;
-                            }
+                            //if (tmp != null&& tmp.DataBody != null ) {
+                            //    outResult = tmp;
+                            //}
                         }
                     }
                     

@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Irony.Parsing;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 {
@@ -39,16 +41,16 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         public const string Ent_Name_Chinese = "【#企业名称_Name#】";//当前授权企业的企业名称
 
 
-        public const string Key_IF = @"^=IF\(\S+\)$";
-        public const string Key_ElseIF = @"^=ElseIF\(\S+\)$";
-        public const string Key_Else = @"^=Else$";
+        public const string Key_IF = @"^=IF\(\s*\S+\s*\)$";
         public const string Key_EndIF = "=EndIF()";
-        public const string Key_Loop = @"^=Loop\(\S+\)$";
+        public const string Key_Loop = @"^=Loop\(\s*\S+\s*\)$";
         public const string Key_EndLoop = "=EndLoop()";
 
-        public const string Key_Sum = @"^=sum\(\S+\)$";
-        public const string Key_Concat = @"^=Concat\(\S+\)$";
-        public const string Key_Count = @"^=count\(\S+\)$";
+        public const string Key_Math = @"=*math\(\s*\S+\s*\)";
+        public const string Key_ColumnSum = @"=*columnsum\(\s*\S+\s*\)";
+        public const string Key_Concat = @"=*Concat\(\s*\S+\s*\)";
+        public const string Key_Count = @"=*count\(\s*\S+\s*\)";
+        public const string Key_Func = @"=*\S+\(\s*\S+\s*\)";//匹配值函数名格式，如sum(sss)
 
         public const string Key_FieldPath = @"【#\s*\S+\s*#】";
 
@@ -153,34 +155,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             formula = null;
             if (string.IsNullOrEmpty(input))
                 return false;
-            formula = input.ToLower().Replace("=if(","").Replace(")","").Trim();
+            formula = input.ToLower().Replace("=if(","").Trim().TrimEnd(')');
+            
             return Regex.IsMatch(input, Key_IF);
         }
-        /// <summary>
-        /// 是否是ElseIF关键字
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="formula">返回ElseIF内的公式内容</param>
-        /// <returns></returns>
-        public static bool IsKey_ElseIF(string input, out string formula)
-        {
-            formula = null;
-            if (string.IsNullOrEmpty(input))
-                return false;
-            formula = input.ToLower().Replace("=elseif(", "").Replace(")", "").Trim();
-            return Regex.IsMatch(input, Key_ElseIF);
-        }
-        /// <summary>
-        /// 是否是Else关键字
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        public static bool IsKey_Else(string input )
-        {
-            if (string.IsNullOrEmpty(input))
-                return false;
-            return IsEquals(input, Key_Else);
-        }
+        
+        
         /// <summary>
         /// 是否是EndIF关键字
         /// </summary>
@@ -204,7 +184,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             formula = null;
             if (string.IsNullOrEmpty(input))
                 return false;
-            formula = input.ToLower().Replace("=loop(", "").Replace(")", "").Trim();
+            formula = input.ToLower().Replace("=loop(", "").Trim().TrimEnd(')');
             return Regex.IsMatch(input, Key_Loop);
        
         }
@@ -222,19 +202,96 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         #endregion
 
         #region ---public Methor（值函数）---
+
+        public static void GetLanguageData(string input)
+        {
+            var grammar = new ExpressionGrammar();
+            var language = new LanguageData(grammar);
+            var parser = new Parser(language);
+            var syntaxTree = parser.Parse(input);
+
+           var res= EvaluationHelper.PerformEvaluate(syntaxTree.Root);
+           var fs= res.Value;
+        }
+
         /// <summary>
-        /// 是否是Sum关键字
+        /// 获取一个表达式中所有的值函数定义
         /// </summary>
         /// <param name="input"></param>
-        /// <param name="formula">返回Sum内的公式内容</param>
+        /// <param name="fieldnames">返回表达式中包含的值函数定义列表</param>
+        /// <returns>源表达式</returns>
+        public static string GetFuncFormula(string input, out List<string> funcList)
+        {
+            funcList = null;
+            if (string.IsNullOrEmpty(input))
+                return null;
+            funcList = new List<string>();
+            var matcheFieldnames = Regex.Matches(input, Key_Func);
+            foreach (Match match in matcheFieldnames)
+            {
+                string formulaTemp = null;
+                if (IsKey_Concat(match.Value, out formulaTemp))
+                {
+                    GetFuncFormula(formulaTemp, out funcList);
+                }
+                if(IsKey_Math(match.Value, out formulaTemp))
+                {
+
+                }
+                funcList.Add(match.Value);
+            }
+            return input;
+        }
+        /// <summary>
+        /// 是否是数学函数关键字，包含运算加减乘除
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="formula">公式内容</param>
         /// <returns></returns>
-        public static bool IsKey_Sum(string input, out string formula)
+        public static bool IsKey_Math(string input, out string formula)
         {
             formula = null;
             if (string.IsNullOrEmpty(input))
                 return false;
-            formula = input.ToLower().Replace("=sum(", "").Replace(")", "").Trim();
-            return Regex.IsMatch(input, Key_Sum);
+            bool res = Regex.IsMatch(input, Key_Math);
+            if (res)
+            {
+                formula = input.ToLower().Replace("=math(", "").Trim();
+                formula = formula.Replace("math(", "").Trim();
+                var index = formula.LastIndexOf(')');//math 函数里边可能有嵌套函数，所以必须匹配最外层的‘）’
+                if (index > 0)
+                {
+                    formula = formula.Remove(index).Trim();
+                }
+            }
+
+            return res;
+        }
+        /// <summary>
+        /// 是否是ColumnSum关键字
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="formula">返回Sum内的公式内容</param>
+        /// <returns></returns>
+        public static bool IsKey_ColumnSum(string input, out string formula)
+        {
+            formula = null;
+            if (string.IsNullOrEmpty(input))
+                return false;
+
+            bool res = Regex.IsMatch(input, Key_ColumnSum);
+            if (res)
+            {
+                formula = input.ToLower().Replace("=columnsum(", "").Trim();
+                formula = formula.Replace("columnsum(", "").Trim();
+                var index = formula.IndexOf(')');//columnsum 函数里边不能有嵌套函数，所以必须匹配第一个‘）’
+                if (index > 0)
+                {
+                    formula = formula.Remove(index).Trim();
+                }
+            }
+
+            return res;
         }
         /// <summary>
         /// 是否是concat关键字
@@ -247,9 +304,24 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             formula = null;
             if (string.IsNullOrEmpty(input))
                 return false;
-            formula = input.ToLower().Replace("=concat(", "").Replace(")", "").Trim();
-            return Regex.IsMatch(input, Key_Concat);
+           
+            bool res = Regex.IsMatch(input, Key_Concat);
+            if (res)
+            {
+                formula = input.ToLower().Replace("=concat(", "").Trim();
+                formula = formula.Replace("concat(", "").Trim();
+                var index = formula.LastIndexOf(')');//concat 函数里边可能有嵌套函数，所以必须匹配最外层的‘）’
+                if (index > 0)
+                {
+                    formula = formula.Remove(index).Trim();
+                }
+            }
+
+            return res;
         }
+
+        
+
         /// <summary>
         /// 是否是count关键字
         /// </summary>
@@ -261,8 +333,19 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             formula = null;
             if (string.IsNullOrEmpty(input))
                 return false;
-            formula = input.ToLower().Replace("=count(", "").Replace(")", "").Trim();
-            return Regex.IsMatch(input, Key_Count);
+            bool res = Regex.IsMatch(input, Key_Count);
+            if (res)
+            {
+                formula = input.ToLower().Replace("=count(", "").Trim();
+                formula = formula.Replace("count(", "").Trim();
+                var index = formula.IndexOf(')');//count 函数里边不能有嵌套表达式，所以必须匹配第一个‘）’
+                if(index>0)
+                {
+                    formula = formula.Remove(index).Trim();
+                }
+            }
+            
+            return res;
         }
         #endregion
 
