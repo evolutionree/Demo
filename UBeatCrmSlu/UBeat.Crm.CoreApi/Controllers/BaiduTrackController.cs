@@ -31,5 +31,18 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _baiduTrackServices.GetRecentLocationByUserIds(searchQuery, UserId);
         }
+
+        /// <summary>
+        /// 轨迹查询
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("track")]
+        public OutputResult<object> GetTrack([FromBody] TrackQuery trackQuery)
+        {
+            if (trackQuery == null) return ResponseError<object>("参数格式错误");
+
+            return _baiduTrackServices.GetTrack(trackQuery, UserId);
+        }
     }
 }

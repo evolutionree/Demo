@@ -24,4 +24,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
 
         public int PageSize { get; set; }
     }
+
+    public class UnBindQuery
+    {
+        public string RecIds { get; set; }
+    }
 }

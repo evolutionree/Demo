@@ -17,21 +17,57 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public string entity_desc { get; set; }
         public string create_time { get; set; }
         public string modify_time { get; set; }
-        public LatestLocation latest_location { get; set; }
+        public LocationPoint latest_location { get; set; }
         public int Status { get; set; }//状态：1正常定位，2未定位,未分配策略，3定位失败,超过{预警时间}未提交位置信息
         public int WarnningInterVal { get; set; }
     }
 
-    public class LatestLocation
+    public class LocationPoint
     {
         public Int64 loc_time { get; set; }
-        public DateTime loc_time_format { get; set; }
+        public DateTime loc_time_format { get; set; }//该时间为用户上传的时间
+        public string create_time { get; set; }//该时间为服务端时间
         public double longitude { get; set; }
         public double latitude { get; set; }
         public string lot_address { get; set; }
         public int direction { get; set; }
-        public int height { get; set; }
-        public int radius { get; set; }
-        public int speed { get; set; }
+        public double height { get; set; }
+        public double radius { get; set; }
+        public double speed { get; set; }
+        public string locate_mode { get; set; }//仅当纠偏时返回。可能的返回值：未知；GPS/北斗定位；网络定位；基站定位
+    }
+
+
+    public class TrackQuery
+    {
+        public int UserId { get; set; }
+        public DateTime searchDate { get; set; }
+        public int IsProcessed { get; set; }
+        public string ProcessOption { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+    }
+
+    public class TrackData
+    {
+        public int status { get; set; }
+        public string message { get; set; }
+        public int total { get; set; }
+        public double distance { get; set; }
+        public LocationPoint start_point { get; set; }
+        public LocationPoint end_point { get; set; }
+        public List<LocationPoint> points { get; set; }
+        public List<CustVisitLocation> custVisitLocation { get; set; }
+    }
+
+    public class CustVisitLocation
+    {
+        public Guid recId { get; set; }
+        public double longitude { get; set; }
+        public double latitude { get; set; }
+        public string address { get; set; }
+        public DateTime visitTime { get; set; }
+        public string custId { get; set; }
+        public string custName { get; set; }
     }
 }

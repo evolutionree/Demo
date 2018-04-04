@@ -152,9 +152,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("UnBind")]
-        public OutputResult<object> UnBind([FromBody] DeviceBindInfo bindInfo)
+        public OutputResult<object> UnBind([FromBody] UnBindQuery unBindQuery)
         {
-            var unBind = _accountServices.UnDeviceBind(bindInfo.RecId, UserId);
+            var unBind = _accountServices.UnDeviceBind(unBindQuery.RecIds, UserId);
             bool result = (bool)unBind.DataBody;
             var response = new
             {

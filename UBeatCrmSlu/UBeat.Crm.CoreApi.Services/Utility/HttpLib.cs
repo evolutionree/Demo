@@ -127,7 +127,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "获取实时定位信息异常");
+                Logger.Error(ex, "GET请求异常");
                 return string.Empty;
             }
         }

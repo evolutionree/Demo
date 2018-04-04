@@ -75,13 +75,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
              DataBaseHelper.QuerySingle<OperateResult>(sql, param);
         }
 
-        public bool UnDeviceBind(Guid recordId, int userNumber)
+        public bool UnDeviceBind(string recordIds, int userNumber)
         {
-            var sql = @"update crm_sys_device_bind set recstatus = 0 where recid = @recordId and recstatus = 1 and userid = @userid";
+            var sql = @"update crm_sys_device_bind set recstatus = 0 where position(recid::text in @recordIds)> 0 and recstatus = 1";
             var param = new
             {
-                recordId = recordId,
-                userid = userNumber,
+                recordIds = recordIds,
+                //userid = userNumber,
             };
             DataBaseHelper.QuerySingle<int>(sql, param);
             return true;

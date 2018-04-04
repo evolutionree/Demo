@@ -76,9 +76,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        public OutputResult<object> UnDeviceBind(Guid recordId, int userNumber)
+        public OutputResult<object> UnDeviceBind(string recordIds, int userNumber)
         {
-            bool unBind = _accountRepository.UnDeviceBind(recordId, userNumber);
+            bool unBind = _accountRepository.UnDeviceBind(recordIds, userNumber);
             return new OutputResult<object>(unBind);
         }
 

@@ -53,6 +53,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Folder>
     <Folder Include="wwwroot\" />
+    <Folder Include="bak\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="App.Metrics" Version="1.3.0" />

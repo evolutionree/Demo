@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         void AddDeviceBind(string deviceModel, string osVersion, string uniqueId, int userNumber);
 
-        bool UnDeviceBind(Guid recordId, int userNumber);
+        bool UnDeviceBind(string recordIds, int userNumber);
 
         Dictionary<string, List<IDictionary<string, object>>> DeviceBindList(DeviceBindInfo deviceBindQuery, int userNumber);
 

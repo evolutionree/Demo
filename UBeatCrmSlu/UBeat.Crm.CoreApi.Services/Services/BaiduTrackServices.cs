@@ -9,19 +9,21 @@ using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Track;
+using System.IO;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class BaiduTrackServices : BaseServices
     {
         static string locationSearchURL = "http://yingyan.baidu.com/api/v3/entity/search";
+        static string getTrackDataURL = "http://yingyan.baidu.com/api/v3/track/gettrack";
 
-        private readonly IBaiduTrackRepository _repository;
+        private readonly IBaiduTrackRepository _baiduTrackRepository;
         private readonly IAccountRepository _accountRepository;
 
         public BaiduTrackServices(IBaiduTrackRepository repository, IAccountRepository accountRepository)
         {
-            _repository = repository;
+            _baiduTrackRepository = repository;
             _accountRepository = accountRepository;
         }
 
@@ -50,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (!string.IsNullOrEmpty(hadBindUserIdsStr)) {
                 queryDic.Add("filter", "entity_names:" + hadBindUserIdsStr);
             }
-            List<LocationDetailInfo> searchResult =  new BaiduTrackHelper().LocationSearch(locationSearchURL, queryDic);
+            List<LocationDetailInfo> searchResult =  BaiduTrackHelper.LocationSearch(locationSearchURL, queryDic, searchQuery);
             foreach(var item in searchResult)
             {
                 System.DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1));
@@ -62,7 +64,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         TimeSpan sp = DateTime.Now.Subtract(dt);
                         item.Status = sp.Minutes > userInfo.WarnningInterval ? 3 : 1;
                         item.WarnningInterVal = userInfo.WarnningInterval;
-                        item.latest_location.lot_address =  new BaiduTrackHelper().SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
+                        item.latest_location.lot_address =  BaiduTrackHelper.SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
                     }
                 }
             }
@@ -84,6 +86,44 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             locationDetailList.AddRange(searchResult);
             return new OutputResult<object>(locationDetailList);
+        }
+
+        public OutputResult<object> GetTrack(TrackQuery trackQuery, int userNumber)
+        {
+            //1、鹰眼定位数据
+            Dictionary<string, string> queryDic = new Dictionary<string, string>() { };
+            queryDic.Add("entity_name", trackQuery.UserId.ToString());
+            queryDic.Add("is_processed", trackQuery.IsProcessed.ToString());
+            queryDic.Add("page_index", trackQuery.PageIndex.ToString());
+            queryDic.Add("page_size", trackQuery.PageSize.ToString());
+            if(trackQuery.IsProcessed == 1 && !string.IsNullOrEmpty(trackQuery.ProcessOption)) {
+                queryDic.Add("process_option", trackQuery.ProcessOption);
+            }
+            if (trackQuery.searchDate != null) {
+                DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1)); // 当地时区
+                long startTimeStamp = (long)(trackQuery.searchDate - startTime).TotalSeconds; // 相差秒数
+                long endTimeStamp = (long)(trackQuery.searchDate.AddHours(24).AddSeconds(-1) - startTime).TotalSeconds; // 相差秒数
+                queryDic.Add("start_time", startTimeStamp.ToString());
+                queryDic.Add("end_time", endTimeStamp.ToString());
+            }
+            var trackData = BaiduTrackHelper.GetTrackData(getTrackDataURL, queryDic);
+
+            //2、签到数据
+            if (trackQuery.PageIndex == 1)
+            {
+                List<CustVisitLocation> custVisitLocation = _baiduTrackRepository.GetVisitCustDataList(trackQuery.searchDate, trackQuery.UserId, userNumber);
+                trackData.custVisitLocation = custVisitLocation;
+            }
+
+            return new OutputResult<object>(trackData);
+        }
+
+        public OutputResult<object> DownLoadTrackDataZip()
+        {
+            //todo 待完善
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "bak", "157572_103626.zip");
+            BaiduTrackHelper.TraceFileDownSave(@"http://gz.bcebos.com/v1/mapopen-yingyan-export/track/157572_103626.zip?authorization=bce-auth-v1/add02280138247ffafecb6baf2bbfa98/2018-04-03T00:41:04Z/172800/host/e9366d7b8dd97e657a40e08b81385692dfb289c9c1411352d9cb38010bdd3099", filePath);
+            return null;
         }
     }
 }
