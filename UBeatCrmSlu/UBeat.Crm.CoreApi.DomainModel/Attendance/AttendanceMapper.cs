@@ -10,6 +10,23 @@ namespace UBeat.Crm.CoreApi.DomainModel.Attendance
         public int SignType { get; set; }
         public string SignMark { get; set; }
         public string SignTime { get; set; }
+        public int CardType { get; set; }
+        public int RecordSource { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new AttendanceSignMapperValidator();
+        }
+    }
+
+    public class AttendanceAddMapper : BaseEntity
+    {
+        public int SignType { get; set; }
+        public string SignMark { get; set; }
+        public string SignTime { get; set; }
+        public int CardType { get; set; }
+        public int SelectUser { get; set; }
+        public int RecordSource { get; set; }
 
         protected override IValidator GetValidator()
         {
@@ -47,7 +64,29 @@ namespace UBeat.Crm.CoreApi.DomainModel.Attendance
             RuleFor(d => d.Locations).NotNull().Must(ValidLocation).WithMessage("定位信息不正确");
             RuleFor(d => d.SignType).NotNull().GreaterThanOrEqualTo(0).WithMessage("考勤类型不能为空");
             RuleFor(d => d.SignMark).NotNull().WithMessage("考勤备注不能为null");
+            RuleFor(d => d.CardType).NotNull().WithMessage("考勤打开类型不能为空");
             RuleFor(d => d.SignTime).NotEmpty().WithMessage("考勤时间不能为空");
+            RuleFor(d => d.RecordSource).NotEmpty().WithMessage("考勤来源不能为空");
+        }
+
+        public static bool ValidLocation(AddressType address)
+        {
+            if (string.IsNullOrWhiteSpace(address.Address)) return false;
+            if (string.IsNullOrWhiteSpace(address.Lat)) return false;
+            if (string.IsNullOrWhiteSpace(address.Lon)) return false;
+            return true;
+        }
+    }
+
+    public class AttendanceAddMapperValidator : AbstractValidator<AttendanceAddMapper>
+    {
+        public AttendanceAddMapperValidator()
+        {
+            RuleFor(d => d.SignType).NotNull().GreaterThanOrEqualTo(0).WithMessage("考勤类型不能为空");
+            RuleFor(d => d.CardType).NotNull().WithMessage("考勤打开类型不能为空");
+            RuleFor(d => d.SelectUser).NotNull().WithMessage("考勤人员不能为空");
+            RuleFor(d => d.SignTime).NotEmpty().WithMessage("考勤时间不能为空");
+            RuleFor(d => d.RecordSource).NotEmpty().WithMessage("考勤来源不能为空");
         }
 
         public static bool ValidLocation(AddressType address)

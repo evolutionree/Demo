@@ -10,8 +10,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.Attendance
         public string SignImg { get; set; }
         public AddressType Locations { get; set; }
         public int SignType { get; set; }
+        public int CardType { get; set; }
         public string SignMark { get; set; }
         public string SignTime { get; set; }
+        public int SelectUser { get; set; }
+        public int RecordSource { get; set; }
     }
 
     public class GroupUserModel

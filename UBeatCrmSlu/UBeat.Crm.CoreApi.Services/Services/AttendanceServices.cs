@@ -44,6 +44,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
         }
 
+        public OutputResult<object> Add(AttendanceSignModel signModel, int userNumber)
+        {
+            var signEntity = new AttendanceAddMapper()
+            {
+                SignType=signModel.SignType,
+                SignMark=signModel.SignMark,
+                SignTime= signModel.SignTime,
+                CardType=signModel.CardType,
+                RecordSource=signModel.RecordSource,
+                SelectUser =signModel.SelectUser
+            };
+            if (signEntity == null || !signEntity.IsValid())
+            {
+                return HandleValid(signEntity);
+            }
+
+            var result = _attendanceRepository.Add(signEntity, userNumber);
+            return HandleResult(result);
+        }
+
         public OutputResult<object> AddGroupUser(AddGroupUserModel settingList, AnalyseHeader header, int userNumber)
         {
             List<string> errorList = new List<string>();

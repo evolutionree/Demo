@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -32,6 +33,47 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Attendance
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
+        }
+
+        /// <summary>
+        /// 手工加入打开记录
+        /// </summary>
+        public OperateResult Add(AttendanceAddMapper signEntity, int userNumber)
+        {
+
+            string sql = sql = @"INSERT INTO crm_sys_attendance(attendid,cardtype,signtype, signmark, udeptcode, reccreated, reccreator, recupdator,recordsource)  
+                VALUES (@attendid,@cardtype,@signtype,@signmark,(SELECT ucode FROM crm_func_userinfo_udeptcode(@reccreator)),@reccreated,@reccreator,@recupdator,@recordsource)";
+
+            Guid attendid = new Guid();
+            var args = new
+            {
+                attendid= attendid,
+                cardtype =signEntity.CardType,
+                signtype = signEntity.SignType,
+                signmark = signEntity.SignMark,
+                reccreated = signEntity.SignTime,
+                reccreator = signEntity.SelectUser,
+                recupdator = userNumber,
+                recordsource = signEntity.RecordSource
+            };
+            var result = DataBaseHelper.ExecuteNonQuery(sql, args, CommandType.Text);
+            if (result == 1)
+            {
+                return new OperateResult()
+                {
+                    Id= attendid.ToString(),
+                    Flag = 1,
+                    Msg = "新增成功"
+                };
+            }
+            else
+            {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "新增失败"
+                };
+            }
         }
 
 
