@@ -2055,7 +2055,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
 
+            if (dynamicModel.RelInfo != null 
+                && dynamicModel.RelInfo.ContainsKey("recid")  && dynamicModel.RelInfo["recid"] != null
+                 && dynamicModel.RelInfo.ContainsKey("relid") && dynamicModel.RelInfo["relid"] != null) {
+                string sqlWhere = _dynamicEntityRepository.ReturnRelTabSql(Guid.Parse(dynamicModel.RelInfo["relid"].ToString()), Guid.Parse(dynamicModel.RelInfo["recid"].ToString()), userNumber);
+                if (sqlWhere != null && sqlWhere.StartsWith("and recid"))
+                {//兼容历史
+                    if (SpecFuncName != null)
+                    {
+                        sqlWhere = sqlWhere.Replace("and recid", "and t.recid");
+                    }
+                    else
+                    {
+                        sqlWhere = sqlWhere.Replace("and recid", "and e.recid");
+                    }
+                }
+                dynamicEntity.SearchQuery = dynamicEntity.SearchQuery + sqlWhere;
 
+
+            }
 
             //处理排序语句
             if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))

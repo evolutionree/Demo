@@ -93,7 +93,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             var isAdvance = dynamicModel.IsAdvanceQuery == 1;
             return _dynamicEntityServices.DataList2(dynamicModel, isAdvance, UserId);
         }
-
+        /// <summary>
+        /// 此接口已废弃
+        /// </summary>
+        /// <param name="dynamicModel"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("advance")]
         public OutputResult<object> AdvanceQuery([FromBody] DynamicEntityListModel dynamicModel = null)
@@ -225,7 +229,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (listModel == null) return ResponseError<object>("参数格式错误");
             return _dynamicEntityServices.EntitySearchRepeat(listModel, UserId);
         }
-
+        /// <summary>
+        /// 此接口已经废弃，合并至list接口
+        /// </summary>
+        /// <param name="dynamicModel"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("reltablist")]
         public OutputResult<object> ConnectList([FromBody] DynamicRelTabModel dynamicModel = null)
