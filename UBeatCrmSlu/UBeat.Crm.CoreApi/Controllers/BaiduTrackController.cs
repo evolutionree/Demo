@@ -44,5 +44,18 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _baiduTrackServices.GetTrack(trackQuery, UserId);
         }
+
+        /// <summary>
+        /// 附近的客户
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("nearbyCust")]
+        public OutputResult<object> GetNearbyCustomer([FromBody] NearbyCustomerQuery query)
+        {
+            if (query == null) return ResponseError<object>("参数格式错误");
+
+            return _baiduTrackServices.GetNearbyCustomerList(query, UserId);
+        }
     }
 }

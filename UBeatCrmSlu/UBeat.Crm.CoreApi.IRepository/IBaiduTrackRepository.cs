@@ -10,5 +10,7 @@ namespace UBeat.Crm.CoreApi.IRepository
     public interface IBaiduTrackRepository : IBaseRepository
     {
         List<CustVisitLocation> GetVisitCustDataList(DateTime visitDate, int visitUser, int userNumber);
+
+        List<NearbyCustomerInfo> GetNearbyCustomerList(NearbyCustomerQuery query, int userNumber);
     }
 }

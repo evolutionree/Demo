@@ -26,5 +26,25 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
             };
             return DBHelper.ExecuteQuery<CustVisitLocation>("", sql, param);
         }
+
+        public List<NearbyCustomerInfo> GetNearbyCustomerList(NearbyCustomerQuery query, int userNumber)
+        {
+            Dictionary<string, string> bindUserInfo = new Dictionary<string, string>();
+            string centerPointStr = string.Format("{0} {1}", query.longitude, query.latitude);
+            var sql = string.Format(@"select
+ ST_distance(
+ 	ST_GeographyFromText('SRID=4326;POINT(' || (custaddr->>'lon') || ' ' || (custaddr->>'lat') || ')'), 
+ 	ST_GeographyFromText('SRID=4326;POINT({0})')) 
+ as distance, recid as CustId, recname as CustName
+from crm_sys_customer c
+where ST_dwithin(ST_GeographyFromText('SRID=4326;POINT(' || (custaddr->>'lon') || ' ' || (custaddr->>'lat') || ')'), 
+				 ST_GeographyFromText('SRID=4326;POINT({1})'), @radius) and recstatus = 1
+order by distance asc;", centerPointStr, centerPointStr);
+            
+            var param = new DbParameter[]{
+                        new NpgsqlParameter("radius", query.searchRadius)
+            };
+            return DBHelper.ExecuteQuery<NearbyCustomerInfo>("", sql, param);
+        }
     }
 }

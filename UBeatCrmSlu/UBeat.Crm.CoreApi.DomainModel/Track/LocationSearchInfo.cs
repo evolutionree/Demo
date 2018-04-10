@@ -70,4 +70,18 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public string custId { get; set; }
         public string custName { get; set; }
     }
+
+    public class NearbyCustomerQuery
+    {
+        public double longitude { get; set; }
+        public double latitude { get; set; }
+        public double searchRadius { get; set; }
+    }
+
+    public class NearbyCustomerInfo
+    {
+        public Guid CustId { set; get; }
+        public string CustName { set; get; }
+        public double Distance { set; get; }
+    }
 }

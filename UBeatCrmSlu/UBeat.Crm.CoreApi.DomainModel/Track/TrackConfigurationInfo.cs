@@ -68,4 +68,5 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public string UserName { get; set; }
         public int WarnningInterval { get; set; }
     }
+
 }

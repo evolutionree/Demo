@@ -125,5 +125,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             BaiduTrackHelper.TraceFileDownSave(@"http://gz.bcebos.com/v1/mapopen-yingyan-export/track/157572_103626.zip?authorization=bce-auth-v1/add02280138247ffafecb6baf2bbfa98/2018-04-03T00:41:04Z/172800/host/e9366d7b8dd97e657a40e08b81385692dfb289c9c1411352d9cb38010bdd3099", filePath);
             return null;
         }
+
+        public OutputResult<object> GetNearbyCustomerList(NearbyCustomerQuery query, int userNumber)
+        {
+            List<NearbyCustomerInfo> custList = _baiduTrackRepository.GetNearbyCustomerList(query, userNumber);
+            return new OutputResult<object>(custList);
+        }
     }
 }
