@@ -25,6 +25,7 @@ using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony;
 using System.Reflection;
 using System.Data.Common;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -326,8 +327,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (isLoop)
                 return newRows;
             //解析表达式的值，得到最后的表达式字符串
-            var formula = GetExpressionValue(cell.CellValue, fields, detailData, userinfo, linkTableFields, linkTableDetailData);
-            if (cell.CellValue != formula)
+            var formula = GetExpressionValue(cell.CellValue.ToString(), fields, detailData, userinfo, linkTableFields, linkTableDetailData);
+            if (cell.CellValue.ToString() != formula)
             {
                 cell.IsUpdated = true;
                 cell.CellValue = formula;
@@ -403,11 +404,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var formula = node.Token.Text;
             var isLinkTabelField = formula.Split('.').Length > 1;//判断是否是嵌套表格控件中的字段
             string formulaValue = null;
+            OXSDataItemType dataType = OXSDataItemType.String;
             if (isLinkTabelField)
             {
-                formulaValue = ParsingLinkTableVariable(formula, linkTableFields, linkTableDetailData, userinfo);
+                formulaValue = ParsingLinkTableVariable(formula, linkTableFields, linkTableDetailData, userinfo,out dataType);
             }
-            else formulaValue = ParsingVariable(formula, fields, detailData, userinfo);
+            else formulaValue = ParsingVariable(formula, fields, detailData, userinfo,out dataType);
             return new ConstantEvaluation(formulaValue);
         }
         #endregion
@@ -647,8 +649,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <summary>
         /// 解析实体变量
         /// </summary>
-        private string ParsingVariable(string formulaArg, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo)
+        private string ParsingVariable(string formulaArg, List<IDictionary<string, object>> fields, IDictionary<string, object> detailData, AccountUserInfo userinfo,out OXSDataItemType dataType)
         {
+            dataType = OXSDataItemType.String;
             List<string> fieldList = null;
             var formula = KeywordHelper.ParsingFormula(formulaArg, out fieldList);
             if (fieldList != null && fieldList.Count > 0)
@@ -712,11 +715,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     {
                                         case EntityFieldControlType.AreaGroup:
                                         case EntityFieldControlType.FileAttach:
-                                        case EntityFieldControlType.HeadPhoto:
                                         case EntityFieldControlType.TreeSingle:
-                                        case EntityFieldControlType.TakePhoto:
                                         case EntityFieldControlType.TreeMulti:
                                         case EntityFieldControlType.LinkeTable:
+                                            break;
+                                        case EntityFieldControlType.HeadPhoto:
+                                        case EntityFieldControlType.TakePhoto:
+                                            {   //把文件id赋值给变量
+                                                dataType = OXSDataItemType.Jpeg;
+                                                var entityfieldname = fieldobj["fieldname"].ToString();
+                                                entityfieldvalue = detailData.ContainsKey(entityfieldname) && detailData[entityfieldname] != null ? detailData[entityfieldname].ToString() : string.Empty;
+                                                formula = formula.Replace(fieldFormat, entityfieldvalue);
+                                            }
                                             break;
                                         default:
                                             { //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
@@ -758,8 +768,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="tableDetailData">嵌套实体的数据详情</param>
         /// <param name="userinfo"></param>
         /// <returns></returns>
-        private string ParsingLinkTableVariable(string formulaArg, List<IDictionary<string, object>> tableFields, IDictionary<string, object> tableDetailData, AccountUserInfo userinfo)
+        private string ParsingLinkTableVariable(string formulaArg, List<IDictionary<string, object>> tableFields, IDictionary<string, object> tableDetailData, AccountUserInfo userinfo, out OXSDataItemType dataType)
         {
+            dataType = OXSDataItemType.String;
             List<string> fieldList = null;
             var formula = KeywordHelper.ParsingFormula(formulaArg, out fieldList);
             if (fieldList != null && fieldList.Count > 0)
@@ -790,11 +801,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 {
                                     case EntityFieldControlType.AreaGroup:
                                     case EntityFieldControlType.FileAttach:
-                                    case EntityFieldControlType.HeadPhoto:
                                     case EntityFieldControlType.TreeSingle:
-                                    case EntityFieldControlType.TakePhoto:
                                     case EntityFieldControlType.TreeMulti:
                                     case EntityFieldControlType.LinkeTable:
+                                        break;
+                                    case EntityFieldControlType.HeadPhoto:
+                                    case EntityFieldControlType.TakePhoto:
+                                        {   //把文件id赋值给变量
+                                            dataType = OXSDataItemType.Jpeg;
+                                            var entityfieldname = fieldobj["fieldname"].ToString();
+                                            entityfieldvalue = tableDetailData.ContainsKey(entityfieldname) && tableDetailData[entityfieldname] != null ? tableDetailData[entityfieldname].ToString() : string.Empty;
+                                            formula = formula.Replace(fieldFormat, entityfieldvalue);
+                                        }
                                         break;
                                     default:
                                         {
@@ -831,7 +849,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<ExcelRowInfo> newRows = new List<ExcelRowInfo>();
             string formula = null;
             int checkRegion = -1;//标识当前检查区域，-1=未进入if 0=if,1=endif
-            if (KeywordHelper.IsKey_IF(cell.CellValue, out formula))
+            if (KeywordHelper.IsKey_IF(cell.CellValue.ToString(), out formula))
             {
                 isKey_IF = true;
                 checkRegion = 0;
@@ -856,7 +874,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     foreach (var celltemp in sheet.Rows[i].Cells)
                     {
                         //结束if模块
-                        if (KeywordHelper.IsKey_EndIF(celltemp.CellValue))
+                        if (KeywordHelper.IsKey_EndIF(celltemp.CellValue.ToString()))
                         {
                             checkRegion = 1;
                             sheet.Rows[i].RowStatus = RowStatus.Deleted;
@@ -899,7 +917,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string formula = null;
             int checkRegion = -1;//标识当前检查区域，-1=未进入Loop, 0=Loop, 1=EndLoop
 
-            if (KeywordHelper.IsKey_Loop(cell.CellValue, out formula))
+            if (KeywordHelper.IsKey_Loop(cell.CellValue.ToString(), out formula))
             {
                 isLoop = true;
                 checkRegion = 0;
@@ -910,7 +928,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     foreach (var celltemp in sheet.Rows[i].Cells)
                     {
-                        if (KeywordHelper.IsKey_EndLoop(celltemp.CellValue))
+                        if (KeywordHelper.IsKey_EndLoop(celltemp.CellValue.ToString()))
                         {
                             checkRegion = 1;
                             row.RowStatus = RowStatus.Deleted;
@@ -928,8 +946,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("Loop函数必须由ENDLoop结束，请检查模板定义");
                 }
-
-                var fieldFormat = ParsingVariable(formula, fields, detailData, userinfo);
+                OXSDataItemType dataType = OXSDataItemType.String;
+                var fieldFormat = ParsingVariable(formula, fields, detailData, userinfo,out dataType);
                 var fieldnames = KeywordHelper.GetFieldNames(fieldFormat);
                 if (fieldnames.Length != 1)
                 {
