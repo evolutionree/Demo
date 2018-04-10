@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
 using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
@@ -68,10 +69,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                     //如果找到匹配的sheet，则修改,反之，新增sheet
                     if (sheet != null)
                     {
-                        var workSheet = ((WorksheetPart)rootbookpart.GetPartById(sheet.Id)).Worksheet;
+                        var sheetbookpart = (WorksheetPart)rootbookpart.GetPartById(sheet.Id);
+                       
                         var workbookStylesPart = rootbookpart.GetPartsOfType<WorkbookStylesPart>();
 
-                        UpdateSheet(sheetData, workSheet, workbookStylesPart.FirstOrDefault());
+                        UpdateSheet(sheetData, sheetbookpart, workbookStylesPart.FirstOrDefault());
                     }
                     else
                     {
@@ -95,9 +97,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             return new Sheet();
         }
-        private static void UpdateSheet(ExcelSheetInfo data, Worksheet worksheet, WorkbookStylesPart workbookStylesPart)
+        private static void UpdateSheet(ExcelSheetInfo data, WorksheetPart sheetbookpart, WorkbookStylesPart workbookStylesPart )
         {
-
+            var worksheet = sheetbookpart.Worksheet;
             var sheetData = worksheet.GetFirstChild<SheetData>();
             var rows = sheetData.Elements<Row>();
             List<Row> tempRows = new List<Row>();
@@ -140,7 +142,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                 }
 
                 temRow.RowIndex = rowIndex;
-                RefreshRow(temRow, rowdata.Cells, workbookStylesPart);
+                RefreshRow(temRow, rowdata.Cells, workbookStylesPart, sheetbookpart);
             }
             sheetData.RemoveAllChildren<Row>();
             sheetData.Append(tempRows);
@@ -152,7 +154,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
         }
 
-        public static void RefreshRow(Row row, List<ExcelCellInfo> celldatas, WorkbookStylesPart workbookStylesPart)
+        public static void RefreshRow(Row row, List<ExcelCellInfo> celldatas, WorkbookStylesPart workbookStylesPart, WorksheetPart workSheet)
         {
             var stylesheet = workbookStylesPart.Stylesheet;
             var styleNumberingFormats = stylesheet.NumberingFormats;
@@ -168,26 +170,56 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                     var celldata = celldatas.Find(m => m.ColumnName == columnName);
                     if (celldata != null && celldata.IsUpdated)
                     {
-                        cell.CellValue = new CellValue(celldata.CellValue);
-                        var styleIndex = (int)cell.StyleIndex.Value;
-                        var cellFormat = stylesheet.CellFormats.ChildElements[styleIndex] as CellFormat;
-
-                        CellValues cellValues = CellValues.String;
-                        if (styleNumberingFormats != null && styleNumberingFormats.ChildElements != null)
+                        if (celldata.DataType == Models.Excels.OXSDataItemType.String)
                         {
-                            var numberingFormatList = styleNumberingFormats.ChildElements.Cast<NumberingFormat>();
-                            if (numberingFormatList != null && numberingFormatList.Count() > 0
-                                && numberingFormatList.Where(m => m.NumberFormatId.HasValue && cellFormat.NumberFormatId.HasValue && m.NumberFormatId.Value == cellFormat.NumberFormatId.Value).Count() > 0)
+
+                            cell.CellValue = new CellValue(celldata.CellValue.ToString());
+                            var styleIndex = (int)cell.StyleIndex.Value;
+                            var cellFormat = stylesheet.CellFormats.ChildElements[styleIndex] as CellFormat;
+
+                            CellValues cellValues = CellValues.String;
+                            if (styleNumberingFormats != null && styleNumberingFormats.ChildElements != null)
                             {
-                                double num = 0;
-                                if (double.TryParse(celldata.CellValue, out num))
+                                var numberingFormatList = styleNumberingFormats.ChildElements.Cast<NumberingFormat>();
+                                if (numberingFormatList != null && numberingFormatList.Count() > 0
+                                    && numberingFormatList.Where(m => m.NumberFormatId.HasValue && cellFormat.NumberFormatId.HasValue && m.NumberFormatId.Value == cellFormat.NumberFormatId.Value).Count() > 0)
                                 {
-                                    cellValues = CellValues.Number;
+                                    double num = 0;
+                                    if (double.TryParse(celldata.CellValue.ToString(), out num))
+                                    {
+                                        cellValues = CellValues.Number;
+                                    }
                                 }
                             }
-                        }
 
-                        cell.DataType = new EnumValue<CellValues>(cellValues);
+                            cell.DataType = new EnumValue<CellValues>(cellValues);
+                        }
+                        else if (celldata.DataType == Models.Excels.OXSDataItemType.Hyperlink)
+                        {
+                            HyperlinkData hyperlinkData = celldata.CellValue as HyperlinkData;
+                            if (hyperlinkData == null || string.IsNullOrEmpty(hyperlinkData.Text))
+                            {
+                                return;
+                            }
+                            CellFormula cellFormula1 = new CellFormula()
+                            {
+                                Space = SpaceProcessingModeValues.Preserve
+                            };
+                            cellFormula1.Text = string.Format(@"HYPERLINK(""{0}"", ""{1}"")", hyperlinkData.Hyperlink, hyperlinkData.Text);
+                            cell.DataType = CellValues.InlineString;
+                            cell.CellValue = new CellValue(hyperlinkData.Text);
+                            cell.CellFormula = cellFormula1;
+                            
+                        }
+                        else //图片资源
+                        {
+                            ImagePartType dataType = (ImagePartType)celldata.DataType;
+                            var columnIndex= OpenXMLExcelHelper.GetColumnIndex(columnName);
+                            int offsetx = 1;
+                            int offsety = 0;
+                            OpenXMLExcelHelper.InsertImage(workSheet, (celldata.CellValue as byte[]), dataType, row.RowIndex - 1, columnIndex, null, null, offsetx, offsety);
+                            
+                        }
                     }
 
                 }

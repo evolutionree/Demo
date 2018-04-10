@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using System.Collections.Generic;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 {
@@ -58,9 +59,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// </summary>
         public string ColumnName { set; get; }
         /// <summary>
-        /// 单元格值
+        /// 单元格值，如果是图片，则为byte[]
         /// </summary>
-        public string CellValue { set; get; }
+        public object CellValue { set; get; }
         /// <summary>
         /// 是否被更新
         /// </summary>
@@ -70,7 +71,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             return this.MemberwiseClone() as ExcelCellInfo;
         }
-
+        public OXSDataItemType DataType { set; get; } = OXSDataItemType.String;
     }
 
     public enum RowStatus
