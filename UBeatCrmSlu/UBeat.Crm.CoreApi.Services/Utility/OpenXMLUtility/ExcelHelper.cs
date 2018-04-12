@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
             try
             {
                 var stream = new MemoryStream();
-                stream.Write(excel.ExcelFileBytes,0,excel.ExcelFileBytes.Length);
+                stream.Write(excel.ExcelFileBytes, 0, excel.ExcelFileBytes.Length);
                 //创建文档对象
                 //var document = SpreadsheetDocument.Open(file, true);
                 // 设置当前流的位置为流的开始
@@ -70,7 +70,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                     if (sheet != null)
                     {
                         var sheetbookpart = (WorksheetPart)rootbookpart.GetPartById(sheet.Id);
-                       
+
                         var workbookStylesPart = rootbookpart.GetPartsOfType<WorkbookStylesPart>();
 
                         UpdateSheet(sheetData, sheetbookpart, workbookStylesPart.FirstOrDefault());
@@ -97,7 +97,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             return new Sheet();
         }
-        private static void UpdateSheet(ExcelSheetInfo data, WorksheetPart sheetbookpart, WorkbookStylesPart workbookStylesPart )
+        private static void UpdateSheet(ExcelSheetInfo data, WorksheetPart sheetbookpart, WorkbookStylesPart workbookStylesPart)
         {
             var worksheet = sheetbookpart.Worksheet;
             var sheetData = worksheet.GetFirstChild<SheetData>();
@@ -154,12 +154,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
         }
 
-        public static void RefreshRow(Row row, List<ExcelCellInfo> celldatas, WorkbookStylesPart workbookStylesPart, WorksheetPart workSheet)
+        public static void RefreshRow(Row row, List<ExcelCellInfo> celldatas, WorkbookStylesPart workbookStylesPart, WorksheetPart sheetbookpart)
         {
+            var worksheet = sheetbookpart.Worksheet;
             var stylesheet = workbookStylesPart.Stylesheet;
             var styleNumberingFormats = stylesheet.NumberingFormats;
 
-
+           
             var cells = row.Descendants<Cell>();
             foreach (var cell in cells)
             {
@@ -170,13 +171,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                     var celldata = celldatas.Find(m => m.ColumnName == columnName);
                     if (celldata != null && celldata.IsUpdated)
                     {
-                        if (celldata.DataType == Models.Excels.OXSDataItemType.String)
+                        if (!celldata.IsImageCell)
                         {
 
                             cell.CellValue = new CellValue(celldata.CellValue.ToString());
                             var styleIndex = (int)cell.StyleIndex.Value;
                             var cellFormat = stylesheet.CellFormats.ChildElements[styleIndex] as CellFormat;
-
+                            
                             CellValues cellValues = CellValues.String;
                             if (styleNumberingFormats != null && styleNumberingFormats.ChildElements != null)
                             {
@@ -194,32 +195,67 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
 
                             cell.DataType = new EnumValue<CellValues>(cellValues);
                         }
-                        else if (celldata.DataType == Models.Excels.OXSDataItemType.Hyperlink)
-                        {
-                            HyperlinkData hyperlinkData = celldata.CellValue as HyperlinkData;
-                            if (hyperlinkData == null || string.IsNullOrEmpty(hyperlinkData.Text))
-                            {
-                                return;
-                            }
-                            CellFormula cellFormula1 = new CellFormula()
-                            {
-                                Space = SpaceProcessingModeValues.Preserve
-                            };
-                            cellFormula1.Text = string.Format(@"HYPERLINK(""{0}"", ""{1}"")", hyperlinkData.Hyperlink, hyperlinkData.Text);
-                            cell.DataType = CellValues.InlineString;
-                            cell.CellValue = new CellValue(hyperlinkData.Text);
-                            cell.CellFormula = cellFormula1;
-                            
-                        }
                         else //图片资源
                         {
-                            ImagePartType dataType = (ImagePartType)celldata.DataType;
-                            var columnIndex= OpenXMLExcelHelper.GetColumnIndex(columnName);
+                            uint rowindex1 = row.RowIndex;
+                            uint colindex1 = OpenXMLExcelHelper.GetColumnIndex(columnName);
+                            uint rowindex2 = rowindex1;
+                            uint colindex2 = colindex1;
+
+                            var mergeCells = worksheet.Elements<MergeCells>().FirstOrDefault();
+                            if (mergeCells != null)
+                            {
+                                var mergeCellList = mergeCells.Elements<MergeCell>();
+                                foreach (var merge in mergeCellList)
+                                {
+                                    if (merge.Reference.Value.Contains(string.Format("{0}:", cell.CellReference.Value)))
+                                    {
+                                        var cellNames = merge.Reference.Value.Split(':');
+                                         rowindex1 = OpenXMLExcelHelper.GetRowIndex(cellNames[0]);
+                                         colindex1 = OpenXMLExcelHelper.GetColumnIndex(OpenXMLExcelHelper.GetColumnName(cellNames[0]));
+                                         rowindex2 = OpenXMLExcelHelper.GetRowIndex(cellNames[1]);
+                                         colindex2 = OpenXMLExcelHelper.GetColumnIndex(OpenXMLExcelHelper.GetColumnName(cellNames[1]));
+                                        break;
+                                    }
+                                }
+                            }
+                          
+
+
+                            ImagePartType dataType = ImagePartType.Jpeg;
+                            if (celldata.ImageInfo == null || celldata.ImageInfo.Images == null)
+                                return;
+                            cell.CellValue = new CellValue("");
+
                             int offsetx = 1;
                             int offsety = 0;
-                            OpenXMLExcelHelper.InsertImage(workSheet, (celldata.CellValue as byte[]), dataType, row.RowIndex - 1, columnIndex, null, null, offsetx, offsety);
-                            
+                            int offsetavg = 0;
+                            int? imagewidth = celldata.ImageInfo.Width <= 0 ? null : (int?)celldata.ImageInfo.Width;
+                            int? imageheight = celldata.ImageInfo.Height <= 0 ? null : (int?)celldata.ImageInfo.Height;
+                            imagewidth = 100;
+                            imageheight = 100;
+                            //offsetavg = (celldata.ImageInfo.Width - 2 * (celldata.ImageInfo.Images.Count + 1)) / celldata.ImageInfo.Images.Count;
+                            offsetavg = imagewidth.Value;
+
+                            var colums = worksheet.GetFirstChild<Columns>();
+                            var sheetData = worksheet.GetFirstChild<SheetData>();
+                            var rows = sheetData.Elements<Row>();
+                            OffsetXY offsetXY=new OffsetXY();
+                            //offsetXY.OffsetType = OffsetType.XY;
+                            //offsetXY.XOffset = (long)Math.Ceiling( colums.Take((int)colindex1).Sum(m => ((Column)m).Width));
+                            //var ss = rows.Take((int)rowindex1);
+                            //var sss = ss.Sum(m => m.Height);
+                            //offsetXY.YOffset = (long)Math.Ceiling(rows.Take((int)rowindex1).Sum(m => m.Height));
+                            foreach (var img in celldata.ImageInfo.Images)
+                            {
+                                offsetXY = OpenXMLExcelHelper.InsertImage(sheetbookpart,  rowindex1 - 1, colindex1, rowindex2 - 1, colindex2, offsetx, offsety, imagewidth.Value, imageheight,  img, dataType, offsetXY);
+                                offsetXY.OffsetType = OffsetType.X;
+                            }
+                           
                         }
+
+
+
                     }
 
                 }

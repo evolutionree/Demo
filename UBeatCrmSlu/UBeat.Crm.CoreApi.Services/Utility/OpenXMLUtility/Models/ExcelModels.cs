@@ -59,9 +59,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         /// </summary>
         public string ColumnName { set; get; }
         /// <summary>
-        /// 单元格值，如果是图片，则为byte[]
+        /// 单元格值
         /// </summary>
-        public object CellValue { set; get; }
+        public string CellValue { set; get; }
         /// <summary>
         /// 是否被更新
         /// </summary>
@@ -71,7 +71,17 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
         {
             return this.MemberwiseClone() as ExcelCellInfo;
         }
-        public OXSDataItemType DataType { set; get; } = OXSDataItemType.String;
+        public bool IsImageCell { set; get; }
+        public ImageData ImageInfo { set; get; }
+    }
+
+    public class ImageData
+    {
+        public List<byte[]> Images { set; get; }
+
+        public int Width { set; get; }
+
+        public int Height { set; get; }
     }
 
     public enum RowStatus
