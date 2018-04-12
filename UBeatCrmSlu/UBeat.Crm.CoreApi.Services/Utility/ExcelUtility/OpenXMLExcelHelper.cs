@@ -9,6 +9,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using System.Text.RegularExpressions;
 using System.DrawingCore;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 {
@@ -209,12 +210,27 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         #endregion
 
         #region --插入图片--
-        public static void InsertImage(WorksheetPart wsp, byte[] bytes, ImagePartType imagePartType, uint rowId, uint cellId, long? width, long? height, long offsetx = 0, long offsety = 0)
+        public static OffsetXY InsertImage(WorksheetPart wsp, byte[] bytes, ImagePartType imagePartType, uint rowId, uint cellId, long? width, long? height, long offsetx = 0, long offsety = 0, OffsetXY offsetXY = null)
         {
-            InsertImage(wsp, rowId, cellId, rowId, cellId, offsetx, offsety, width, height, bytes, imagePartType);
+            return InsertImage(wsp, rowId, cellId, rowId, cellId, offsetx, offsety, width, height, bytes, imagePartType, offsetXY);
         }
 
-        public static void InsertImage(WorksheetPart wsp, uint rowId1, uint columnId1, uint rowId2, uint columnId2, long offsetx, long offsety, long? width, long? height, byte[] bytes, ImagePartType imagePartType)
+        /// <summary>
+        /// 插入图片
+        /// </summary>
+        /// <param name="wsp"></param>
+        /// <param name="rowId1">起始行编号</param>
+        /// <param name="columnId1">起始列编号</param>
+
+        /// <param name="offsetx">X偏差像素</param>
+        /// <param name="offsety">Y偏差像素</param>
+        /// <param name="width">图片宽度</param>
+        /// <param name="height">图片高度</param>
+        /// <param name="bytes">图片数据</param>
+        /// <param name="imagePartType">格式</param>
+        /// <param name="offsetXY">图片插入位置相对单元格左上角的偏差值,用于同个单元格多张图片时计算位移</param>
+        /// <returns></returns>
+        public static OffsetXY InsertImage(WorksheetPart wsp, uint rowId1, uint columnId1, uint rowId2, uint columnId2, long offsetx, long offsety, long? width, long? height, byte[] bytes, ImagePartType imagePartType, OffsetXY offsetXY=null)
         {
             try
             {
@@ -248,46 +264,82 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                         drawing.Id = dp.GetIdOfPart(imgp);
                         wsp.Worksheet.Append(drawing);
                     }
-
-                    Bitmap bm = new Bitmap(imageStream);
+                    Bitmap bmtemp = new Bitmap(imageStream);
+                    Bitmap bm = bmtemp;
+                    bm.SetResolution(96, 96);
+                    if (width != null && height != null)
+                    {
+                        bm = new Bitmap(bmtemp, (int)width.Value, (int)height.Value);
+                    }
                     float verticalResolution = bm.VerticalResolution;
                     float horizontalResolution = bm.HorizontalResolution;
+                    
                     var extents = new DocumentFormat.OpenXml.Drawing.Extents();
                     //计算公式：EMU = pixel * 914400 / Resolution
-                    if (width == null)
-                        extents.Cx = ((long)bm.Width + offsetx) * (long)((float)914400 / bm.HorizontalResolution);
-                    else
-                        extents.Cx = (width + offsetx) * (long)((float)914400 / bm.HorizontalResolution);
-
-                    if (height == null)
-                        extents.Cy = ((long)bm.Height + offsety) * (long)((float)914400 / bm.VerticalResolution);
-                    else
-                        extents.Cy = (height + offsety) * (long)((float)914400 / bm.VerticalResolution);
-
+                    extents.Cx = ((long)bm.Width ) * (long)((float)914400 / horizontalResolution);
+                    extents.Cy = ((long)bm.Height ) * (long)((float)914400 / verticalResolution);
+                    bmtemp.Dispose();
                     bm.Dispose();
 
+
+                    if (offsetXY == null)
+                        offsetXY = new OffsetXY();
+                    var XOffsetEMU = offsetx * (long)((float)914400 / horizontalResolution);
+                    var YOffsetEMU = offsety * (long)((float)914400 / verticalResolution);
+                 
+
+                    var fromXOffset = XOffsetEMU;
+                    var fromYOffset = YOffsetEMU;
+                   
+
+                    switch (offsetXY.OffsetType)
+                    {
+                        case OffsetType.X:
+                            fromXOffset = offsetXY.XOffset+ XOffsetEMU;
+                            break;
+                        case OffsetType.Y:
+                            fromYOffset = offsetXY.YOffset+ YOffsetEMU;
+                            break;
+                        case OffsetType.XY:
+                            fromXOffset = offsetXY.XOffset + XOffsetEMU;
+                            fromYOffset = offsetXY.YOffset + YOffsetEMU;
+                            break;
+                    }
+
+
+                    AbsoluteAnchor anchor = wsd.AppendChild(new AbsoluteAnchor());
+                   
                     var picture = new DocumentFormat.OpenXml.Drawing.Spreadsheet.Picture()
                     {
                         NonVisualPictureProperties = GetNonVisualPictureProperties(imageNumber),
                         BlipFill = GetBlipFill(dp, imgp),
                         ShapeProperties = GetShapeProperties(extents)
                     };
+                    anchor.Extent = new Extent();
+                    anchor.Extent.Cx = extents.Cx;
+                    anchor.Extent.Cy = extents.Cy;
+                    anchor.Position = new Position();
+                    anchor.Position.X = fromXOffset;
+                    anchor.Position.Y = fromYOffset;
+                    //anchor.FromMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.FromMarker(
+                    //    new ColumnId(columnId1.ToString()), 
+                    //    new ColumnOffset(fromXOffset.ToString()), 
+                    //    new RowId(rowId1.ToString()), 
+                    //    new RowOffset(fromYOffset.ToString()));
+                    //anchor.ToMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.ToMarker(
+                    //   new ColumnId(columnId2.ToString()),
+                    //   new ColumnOffset((fromXOffset+ extents.Cx).ToString()),
+                    //   new RowId(rowId2.ToString()),
+                    //   new RowOffset((fromYOffset + extents.Cy).ToString()));
 
-                    TwoCellAnchor anchor = wsd.AppendChild(new TwoCellAnchor());
-                    anchor.Append(new DocumentFormat.OpenXml.Drawing.Spreadsheet.FromMarker(
-                        new ColumnId(columnId1.ToString()),
-                        new ColumnOffset((offsetx * (long)((float)914400 / horizontalResolution)).ToString()),
-                        new RowId(rowId1.ToString()),
-                        new RowOffset((offsety * (long)((float)914400 / verticalResolution)).ToString())));
-                    anchor.Append(new DocumentFormat.OpenXml.Drawing.Spreadsheet.ToMarker(
-                        new ColumnId(columnId2.ToString()),
-                        new ColumnOffset(extents.Cx.ToString()),
-                        new RowId(rowId2.ToString()),
-                        new RowOffset(extents.Cy.ToString())));
 
                     anchor.Append(picture);
                     anchor.Append(new ClientData());
+                    
                     wsd.Save(dp);
+                    offsetXY.XOffset = fromXOffset + extents.Cx;
+                    offsetXY.YOffset = fromYOffset + extents.Cy;
+                    return offsetXY;
                 }
             }
             catch (Exception ex)
@@ -318,11 +370,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         {
             var stretch = new DocumentFormat.OpenXml.Drawing.Stretch();
             stretch.FillRectangle = new DocumentFormat.OpenXml.Drawing.FillRectangle();
-
+            
             BlipFill blipFill = new BlipFill();
+            
             var blip = new DocumentFormat.OpenXml.Drawing.Blip();
             blip.Embed = dp.GetIdOfPart(imgp);
             blip.CompressionState = DocumentFormat.OpenXml.Drawing.BlipCompressionValues.Print;
+            
             blipFill.Blip = blip;
             blipFill.SourceRectangle = new DocumentFormat.OpenXml.Drawing.SourceRectangle();
             blipFill.Append(stretch);

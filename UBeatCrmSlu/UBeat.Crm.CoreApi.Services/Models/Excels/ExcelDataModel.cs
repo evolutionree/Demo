@@ -394,6 +394,37 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
 
     }
 
+    public enum OffsetType
+    {
+        /// <summary>
+        /// 不偏移
+        /// </summary>
+        None=-1,
+        /// <summary>
+        /// 只偏移X方向
+        /// </summary>
+        X=0,
+        /// <summary>
+        /// 只偏移Y方向
+        /// </summary>
+        Y=1,
+        /// <summary>
+        /// xy方向同时偏移
+        /// </summary>
+        XY=2
+    }
 
+    public class OffsetXY
+    {
+        /// <summary>
+        /// 偏移方向
+        /// </summary>
+        public OffsetType OffsetType { set; get; }
+        public long XOffset { set; get; }
+
+        public long YOffset { set; get; }
+
+        
+    }
 
 }
