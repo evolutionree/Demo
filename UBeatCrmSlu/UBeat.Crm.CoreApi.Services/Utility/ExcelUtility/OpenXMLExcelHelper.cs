@@ -234,6 +234,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         {
             try
             {
+                
                 using (Stream imageStream = new MemoryStream(bytes))
                 {
                     DrawingsPart dp;
@@ -255,7 +256,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                         dp.CreateRelationshipToPart(imgp);
                         wsd = dp.WorksheetDrawing;
                     }
-
+                    
                     imgp.FeedData(new MemoryStream(bytes));
                     int imageNumber = dp.ImageParts.Count();
                     if (imageNumber == 1)
@@ -307,30 +308,32 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                     }
 
 
-                    AbsoluteAnchor anchor = wsd.AppendChild(new AbsoluteAnchor());
-                   
-                    var picture = new DocumentFormat.OpenXml.Drawing.Spreadsheet.Picture()
+                    TwoCellAnchor anchor = wsd.AppendChild(new TwoCellAnchor() { EditAs = EditAsValues.Absolute });
+                    
+
+                     var picture = new DocumentFormat.OpenXml.Drawing.Spreadsheet.Picture()
                     {
                         NonVisualPictureProperties = GetNonVisualPictureProperties(imageNumber),
                         BlipFill = GetBlipFill(dp, imgp),
                         ShapeProperties = GetShapeProperties(extents)
                     };
-                    anchor.Extent = new Extent();
-                    anchor.Extent.Cx = extents.Cx;
-                    anchor.Extent.Cy = extents.Cy;
-                    anchor.Position = new Position();
-                    anchor.Position.X = fromXOffset;
-                    anchor.Position.Y = fromYOffset;
-                    //anchor.FromMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.FromMarker(
-                    //    new ColumnId(columnId1.ToString()), 
-                    //    new ColumnOffset(fromXOffset.ToString()), 
-                    //    new RowId(rowId1.ToString()), 
-                    //    new RowOffset(fromYOffset.ToString()));
-                    //anchor.ToMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.ToMarker(
-                    //   new ColumnId(columnId2.ToString()),
-                    //   new ColumnOffset((fromXOffset+ extents.Cx).ToString()),
-                    //   new RowId(rowId2.ToString()),
-                    //   new RowOffset((fromYOffset + extents.Cy).ToString()));
+
+                    //anchor.Extent = new Extent();
+                    //anchor.Extent.Cx = extents.Cx;
+                    //anchor.Extent.Cy = extents.Cy;
+                    //anchor.Position = new Position();
+                    //anchor.Position.X = fromXOffset;
+                    //anchor.Position.Y = fromYOffset;
+                    anchor.FromMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.FromMarker(
+                        new ColumnId(columnId1.ToString()),
+                        new ColumnOffset(fromXOffset.ToString()),
+                        new RowId(rowId1.ToString()),
+                        new RowOffset(fromYOffset.ToString()));
+                    anchor.ToMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.ToMarker(
+                       new ColumnId(columnId2.ToString()),
+                       new ColumnOffset((fromXOffset + extents.Cx).ToString()),
+                       new RowId(rowId2.ToString()),
+                       new RowOffset((fromYOffset + extents.Cy).ToString()));
 
 
                     anchor.Append(picture);
