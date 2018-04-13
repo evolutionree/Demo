@@ -244,12 +244,17 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                             //offsetXY.OffsetType = OffsetType.XY;
                             //offsetXY.XOffset = (long)Math.Ceiling( colums.Take((int)colindex1).Sum(m => ((Column)m).Width));
                             //var ss = rows.Take((int)rowindex1);
-                            //var sss = ss.Sum(m => m.Height);
+                            //var sss = ss.Sum(m => m.Height); 
                             //offsetXY.YOffset = (long)Math.Ceiling(rows.Take((int)rowindex1).Sum(m => m.Height));
+                            uint colIndex = colindex1;
                             foreach (var img in celldata.ImageInfo.Images)
                             {
-                                offsetXY = OpenXMLExcelHelper.InsertImage(sheetbookpart,  rowindex1 - 1, colindex1, rowindex2 - 1, colindex2, offsetx, offsety, imagewidth.Value, imageheight,  img, dataType, offsetXY);
-                                offsetXY.OffsetType = OffsetType.X;
+                                offsetXY = OpenXMLExcelHelper.InsertImage(sheetbookpart,  rowindex1 - 1, colIndex, rowindex2 - 1, colIndex, offsetx, offsety, imagewidth.Value, imageheight,  img, dataType, offsetXY);
+                                //offsetXY.OffsetType = OffsetType.X;
+                                offsetXY = null;
+                                colIndex++;
+                                if (colIndex > colindex2)
+                                    colIndex = colindex2;
                             }
                            
                         }
