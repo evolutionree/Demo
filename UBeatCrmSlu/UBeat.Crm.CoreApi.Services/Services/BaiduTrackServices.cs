@@ -17,6 +17,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
     {
         static string locationSearchURL = "http://yingyan.baidu.com/api/v3/entity/search";
         static string getTrackDataURL = "http://yingyan.baidu.com/api/v3/track/gettrack";
+        static string stayPointURL = "http://yingyan.baidu.com/api/v3/analysis/staypoint";
 
         private readonly IBaiduTrackRepository _baiduTrackRepository;
         private readonly IAccountRepository _accountRepository;
@@ -116,6 +117,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return new OutputResult<object>(trackData);
+        }
+
+        public OutputResult<object> StayPoint(StayPointQuery stayPointQuery, int userNumber)
+        {
+            //1、鹰眼定位数据
+            Dictionary<string, string> queryDic = new Dictionary<string, string>() { };
+            queryDic.Add("entity_name", stayPointQuery.UserId.ToString());
+            queryDic.Add("stay_time", stayPointQuery.StayTime == 0 ? "600" :  stayPointQuery.StayTime.ToString());
+            queryDic.Add("stay_radius", stayPointQuery.StayRadius == 0 ? "20" : stayPointQuery.StayRadius.ToString());
+            if (stayPointQuery.searchDate != null)
+            {
+                DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1)); // 当地时区
+                long startTimeStamp = (long)(stayPointQuery.searchDate - startTime).TotalSeconds; // 相差秒数
+                long endTimeStamp = (long)(stayPointQuery.searchDate.AddHours(24).AddSeconds(-1) - startTime).TotalSeconds; // 相差秒数
+                queryDic.Add("start_time", startTimeStamp.ToString());
+                queryDic.Add("end_time", endTimeStamp.ToString());
+            }
+            var stayPointData = BaiduTrackHelper.StayPoint(stayPointURL, queryDic);
+            return new OutputResult<object>(stayPointData);
         }
 
         public OutputResult<object> DownLoadTrackDataZip()

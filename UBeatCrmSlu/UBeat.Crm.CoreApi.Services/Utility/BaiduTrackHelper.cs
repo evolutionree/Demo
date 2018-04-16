@@ -159,6 +159,33 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return new TrackData();
         }
 
+        public static StayPointData StayPoint(string url, IDictionary<string, string> querystring_arrays)
+        {
+            var _logger = LogManager.GetLogger(typeof(BaiduTrackHelper).FullName);
+            querystring_arrays.Add("ak", "L7QFk4KGnQLSxvR64VB8A9jqRLF3rnRl");
+            querystring_arrays.Add("service_id", "162550");
+            StringBuilder sb = new StringBuilder();
+            foreach (var item in querystring_arrays)
+            {
+                sb.Append(item.Key);
+                sb.Append("=");
+                sb.Append(item.Value);
+                sb.Append("&");
+            }
+            sb.Remove(sb.Length - 1, 1);
+            url = string.Format("{0}?{1}", url, sb.ToString());
+
+            _logger.Error("StayPoint.url:" + url);
+            var response = HttpLib.Get(url);
+            var searchResult = Newtonsoft.Json.JsonConvert.DeserializeObject<StayPointData>(response);
+            _logger.Error("StayPoint.result:" + response);
+            if (searchResult != null && searchResult.status == 0)
+            {
+                return searchResult;
+            }
+            return new StayPointData();
+        }
+
         public static void TraceFileDownSave(string url, string savePath)
         {
             if (File.Exists(savePath))
