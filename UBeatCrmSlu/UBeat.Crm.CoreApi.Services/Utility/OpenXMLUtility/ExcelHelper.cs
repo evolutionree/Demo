@@ -239,8 +239,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                             var colums = worksheet.GetFirstChild<Columns>();
                             var sheetData = worksheet.GetFirstChild<SheetData>();
                             var rows = sheetData.Elements<Row>();
-                            OffsetXY offsetXY=null;
+                            OffsetXY offsetXY=null;//设置图片的相对偏移量
                             uint colIndex = colindex1;
+                            //如下逻辑：循环图片列表，如果一个字段多张图片，则按照逐张图片插入合并单元格的逐个cell中，若图片多于合并单元格的个数，则后面的图片全部以最后一个单元格为基准，设置偏移量。
                             foreach (var img in celldata.ImageInfo.Images)
                             {
                                 offsetXY = OpenXMLExcelHelper.InsertImage(sheetbookpart,  rowindex1 - 1, colIndex, rowindex2 - 1, colIndex, offsetx, offsety, imagewidth.Value, imageheight,  img, dataType, offsetXY);
