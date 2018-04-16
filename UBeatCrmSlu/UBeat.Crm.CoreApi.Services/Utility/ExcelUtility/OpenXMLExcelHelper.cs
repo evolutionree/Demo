@@ -330,7 +330,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                         new RowId(rowId1.ToString()),
                         new RowOffset(fromYOffset.ToString()));
                     anchor.ToMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.ToMarker(
-                       new ColumnId(columnId2.ToString()),
+                       new ColumnId(columnId1.ToString()),
                        new ColumnOffset((fromXOffset + extents.Cx).ToString()),
                        new RowId(rowId2.ToString()),
                        new RowOffset((fromYOffset + extents.Cy).ToString()));

@@ -232,29 +232,23 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility
                             int offsetavg = 0;
                             int? imagewidth = celldata.ImageInfo.Width <= 0 ? null : (int?)celldata.ImageInfo.Width;
                             int? imageheight = celldata.ImageInfo.Height <= 0 ? null : (int?)celldata.ImageInfo.Height;
-                            imagewidth = 100;
-                            imageheight = 100;
+                           
                             //offsetavg = (celldata.ImageInfo.Width - 2 * (celldata.ImageInfo.Images.Count + 1)) / celldata.ImageInfo.Images.Count;
                             offsetavg = imagewidth.Value;
 
                             var colums = worksheet.GetFirstChild<Columns>();
                             var sheetData = worksheet.GetFirstChild<SheetData>();
                             var rows = sheetData.Elements<Row>();
-                            OffsetXY offsetXY=new OffsetXY();
-                            //offsetXY.OffsetType = OffsetType.XY;
-                            //offsetXY.XOffset = (long)Math.Ceiling( colums.Take((int)colindex1).Sum(m => ((Column)m).Width));
-                            //var ss = rows.Take((int)rowindex1);
-                            //var sss = ss.Sum(m => m.Height); 
-                            //offsetXY.YOffset = (long)Math.Ceiling(rows.Take((int)rowindex1).Sum(m => m.Height));
+                            OffsetXY offsetXY=null;
                             uint colIndex = colindex1;
                             foreach (var img in celldata.ImageInfo.Images)
                             {
                                 offsetXY = OpenXMLExcelHelper.InsertImage(sheetbookpart,  rowindex1 - 1, colIndex, rowindex2 - 1, colIndex, offsetx, offsety, imagewidth.Value, imageheight,  img, dataType, offsetXY);
-                                //offsetXY.OffsetType = OffsetType.X;
-                                offsetXY = null;
+                                offsetXY.OffsetType = OffsetType.X;
                                 colIndex++;
                                 if (colIndex > colindex2)
                                     colIndex = colindex2;
+                                else offsetXY = null;
                             }
                            
                         }
