@@ -35,7 +35,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Track
  ST_distance(
  	ST_GeographyFromText('SRID=4326;POINT(' || (custaddr->>'lon') || ' ' || (custaddr->>'lat') || ')'), 
  	ST_GeographyFromText('SRID=4326;POINT({0})')) 
- as distance, recid as CustId, recname as CustName
+ as distance, recid as CustId, recname as CustName, custaddr as CustAddress
 from crm_sys_customer c
 where ST_dwithin(ST_GeographyFromText('SRID=4326;POINT(' || (custaddr->>'lon') || ' ' || (custaddr->>'lat') || ')'), 
 				 ST_GeographyFromText('SRID=4326;POINT({1})'), @radius) and recstatus = 1

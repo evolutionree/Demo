@@ -109,5 +109,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public Guid CustId { set; get; }
         public string CustName { set; get; }
         public double Distance { set; get; }
+        public Dictionary<string, object> CustAddress { set; get; }
     }
 }
