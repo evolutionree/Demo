@@ -33,7 +33,7 @@
       <publishTime>03/02/2018 14:18:46</publishTime>
     </File>
     <File Include="appsettings.json">
-      <publishTime>03/30/2018 14:07:05</publishTime>
+      <publishTime>04/16/2018 14:10:46</publishTime>
     </File>
     <File Include="Autofac.dll">
       <publishTime>10/16/2017 09:53:24</publishTime>
@@ -1011,61 +1011,61 @@
       <publishTime>02/09/2018 15:02:12</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.Core.dll">
-      <publishTime>03/27/2018 15:14:41</publishTime>
+      <publishTime>04/10/2018 18:36:52</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.Core.pdb">
-      <publishTime>03/27/2018 15:14:41</publishTime>
+      <publishTime>04/10/2018 18:36:52</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.deps.json">
-      <publishTime>04/02/2018 15:36:19</publishTime>
+      <publishTime>04/16/2018 14:35:33</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.dll">
-      <publishTime>04/02/2018 15:36:18</publishTime>
+      <publishTime>04/16/2018 14:35:32</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.DomainModel.dll">
-      <publishTime>03/30/2018 15:20:55</publishTime>
+      <publishTime>04/16/2018 13:46:45</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.DomainModel.pdb">
-      <publishTime>03/30/2018 15:20:55</publishTime>
+      <publishTime>04/16/2018 13:46:45</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.IRepository.dll">
-      <publishTime>03/30/2018 15:20:57</publishTime>
+      <publishTime>04/16/2018 13:46:46</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.IRepository.pdb">
-      <publishTime>03/30/2018 15:20:57</publishTime>
+      <publishTime>04/16/2018 13:46:46</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.pdb">
-      <publishTime>04/02/2018 15:36:18</publishTime>
+      <publishTime>04/16/2018 14:35:32</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.Repository.dll">
-      <publishTime>03/30/2018 16:45:40</publishTime>
+      <publishTime>04/16/2018 13:46:50</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.Repository.pdb">
-      <publishTime>03/30/2018 16:45:40</publishTime>
+      <publishTime>04/16/2018 13:46:50</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.runtimeconfig.json">
-      <publishTime>04/02/2018 15:36:19</publishTime>
+      <publishTime>04/16/2018 14:35:33</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.Services.dll">
-      <publishTime>04/02/2018 15:36:12</publishTime>
+      <publishTime>04/16/2018 14:35:25</publishTime>
     </File>
     <File Include="UBeat.Crm.CoreApi.Services.pdb">
-      <publishTime>04/02/2018 15:36:12</publishTime>
+      <publishTime>04/16/2018 14:35:25</publishTime>
     </File>
     <File Include="UBeat.Crm.LicenseCore.dll">
-      <publishTime>03/27/2018 15:14:40</publishTime>
+      <publishTime>04/10/2018 18:36:51</publishTime>
     </File>
     <File Include="UBeat.Crm.LicenseCore.pdb">
-      <publishTime>03/27/2018 15:14:40</publishTime>
+      <publishTime>04/10/2018 18:36:51</publishTime>
     </File>
     <File Include="UBeat.Crm.MailService.dll">
-      <publishTime>03/27/2018 15:14:42</publishTime>
+      <publishTime>04/10/2018 18:36:51</publishTime>
     </File>
     <File Include="UBeat.Crm.MailService.pdb">
-      <publishTime>03/27/2018 15:14:42</publishTime>
+      <publishTime>04/10/2018 18:36:51</publishTime>
     </File>
     <File Include="web.config">
-      <publishTime>04/02/2018 15:36:19</publishTime>
+      <publishTime>04/16/2018 14:35:33</publishTime>
     </File>
     <File Include="ZKWeb.System.Drawing.dll">
       <publishTime>12/08/2017 16:36:04</publishTime>

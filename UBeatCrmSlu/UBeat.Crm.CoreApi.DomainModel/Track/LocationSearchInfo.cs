@@ -48,6 +48,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public int PageSize { get; set; }
     }
 
+    public class StayPointQuery
+    {
+
+        public int UserId { get; set; }
+        public DateTime searchDate { get; set; }
+        public int StayRadius { get; set; }
+        public int StayTime { get; set; }
+    }
+
     public class TrackData
     {
         public int status { get; set; }
@@ -58,6 +67,23 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public LocationPoint end_point { get; set; }
         public List<LocationPoint> points { get; set; }
         public List<CustVisitLocation> custVisitLocation { get; set; }
+    }
+
+    public class StayPointData
+    {
+        public int status { get; set; }
+        public string message { get; set; }
+        public int staypoint_num { get; set; }
+        public List<StayPointInfo> stay_points { get; set; }
+    }
+
+    public class StayPointInfo
+    {
+        public UInt64 start_time { get; set; }
+        public UInt64 end_time { get; set; }
+        public int duration { get; set; }
+        public Dictionary<string, object> stay_point { get; set; }
+
     }
 
     public class CustVisitLocation

@@ -92,8 +92,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             querystring_arrays.Add("coord_type_output", "bd09ll");//该字段在国外无效，国外均返回 wgs84坐标
             querystring_arrays.Add("page_index", searchInfo.PageIndex.ToString());
             querystring_arrays.Add("page_size", searchInfo.PageSize.ToString());
-            querystring_arrays.Add("ak", "5WbRjhj5kLKZLQZdF78vprTVjpNB4C5H");
-            querystring_arrays.Add("service_id", "157572");
+            querystring_arrays.Add("ak", "L7QFk4KGnQLSxvR64VB8A9jqRLF3rnRl");
+            querystring_arrays.Add("service_id", "162550");
             StringBuilder sb = new StringBuilder();
             foreach (var item in querystring_arrays)
             {
@@ -121,7 +121,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         {
             string address = string.Empty;
             string url = "http://api.map.baidu.com/geocoder/v2/?callback=renderReverse&location={0},{1}&output=json&pois=1&ak={2}";
-            url = string.Format(url, latitude, longitude, AK);
+            url = string.Format(url, latitude, longitude, "L7QFk4KGnQLSxvR64VB8A9jqRLF3rnRl");
             var response = HttpLib.Get(url);
             var responseData = response.Substring(response.IndexOf("{"), response.LastIndexOf("}") - response.IndexOf("{") + 1);
             var result = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
@@ -135,8 +135,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         public static TrackData GetTrackData(string url, IDictionary<string, string> querystring_arrays)
         {
             var _logger = LogManager.GetLogger(typeof(BaiduTrackHelper).FullName);
-            querystring_arrays.Add("ak", "5WbRjhj5kLKZLQZdF78vprTVjpNB4C5H");
-            querystring_arrays.Add("service_id", "157572");
+            querystring_arrays.Add("ak", "L7QFk4KGnQLSxvR64VB8A9jqRLF3rnRl");
+            querystring_arrays.Add("service_id", "162550");
             StringBuilder sb = new StringBuilder();
             foreach (var item in querystring_arrays)
             {
@@ -157,6 +157,33 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 return searchResult;
             }
             return new TrackData();
+        }
+
+        public static StayPointData StayPoint(string url, IDictionary<string, string> querystring_arrays)
+        {
+            var _logger = LogManager.GetLogger(typeof(BaiduTrackHelper).FullName);
+            querystring_arrays.Add("ak", "L7QFk4KGnQLSxvR64VB8A9jqRLF3rnRl");
+            querystring_arrays.Add("service_id", "162550");
+            StringBuilder sb = new StringBuilder();
+            foreach (var item in querystring_arrays)
+            {
+                sb.Append(item.Key);
+                sb.Append("=");
+                sb.Append(item.Value);
+                sb.Append("&");
+            }
+            sb.Remove(sb.Length - 1, 1);
+            url = string.Format("{0}?{1}", url, sb.ToString());
+
+            _logger.Error("StayPoint.url:" + url);
+            var response = HttpLib.Get(url);
+            var searchResult = Newtonsoft.Json.JsonConvert.DeserializeObject<StayPointData>(response);
+            _logger.Error("StayPoint.result:" + response);
+            if (searchResult != null && searchResult.status == 0)
+            {
+                return searchResult;
+            }
+            return new StayPointData();
         }
 
         public static void TraceFileDownSave(string url, string savePath)

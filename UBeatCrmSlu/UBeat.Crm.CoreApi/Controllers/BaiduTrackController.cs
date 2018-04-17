@@ -46,6 +46,19 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         /// <summary>
+        /// 停留点分析
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("staypoint")]
+        public OutputResult<object> StayPoint([FromBody] StayPointQuery stayPointQuery)
+        {
+            if (stayPointQuery == null) return ResponseError<object>("参数格式错误");
+
+            return _baiduTrackServices.StayPoint(stayPointQuery, UserId);
+        }
+
+        /// <summary>
         /// 附近的客户
         /// </summary>
         /// <returns></returns>
