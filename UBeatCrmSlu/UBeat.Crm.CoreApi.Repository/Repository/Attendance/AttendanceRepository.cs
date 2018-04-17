@@ -1,4 +1,6 @@
-﻿using Npgsql;
+﻿using Dapper;
+using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -30,6 +32,78 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Attendance
                 UserNo = userNumber
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+            return result;
+        }
+
+        /// <summary>
+        /// 手工加入打开记录
+        /// </summary>
+        public OperateResult Add(AttendanceAddMapper signEntity, int userNumber)
+        {
+
+            string sql = sql = @"INSERT INTO crm_sys_attendance(attendid,cardtype,signtype, signmark, udeptcode, reccreated, reccreator, recupdator,recordsource)  
+                VALUES (@attendid,@cardtype,@signtype,@signmark,(SELECT ucode FROM crm_func_userinfo_udeptcode(@reccreator)),@reccreated,@reccreator,@recupdator,@recordsource)";
+
+            Guid attendid = new Guid();
+            var args = new
+            {
+                attendid= attendid,
+                cardtype =signEntity.CardType,
+                signtype = signEntity.SignType,
+                signmark = signEntity.SignMark,
+                reccreated = signEntity.SignTime,
+                reccreator = signEntity.SelectUser,
+                recupdator = userNumber,
+                recordsource = signEntity.RecordSource
+            };
+            var result = DataBaseHelper.ExecuteNonQuery(sql, args, CommandType.Text);
+            if (result == 1)
+            {
+                return new OperateResult()
+                {
+                    Id= attendid.ToString(),
+                    Flag = 1,
+                    Msg = "新增成功"
+                };
+            }
+            else
+            {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "新增失败"
+                };
+            }
+        }
+
+
+        /// <summary>
+        /// 检查是否存在该用户的班组绑定
+        /// </summary>
+        /// <typeparam name="selectUser">查询的用户</typeparam>
+        public int ExistGroupUser(string selectUser) {
+            var existSql = @"select count(1) from crm_sys_attendance_setting where person=@selectuser ";
+            var param = new
+            {
+                selectuser = selectUser
+            };
+            var existCount = DataBaseHelper.QuerySingle<int>(existSql, param, CommandType.Text);
+            return existCount;
+        }
+
+        public Dictionary<string, List<IDictionary<string, object>>> GroupUserQuery(GroupUserMapper groupUser, int userNumber)
+        {
+            var procName =
+                "SELECT crm_func_schedule_user_list(@deptid,@username,@pageindex,@pagesize,@userno)";
+
+            var dataNames = new List<string> { "Page", "PageCount" };
+            var param = new DynamicParameters();
+            param.Add("deptid", groupUser.DeptId);
+            param.Add("username", groupUser.UserName);
+            param.Add("pageindex", groupUser.PageIndex);
+            param.Add("pagesize", groupUser.PageSize);
+            param.Add("userno", userNumber);
+            var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
             return result;
         }
 

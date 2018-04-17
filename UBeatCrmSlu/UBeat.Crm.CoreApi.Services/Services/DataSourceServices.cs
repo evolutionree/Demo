@@ -166,7 +166,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, object> dicExtraData = new Dictionary<string, object>();
             entity.QueryData.ForEach(a =>
             {
-                int i = 0;
                 searchFields.ForEach(t =>
                 {
                     if (a.ContainsKey(t.FieldName))
@@ -189,27 +188,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 });
                 if (a.Keys.Count == 0)
                     return;
-                string key = a.Keys.ElementAt(i);
-                object value = a.Values.ElementAt(i);
-                if (a["islike"] != null)
+                bool isExist = a.Keys.Any(t => t == "islike");
+                if (!isExist) return;
+                if (a["islike"] == null || string.IsNullOrEmpty(a["islike"].ToString())) return;
+                string islikeVal = a["islike"].ToString();
+                foreach (var tmp in a.Keys.Where(t => t != "islike"))
                 {
-                    if (a["islike"].ToString() == "0")
+                    if (islikeVal == "0")
                     {
-                        if (!dicExtraData.Keys.Contains(key) && !dic.Keys.Contains(key))
-                            dicExtraData.Add(key, key + " = '" + value + "'");
+                        if (!dicExtraData.Keys.Contains(tmp) && !dic.Keys.Contains(tmp))
+                            dicExtraData.Add(tmp, tmp + " = '" + a[tmp] + "'");
                     }
                     else
                     {
-                        if (!dicExtraData.Keys.Contains(key) && !dic.Keys.Contains(key))
-                            dicExtraData.Add(key, key + " ilike '%" + value + "%'");
+                        if (!dicExtraData.Keys.Contains(tmp) && !dic.Keys.Contains(tmp))
+                            dicExtraData.Add(tmp, tmp + " ilike '%" + a[tmp] + "%'");
                     }
+
                 }
-                i++;
+
             });
             var validResults = DynamicProtocolHelper.AdvanceQuery(searchFields, dic);
             var validTips = new List<string>();
             var data = new Dictionary<string, string>();
-
 
 
             foreach (DynamicProtocolValidResult validResult in validResults.Values)

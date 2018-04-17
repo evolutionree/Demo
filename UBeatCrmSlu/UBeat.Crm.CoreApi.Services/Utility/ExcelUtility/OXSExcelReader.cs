@@ -744,9 +744,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 							}
 							else//其他的货币、数值
 							{
-								cellStyle = cellStyle.Substring(cellStyle.LastIndexOf('.') - 1).Replace("\\", "");
-								decimal decimalNum = decimal.Parse(cellInnerText);
-								cellValue = decimal.Parse(decimalNum.ToString(cellStyle)).ToString();
+                                cellValue = cellInnerText;
+        //                        cellStyle = cellStyle.Substring(cellStyle.LastIndexOf('.') - 1).Replace("\\", "");
+								//decimal decimalNum = decimal.Parse(cellInnerText);
+								//cellValue = decimal.Parse(decimalNum.ToString(cellStyle)).ToString();
 							}
 						}
                     }

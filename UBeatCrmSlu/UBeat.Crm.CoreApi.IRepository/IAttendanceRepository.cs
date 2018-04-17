@@ -10,6 +10,11 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
         OperateResult Sign(AttendanceSignMapper signEntity, int userNumber);
 
+        Dictionary<string, List<IDictionary<string, object>>> GroupUserQuery(GroupUserMapper groupUser, int userNumber);
+
+        int ExistGroupUser(string selectUser);
+        OperateResult Add(AttendanceAddMapper signEntity, int userNumber);
+
         Dictionary<string, List<Dictionary<string, object>>> SignList(PageParam pageParam, AttendanceSignListMapper searchParm, int userNumber);
     }
 }

@@ -53,7 +53,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public int PageSize { get; set; }
         public int IsAdvanceQuery { get; set; }
         public int? NeedPower { get; set; }
+        /// <summary>
+        /// 用于关联列表查询
+        /// 包含两个字段
+        /// RelFieldName 和RelRecId
+        /// </summary>
+        public Dictionary<string,object>  RelInfo { get; set; }
     }
+
 
     public class DynamicEntityDetailModel
     {

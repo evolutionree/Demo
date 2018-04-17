@@ -145,7 +145,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.FileService
             //var query = Builders<GridFSFileInfo>.Filter.Eq("_id", id);
             //var fileInfo = await GetGridFSBucket().Find(query).FirstOrDefaultAsync();
             var query = Builders<GridFSFileInfo>.Filter.Eq(fileIdKey, id);
-            var fileInfo = await GetGridFSBucket().Find(query).FirstOrDefaultAsync();
+            var queryData = GetGridFSBucket().Find(query);
+            if (queryData == null)
+                return null;
+
+            var fileInfo = await queryData.FirstOrDefaultAsync();
+            if(fileInfo==null)
+                return null;
             var fileData = await GetGridFSBucket().DownloadAsBytesAsync(fileInfo.Id);
             return fileData;
             //return new { FileName = fileInfo.Filename, Data = fileData };
