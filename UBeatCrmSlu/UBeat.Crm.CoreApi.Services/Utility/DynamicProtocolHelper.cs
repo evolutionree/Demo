@@ -315,286 +315,304 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 result.FieldName = field.FieldName;
 
                 var dataStr = fieldData.ToString().Trim();
-
+                bool isNull = dataStr.Equals("isnull");
                 //根据控件处理不同的数据格式
                 //数字，时间这2种才有范围，其余的是文本ilike
-                switch ((DynamicProtocolControlType)field.NewType)
+                if (isNull)
                 {
-                    case DynamicProtocolControlType.RelateControl:
-                        JObject jo = JObject.Parse(field.FieldConfig);
-                        if (jo["relentityid"] == null || jo["relfieldid"] == null)
-                            throw new Exception("关联对象信息配置异常");
-                        DynamicEntityRepository dynEntityRepository = new DynamicEntityRepository();
-                        var relEntityFields = dynEntityRepository.GetEntityFields(Guid.Parse(jo["relentityid"].ToString()), 0).Where(t => t.FieldId == Guid.Parse(jo["relfieldid"].ToString())).ToList();
-                        var reEntity = dynEntityRepository.getEntityBaseInfoById(Guid.Parse(jo["relentityid"].ToString()), 0);
-                        var relField = relEntityFields.FirstOrDefault();
-                        Dictionary<string, object> relFieldDatas = new Dictionary<string, object>();
-                        relFieldDatas.Add(relField.FieldName, fieldData);
-                        var validResults = RelateSimpleQuery(relEntityFields, relFieldDatas, reEntity);
-                        foreach (var tmp in validResults.Values)
-                        {
-                            result.FieldData = tmp.FieldData;
-                        }
-                        break;
-                    case DynamicProtocolControlType.RecOnlive:
-                    case DynamicProtocolControlType.RecCreated:
-                    case DynamicProtocolControlType.RecUpdated:
-                    case DynamicProtocolControlType.NumberInt:
-                    case DynamicProtocolControlType.NumberDecimal:
-                    case DynamicProtocolControlType.TimeDate:
-                    case DynamicProtocolControlType.TimeStamp:
-                        {
-                            //一个是等于，两个是between
-                            var dataArr = dataStr.Split(',');
-                            if (dataArr.Length != 2 && dataArr.Length != 1)
+                    result.FieldData = string.Format("t.{0} is null", columnKey, dataStr);
+                }
+                else
+                {
+                    switch ((DynamicProtocolControlType)field.NewType)
+                    {
+                        case DynamicProtocolControlType.RelateControl:
+                            JObject jo = JObject.Parse(field.FieldConfig);
+                            if (jo["relentityid"] == null || jo["relfieldid"] == null)
+                                throw new Exception("关联对象信息配置异常");
+                            DynamicEntityRepository dynEntityRepository = new DynamicEntityRepository();
+                            var relEntityFields = dynEntityRepository.GetEntityFields(Guid.Parse(jo["relentityid"].ToString()), 0).Where(t => t.FieldId == Guid.Parse(jo["relfieldid"].ToString())).ToList();
+                            var reEntity = dynEntityRepository.getEntityBaseInfoById(Guid.Parse(jo["relentityid"].ToString()), 0);
+                            var relField = relEntityFields.FirstOrDefault();
+                            Dictionary<string, object> relFieldDatas = new Dictionary<string, object>();
+                            relFieldDatas.Add(relField.FieldName, fieldData);
+                            var validResults = RelateSimpleQuery(relEntityFields, relFieldDatas, reEntity);
+                            foreach (var tmp in validResults.Values)
                             {
-                                result.Tips = "数据格式不对,应为逗号分隔";
-                                validResultDic.Add(field.FieldName, result);
-                                continue;
+                                result.FieldData = tmp.FieldData;
                             }
-                            if (dataArr.Length == 1)
-                            {
-                                var conditions = new List<string>();
-                                if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
-                                {
-                                    conditions.Add(string.Format("e.{0} = '{1}' ", columnKey, dataArr[0].Trim()));
-                                }
-                                if (conditions.Count > 0)
-                                {
-                                    result.FieldData = string.Join(" AND ", conditions.ToArray());
-                                }
-                            }
-                            else
-                            {
-                                var conditions = new List<string>();
-                                if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
-                                {
-                                    conditions.Add(string.Format("e.{0} >= '{1}' ", columnKey, dataArr[0].Trim()));
-                                }
-                                if (!string.IsNullOrWhiteSpace(dataArr[1].Trim()))
-                                {
-                                    conditions.Add(string.Format("e.{0} <= '{1}' ", columnKey, dataArr[1].Trim()));
-                                }
-
-                                if (conditions.Count > 0)
-                                {
-                                    result.FieldData = string.Join(" AND ", conditions.ToArray());
-                                }
-                            }
-
-
                             break;
-                        }
-                    case DynamicProtocolControlType.RecName:
-                    case DynamicProtocolControlType.Telephone:
-                    case DynamicProtocolControlType.PhoneNum:
-                    case DynamicProtocolControlType.Text:
-                    case DynamicProtocolControlType.TextArea:
-                    case DynamicProtocolControlType.EmailAddr:
-                        {
-                            var _operator = string.Empty;
-                            if (field.IsLike == 0)//是否走模糊查询 1 支持模糊 0不支持
+                        case DynamicProtocolControlType.RecOnlive:
+                        case DynamicProtocolControlType.RecCreated:
+                        case DynamicProtocolControlType.RecUpdated:
+                        case DynamicProtocolControlType.NumberInt:
+                        case DynamicProtocolControlType.NumberDecimal:
+                        case DynamicProtocolControlType.TimeDate:
+                        case DynamicProtocolControlType.TimeStamp:
                             {
-                                if (isNameField == false)
+                                //一个是等于，两个是between
+                                var dataArr = dataStr.Split(',');
+                                if (dataArr.Length != 2 && dataArr.Length != 1)
                                 {
-                                    result.FieldData = string.Format("e.{0}='{1}'", columnKey, dataStr);
+                                    result.Tips = "数据格式不对,应为逗号分隔";
+                                    validResultDic.Add(field.FieldName, result);
+                                    continue;
+                                }
+                                if (dataArr.Length == 1)
+                                {
+                                    var conditions = new List<string>();
+                                    if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
+                                    {
+                                        conditions.Add(string.Format("e.{0} = '{1}' ", columnKey, dataArr[0].Trim()));
+                                    }
+                                    if (conditions.Count > 0)
+                                    {
+                                        result.FieldData = string.Join(" AND ", conditions.ToArray());
+                                    }
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format("e.{0}='{1}'", columnKey, dataStr);//应该不可能在这里
+                                    var conditions = new List<string>();
+                                    if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
+                                    {
+                                        conditions.Add(string.Format("e.{0} >= '{1}' ", columnKey, dataArr[0].Trim()));
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(dataArr[1].Trim()))
+                                    {
+                                        conditions.Add(string.Format("e.{0} <= '{1}' ", columnKey, dataArr[1].Trim()));
+                                    }
+
+                                    if (conditions.Count > 0)
+                                    {
+                                        result.FieldData = string.Join(" AND ", conditions.ToArray());
+                                    }
+                                }
+
+
+                                break;
+                            }
+                        case DynamicProtocolControlType.RecName:
+                        case DynamicProtocolControlType.Telephone:
+                        case DynamicProtocolControlType.PhoneNum:
+                        case DynamicProtocolControlType.Text:
+                        case DynamicProtocolControlType.TextArea:
+                        case DynamicProtocolControlType.EmailAddr:
+                            {
+                                var _operator = string.Empty;
+                                if (field.IsLike == 0)//是否走模糊查询 1 支持模糊 0不支持
+                                {
+                                    if (isNameField == false)
+                                    {
+                                        result.FieldData = string.Format("e.{0}='{1}'", columnKey, dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("e.{0}='{1}'", columnKey, dataStr);//应该不可能在这里
+
+                                    }
+                                }
+                                else
+                                {
+                                    if (isNameField == false)
+                                    {
+                                        result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);//应该不可能在这里
+
+                                    }
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.Address:
+                        case DynamicProtocolControlType.Location:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("jsonb_extract_path_text(e.{0}, 'address')='%{1}%'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format("jsonb_extract_path_text(e.{0}, 'address') ilike '%{1}%'", columnKey, dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.RecCreator:
+                        case DynamicProtocolControlType.RecUpdator:
+                        case DynamicProtocolControlType.RecManager:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0}_t.username  ilike '%{1}%'", columnKey, dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.AreaRegion:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0}_t.fullname  ilike '%{1}%'", columnKey, dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.Department:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);//这里应该有问题，要判断多选还是单选
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.SelectSingle:
+                            {
+                                //字典单选的存储方式为：“1”
+                                if (field.IsLike == 0)
+                                {
+                                    string[] values = dataStr.Split(",");
+                                    if (values.Length == 1)
+                                    {
+                                        result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                    }
+                                    else if (values.Length > 1)
+                                    {
+                                        string tmp = string.Join(',', values);
+                                        result.FieldData = string.Format("e.{0} in ({1})", columnKey, tmp);
+                                    }
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0}_t.dataval ilike '%{1}%'", columnKey, dataStr);//多选会有问题的
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.SelectMulti:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("string_to_array(e.{0}, ',') && string_to_array('{1}', ',')", columnKey, dataStr);
 
                                 }
-                            }
-                            else
-                            {
-                                if (isNameField == false)
+                                else
                                 {
-                                    result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);//多选有问题
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.RecType:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);//应该不可能在这里
-
+                                    result.FieldData = string.Format(" {0}_t.catalogname ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
                                 }
+                                break;
                             }
-                            break;
-                        }
-                    case DynamicProtocolControlType.Address:
-                    case DynamicProtocolControlType.Location:
-                        {
-                            if (field.IsLike == 0)
+                        case DynamicProtocolControlType.DataSourceSingle:
                             {
-                                result.FieldData = string.Format("jsonb_extract_path_text(e.{0}, 'address')='%{1}%'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format("jsonb_extract_path_text(e.{0}, 'address') ilike '%{1}%'", columnKey, dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.RecCreator:
-                    case DynamicProtocolControlType.RecUpdator:
-                    case DynamicProtocolControlType.RecManager:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0}_t.username  ilike '%{1}%'", columnKey, dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.AreaRegion:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0}_t.fullname  ilike '%{1}%'", columnKey, dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.Department:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);//这里应该有问题，要判断多选还是单选
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.SelectSingle:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0}_t.dataval ilike '%{1}%'", columnKey, dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.SelectMulti:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);//多选有问题
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.RecType:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0}_t.catalogname ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.DataSourceSingle:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("(e.{0}->>'id')='{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.DataSourceMulti:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("(e.{0}->>'id') in ('{1}')", columnKey, dataStr.Replace(",", "','"));
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.QuoteControl:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                if (columnKey == "deptgroup")
+                                if (field.IsLike == 0)
                                 {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(e.recmanager) = '{0}'", dataStr);
-                                }
-                                else if (columnKey == "predeptgroup")
-                                {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(e.recmanager) = '{0}'", dataStr);
+                                    result.FieldData = string.Format("(e.{0}->>'id')='{1}'", columnKey, dataStr);
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format("{0} = '{1}'", tryParseFieldSearchString(field, "e"), dataStr);
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
                                 }
+                                break;
                             }
-                            else
+                        case DynamicProtocolControlType.DataSourceMulti:
                             {
-                                if (columnKey == "deptgroup")
+                                if (field.IsLike == 0)
                                 {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(e.recmanager) ilike '%{0}%'", dataStr);
-                                }
-                                else if (columnKey == "predeptgroup")
-                                {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(e.recmanager) ilike '%{0}%'", dataStr);
+                                    result.FieldData = string.Format("(e.{0}->>'id') in ('{1}')", columnKey, dataStr.Replace(",", "','"));
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
                                 }
+                                break;
                             }
-                            break;
-                        }
-                    case DynamicProtocolControlType.ProductSet:
-                    case DynamicProtocolControlType.Product:
-                        {
-                            if (field.IsLike == 0)
+                        case DynamicProtocolControlType.QuoteControl:
                             {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                if (field.IsLike == 0)
+                                {
+                                    if (columnKey == "deptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(e.recmanager) = '{0}'", dataStr);
+                                    }
+                                    else if (columnKey == "predeptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(e.recmanager) = '{0}'", dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("{0} = '{1}'", tryParseFieldSearchString(field, "e"), dataStr);
+                                    }
+                                }
+                                else
+                                {
+                                    if (columnKey == "deptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(e.recmanager) ilike '%{0}%'", dataStr);
+                                    }
+                                    else if (columnKey == "predeptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(e.recmanager) ilike '%{0}%'", dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                    }
+                                }
+                                break;
                             }
-                            else
+                        case DynamicProtocolControlType.ProductSet:
+                        case DynamicProtocolControlType.Product:
                             {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                }
+                                break;
                             }
-                            break;
-                        }
-                    case DynamicProtocolControlType.PersonSelectSingle:
-                    case DynamicProtocolControlType.PersonSelectMulti:
-                        {
-                            if (field.IsLike == 0)
+                        case DynamicProtocolControlType.PersonSelectSingle:
+                        case DynamicProtocolControlType.PersonSelectMulti:
                             {
-                                result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                }
+                                break;
                             }
-                            else
+                        default:
                             {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                result.FieldData = " 1=1 ";
+                                break;
                             }
-                            break;
-                        }
-                    default:
-                        {
-                            result.FieldData = " 1=1 ";
-                            break;
-                        }
+                    }
                 }
 
                 result.IsValid = true;
@@ -639,258 +657,288 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
                 var dataStr = fieldData.ToString().Trim();
 
+                bool isNull = dataStr.Equals("isnull");
                 //根据控件处理不同的数据格式
                 //数字，时间这2种才有范围，其余的是文本ilike
-                switch ((DynamicProtocolControlType)field.NewType)
+                if (isNull)
                 {
-                    case DynamicProtocolControlType.RecOnlive:
-                    case DynamicProtocolControlType.RecCreated:
-                    case DynamicProtocolControlType.RecUpdated:
-                    case DynamicProtocolControlType.NumberInt:
-                    case DynamicProtocolControlType.NumberDecimal:
-                    case DynamicProtocolControlType.TimeDate:
-                    case DynamicProtocolControlType.TimeStamp:
-                        {
-                            //一个是等于，两个是between
-                            var dataArr = dataStr.Split(',');
-                            if (dataArr.Length != 2 && dataArr.Length != 1)
-                            {
-                                result.Tips = "数据格式不对,应为逗号分隔";
-                                validResultDic.Add(field.FieldName, result);
-                                continue;
-                            }
-                            if (dataArr.Length == 1)
-                            {
-                                var conditions = new List<string>();
-                                if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
-                                {
-                                    conditions.Add(string.Format("t.{0} = '{1}' ", columnKey, dataArr[0].Trim()));
-                                }
-                                if (conditions.Count > 0)
-                                {
-                                    result.FieldData = string.Join(" AND ", conditions.ToArray());
-                                }
-                            }
-                            else
-                            {
-                                var conditions = new List<string>();
-                                if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
-                                {
-                                    conditions.Add(string.Format("t.{0} >= '{1}' ", columnKey, dataArr[0].Trim()));
-                                }
-                                if (!string.IsNullOrWhiteSpace(dataArr[1].Trim()))
-                                {
-                                    conditions.Add(string.Format("t.{0} <= '{1}' ", columnKey, dataArr[1].Trim()));
-                                }
-
-                                if (conditions.Count > 0)
-                                {
-                                    result.FieldData = string.Join(" AND ", conditions.ToArray());
-                                }
-                            }
-
-                            break;
-                        }
-                    case DynamicProtocolControlType.RecName:
-                    case DynamicProtocolControlType.Telephone:
-                    case DynamicProtocolControlType.PhoneNum:
-                    case DynamicProtocolControlType.Text:
-                    case DynamicProtocolControlType.TextArea:
-                    case DynamicProtocolControlType.EmailAddr:
-                        {
-                            var _operator = string.Empty;
-                            if (field.IsLike == 0)//是否走模糊查询 1 支持模糊 0不支持
-                            {
-                                if (isNameField == false)
-                                {
-                                    result.FieldData = string.Format("t.{0}='{1}'", columnKey, dataStr);
-                                }
-                                else
-                                {
-                                    result.FieldData = string.Format("{0}='{1}'", tryParseFieldSearchString(field), dataStr);
-
-                                }
-                            }
-                            else
-                            {
-                                if (isNameField == false)
-                                {
-                                    result.FieldData = string.Format("t.{0} ilike '%{1}%'", columnKey, dataStr);
-                                }
-                                else
-                                {
-                                    result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-
-                                }
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.Address:
-                    case DynamicProtocolControlType.Location:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("jsonb_extract_path_text(t.{0}, 'address')='%{1}%'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format("jsonb_extract_path_text(t.{0}, 'address') ilike '%{1}%'", columnKey, dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.RecCreator:
-                    case DynamicProtocolControlType.RecUpdator:
-                    case DynamicProtocolControlType.RecManager:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.AreaRegion:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.Department:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.SelectSingle:
-                    case DynamicProtocolControlType.SelectMulti:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.RecType:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.DataSourceSingle:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("(t.{0}->>'id')='{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.DataSourceMulti:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("(t.{0}->>'id') in ('{1}')", columnKey, dataStr.Replace(",", "','"));
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.QuoteControl:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                if (columnKey == "deptgroup")
-                                {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(t.recmanager) = '{0}'", dataStr);
-                                }
-                                else if (columnKey == "predeptgroup")
-                                {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(t.recmanager) = '{0}'", dataStr);
-                                }
-                                else
-                                {
-                                    result.FieldData = string.Format("{0} = '{1}'", tryParseFieldSearchString(field), dataStr);
-                                }
-                            }
-                            else
-                            {
-                                if (columnKey == "deptgroup")
-                                {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(t.recmanager) ilike '%{0}%'", dataStr);
-                                }
-                                else if (columnKey == "predeptgroup")
-                                {
-                                    result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(t.recmanager) ilike '%{0}%'", dataStr);
-                                }
-                                else
-                                {
-                                    result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                                }
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.ProductSet:
-                    case DynamicProtocolControlType.Product:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    case DynamicProtocolControlType.PersonSelectSingle:
-                    case DynamicProtocolControlType.PersonSelectMulti:
-                        {
-                            if (field.IsLike == 0)
-                            {
-                                result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
-                            }
-                            else
-                            {
-                                result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
-                            }
-                            break;
-                        }
-                    default:
-                        {
-                            result.FieldData = " 1=1 ";
-                            break;
-                        }
+                    result.FieldData = string.Format("t.{0} is null", columnKey, dataStr);
                 }
+                else {
+                    switch ((DynamicProtocolControlType)field.NewType)
+                    {
+                        case DynamicProtocolControlType.RecOnlive:
+                        case DynamicProtocolControlType.RecCreated:
+                        case DynamicProtocolControlType.RecUpdated:
+                        case DynamicProtocolControlType.NumberInt:
+                        case DynamicProtocolControlType.NumberDecimal:
+                        case DynamicProtocolControlType.TimeDate:
+                        case DynamicProtocolControlType.TimeStamp:
+                            {
+                                //一个是等于，两个是between
+
+                                var dataArr = dataStr.Split(',');
+                                if (dataArr.Length != 2 && dataArr.Length != 1)
+                                {
+                                    result.Tips = "数据格式不对,应为逗号分隔";
+                                    validResultDic.Add(field.FieldName, result);
+                                    continue;
+                                }
+                                if (dataArr.Length == 1)
+                                {
+                                    var conditions = new List<string>();
+                                    if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
+                                    {
+                                        conditions.Add(string.Format("t.{0} = '{1}' ", columnKey, dataArr[0].Trim()));
+                                    }
+                                    if (conditions.Count > 0)
+                                    {
+                                        result.FieldData = string.Join(" AND ", conditions.ToArray());
+                                    }
+                                }
+                                else
+                                {
+                                    var conditions = new List<string>();
+                                    if (!string.IsNullOrWhiteSpace(dataArr[0].Trim()))
+                                    {
+                                        conditions.Add(string.Format("t.{0} >= '{1}' ", columnKey, dataArr[0].Trim()));
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(dataArr[1].Trim()))
+                                    {
+                                        conditions.Add(string.Format("t.{0} <= '{1}' ", columnKey, dataArr[1].Trim()));
+                                    }
+
+                                    if (conditions.Count > 0)
+                                    {
+                                        result.FieldData = string.Join(" AND ", conditions.ToArray());
+                                    }
+                                }
+
+                                break;
+                            }
+                        case DynamicProtocolControlType.RecName:
+                        case DynamicProtocolControlType.Telephone:
+                        case DynamicProtocolControlType.PhoneNum:
+                        case DynamicProtocolControlType.Text:
+                        case DynamicProtocolControlType.TextArea:
+                        case DynamicProtocolControlType.EmailAddr:
+                            {
+                                var _operator = string.Empty;
+                                if (field.IsLike == 0)//是否走模糊查询 1 支持模糊 0不支持
+                                {
+                                    if (isNameField == false)
+                                    {
+                                        result.FieldData = string.Format("t.{0}='{1}'", columnKey, dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("{0}='{1}'", tryParseFieldSearchString(field), dataStr);
+
+                                    }
+                                }
+                                else
+                                {
+                                    if (isNameField == false)
+                                    {
+                                        result.FieldData = string.Format("t.{0} ilike '%{1}%'", columnKey, dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+
+                                    }
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.Address:
+                        case DynamicProtocolControlType.Location:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("jsonb_extract_path_text(t.{0}, 'address')='%{1}%'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format("jsonb_extract_path_text(t.{0}, 'address') ilike '%{1}%'", columnKey, dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.RecCreator:
+                        case DynamicProtocolControlType.RecUpdator:
+                        case DynamicProtocolControlType.RecManager:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.AreaRegion:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.Department:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.SelectSingle:
+                            {
+                                //字典单选的存储方式为：“1”
+                                if (field.IsLike == 0)
+                                {
+                                    string[] values = dataStr.Split(",");
+                                    if (values.Length == 1)
+                                    {
+                                        result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
+                                    }
+                                    else if (values.Length > 1)
+                                    {
+                                        string tmp = string.Join(',', values);
+                                        result.FieldData = string.Format("e.{0} in ({1})", columnKey, tmp);
+                                    }
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0}_t.dataval ilike '%{1}%'", columnKey, dataStr);//多选会有问题的
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.SelectMulti:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("string_to_array(t.{0}, ',') && string_to_array('{1}', ',')", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.RecType:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.DataSourceSingle:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("(t.{0}->>'id')='{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.DataSourceMulti:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("(t.{0}->>'id') in ('{1}')", columnKey, dataStr.Replace(",", "','"));
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.QuoteControl:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    if (columnKey == "deptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(t.recmanager) = '{0}'", dataStr);
+                                    }
+                                    else if (columnKey == "predeptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(t.recmanager) = '{0}'", dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("{0} = '{1}'", tryParseFieldSearchString(field), dataStr);
+                                    }
+                                }
+                                else
+                                {
+                                    if (columnKey == "deptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_belongdepartment(t.recmanager) ilike '%{0}%'", dataStr);
+                                    }
+                                    else if (columnKey == "predeptgroup")
+                                    {
+                                        result.FieldData = string.Format("crm_func_entity_protocol_format_predepartment(t.recmanager) ilike '%{0}%'", dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                    }
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.ProductSet:
+                        case DynamicProtocolControlType.Product:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.PersonSelectSingle:
+                        case DynamicProtocolControlType.PersonSelectMulti:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
+                                }
+                                break;
+                            }
+                        default:
+                            {
+                                result.FieldData = " 1=1 ";
+                                break;
+                            }
+                    }
+                }
+                
 
                 result.IsValid = true;
                 validResultDic.Add(field.FieldName, result);
