@@ -2075,6 +2075,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             }
 
+            #region 处理字段自由过滤
+            if (dynamicModel.ColumnFilter != null && dynamicModel.ColumnFilter.Count >0) {
+                var searchFields =  GetEntityFields(dynamicEntity.EntityId, userNumber);
+                foreach (DynamicEntityFieldSearch field in searchFields) {
+                    if (field.ControlType == (int)DynamicProtocolControlType.SelectSingle
+                        || field.ControlType == (int)DynamicProtocolControlType.SelectMulti)
+                    {
+                        field.IsLike = 0;
+                    }
+                    else {
+                        field.IsLike = 1;//把除字典类型所有的字段都设成模糊搜索
+                    }
+                    
+                }
+                Dictionary<string, object> fieldDatas = new Dictionary<string, object>();
+                foreach(Dictionary<string, string> searchField in dynamicModel.ColumnFilter) {
+                    DynamicEntityFieldSearch fieldInfo = searchFields.FirstOrDefault(t => t.FieldId.ToString() == searchField["fieldid"]);
+                    if (fieldInfo == null) continue;
+                    fieldDatas.Add(fieldInfo.FieldName, searchField["value"]);
+
+                }
+                var validResults = DynamicProtocolHelper.AdvanceQuery2(searchFields, fieldDatas);
+                if (SpecFuncName != null)
+                {
+                    validResults =   DynamicProtocolHelper.AdvanceQuery(searchFields, fieldDatas);
+                }
+
+            }
+
+            #endregion
             //处理排序语句
             if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
             {
