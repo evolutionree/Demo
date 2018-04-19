@@ -242,9 +242,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var i1 = i;
                         var length = numThreads - 1 == i ? m.DataRows.Count - i * count : count;
                         var rangdata = m.DataRows.GetRange(i * count, length);
-
+                        
                         ThreadPool.QueueUserWorkItem(delegate (object dataparam)
                         {
+                            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
                             var datarows = dataparam as List<Dictionary<string, object>>;
                             if (datarows == null)
                                 return;
@@ -388,37 +389,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var fileID = Guid.NewGuid().ToString();
                     //上传文档到文件服务器
                     progress.ResultFileId = _fileServices.UploadFile(null, fileID, string.Format("{0}导入结果.xlsx", taskData.TaskName), errorExcleBytes);
-                    //return new OutputResult<object>(fileId, "导入出现错误，错误内容请下载错误提示的Excel文档", 1);
+                   
                 }
                 //var taskDataTemp = _cache.Get(taskDataId_prefix + taskid) as TaskDataModel;
                 if (taskData != null)
                 {
-                    //移除任务的缓存数据
-                    // _cache.Remove(taskDataId_prefix + taskid);
-                    //lock (lockObj)
-                    //{
-                    //    taskList.Remove(progress);
-                    //}
+                    
                     Guid entityid = Guid.Empty;
                     Guid.TryParse(taskData.FormDataKey, out entityid);
                     SendMessage(entityid, progress, hasError, taskData.UserNo);
-
-
-                    //               NotifyEntity notifyEntity = new NotifyEntity();
-
-                    //notifyEntity.entityid = entityid;
-                    //notifyEntity.msgcontent = string.Format("导入结果：{0}", resultData.Count > 1 ? "存在错误" : "成功导入");
-                    ////notifyEntity.msgdataid = null;
-                    //notifyEntity.msggroupid = (int)MsgEnum.Remind;
-                    //notifyEntity.msgparam = JsonConvert.SerializeObject(progress);
-                    ////notifyEntity.msgstatus = "";
-                    //notifyEntity.msgtitle = "导入任务完成";
-                    //notifyEntity.msgtype = (int)MsgTypeEnum.ExportRedmind;
-                    //notifyEntity.receiver = taskData.UserNo.ToString();
-                    //notifyEntity.sendtime = DateTime.Now;
-                    //notifyEntity.userno = taskData.UserNo;
-
-                    //_notifyServices.WriteMessage(notifyEntity, taskData.UserNo);
+                    
                 }
             });
 
@@ -667,6 +647,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         public ExportModel ExportData(ExportDataModel data)
         {
+            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
             var userData = HasFunctionAccess(data.UserId);
 
 
