@@ -2090,16 +2090,37 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     
                 }
                 Dictionary<string, object> fieldDatas = new Dictionary<string, object>();
-                foreach(Dictionary<string, string> searchField in dynamicModel.ColumnFilter) {
-                    DynamicEntityFieldSearch fieldInfo = searchFields.FirstOrDefault(t => t.FieldId.ToString() == searchField["fieldid"]);
+                foreach(string key  in dynamicModel.ColumnFilter.Keys) {
+                    DynamicEntityFieldSearch fieldInfo = searchFields.FirstOrDefault(t => t.FieldName.ToString() == key);
                     if (fieldInfo == null) continue;
-                    fieldDatas.Add(fieldInfo.FieldName, searchField["value"]);
+                    fieldDatas.Add(fieldInfo.FieldName, dynamicModel.ColumnFilter[key]);
 
                 }
                 var validResults = DynamicProtocolHelper.AdvanceQuery2(searchFields, fieldDatas);
                 if (SpecFuncName != null)
                 {
                     validResults =   DynamicProtocolHelper.AdvanceQuery(searchFields, fieldDatas);
+                }
+                var validTips = new List<string>();
+                var data = new Dictionary<string, string>();
+                foreach (DynamicProtocolValidResult validResult in validResults.Values)
+                {
+                    if (!validResult.IsValid)
+                    {
+                        validTips.Add(validResult.Tips);
+                    }
+                    data.Add(validResult.FieldName, validResult.FieldData.ToString());
+
+                }
+
+                if (validTips.Count > 0)
+                {
+                    return ShowError<object>(string.Join(";", validTips));
+                }
+
+                if (data.Count > 0)
+                {
+                    dynamicEntity.SearchQuery = dynamicEntity.SearchQuery  + " AND (" + string.Join(" AND ", data.Values.ToArray())+")";
                 }
 
             }

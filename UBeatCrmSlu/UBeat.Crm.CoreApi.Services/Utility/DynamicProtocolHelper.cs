@@ -320,7 +320,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 //数字，时间这2种才有范围，其余的是文本ilike
                 if (isNull)
                 {
-                    result.FieldData = string.Format("t.{0} is null", columnKey, dataStr);
+                    result.FieldData = string.Format("e.{0} is null", columnKey, dataStr);
                 }
                 else
                 {
@@ -482,6 +482,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 if (field.IsLike == 0)
                                 {
                                     string[] values = dataStr.Split(",");
+                                    bool hasNull = false;
+                                    for (int i = 0; i < values.Length; i++) {
+                                        if (values[i] == "isnull") {
+                                            values[i] = "0";
+                                            hasNull = true;
+                                        }
+                                    }
                                     if (values.Length == 1)
                                     {
                                         result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
@@ -490,6 +497,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                     {
                                         string tmp = string.Join(',', values);
                                         result.FieldData = string.Format("e.{0} in ({1})", columnKey, tmp);
+                                        if (hasNull) {
+                                            result.FieldData = "(" + result.FieldData + " or " + string.Format("e.{0} is null )", columnKey);
+                                        }
                                     }
                                 }
                                 else
@@ -807,6 +817,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 if (field.IsLike == 0)
                                 {
                                     string[] values = dataStr.Split(",");
+                                    bool hasNull = false;
+                                    for (int i = 0; i < values.Length; i++)
+                                    {
+                                        if (values[i] == "isnull")
+                                        {
+                                            values[i] = "0";
+                                            hasNull = true;
+                                        }
+                                    }
                                     if (values.Length == 1)
                                     {
                                         result.FieldData = string.Format("t.{0} = '{1}'", columnKey, dataStr);
@@ -814,7 +833,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                     else if (values.Length > 1)
                                     {
                                         string tmp = string.Join(',', values);
-                                        result.FieldData = string.Format("e.{0} in ({1})", columnKey, tmp);
+                                        result.FieldData = string.Format("t.{0} in ({1})", columnKey, tmp);
+                                        if (hasNull)
+                                        {
+                                            result.FieldData = "(" + result.FieldData + " or " + string.Format("t.{0} is null )", columnKey);
+                                        }
                                     }
                                 }
                                 else

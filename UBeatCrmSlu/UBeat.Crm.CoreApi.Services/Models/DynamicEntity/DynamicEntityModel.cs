@@ -59,7 +59,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// RelFieldName 和RelRecId
         /// </summary>
         public Dictionary<string,object>  RelInfo { get; set; }
-        public List<Dictionary<string, string>> ColumnFilter { get; set; }
+        public Dictionary<string, string> ColumnFilter { get; set; }
     }
 
 
