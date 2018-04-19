@@ -2075,6 +2075,57 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             }
 
+            #region 处理字段自由过滤
+            if (dynamicModel.ColumnFilter != null && dynamicModel.ColumnFilter.Count >0) {
+                var searchFields =  GetEntityFields(dynamicEntity.EntityId, userNumber);
+                foreach (DynamicEntityFieldSearch field in searchFields) {
+                    if (field.ControlType == (int)DynamicProtocolControlType.SelectSingle
+                        || field.ControlType == (int)DynamicProtocolControlType.SelectMulti)
+                    {
+                        field.IsLike = 0;
+                    }
+                    else {
+                        field.IsLike = 1;//把除字典类型所有的字段都设成模糊搜索
+                    }
+                    
+                }
+                Dictionary<string, object> fieldDatas = new Dictionary<string, object>();
+                foreach(string key  in dynamicModel.ColumnFilter.Keys) {
+                    DynamicEntityFieldSearch fieldInfo = searchFields.FirstOrDefault(t => t.FieldName.ToString() == key);
+                    if (fieldInfo == null) continue;
+                    fieldDatas.Add(fieldInfo.FieldName, dynamicModel.ColumnFilter[key]);
+
+                }
+                var validResults = DynamicProtocolHelper.AdvanceQuery2(searchFields, fieldDatas);
+                if (SpecFuncName != null)
+                {
+                    validResults =   DynamicProtocolHelper.AdvanceQuery(searchFields, fieldDatas);
+                }
+                var validTips = new List<string>();
+                var data = new Dictionary<string, string>();
+                foreach (DynamicProtocolValidResult validResult in validResults.Values)
+                {
+                    if (!validResult.IsValid)
+                    {
+                        validTips.Add(validResult.Tips);
+                    }
+                    data.Add(validResult.FieldName, validResult.FieldData.ToString());
+
+                }
+
+                if (validTips.Count > 0)
+                {
+                    return ShowError<object>(string.Join(";", validTips));
+                }
+
+                if (data.Count > 0)
+                {
+                    dynamicEntity.SearchQuery = dynamicEntity.SearchQuery  + " AND (" + string.Join(" AND ", data.Values.ToArray())+")";
+                }
+
+            }
+
+            #endregion
             //处理排序语句
             if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
             {
