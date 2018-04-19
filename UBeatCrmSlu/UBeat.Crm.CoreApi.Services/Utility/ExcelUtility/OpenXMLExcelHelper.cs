@@ -8,8 +8,9 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using System.Text.RegularExpressions;
-using System.DrawingCore;
+
 using UBeat.Crm.CoreApi.Services.Models.Excels;
+using System.DrawingCore;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 {
@@ -265,24 +266,28 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                         drawing.Id = dp.GetIdOfPart(imgp);
                         wsp.Worksheet.Append(drawing);
                     }
-                    Bitmap bmtemp = new Bitmap(imageStream);
-                    Bitmap bm = bmtemp;
-                    bm.SetResolution(96, 96);
-                    if (width != null && height != null)
-                    {
-                        bm = new Bitmap(bmtemp, (int)width.Value, (int)height.Value);
-                    }
-                    float verticalResolution = bm.VerticalResolution;
-                    float horizontalResolution = bm.HorizontalResolution;
-                    
                     var extents = new DocumentFormat.OpenXml.Drawing.Extents();
+                    //Bitmap bmtemp = new Bitmap(imageStream);
+                    //Bitmap bm = bmtemp;
+                    //bm.SetResolution(96, 96);
+                    //if (width != null && height != null)
+                    //{
+                    //    bm = new Bitmap(bmtemp, (int)width.Value, (int)height.Value);
+                    //}
+                    //float verticalResolution = bm.VerticalResolution;
+                    //float horizontalResolution = bm.HorizontalResolution;
+
+                    ////计算公式：EMU = pixel * 914400 / Resolution
+                    //extents.Cx = ((long)bm.Width ) * (long)((float)914400 / horizontalResolution);
+                    //extents.Cy = ((long)bm.Height ) * (long)((float)914400 / verticalResolution);
+                    //bmtemp.Dispose();
+                    //bm.Dispose();
+                    //linux 不支持bitmap，故写死这段范围和图片分辨率作为计算条件
+                    float verticalResolution = 96;
+                    float horizontalResolution = 96;
                     //计算公式：EMU = pixel * 914400 / Resolution
-                    extents.Cx = ((long)bm.Width ) * (long)((float)914400 / horizontalResolution);
-                    extents.Cy = ((long)bm.Height ) * (long)((float)914400 / verticalResolution);
-                    bmtemp.Dispose();
-                    bm.Dispose();
-
-
+                    extents.Cx = ((long)width.Value) * (long)((float)914400 / horizontalResolution);
+                    extents.Cy = ((long)height.Value) * (long)((float)914400 / verticalResolution);
                     if (offsetXY == null)
                         offsetXY = new OffsetXY();
                     var XOffsetEMU = offsetx * (long)((float)914400 / horizontalResolution);
@@ -330,7 +335,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                         new RowId(rowId1.ToString()),
                         new RowOffset(fromYOffset.ToString()));
                     anchor.ToMarker = new DocumentFormat.OpenXml.Drawing.Spreadsheet.ToMarker(
-                       new ColumnId(columnId1.ToString()),
+                       new ColumnId(columnId2.ToString()),
                        new ColumnOffset((fromXOffset + extents.Cx).ToString()),
                        new RowId(rowId2.ToString()),
                        new RowOffset((fromYOffset + extents.Cy).ToString()));
