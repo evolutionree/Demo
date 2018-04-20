@@ -63,8 +63,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (userInfo.UserId == item.entity_name) {
                         item.entity_desc = userInfo.UserName;
                         TimeSpan sp = DateTime.Now.Subtract(dt);
-                        item.Status = sp.Minutes > userInfo.WarnningInterval ? 3 : 1;
-                        item.WarnningInterVal = userInfo.WarnningInterval;
+                        item.Status = sp.Minutes > userInfo.WarningInterval ? 3 : 1;
+                        item.WarningInterval = userInfo.WarningInterval;
                         item.latest_location.lot_address =  BaiduTrackHelper.SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
                     }
                 }
@@ -79,7 +79,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (!hadLocationUserIds.Contains(userid))
                     {
                         UserTrackStrategyInfo userinfo = hadBindUserInfo.Where(x => x.UserId.ToString() == userid).FirstOrDefault();
-                        var detail = new LocationDetailInfo { entity_name = int.Parse(userid), entity_desc = userinfo.UserName, Status = 3, WarnningInterVal = userinfo.WarnningInterval };
+                        var detail = new LocationDetailInfo { entity_name = int.Parse(userid), entity_desc = userinfo.UserName, Status = 3, WarningInterval = userinfo.WarningInterval };
                         locationDetailList.Add(detail);
                     }
                 }
