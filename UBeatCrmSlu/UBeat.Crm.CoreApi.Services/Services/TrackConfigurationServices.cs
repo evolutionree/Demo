@@ -69,5 +69,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return _tackConfigurationRepository.FilterHadBindTrackStrategyUser(userIds);
         }
+
+        public string AllocatedUsers()
+        {
+            return _tackConfigurationRepository.AllocatedUsers();
+        }
     }
 }

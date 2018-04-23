@@ -52,40 +52,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, string> queryDic = new Dictionary<string, string>() { };
             if (!string.IsNullOrEmpty(hadBindUserIdsStr)) {
                 queryDic.Add("filter", "entity_names:" + hadBindUserIdsStr);
-            }
-            List<LocationDetailInfo> searchResult =  BaiduTrackHelper.LocationSearch(locationSearchURL, queryDic, searchQuery);
-            foreach(var item in searchResult)
-            {
-                System.DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1));
-                DateTime dt = startTime.AddSeconds(item.latest_location.loc_time);
-                item.latest_location.loc_time_format = dt;
-                foreach (var userInfo in hadBindUserInfo) {
-                    if (userInfo.UserId == item.entity_name) {
-                        item.entity_desc = userInfo.UserName;
-                        TimeSpan sp = DateTime.Now.Subtract(dt);
-                        item.Status = sp.Minutes > userInfo.WarningInterval ? 3 : 1;
-                        item.WarningInterval = userInfo.WarningInterval;
-                        item.latest_location.lot_address =  BaiduTrackHelper.SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
-                    }
-                }
-            }
-
-            //绑定定位策略但未有任何定位信息
-            if (searchResult.Count < hadBindUserIdsArr.Length)
-            {
-                var hadLocationUserIds = searchResult.Select(x => x.entity_name.ToString()).ToArray();
-                foreach (var userid in hadBindUserIdsArr)
+                List<LocationDetailInfo> searchResult = BaiduTrackHelper.LocationSearch(locationSearchURL, queryDic, searchQuery);
+                foreach (var item in searchResult)
                 {
-                    if (!hadLocationUserIds.Contains(userid))
+                    System.DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1));
+                    DateTime dt = startTime.AddSeconds(item.latest_location.loc_time);
+                    item.latest_location.loc_time_format = dt;
+                    foreach (var userInfo in hadBindUserInfo)
                     {
-                        UserTrackStrategyInfo userinfo = hadBindUserInfo.Where(x => x.UserId.ToString() == userid).FirstOrDefault();
-                        var detail = new LocationDetailInfo { entity_name = int.Parse(userid), entity_desc = userinfo.UserName, Status = 3, WarningInterval = userinfo.WarningInterval };
-                        locationDetailList.Add(detail);
+                        if (userInfo.UserId == item.entity_name)
+                        {
+                            item.entity_desc = userInfo.UserName;
+                            TimeSpan sp = DateTime.Now.Subtract(dt);
+                            item.Status = (sp.Days * 24 + sp.Hours) * 60 + sp.Minutes > userInfo.WarningInterval ? 3 : 1;
+                            item.WarningInterval = userInfo.WarningInterval;
+                            item.latest_location.lot_address = BaiduTrackHelper.SearchAddressByLocationPoint(item.latest_location.latitude, item.latest_location.longitude);
+                        }
                     }
                 }
-            }
 
-            locationDetailList.AddRange(searchResult);
+                //绑定定位策略但未有任何定位信息
+                if (searchResult.Count < hadBindUserIdsArr.Length)
+                {
+                    var hadLocationUserIds = searchResult.Select(x => x.entity_name.ToString()).ToArray();
+                    foreach (var userid in hadBindUserIdsArr)
+                    {
+                        if (!hadLocationUserIds.Contains(userid))
+                        {
+                            UserTrackStrategyInfo userinfo = hadBindUserInfo.Where(x => x.UserId.ToString() == userid).FirstOrDefault();
+                            var detail = new LocationDetailInfo { entity_name = int.Parse(userid), entity_desc = userinfo.UserName, Status = 4, WarningInterval = userinfo.WarningInterval };
+                            locationDetailList.Add(detail);
+                        }
+                    }
+                }
+                locationDetailList.AddRange(searchResult);
+            }
             return new OutputResult<object>(locationDetailList);
         }
 

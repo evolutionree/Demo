@@ -120,5 +120,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             };
             return new OutputResult<object>(response);
         }
+
+        [HttpPost]
+        [Route("AllocatedUsers")]
+        public OutputResult<object> AllocatedUsers()
+        {
+            var userIds = _trackConfigurationServices.AllocatedUsers();
+            var response = new
+            {
+                value = userIds
+            };
+            return new OutputResult<object>(response);
+        }
     }
 }

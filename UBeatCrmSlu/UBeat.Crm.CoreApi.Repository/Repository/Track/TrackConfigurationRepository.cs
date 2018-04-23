@@ -170,5 +170,20 @@ and sc.recstatus = 1";
             };
             return DBHelper.ExecuteQuery<UserTrackStrategyInfo>("", sql, param);
         }
+
+        public string AllocatedUsers()
+        {
+            string userIds = string.Empty;
+            var sql = @"select string_agg(sa.userid::text, ',') as userids
+from crm_sys_track_strategy_allocation sa left
+join crm_sys_track_strategy_configuare sc on sa.strategyid = sc.recid
+where sc.recstatus = 1 and sa.recstatus = 1";
+            object obj = ExecuteScalar(sql, null);
+            if (obj != null)
+            {
+                userIds = obj.ToString();
+            }
+            return userIds;
+        }
     }
 }

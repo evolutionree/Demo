@@ -18,7 +18,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Track
         public string create_time { get; set; }
         public string modify_time { get; set; }
         public LocationPoint latest_location { get; set; }
-        public int Status { get; set; }//状态：1正常定位，2未定位,未分配策略，3定位失败,超过{预警时间}未提交位置信息
+        public int Status { get; set; }//状态：1正常定位，2未定位,未分配策略，3定位失败,超过{预警时间}未提交位置信息 4分配策略但没有任何定位信息
         public int WarningInterval { get; set; }
     }
 
