@@ -32,12 +32,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateTrackConfiguration(TrackConfigurationInfo trackConfigurationQuery)
         {
             bool result = _tackConfigurationRepository.UpdateTrackConfiguration(trackConfigurationQuery);
+            IncreaseDataVersion(DataVersionType.TrackSettingData, null);
             return new OutputResult<object>(result);
         }
 
         public OutputResult<object> DeleteTrackConfiguration(TrackConfigurationDel delQuery, int userNumber)
         {
             var result = _tackConfigurationRepository.DeleteTrackConfiguration(delQuery, userNumber);
+            IncreaseDataVersion(DataVersionType.TrackSettingData, null);
             return HandleResult(result);
         }
 
