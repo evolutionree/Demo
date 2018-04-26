@@ -300,6 +300,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("saverelconfig")]
+        public OutputResult<object> SaveRelConfig([FromBody] SaveRelConfigModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.SaveRelConfig(dynamicModel, UserId);
+        }
+
+        [HttpPost]
         [Route("editreltab")]
         public OutputResult<object> UpdateRelTab([FromBody] UpdateRelTabModel dynamicModel = null)
         {

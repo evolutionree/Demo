@@ -723,6 +723,98 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return result;
         }
 
+        public OperateResult SaveRelConfig(List<RelConfig> configs, Guid RelId,int userNumber)
+        {
+            //清除历史配置
+            string delSql = @"DELETE from crm_sys_entity_rel_config where relid=@relid;";
+            var delParam = new DbParameter[]
+            {
+                new NpgsqlParameter("relid",RelId)
+            };
+            ExecuteQuery(delSql, delParam);
+            string sql = @"INSERT into crm_sys_entity_rel_config(type,relid,relentityid,fieldid,calcutetype,entityid,index)  
+                        values (@type,@relid,@relentityid,@fieldid,@calcutetype,@entityid,@index)";
+            Boolean isSuf = true;
+            foreach (var item in configs) {
+                var param = new DbParameter[]
+                {
+                        new NpgsqlParameter("type",item.Type),
+                        new NpgsqlParameter("relid",RelId),
+                        new NpgsqlParameter("relentityid",item.RelentityId),
+                        new NpgsqlParameter("fieldid",item.FieldId),
+                        new NpgsqlParameter("calcutetype",item.CalcuteType),
+                        new NpgsqlParameter("entityid",item.EntityId),
+                        new NpgsqlParameter("index",item.Index)
+                };
+                int count = ExecuteNonQuery(sql, param);
+                if (count == 0)
+                    isSuf = false;
+            }
+            if (isSuf)
+            {
+                return new OperateResult()
+                {
+                    Flag = 1,
+                    Msg = "新增配置成功"
+                };
+            }
+            else {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "新增配置失败"
+                };
+            }
+        }
+
+        public OperateResult SaveRelConfigSet(List<RelConfigSet> configSets, Guid RelId, int userNumber)
+        {
+            //清除历史配置
+            string delSql = @"DELETE from crm_sys_entity_rel_config_set where relid=@relid;";
+            var delParam = new DbParameter[]
+            {
+                new NpgsqlParameter("relid",RelId)
+            };
+            ExecuteQuery(delSql, delParam);
+            string sql = @"INSERT into crm_sys_entity_rel_config_set(relid,configset1,title1,configset2,title2,configset3,title3,configset4,title4)  
+                        values (@relid,@configset1,@title1,@configset2,@title2,@configset3,@title3,@configset4,@title4)";
+            Boolean isSuf = true;
+            foreach (var item in configSets)
+            {
+                var param = new DbParameter[]
+                {
+                        new NpgsqlParameter("relid",RelId),
+                        new NpgsqlParameter("configset1",item.ConfigSet1),
+                        new NpgsqlParameter("title1",item.title1),
+                        new NpgsqlParameter("configset2",item.ConfigSet2),
+                        new NpgsqlParameter("title2",item.title2),
+                        new NpgsqlParameter("configset3",item.ConfigSet3),
+                        new NpgsqlParameter("title3",item.title3),
+                        new NpgsqlParameter("configset4",item.ConfigSet4),
+                        new NpgsqlParameter("title4",item.title4)
+                };
+                int count = ExecuteNonQuery(sql, param);
+                if (count == 0)
+                    isSuf = false;
+            }
+            if (isSuf)
+            {
+                return new OperateResult()
+                {
+                    Flag = 1,
+                    Msg = "新增配置计算公式成功"
+                };
+            }
+            else
+            {
+                return new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "新增配置计算公式失败"
+                };
+            }
+        }
+
         public OperateResult UpdateRelTab(UpdateRelTabMapper entity, int userNumber)
         {
             var sql = @"

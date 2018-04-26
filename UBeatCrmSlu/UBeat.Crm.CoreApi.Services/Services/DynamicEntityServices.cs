@@ -2973,10 +2973,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = _dynamicEntityRepository.RelTabInfoQuery(entity, userNumber);
             return new OutputResult<object>(result);
         }
+        public OutputResult<object> SaveRelConfig(SaveRelConfigModel entityModel, int userNumber)
+        {
+            var configs = entityModel.Configs;
 
+            var configSets = entityModel.ConfigSets;
+            var configResult= _dynamicEntityRepository.SaveRelConfig(configs, entityModel.RelId, userNumber);
+            var setResult=_dynamicEntityRepository.SaveRelConfigSet(configSets, entityModel.RelId,userNumber);
+            if (configResult.Flag==1&& setResult.Flag==1)
+            {
+                return new OutputResult<object>(new OperateResult()
+                {
+                    Flag = 1,
+                    Msg = "保存配置成功"
+                });
+            }
+            else
+            {
+                return new OutputResult<object>(new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "保存配置失败"
+                });
+            }
+        }
 
-
-        public OutputResult<object> AddRelTab(AddRelTabModel entityModel, int userNumber)
+            public OutputResult<object> AddRelTab(AddRelTabModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<AddRelTabModel, AddRelTabMapper>(entityModel);
             if (entity == null || !entity.IsValid())

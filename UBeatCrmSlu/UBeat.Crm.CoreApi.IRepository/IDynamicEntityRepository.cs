@@ -12,6 +12,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<DynamicEntityDataFieldMapper> GetTypeFields(Guid typeId, int operateType, int userNumber);
         Guid getGridTypeByMainType(Guid typeId, Guid entityId);
 
+        OperateResult SaveRelConfig(List<RelConfig> entity, Guid RelId, int userNumber);
+
+        OperateResult SaveRelConfigSet(List<RelConfigSet> entity,Guid RelId, int userNumber);
+
         List<DynamicEntityWebFieldMapper> GetWebFields(Guid entityId, int viewType, int userNumber);
 
         List<DynamicEntityWebFieldMapper> GetWebDynamicListFields(Guid typeId, int operateType, int userNumber);
