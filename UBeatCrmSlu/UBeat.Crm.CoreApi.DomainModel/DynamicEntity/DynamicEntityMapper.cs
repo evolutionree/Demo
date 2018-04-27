@@ -293,6 +293,65 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         }
     }
 
+    public class RelConfigInfo 
+    {
+        public Guid RelId { get; set; }
+        public List<RelConfig> Configs { get; set; }
+        public List<RelConfigSet> ConfigSets { get; set; }
+    }
+
+     public class RelConfig : BaseEntity
+    {
+        public Guid RecId { get; set; }
+        public int Index { get; set; }
+        //0配置1函数2服务
+        public int Type { get; set; }
+
+        public Guid RelId { get; set; }
+        public Guid RelentityId { get; set; }
+        public Guid FieldId { get; set; }
+        //0直接取值1求和2求平均3计数
+        public int CalcuteType { get; set; }
+        public Guid EntityId { get; set; }
+        public string Func { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new RelConfigValidator();
+        }
+        class RelConfigValidator : AbstractValidator<RelConfig>
+        {
+            public RelConfigValidator()
+            {
+                RuleFor(d => d.EntityId).NotNull().WithMessage("实体ID不能为空");
+            }
+        }
+    }
+
+    public class RelConfigSet : BaseEntity
+    {
+        public Guid RecId { get; set; }
+        public Guid RelId { get; set; }
+        public string ConfigSet1 { get; set; }
+        public string title1 { get; set; }
+        public string ConfigSet2 { get; set; }
+        public string title2 { get; set; }
+        public string ConfigSet3 { get; set; }
+        public string title3 { get; set; }
+        public string ConfigSet4 { get; set; }
+        public string title4 { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new RelConfigSetValidator();
+        }
+        class RelConfigSetValidator : AbstractValidator<RelConfigSet>
+        {
+            public RelConfigSetValidator()
+            {
+                RuleFor(d => d.RelId).NotNull().WithMessage("RelID不能为空");
+            }
+        }
+    }
+
     public class RelTabListMapper : BaseEntity
     {
         public int DeviceType { get; set; }
@@ -309,6 +368,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
             }
         }
     }
+
     public class RelTabInfoMapper : BaseEntity
     {
         public Guid RelId { get; set; }

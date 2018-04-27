@@ -839,6 +839,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+
+        public OutputResult<object> GetRelConfigFields(GetEntityFieldsModel entity, int userNumber)
+        {
+            var dynamicEntity = new GetEntityFieldsMapper()
+            {
+                EntityId = entity.EntityId,
+                RelEntityId = entity.RelEntityId
+            };
+            if (dynamicEntity == null || !dynamicEntity.IsValid())
+            {
+                return HandleValid(dynamicEntity);
+            }
+            var result = _dynamicEntityRepository.GetRelConfigFields(dynamicEntity, userNumber);
+            return new OutputResult<object>(result);
+        }
+
         public OutputResult<object> AddList(DynamicEntityAddListModel dynamicModel, AnalyseHeader header, int userNumber)
         {
 
@@ -2973,8 +2989,45 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = _dynamicEntityRepository.RelTabInfoQuery(entity, userNumber);
             return new OutputResult<object>(result);
         }
+        public OutputResult<object> SaveRelConfig(SaveRelConfigModel entityModel, int userNumber)
+        {
+            if (entityModel?.RelId == null|| entityModel.RelId== new Guid("00000000-0000-0000-0000-000000000000"))
+            {
+                return ShowError<object>("页签id不能为空");
+            }
 
+            var configs = entityModel.Configs;
 
+            var configSets = entityModel.ConfigSets;
+            var configResult= _dynamicEntityRepository.SaveRelConfig(configs, entityModel.RelId, userNumber);
+            var setResult=_dynamicEntityRepository.SaveRelConfigSet(configSets, entityModel.RelId,userNumber);
+            if (configResult.Flag==1&& setResult.Flag==1)
+            {
+                return new OutputResult<object>(new OperateResult()
+                {
+                    Flag = 1,
+                    Msg = "保存配置成功"
+                });
+            }
+            else
+            {
+                return new OutputResult<object>(new OperateResult()
+                {
+                    Flag = 0,
+                    Msg = "保存配置失败"
+                });
+            }
+        }
+
+        public OutputResult<object> GetRelConfig(RelConfigModel entityModel, int userNumber)
+        {
+            if (entityModel?.RelId == null || entityModel.RelId == new Guid("00000000-0000-0000-0000-000000000000"))
+            {
+                return ShowError<object>("页签id不能为空");
+            }
+            return new OutputResult<object>(_dynamicEntityRepository.GetRelConfig(entityModel.RelId, userNumber));
+
+        }
 
         public OutputResult<object> AddRelTab(AddRelTabModel entityModel, int userNumber)
         {
