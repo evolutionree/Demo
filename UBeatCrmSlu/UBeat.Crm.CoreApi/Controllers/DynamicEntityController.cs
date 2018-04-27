@@ -292,6 +292,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("getrelconfigfields")]
+        public OutputResult<object> GetRelConfigFields([FromBody] GetEntityFieldsModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.GetRelConfigFields(dynamicModel, UserId);
+        }
+
+        [HttpPost]
         [Route("addreltab")]
         public OutputResult<object> AddRelTab([FromBody] AddRelTabModel dynamicModel = null)
         {
@@ -305,6 +313,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             return _dynamicEntityServices.SaveRelConfig(dynamicModel, UserId);
+        }
+
+        [HttpPost]
+        [Route("getrelconfig")]
+        public OutputResult<object> GetRelConfig([FromBody] RelConfigModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.GetRelConfig(dynamicModel, UserId);
         }
 
         [HttpPost]

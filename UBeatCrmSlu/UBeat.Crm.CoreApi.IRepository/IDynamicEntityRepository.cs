@@ -11,8 +11,10 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
         List<DynamicEntityDataFieldMapper> GetTypeFields(Guid typeId, int operateType, int userNumber);
         Guid getGridTypeByMainType(Guid typeId, Guid entityId);
-
+        RelConfigInfo GetRelConfig(Guid RelId, int userNumber);
         OperateResult SaveRelConfig(List<RelConfig> entity, Guid RelId, int userNumber);
+
+        List<IDictionary<string, object>> GetRelConfigFields(GetEntityFieldsMapper entity, int userNumber);
 
         OperateResult SaveRelConfigSet(List<RelConfigSet> entity,Guid RelId, int userNumber);
 

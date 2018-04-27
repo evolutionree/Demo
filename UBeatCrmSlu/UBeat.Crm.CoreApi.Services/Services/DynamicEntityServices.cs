@@ -839,6 +839,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+
+        public OutputResult<object> GetRelConfigFields(GetEntityFieldsModel entity, int userNumber)
+        {
+            var dynamicEntity = new GetEntityFieldsMapper()
+            {
+                EntityId = entity.EntityId,
+                RelEntityId = entity.RelEntityId
+            };
+            if (dynamicEntity == null || !dynamicEntity.IsValid())
+            {
+                return HandleValid(dynamicEntity);
+            }
+            var result = _dynamicEntityRepository.GetRelConfigFields(dynamicEntity, userNumber);
+            return new OutputResult<object>(result);
+        }
+
         public OutputResult<object> AddList(DynamicEntityAddListModel dynamicModel, AnalyseHeader header, int userNumber)
         {
 
@@ -2975,6 +2991,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> SaveRelConfig(SaveRelConfigModel entityModel, int userNumber)
         {
+            if (entityModel?.RelId == null|| entityModel.RelId== new Guid("00000000-0000-0000-0000-000000000000"))
+            {
+                return ShowError<object>("页签id不能为空");
+            }
+
             var configs = entityModel.Configs;
 
             var configSets = entityModel.ConfigSets;
@@ -2998,7 +3019,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-            public OutputResult<object> AddRelTab(AddRelTabModel entityModel, int userNumber)
+        public OutputResult<object> GetRelConfig(RelConfigModel entityModel, int userNumber)
+        {
+            if (entityModel?.RelId == null || entityModel.RelId == new Guid("00000000-0000-0000-0000-000000000000"))
+            {
+                return ShowError<object>("页签id不能为空");
+            }
+            return new OutputResult<object>(_dynamicEntityRepository.GetRelConfig(entityModel.RelId, userNumber));
+
+        }
+
+        public OutputResult<object> AddRelTab(AddRelTabModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<AddRelTabModel, AddRelTabMapper>(entityModel);
             if (entity == null || !entity.IsValid())

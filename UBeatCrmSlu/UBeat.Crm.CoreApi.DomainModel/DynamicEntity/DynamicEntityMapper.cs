@@ -293,7 +293,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         }
     }
 
-    public class RelConfig : BaseEntity
+    public class RelConfigInfo 
+    {
+        public Guid RelId { get; set; }
+        public List<RelConfig> Configs { get; set; }
+        public List<RelConfigSet> ConfigSets { get; set; }
+    }
+
+     public class RelConfig : BaseEntity
     {
         public Guid RecId { get; set; }
         public int Index { get; set; }
@@ -306,6 +313,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         //0直接取值1求和2求平均3计数
         public int CalcuteType { get; set; }
         public Guid EntityId { get; set; }
+        public string Func { get; set; }
         protected override IValidator GetValidator()
         {
             return new RelConfigValidator();

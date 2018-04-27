@@ -263,6 +263,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public List<RelConfig> Configs { get; set; }
         public List<RelConfigSet> ConfigSets { get; set; }
     }
+
+    public class RelConfigModel
+    {
+        public Guid RelId { get; set; }
+        public List<RelConfig> Configs { get; set; }
+        public List<RelConfigSet> ConfigSets { get; set; }
+    }
     public class UpdateRelTabModel
     {
         public Guid RelId { get; set; }
