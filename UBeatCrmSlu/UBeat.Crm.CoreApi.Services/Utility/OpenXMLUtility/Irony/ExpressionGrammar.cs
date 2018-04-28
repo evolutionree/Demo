@@ -18,7 +18,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony
             number.DefaultIntTypes = new TypeCode[] { TypeCode.Int16, TypeCode.Int32, TypeCode.Int64 };
             number.DefaultFloatType = TypeCode.Single;
 
-            var stringLiteral = new RegexBasedTerminal("String", "\"\\s*\\S+\\s*\"");
+            var stringLiteral = new RegexBasedTerminal("String", "\"\\s*[^ \\f\\n\\r\\t\\v\"]+\\s*\"");
             //var field = new IdentifierTerminal("Field", "#】", "【#");
 
             var identifier = new IdentifierTerminal("Identifier");
