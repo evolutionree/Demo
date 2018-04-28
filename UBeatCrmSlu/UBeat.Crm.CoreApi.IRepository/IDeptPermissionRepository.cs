@@ -39,5 +39,13 @@ namespace UBeat.Crm.CoreApi.IRepository
         void DeletePermissionItemByUser(DbTransaction tran, Guid schemeId, int authorized_userid, int userId);
         void DeletePermissionItemByRole(DbTransaction tran, Guid schemeId, Guid authorized_roleid, int userId);
         void SavePermissionItem(DbTransaction tran, List<DeptPermissionSchemeEntryInfo> items, int userId);
+        /// <summary>
+        /// 获取某用户的角色列表
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="searchResultUserId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        List<Guid> GetRolesByUser(DbTransaction tran , int searchResultUserId, int userId);
     }
 }

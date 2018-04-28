@@ -45,6 +45,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <param name="paramInfo"></param>
         /// <returns></returns>
         [HttpPost("authlist")]
+        [AllowAnonymous]
         public OutputResult<object> ListAuthorizedObject([FromBody] SchemeAuthorizedListParamInfo paramInfo) {
             if (paramInfo == null || paramInfo.SchemeId == null || paramInfo.SchemeId.Equals(Guid.Empty)) {
                 return ResponseError<object>("参数异常");
@@ -57,6 +58,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <param name="paramInfo"></param>
         /// <returns></returns>
         [HttpPost("detail")]
+        [AllowAnonymous]
         public OutputResult<object> DetailScheme([FromBody] SchemeDetailFetchParamInfo paramInfo)
         {
             if (paramInfo == null || paramInfo.SchemeId == null || paramInfo.SchemeId.Equals(Guid.Empty)) {
@@ -72,6 +74,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost("savedetail")]
+        [AllowAnonymous]
         public OutputResult<object> SaveSchemeDetail([FromBody]SchemeDetailSaveParamInfo paramInfo  ) {
             if (paramInfo == null || paramInfo.SchemeId == null || paramInfo.SchemeId.Equals(Guid.Empty))
                 return ResponseError<object>("参数异常");
@@ -89,7 +92,20 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>(this._deptPermissionServices.SaveSchemeDetail(paramInfo.SchemeId,paramInfo.Authorized_UserId,paramInfo.Authorized_RoleId,paramInfo.Authorized_Type,paramInfo.Items, UserId));
         }
         [HttpPost("fetch")]
-        public OutputResult<object> FetchOrgAndUsers() {
+        [AllowAnonymous]
+        public OutputResult<object> FetchOrgAndUsers([FromBody] SchemeFetchParamInfo paramInfo) {
+            if (paramInfo == null || paramInfo.SchemeId == null || paramInfo.SchemeId.Equals(Guid.Empty)) return ResponseError<object>("参数异常");
+            if (paramInfo.RoleId != null && paramInfo.RoleId.Equals(Guid.Empty) == false)
+            {
+                return new OutputResult<object>(this._deptPermissionServices.FetchOrgPermissionByRole(paramInfo.SchemeId, (Guid)paramInfo.RoleId, paramInfo.Optimize, UserId));
+            }
+            else {
+                int searchResultUserId = paramInfo.UserId;
+                if (paramInfo.UserId <= 0)
+                    searchResultUserId = UserId;
+                return new OutputResult<object>(this._deptPermissionServices.FetchOrgPermissionByUser(paramInfo.SchemeId, searchResultUserId, paramInfo.Optimize, paramInfo.IsCombined, UserId));
+
+            }
             throw (new NotImplementedException());
         }
     }
@@ -133,5 +149,21 @@ namespace UBeat.Crm.CoreApi.Controllers
         public Guid Authorized_RoleId { get; set; }
         public DeptPermissionObjectTypeEnum Authorized_Type { get; set; }
         public List<DeptPermissionSchemeEntryInfo> Items { get; set; }
+    }
+    /// <summary>
+    /// 组织权限获取详情的参数
+    /// </summary>
+    public class SchemeFetchParamInfo {
+        /// <summary>
+        /// 方案id
+        /// </summary>
+        public Guid SchemeId { get; set; }
+        /// <summary>
+        /// 用户id，优先roleid，然后userid，如果都不符合要求，则按当前用户
+        /// </summary>
+        public int UserId { get; set; }
+        public Guid ? RoleId { get; set; }
+        public int IsCombined { get; set; }
+        public int Optimize { get; set; }
     }
 }

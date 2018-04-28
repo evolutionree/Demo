@@ -1,4 +1,6 @@
-﻿                                                                using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -50,11 +52,44 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
             }
         }
 
+        public List<Guid> GetRolesByUser(DbTransaction tran, int searchResultUserId, int userId)
+        {
+            try
+            {
+                string strSQL = @"select distinct  a.roleid 
+from crm_sys_userinfo_role_relate  a
+	inner join crm_sys_role b on a.roleid = b.roleid 
+where a.userid =@userid";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@userid",searchResultUserId)
+                };
+                List<Dictionary<string, object>> ret = null;
+                if (tran == null)
+                    ret = DBHelper.ExecuteQuery("", strSQL, p);
+                else
+                    ret = DBHelper.ExecuteQuery(tran, strSQL, p);
+                List<Guid> retList = new List<Guid>();
+                foreach(Dictionary<string,object> item in ret)
+                {
+                    if (item.ContainsKey("roleid") && item["roleid"] != null) {
+                        Guid tmp = Guid.Empty;
+                        if (Guid.TryParse(item["roleid"].ToString(), out tmp)) {
+                            retList.Add(tmp);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) {
+
+            }
+            return new List<Guid>();
+        }
+
         public List<Dictionary<string, object>> ListAuthorizedObjects(DbTransaction tran, Guid schemeId, int userId)
         {
             try
             {
-                string strSQL = @"select *
+                string strSQL = @"select distinct *
 from (select a.authorized_type, a.authorized_userid ,b.username authorized_username ,null authorized_roleid ,'' authorized_rolename 
 FROM crm_sys_pm_orgschemeentry a
 	inner join (select *from crm_sys_userinfo where recstatus =1 )  b on a.authorized_userid = b.userid 
@@ -165,9 +200,9 @@ where (aaa.schemeid is null or aaa.schemeid=@schemeid) and (aaa.authorized_useri
             try
             {
                 string strSQL = @"INSERT INTO  crm_sys_pm_orgschemeentry (recid, schemeid, authorized_userid, authorized_roleid, authorized_type, pmobject_userid, pmobject_deptid, pmobject_type, permissiontype, subdeptpermission, subuserpermission)
-select * from json_populate_recordset(null::crm_sys_pm_orgschemeentry,@data)";
+select * from json_populate_recordset(null::crm_sys_pm_orgschemeentry,@data::json)";
                 DbParameter[] p = new DbParameter[] {
-                    new Npgsql.NpgsqlParameter("@data",Newtonsoft.Json.JsonConvert.SerializeObject(items))
+                    new Npgsql.NpgsqlParameter("@data",Newtonsoft.Json.JsonConvert.SerializeObject(items,Formatting.Indented,new JsonSerializerSettings(){ ContractResolver = new CamelCasePropertyNamesContractResolver() }))
                 };
                 if (tran == null) DBHelper.ExecuteNonQuery("", strSQL, p);
                 else DBHelper.ExecuteNonQuery(tran, strSQL, p);
@@ -175,7 +210,6 @@ select * from json_populate_recordset(null::crm_sys_pm_orgschemeentry,@data)";
             catch (Exception ex) {
                 
             }
-            throw new NotImplementedException();
         }
     }
 }
