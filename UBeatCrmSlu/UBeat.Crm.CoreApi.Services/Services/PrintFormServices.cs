@@ -734,7 +734,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var entityfieldvalue = string.Empty;
                             if (detailData.ContainsKey(tempfield)) //先匹配key，如果不存在，再解析实体字段定义，拿到字段名称再查询字典数据
                             {
-                                entityfieldvalue = detailData[tempfield] != null ? detailData[tempfield].ToString() : string.Empty;
+                                if (!isId && detailData.ContainsKey(tempfield + "_name"))
+                                {
+                                    var entityfieldkey = tempfield + "_name";
+                                    entityfieldvalue = detailData.ContainsKey(entityfieldkey) && detailData[entityfieldkey] != null ? detailData[entityfieldkey].ToString() : string.Empty;
+                                }
+                                else   entityfieldvalue = detailData[tempfield] != null ? detailData[tempfield].ToString() : string.Empty;
                                 formula = formula.Replace(fieldFormat, entityfieldvalue);
                             }
                             else
@@ -765,8 +770,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             break;
                                         default:
                                             { //如果是表格控件等嵌套实体字段，则跳过解析，由处理嵌套表格控件的逻辑处理
-                                                var entityfieldname = fieldobj["fieldname"].ToString();
 
+                                                var entityfieldname = fieldobj["fieldname"].ToString();
                                                 if (!isId && detailData.ContainsKey(entityfieldname + "_name"))
                                                 {
                                                     var entityfieldkey = entityfieldname + "_name";
