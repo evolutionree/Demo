@@ -323,6 +323,40 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dynamicEntityServices.GetRelConfig(dynamicModel, UserId);
         }
 
+        /// <summary>
+        /// 返回页签统计信息
+        /// </summary>
+        /// <param name="queryModel"></param>>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("queryreldatasource")]
+        public OutputResult<object> queryDataForDataSource([FromBody]RelQueryDataModel queryModel)
+        {
+            if (queryModel == null || queryModel.RelId == null || queryModel.RelId== new Guid("00000000-0000-0000-0000-000000000000")
+                || queryModel.RecId == null || queryModel.RecId== new Guid("00000000-0000-0000-0000-000000000000"))
+                return new OutputResult<object>(null, "参数异常", 1);
+           
+            try
+            {
+
+                return _dynamicEntityServices.queryDataForDataSource(ControllerContext.HttpContext.RequestServices,queryModel, UserId); ;
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException != null)
+                {
+                    return new OutputResult<object>(null, ex.InnerException.Message, -1);
+
+                }
+                else
+                {
+
+                    return new OutputResult<object>(null, ex.Message, -1);
+                }
+            }
+
+        }
+
         [HttpPost]
         [Route("editreltab")]
         public OutputResult<object> UpdateRelTab([FromBody] UpdateRelTabModel dynamicModel = null)

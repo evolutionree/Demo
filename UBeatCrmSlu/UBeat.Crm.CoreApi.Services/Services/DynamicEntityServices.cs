@@ -3019,6 +3019,87 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+        public OutputResult<object> queryDataForDataSource(IServiceProvider serviceProvider, RelQueryDataModel queryModel, int userNum) {
+            int errorCode = 0;
+            string errorMsg = "";
+            Guid tmpEntityId = Guid.Empty;
+            OutputResult<object> resujlt = ExcuteSelectAction((transaction, arg, userData) =>
+            {
+                RelConfigInfo relConfigInfo=_dynamicEntityRepository.GetRelConfig(queryModel.RelId, userNum);
+                List<RelConfig> configList=relConfigInfo.Configs;
+                //4个统计结果
+                Dictionary<string, Dictionary<string, object>>  statRet = new Dictionary<string, Dictionary<string, object>>();
+                //根据条件查询结果
+                Dictionary<string, object> queryRet= new Dictionary<string, object>();
+                foreach (var config in configList) {
+                    //0配置1函数2服务
+                    if (config.Type == 0)
+                    {
+                        var queryVal = _dynamicEntityRepository.queryDataForDataSource_CalcuteType(config, queryModel.RecId, userNum);
+                        queryRet.Add("q"+ config.Index, queryVal);
+                    }
+                    else if (config.Type == 1)
+                    {
+                        //函数返回直接返回decimal
+                        var queryVal = _dynamicEntityRepository.queryDataForDataSource_funcType(config, queryModel.RecId, userNum);
+                        queryRet.Add("q" + config.Index, queryVal);
+                    }
+                    else
+                    {
+                        //服务没实现
+                    }
+                }
+                 if(relConfigInfo.ConfigSets.Count>0)
+                {
+                    var configSet=relConfigInfo.ConfigSets[0];
+                    for (int i = 0; i < 4; i++)
+                    {
+                        string expressionStr = GetModelValue("ConfigSet" + (i + 1), configSet);
+                        string expressionTitleStr = GetModelValue("title" + (i + 1), configSet);
+                        if (!string.IsNullOrEmpty(expressionTitleStr))
+                        {
+                            Dictionary<string, object> titleObj = new Dictionary<string, object>();
+                            if (string.IsNullOrEmpty(expressionStr))
+                            {
+                                titleObj.Add(expressionTitleStr, 0);
+                                statRet.Add("title" + (i + 1), titleObj);
+                            }
+                            else
+                            {
+                                foreach (var queryVal in queryRet)
+                                {
+                                    expressionStr = expressionStr.Replace(queryVal.Key, queryVal.Value.ToString());
+                                }
+                                string calcSql = string.Format(@"select {0} as result", expressionStr);
+                                var calcRet = this._dynamicEntityRepository.ExecuteQuery(calcSql, null).FirstOrDefault();
+                                titleObj.Add(expressionTitleStr, calcRet["result"]);
+                                statRet.Add("title" + (i + 1), titleObj);
+                            }
+
+                        }
+                    }
+                }
+                return new OutputResult<object>(statRet, errorMsg, errorCode);
+            }, "", tmpEntityId, userNum);
+            return resujlt;
+        }
+
+        public string GetModelValue(string FieldName, object obj)
+        {
+            try
+            {
+                Type Ts = obj.GetType();
+                object o = Ts.GetProperty(FieldName).GetValue(obj, null);
+                string Value = Convert.ToString(o);
+                if (string.IsNullOrEmpty(Value)) return null;
+                return Value;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public OutputResult<object> GetRelConfig(RelConfigModel entityModel, int userNumber)
         {
             if (entityModel?.RelId == null || entityModel.RelId == new Guid("00000000-0000-0000-0000-000000000000"))

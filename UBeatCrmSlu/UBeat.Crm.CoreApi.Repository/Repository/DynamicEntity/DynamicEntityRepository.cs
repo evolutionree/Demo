@@ -799,7 +799,71 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return info;
         }
 
-            public OperateResult SaveRelConfigSet(List<RelConfigSet> configSets, Guid RelId, int userNumber)
+        public decimal queryDataForDataSource_funcType(RelConfig config, Guid parentRecId, int userNumber)
+        {
+            var sql = @"
+                SELECT * FROM "+ config.Func + "(@relid,@parentRecId)";
+
+            var param = new DbParameter[]
+            {
+              new NpgsqlParameter("relid",config.RelId),
+              new NpgsqlParameter("parentRecId",parentRecId)
+            };
+            var ret = ExecuteQuery(sql, null).FirstOrDefault();
+            return (decimal)ret["result"]; ;
+        }
+
+            public decimal queryDataForDataSource_CalcuteType(RelConfig config,Guid parentRecId, int userNumber)
+        {
+            string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
+                                         inner JOIN crm_sys_entity c on c.entityid=a.relentityid
+                                         inner join crm_sys_entity_fields b on  b.fieldid=a.fieldid
+                                          where relid=@relid ";
+            var param = new DbParameter[]
+            {
+              new NpgsqlParameter("relid",config.RelId)
+            };
+            var parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
+
+            string childfieldSql = @"select a.fieldname  from crm_sys_entity_fields a where  a.fieldid=@fieldid";
+            var param1 = new DbParameter[]
+            {
+              new NpgsqlParameter("fieldid",config.FieldId)
+            };
+            var childTableInfo = ExecuteQuery(childfieldSql, param1).FirstOrDefault();
+            string whereClause = "";
+            string selectClause = "";
+            whereClause = string.Format(@"jsonb_extract_path_text({0},'id')='{1}' ", parentTableInfo["fieldname"], parentRecId);
+            //0直接取值1求和2求平均3计数
+            if (config.CalcuteType == 0)
+            {
+                //直接取值只能是数字
+                if (parentTableInfo["controltype"].ToString() == "1001")
+                {
+                    return new decimal(0);
+                }
+                else
+                {
+                    selectClause = childTableInfo["fieldname"].ToString()+ "::decimal"; 
+                }
+            }
+            else if (config.CalcuteType == 1)
+            {
+                selectClause = string.Format(@"sum({0})::decimal ", childTableInfo["fieldname"]);
+            }
+            else if (config.CalcuteType == 2) {
+                selectClause = string.Format(@"avg({0})::decimal ", childTableInfo["fieldname"]);
+            } else if (config.CalcuteType == 3) {
+                selectClause = string.Format(@"count({0})::decimal ", childTableInfo["fieldname"]);
+            } else {
+                return new decimal(0);
+            }
+            string expressionSqlStr = string.Format(@"select {0} as result from {1}  where  {2}", selectClause, parentTableInfo["entitytable"], whereClause);
+            var ret=ExecuteQuery(expressionSqlStr, null).FirstOrDefault();
+            return (decimal)ret["result"]; ; 
+        }
+
+        public OperateResult SaveRelConfigSet(List<RelConfigSet> configSets, Guid RelId, int userNumber)
         {
             //清除历史配置
             string delSql = @"DELETE from crm_sys_entity_rel_config_set where relid=@relid;";
