@@ -3061,11 +3061,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         string expressionTitleStr = GetModelValue("title" + (i + 1), configSet);
                         if (!string.IsNullOrEmpty(expressionTitleStr))
                         {
-                            Dictionary<string, object> listObj = new Dictionary<string, object>();
+                            Dictionary<string, string> listObj = new Dictionary<string, string>();
                             if (string.IsNullOrEmpty(expressionStr))
                             {
                                 listObj.Add("title", expressionTitleStr);
-                                listObj.Add("value", 0);
+                                listObj.Add("value", "0");
                                 list.Add(listObj);
                             }
                             else
@@ -3077,7 +3077,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 string calcSql = string.Format(@"select {0} as result", expressionStr);
                                 var calcRet = this._dynamicEntityRepository.ExecuteQuery(calcSql, null).FirstOrDefault();
                                 listObj.Add("title", expressionTitleStr);
-                                listObj.Add("value", calcRet["result"]);
+                                listObj.Add("value", calcRet["result"].ToString());
                                 list.Add(listObj);
                             }
 
