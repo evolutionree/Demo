@@ -3028,7 +3028,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 RelConfigInfo relConfigInfo=_dynamicEntityRepository.GetRelConfig(queryModel.RelId, userNum);
                 List<RelConfig> configList=relConfigInfo.Configs;
                 //4个统计结果
-                Dictionary<string, Dictionary<string, object>>  statRet = new Dictionary<string, Dictionary<string, object>>();
+                Dictionary<string, List<object>>  statRet = new Dictionary<string, List<object>>();
+                List<object> list = new List<object>();
+                statRet.Add("data", list);
+
                 //根据条件查询结果
                 Dictionary<string, object> queryRet= new Dictionary<string, object>();
                 foreach (var config in configList) {
@@ -3058,11 +3061,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         string expressionTitleStr = GetModelValue("title" + (i + 1), configSet);
                         if (!string.IsNullOrEmpty(expressionTitleStr))
                         {
-                            Dictionary<string, object> titleObj = new Dictionary<string, object>();
+                            Dictionary<string, object> listObj = new Dictionary<string, object>();
                             if (string.IsNullOrEmpty(expressionStr))
                             {
-                                titleObj.Add(expressionTitleStr, 0);
-                                statRet.Add("title" + (i + 1), titleObj);
+                                listObj.Add("title", expressionTitleStr);
+                                listObj.Add("value", 0);
+                                list.Add(listObj);
                             }
                             else
                             {
@@ -3072,8 +3076,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                                 string calcSql = string.Format(@"select {0} as result", expressionStr);
                                 var calcRet = this._dynamicEntityRepository.ExecuteQuery(calcSql, null).FirstOrDefault();
-                                titleObj.Add(expressionTitleStr, calcRet["result"]);
-                                statRet.Add("title" + (i + 1), titleObj);
+                                listObj.Add("title", expressionTitleStr);
+                                listObj.Add("value", calcRet["result"]);
+                                list.Add(listObj);
                             }
 
                         }
