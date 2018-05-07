@@ -80,11 +80,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             //设备绑定
             if (isMobile)
             {
-                var hadBinded = _accountServices.checkHadBinded(loginModel, userInfo.UserId);
-                if (!(hadBinded.DataBody is bool))
-                {
-                    return hadBinded;
-                }
+                //var hadBinded = _accountServices.checkHadBinded(loginModel, userInfo.UserId);
+                //if (!(hadBinded.DataBody is bool))
+                //{
+                //    return hadBinded;
+                //}
+                ///移动端未调通，暂时注释
             }
 
             //login finished
