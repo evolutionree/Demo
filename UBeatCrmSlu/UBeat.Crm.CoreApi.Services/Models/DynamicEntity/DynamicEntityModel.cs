@@ -355,7 +355,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     #region 查重条件实体
     /// <summary>
-    /// 查重条件实体
+    /// 查重条件-----
     /// </summary>
     public class EntityCondition
     {
@@ -375,6 +375,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 排序
         /// </summary>
         public int Recorder { get; set; }
+
+        /// <summary>
+        /// 字段ID集合字符串
+        /// </summary>
+        public string Fieldids { get; set; }
     }
 
     public enum FuncType

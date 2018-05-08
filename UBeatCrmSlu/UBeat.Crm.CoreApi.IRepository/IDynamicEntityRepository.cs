@@ -116,5 +116,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         //查询实体条件
         Dictionary<string, object> QueryEntityCondition(DynamicEntityCondition entity, DbTransaction tran);
+
+        bool UpdateEntityCondition(List<DynamicEntityCondition> entityList, int userNumber, DbTransaction tran);
     }
 }

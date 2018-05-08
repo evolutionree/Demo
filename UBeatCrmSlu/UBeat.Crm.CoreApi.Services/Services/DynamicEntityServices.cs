@@ -3316,6 +3316,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+        public OutputResult<object> UpdateEntityCondition(EntityCondition entity, int userNumber)
+        {
+            DbTransaction tran = null;
+            var fieldIds = entity.Fieldids.Split(',');
+            List<DynamicEntityCondition> entityList = new List<DynamicEntityCondition>();
+            for (int i = 0; i < fieldIds.Count(); i++)
+            {
+                entityList.Add(new DynamicEntityCondition
+                {
+                    EntityId = entity.EntityId,
+                    Fieldid = new Guid(fieldIds[i]),
+                    Functype = (int)FuncType.Repeat
+                });
+            }
+            var flag = _dynamicEntityRepository.UpdateEntityCondition(entityList, userNumber, tran);
+            if (flag)
+                return new OutputResult<object>(null, "修改成功！", 0);
+            else
+                return new OutputResult<object>(null, "修改失败！", -1);
+
+        }
 
 
         public OutputResult<object> MarkRecordComplete(Guid recId, int userNumber)

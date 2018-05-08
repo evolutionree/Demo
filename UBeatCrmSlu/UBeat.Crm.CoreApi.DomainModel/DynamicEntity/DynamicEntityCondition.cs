@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,16 +11,19 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         /// <summary>
         /// 实体ID
         /// </summary>
+        [JsonProperty("entityid")]
         public Guid EntityId { get; set; }
-
+        
         /// <summary>
         /// 字段ID
         /// </summary>
+        [JsonProperty("fieldid")]
         public Guid Fieldid { get; set; }
 
         /// <summary>
         /// 条件类型 0是查重
         /// </summary>
+        [JsonProperty("functype")]
         public int Functype { get; set; }
 
         /// <summary>

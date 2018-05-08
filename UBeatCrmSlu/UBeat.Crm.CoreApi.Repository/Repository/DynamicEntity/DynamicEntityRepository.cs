@@ -11,6 +11,8 @@ using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
+using Newtonsoft.Json;
+using NpgsqlTypes;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 {
@@ -1500,6 +1502,45 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             entityConditionData.Add("fieldvisible", checkData);
             entityConditionData.Add("fieldnotvisible", notCheckData);
             return entityConditionData;
+        }
+        /// <summary>
+        /// 修改查重
+        /// </summary>
+        /// <param name="entityList">插入对象List</param>
+        /// <param name="userNumber"></param>
+        /// <param name="trans"></param>
+        /// <returns></returns>
+        public bool UpdateEntityCondition(List<DynamicEntityCondition> entityList, int userNumber, DbTransaction trans)
+        {
+            try
+            {
+                #region sql
+                string delSQL = @"Delete from crm_sys_entity_condition where entityid = @entityid";
+                string insertSql = string.Format(@"INSERT INTO crm_sys_entity_condition(entityid,fieldid,functype)
+                                   SELECT entityid,fieldid,functype
+                                   FROM json_populate_recordset(null::crm_sys_entity_condition,@condition)");
+                #endregion
+                #region 删除
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("@entityid",entityList[0].EntityId)
+                };
+                this.ExecuteNonQuery(delSQL, param, trans);
+                #endregion
+
+                #region 插入
+                DbParameter[] rulesparams = new DbParameter[] { new NpgsqlParameter("condition", JsonConvert.SerializeObject(entityList)) { NpgsqlDbType = NpgsqlDbType.Json } };
+                int count = ExecuteNonQuery(insertSql, rulesparams, trans);
+                #endregion
+                if (count > 0)
+                    return true;
+                else
+                    return false;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
     }
 }

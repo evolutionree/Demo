@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
@@ -512,6 +513,27 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("参数格式错误");
             body.Functype = (int)FuncType.Repeat;
             return _dynamicEntityServices.QueryEntityCondition(body);
+        }
+
+        /// <summary>
+        /// 查重修改
+        /// </summary>
+        /// <param name="body">参数对象</param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("updateentitycondition")]
+        public OutputResult<object> UpdateEntityCondition([FromBody] EntityCondition body)
+        {
+            if (body == null || body.EntityId.Equals(Guid.Empty) || string.IsNullOrEmpty(body.Fieldids))
+                return ResponseError<object>("参数格式错误");
+            var list = body.Fieldids.Split(',');
+            Guid g = Guid.Empty;
+            for (int i = 0; i < list.Count(); i++)
+            {
+                if (!Guid.TryParse(list[i], out g))
+                    return ResponseError<object>("GUID格式有误！");
+            }
+            return _dynamicEntityServices.UpdateEntityCondition(body, UserId);
         }
         #endregion
 
