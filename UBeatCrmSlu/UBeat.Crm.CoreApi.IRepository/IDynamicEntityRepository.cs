@@ -114,9 +114,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         void UpdatePersonalWebListColumnsSetting(Guid entityId,WebListPersonalViewSettingInfo viewConfig, int userId, DbTransaction tran);
         void AddPersonalWebListColumnsSetting(Guid entityId,WebListPersonalViewSettingInfo viewConfig, int userId, DbTransaction tran);
 
-        //查询实体条件
+        //查重
         Dictionary<string, object> QueryEntityCondition(DynamicEntityCondition entity, DbTransaction tran);
-
+        //修改查重
         bool UpdateEntityCondition(List<DynamicEntityCondition> entityList, int userNumber, DbTransaction tran);
     }
 }

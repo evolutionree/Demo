@@ -3316,6 +3316,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+        /// <summary>
+        /// 查重修改
+        /// </summary>
+        /// <param name="entity">参数对象</param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
         public OutputResult<object> UpdateEntityCondition(EntityCondition entity, int userNumber)
         {
             DbTransaction tran = null;
