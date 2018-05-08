@@ -3300,6 +3300,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
         }
 
+        /// <summary>
+        /// 查重
+        /// </summary>
+        /// <param name="entity">实体</param>
+        /// <param name="userNumber">用户id</param>
+        /// <returns></returns>
+        public OutputResult<object> QueryEntityCondition(EntityCondition entity)
+        {
+            DbTransaction tran = null;
+            DynamicEntityCondition dyEntity = new DynamicEntityCondition();
+            dyEntity.EntityId = entity.EntityId;
+            dyEntity.Functype = entity.Functype;
+            var result = _dynamicEntityRepository.QueryEntityCondition(dyEntity, tran);
+            return new OutputResult<object>(result);
+        }
 
 
 

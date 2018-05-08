@@ -353,6 +353,39 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Guid EntityId { get; set; }
     }
 
+    #region 查重条件实体
+    /// <summary>
+    /// 查重条件实体
+    /// </summary>
+    public class EntityCondition
+    {
+        /// <summary>
+        /// 实体ID
+        /// </summary>
+        public Guid EntityId { get; set; }
+        /// <summary>
+        /// 字段ID
+        /// </summary>
+        public Guid Fieldid { get; set; }
+        /// <summary>
+        /// 条件类型 0是查重
+        /// </summary>
+        public int Functype { get; set; }
+        /// <summary>
+        /// 排序
+        /// </summary>
+        public int Recorder { get; set; }
+    }
+
+    public enum FuncType
+    {
+        /// <summary>
+        /// 查重
+        /// </summary>
+        Repeat = 0
+    }
+    #endregion
+
     public class MarkCompleteModel
     {
         public Guid RecId { get; set; }

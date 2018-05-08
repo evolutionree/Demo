@@ -498,6 +498,23 @@ namespace UBeat.Crm.CoreApi.Controllers
             return null;
         }
 
+        #region 查重
+        /// <summary>
+        /// 查重
+        /// </summary>
+        /// <param name="body">条件对象</param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("queryentitycondition")]
+        public OutputResult<object> QueryEntityCondition([FromBody] EntityCondition body)
+        {
+            if (body == null || body.EntityId.Equals(Guid.Empty))
+                return ResponseError<object>("参数格式错误");
+            body.Functype = (int)FuncType.Repeat;
+            return _dynamicEntityServices.QueryEntityCondition(body);
+        }
+        #endregion
+
         #region 通用实体（独立实体、简单实体、动态实体）WEB列表中，显示字段的个人配置相关接口
         /// <summary>
         /// 获取实体的个人web列表定义
