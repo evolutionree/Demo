@@ -366,20 +366,20 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// <summary>
         /// 字段ID
         /// </summary>
-        public Guid Fieldid { get; set; }
+        public Guid FieldId { get; set; }
         /// <summary>
         /// 条件类型 0是查重
         /// </summary>
-        public int Functype { get; set; }
+        public int FuncType { get; set; }
         /// <summary>
         /// 排序
         /// </summary>
-        public int Recorder { get; set; }
+        public int RecOrder { get; set; }
 
         /// <summary>
         /// 字段ID集合字符串
         /// </summary>
-        public string Fieldids { get; set; }
+        public string FieldIds { get; set; }
     }
 
     public enum FuncType

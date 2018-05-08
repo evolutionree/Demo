@@ -511,7 +511,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (body == null || body.EntityId.Equals(Guid.Empty))
                 return ResponseError<object>("参数格式错误");
-            body.Functype = (int)FuncType.Repeat;
+            body.FuncType = (int)FuncType.Repeat;
             return _dynamicEntityServices.QueryEntityCondition(body);
         }
 
@@ -524,14 +524,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("updateentitycondition")]
         public OutputResult<object> UpdateEntityCondition([FromBody] EntityCondition body)
         {
-            if (body == null || body.EntityId.Equals(Guid.Empty) || string.IsNullOrEmpty(body.Fieldids))
+            if (body == null || body.EntityId.Equals(Guid.Empty))
                 return ResponseError<object>("参数格式错误");
-            var list = body.Fieldids.Split(',');
             Guid g = Guid.Empty;
-            for (int i = 0; i < list.Count(); i++)
+            if (!string.IsNullOrEmpty(body.FieldIds))
             {
-                if (!Guid.TryParse(list[i], out g))
-                    return ResponseError<object>("GUID格式有误！");
+                var list = body.FieldIds.Split(',');
+                for (int i = 0; i < list.Count(); i++)
+                {
+                    if (!Guid.TryParse(list[i], out g))
+                        return ResponseError<object>("GUID格式有误！");
+                }
             }
             return _dynamicEntityServices.UpdateEntityCondition(body, UserId);
         }

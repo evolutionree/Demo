@@ -3311,7 +3311,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbTransaction tran = null;
             DynamicEntityCondition dyEntity = new DynamicEntityCondition();
             dyEntity.EntityId = entity.EntityId;
-            dyEntity.Functype = entity.Functype;
+            dyEntity.Functype = entity.FuncType;
             var result = _dynamicEntityRepository.QueryEntityCondition(dyEntity, tran);
             return new OutputResult<object>(result);
         }
@@ -3325,14 +3325,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityCondition(EntityCondition entity, int userNumber)
         {
             DbTransaction tran = null;
-            var fieldIds = entity.Fieldids.Split(',');
+            var fieldIds = entity.FieldIds.Split(',');
             List<DynamicEntityCondition> entityList = new List<DynamicEntityCondition>();
-            for (int i = 0; i < fieldIds.Count(); i++)
+            if (!string.IsNullOrEmpty(entity.FieldIds))
             {
+                for (int i = 0; i < fieldIds.Count(); i++)
+                {
+                    entityList.Add(new DynamicEntityCondition
+                    {
+                        EntityId = entity.EntityId,
+                        Fieldid = new Guid(fieldIds[i]),
+                        Functype = (int)FuncType.Repeat
+                    });
+                }
+            }
+            else {
                 entityList.Add(new DynamicEntityCondition
                 {
                     EntityId = entity.EntityId,
-                    Fieldid = new Guid(fieldIds[i]),
+                    Fieldid = Guid.Empty,
                     Functype = (int)FuncType.Repeat
                 });
             }
