@@ -5,7 +5,6 @@
 	解决keyword参数不生效问题
 	截止目前改为：
 		keyword对所有的可显示字段（数据源配置）生效
-		"_sqlwhere" 对高级查询有效
 ***/
 CREATE OR REPLACE FUNCTION "public"."crm_func_business_ds_list"("_datasrckey" text, "_keyword" text, "_sqlwhere" text, "_pageindex" int4, "_pagesize" int4, "_userno" int4)
   RETURNS SETOF "pg_catalog"."refcursor" AS $BODY$
@@ -90,7 +89,7 @@ BEGIN
       _rulesql:=replace(_rulesql,'{currentUser}',_userno::VARCHAR);
    END IF;
 	EXECUTE _field_sql INTO _field_keys;
-	_keyword_where_sql:=' 1=1 ';
+	_keyword_where_sql:=' 1<> 1 ';
 	if _keyword is not null and _keyword<> '' then 
 		_keyword := replace(_keyword,'''','''''');
 		if _field_keys is not null THEN
@@ -98,7 +97,7 @@ BEGIN
 				loop
 					fetch _field_keys_r into _fieldname;  
 					if found then 
-						_keyword_where_sql:=_keyword_where_sql|| ' and t.'|| _fieldname|| '::text like ''%' || _keyword|| '%'' ';
+						_keyword_where_sql:=_keyword_where_sql|| ' or  t.'|| _fieldname|| '::text like ''%' || _keyword|| '%'' ';
 					else 
 						exit;
 					end if;
