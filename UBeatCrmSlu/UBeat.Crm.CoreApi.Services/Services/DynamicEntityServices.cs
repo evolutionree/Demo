@@ -3338,7 +3338,60 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
         }
 
+        /// <summary>
+        /// 查重
+        /// </summary>
+        /// <param name="entity">实体</param>
+        /// <param name="userNumber">用户id</param>
+        /// <returns></returns>
+        public OutputResult<object> QueryEntityCondition(EntityCondition entity)
+        {
+            DbTransaction tran = null;
+            DynamicEntityCondition dyEntity = new DynamicEntityCondition();
+            dyEntity.EntityId = entity.EntityId;
+            dyEntity.Functype = entity.FuncType;
+            var result = _dynamicEntityRepository.QueryEntityCondition(dyEntity, tran);
+            return new OutputResult<object>(result);
+        }
 
+        /// <summary>
+        /// 查重修改
+        /// </summary>
+        /// <param name="entity">参数对象</param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public OutputResult<object> UpdateEntityCondition(EntityCondition entity, int userNumber)
+        {
+            DbTransaction tran = null;
+            var fieldIds = entity.FieldIds.Split(',');
+            List<DynamicEntityCondition> entityList = new List<DynamicEntityCondition>();
+            if (!string.IsNullOrEmpty(entity.FieldIds))
+            {
+                for (int i = 0; i < fieldIds.Count(); i++)
+                {
+                    entityList.Add(new DynamicEntityCondition
+                    {
+                        EntityId = entity.EntityId,
+                        Fieldid = new Guid(fieldIds[i]),
+                        Functype = (int)FuncType.Repeat
+                    });
+                }
+            }
+            else {
+                entityList.Add(new DynamicEntityCondition
+                {
+                    EntityId = entity.EntityId,
+                    Fieldid = Guid.Empty,
+                    Functype = (int)FuncType.Repeat
+                });
+            }
+            var flag = _dynamicEntityRepository.UpdateEntityCondition(entityList, userNumber, tran);
+            if (flag)
+                return new OutputResult<object>(null, "修改成功！", 0);
+            else
+                return new OutputResult<object>(null, "修改失败！", -1);
+
+        }
 
 
         public OutputResult<object> MarkRecordComplete(Guid recId, int userNumber)

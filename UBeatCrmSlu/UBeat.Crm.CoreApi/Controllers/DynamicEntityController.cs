@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
@@ -497,6 +498,47 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return null;
         }
+
+        #region 查重
+        /// <summary>
+        /// 查重
+        /// </summary>
+        /// <param name="body">条件对象</param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("queryentitycondition")]
+        public OutputResult<object> QueryEntityCondition([FromBody] EntityCondition body)
+        {
+            if (body == null || body.EntityId.Equals(Guid.Empty))
+                return ResponseError<object>("参数格式错误");
+            body.FuncType = (int)FuncType.Repeat;
+            return _dynamicEntityServices.QueryEntityCondition(body);
+        }
+
+        /// <summary>
+        /// 查重修改
+        /// </summary>
+        /// <param name="body">参数对象</param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("updateentitycondition")]
+        public OutputResult<object> UpdateEntityCondition([FromBody] EntityCondition body)
+        {
+            if (body == null || body.EntityId.Equals(Guid.Empty))
+                return ResponseError<object>("参数格式错误");
+            Guid g = Guid.Empty;
+            if (!string.IsNullOrEmpty(body.FieldIds))
+            {
+                var list = body.FieldIds.Split(',');
+                for (int i = 0; i < list.Count(); i++)
+                {
+                    if (!Guid.TryParse(list[i], out g))
+                        return ResponseError<object>("GUID格式有误！");
+                }
+            }
+            return _dynamicEntityServices.UpdateEntityCondition(body, UserId);
+        }
+        #endregion
 
         #region 通用实体（独立实体、简单实体、动态实体）WEB列表中，显示字段的个人配置相关接口
         /// <summary>

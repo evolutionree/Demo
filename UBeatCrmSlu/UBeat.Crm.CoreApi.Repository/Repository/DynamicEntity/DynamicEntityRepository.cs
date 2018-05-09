@@ -11,6 +11,8 @@ using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
+using Newtonsoft.Json;
+using NpgsqlTypes;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 {
@@ -735,7 +737,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return result;
         }
 
-        public OperateResult SaveRelConfig(List<RelConfig> configs, Guid RelId,int userNumber)
+        public OperateResult SaveRelConfig(List<RelConfig> configs, Guid RelId, int userNumber)
         {
             //清除历史配置
             string delSql = @"DELETE from crm_sys_entity_rel_config where relid=@relid;";
@@ -792,9 +794,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             var relConfigSet = ExecuteQuery<RelConfigSet>(getSetSql, param);
             RelConfigInfo info = new RelConfigInfo
             {
-                RelId= RelId,
-                Configs= relConfig,
-                ConfigSets=relConfigSet
+                RelId = RelId,
+                Configs = relConfig,
+                ConfigSets = relConfigSet
             };
             return info;
         }
@@ -802,7 +804,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public decimal queryDataForDataSource_funcType(RelConfig config, Guid parentRecId, int userNumber)
         {
             var sql = @"
-                SELECT * FROM "+ config.Func + "(@relid,@parentRecId)";
+                SELECT * FROM " + config.Func + "(@relid,@parentRecId)";
 
             var param = new DbParameter[]
             {
@@ -813,7 +815,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return (decimal)ret["result"]; ;
         }
 
-            public decimal queryDataForDataSource_CalcuteType(RelConfig config,Guid parentRecId, int userNumber)
+        public decimal queryDataForDataSource_CalcuteType(RelConfig config, Guid parentRecId, int userNumber)
         {
             string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
                                          inner JOIN crm_sys_entity c on c.entityid=a.relentityid
@@ -844,7 +846,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 }
                 else
                 {
-                    selectClause = childTableInfo["fieldname"].ToString()+ "::decimal"; 
+                    selectClause = childTableInfo["fieldname"].ToString() + "::decimal";
                 }
             }
             else if (config.CalcuteType == 1)
@@ -859,8 +861,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 return new decimal(0);
             }
             string expressionSqlStr = string.Format(@"select {0} as result from {1}  where  {2}", selectClause, parentTableInfo["entitytable"], whereClause);
-            var ret=ExecuteQuery(expressionSqlStr, null).FirstOrDefault();
-            return (decimal)ret["result"]; ; 
+            var ret = ExecuteQuery(expressionSqlStr, null).FirstOrDefault();
+            return (decimal)ret["result"];
         }
 
         public OperateResult SaveRelConfigSet(List<RelConfigSet> configSets, Guid RelId, int userNumber)
@@ -1411,13 +1413,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
         }
 
-       /// <summary>
-       /// 根据用户id和实体ID获取改用的该实体的自定义WEB列
-       /// </summary>
-       /// <param name="entityId"></param>
-       /// <param name="userId"></param>
-       /// <param name="tran"></param>
-       /// <returns></returns>
+        /// <summary>
+        /// 根据用户id和实体ID获取改用的该实体的自定义WEB列
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <param name="userId"></param>
+        /// <param name="tran"></param>
+        /// <returns></returns>
         public Dictionary<string, object> GetPersonalWebListColumnsSetting(Guid entityId, int userId, DbTransaction tran)
         {
             try
@@ -1469,6 +1471,75 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 this.ExecuteNonQuery(strSQL, param, tran);
             }
             catch (Exception ex) {
+            }
+        }
+        /// <summary>
+        /// 查重
+        /// </summary>
+        /// <param name="entity">实体</param>
+        /// <param name="uesrNumber">用户id</param>
+        /// <param name="tran"></param>
+        /// <returns></returns>
+        public Dictionary<string, object> QueryEntityCondition(DynamicEntityCondition entity, DbTransaction tran = null)
+        {
+            Dictionary<string, object> entityConditionData = new Dictionary<string, object>();
+            #region sql
+            string sql = @"SELECT
+	                        con.entityid,
+	                        con.functype,
+	                        fie.fieldid,
+	                        fie.displayname,
+	                        fie.fieldname
+                        FROM
+	                        crm_sys_entity_condition AS con
+                        RIGHT OUTER  JOIN crm_sys_entity_fields AS fie ON con.fieldid = fie.fieldid
+                        WHERE fie.entityid = @entityid
+                        ORDER BY fie.recorder ";
+            #endregion
+            var data = ExecuteQuery(sql, new DbParameter[] { new Npgsql.NpgsqlParameter("@entityid",entity.EntityId)}, tran);
+            var checkData = data.Where(r => r["entityid"] != null && (Guid)r["entityid"] == entity.EntityId).ToList();
+            var notCheckData = data.Where(r => r["entityid"] == null).ToList();
+            entityConditionData.Add("fieldvisible", checkData);
+            entityConditionData.Add("fieldnotvisible", notCheckData);
+            return entityConditionData;
+        }
+        /// <summary>
+        /// 修改查重
+        /// </summary>
+        /// <param name="entityList">插入对象List</param>
+        /// <param name="userNumber"></param>
+        /// <param name="trans"></param>
+        /// <returns></returns>
+        public bool UpdateEntityCondition(List<DynamicEntityCondition> entityList, int userNumber, DbTransaction trans)
+        {
+            try
+            {
+                #region sql
+                string delSQL = @"Delete from crm_sys_entity_condition where entityid = @entityid";
+                string insertSql = string.Format(@"INSERT INTO crm_sys_entity_condition(entityid,fieldid,functype)
+                                   SELECT entityid,fieldid,functype
+                                   FROM json_populate_recordset(null::crm_sys_entity_condition,@condition)");
+                #endregion
+                #region 删除
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("@entityid",entityList[0].EntityId)
+                };
+                this.ExecuteNonQuery(delSQL, param, trans);
+                #endregion
+
+                #region 插入
+                DbParameter[] rulesparams = new DbParameter[] { new NpgsqlParameter("condition", JsonConvert.SerializeObject(entityList)) { NpgsqlDbType = NpgsqlDbType.Json } };
+                int count = ExecuteNonQuery(insertSql, rulesparams, trans);
+                #endregion
+                if (count > 0)
+                    return true;
+                else
+                    return false;
+            }
+            catch (Exception ex)
+            {
+                return false;
             }
         }
     }
