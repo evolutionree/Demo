@@ -90,7 +90,9 @@ BEGIN
    END IF;
 	EXECUTE _field_sql INTO _field_keys;
 	_keyword_where_sql:=' 1<> 1 ';
-	if _keyword is not null and _keyword<> '' then 
+	if _keyword is null THEN
+		_keyword :='';	
+	end if;
 		_keyword := replace(_keyword,'''','''''');
 		if _field_keys is not null THEN
 			open _field_keys_r for EXECUTE 'select UNNEST(string_to_array('''|| _field_keys ||''', '','')) fieldname  ' ;
@@ -104,7 +106,6 @@ BEGIN
 			end loop;
 			close _field_keys_r;
 		end if;
-	end if;
 	 _sqlwhere:=COALESCE(_sqlwhere,'');
 		--raise notice '%',_keyword_where_sql;
 	 IF _ispro=0 THEN
@@ -146,4 +147,4 @@ $BODY$
  ROWS 1000
 ;
 
-ALTER FUNCTION "public"."crm_func_business_ds_list"("_datasrckey" text, "_keyword" text, "_sqlwhere" text, "_pageindex" int4, "_pagesize" int4, "_userno" int4) OWNER TO "postgres";
+
