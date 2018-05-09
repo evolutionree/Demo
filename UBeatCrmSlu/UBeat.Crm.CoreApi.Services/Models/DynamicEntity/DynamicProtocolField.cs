@@ -289,6 +289,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public string SourceId { get; set; }
 
         public string SourceKey { get; set; }
+        /// <summary>
+        /// 增加对数据源整理后的entityid处理，只是在回传前端使用，不记录到数据库中 
+        /// </summary>
+        public Guid EntityId { get; set; }
 
         ///// <summary>
         ///// 数据源类型
