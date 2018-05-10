@@ -14,6 +14,7 @@ using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.Services.Models.Message;
 using UBeat.Crm.CoreApi.DomainModel.Message;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -151,6 +152,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = MessageService.StatisticUnreadMessage(msgGroupIds, userNumber);
 
             return new OutputResult<object>(result);
+        }
+        //修改消息状态 => 已读
+        public OutputResult<object> MessageRead(MsgStuausParameter parameter, int userNumber)
+        {
+            var readstatus = (int)MsgStatus.Read; //状态修改已读
+            MessageService.UpdateMessageStutas(parameter.MsgGroupId, null, readstatus, userNumber);
+            return new OutputResult<object>() { Status = 0, Message = "操作成功" };
+        }
+        //删除消息
+        public OutputResult<object> DeleteMessage(MsgStuausParameter paras, int userNumber)
+        {
+            var readstatus = (int)MsgStatus.Del; //状态修改删除
+            List<Guid> msgIds = new List<Guid>();
+            if (!string.IsNullOrEmpty(paras.MessageIds))
+            {
+                var ids = paras.MessageIds.Split(',');
+                for (int i = 0; i < ids.Count(); i++)
+                {
+                    msgIds.Add(new Guid(ids[i]));
+                }
+            }
+            MessageService.UpdateMessageStutas(paras.MsgGroupId, msgIds, readstatus, userNumber);
+            return new OutputResult<object>() { Status = 0, Message = "操作成功" };
         }
     }
 }

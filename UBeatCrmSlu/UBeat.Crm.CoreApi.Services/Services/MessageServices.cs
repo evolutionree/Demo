@@ -614,6 +614,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return _msgRepository.StatisticUnreadMessage(msgGroupIds, userNumber);
         }
 
+        /// <summary>
+        /// 修改消息状态
+        /// </summary>
+        /// <param name="msgGroupId"></param>
+        /// <param name="msgIds"></param>
+        /// <param name="readstatus">消息状态，0未读 1已查 2已读 3删除</param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public void UpdateMessageStutas(int msgGroupId, List<Guid> msgIds, int readstatus, int userNumber)
+        {
+            DbTransaction tran = null;
+            _msgRepository.UpdateMessageStatus(tran, msgGroupId, msgIds, readstatus, userNumber);
+        }
 
         #region ---private Methor---
 

@@ -66,7 +66,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Attendance
             RuleFor(d => d.SignMark).NotNull().WithMessage("考勤备注不能为null");
             RuleFor(d => d.CardType).NotNull().WithMessage("考勤打开类型不能为空");
             RuleFor(d => d.SignTime).NotEmpty().WithMessage("考勤时间不能为空");
-           // RuleFor(d => d.RecordSource).NotEmpty().WithMessage("考勤来源不能为空");
+            RuleFor(d => d.RecordSource).NotEmpty().WithMessage("考勤来源不能为空");
         }
 
         public static bool ValidLocation(AddressType address)
@@ -86,7 +86,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Attendance
             RuleFor(d => d.CardType).NotNull().WithMessage("考勤打开类型不能为空");
             RuleFor(d => d.SelectUser).NotNull().WithMessage("考勤人员不能为空");
             RuleFor(d => d.SignTime).NotEmpty().WithMessage("考勤时间不能为空");
-           // RuleFor(d => d.RecordSource).NotEmpty().WithMessage("考勤来源不能为空");
+            RuleFor(d => d.RecordSource).NotEmpty().WithMessage("考勤来源不能为空");
         }
 
         public static bool ValidLocation(AddressType address)
