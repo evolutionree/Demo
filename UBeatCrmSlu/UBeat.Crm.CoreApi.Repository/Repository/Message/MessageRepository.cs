@@ -187,7 +187,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
                                 LEFT JOIN crm_sys_message AS m ON m.msgid= mr.msgid
                                 LEFT JOIN crm_sys_userinfo AS u ON m.reccreator = u.userid
                                 LEFT JOIN crm_sys_entity AS e ON e.entityid = m.entityid
-                                WHERE (mr.userid=@userid ) {0} {1} {2} {3} {4}
+                                WHERE (mr.userid=@userid and mr.readstatus != 3) {0} {1} {2} {3} {4}
                                 ORDER BY m.recversion {5}
                                 {6};", versionSql, entityIdSql, businessIdSql, msgGroupIdSql, msgStyleTypeSql, orderby, limitSql);
 
@@ -292,9 +292,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
                     new NpgsqlParameter("userid", userNumber),
                     new NpgsqlParameter("messageids", messageids.ToArray()),
              };
-            int result = ExecuteNonQuery(executeSql, param);
-            if (result <= 0)
-                throw new Exception("回写消息失败");
+            ExecuteNonQuery(executeSql, param);
 
         }
         /// <summary>
@@ -304,22 +302,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
         /// <param name="readstatus">消息状态，0未读 1已查 2已读 3删除</param>
         /// <param name="userNumber"></param>
         /// <returns></returns>
-        public void UpdateMessageStatus(DbTransaction tran ,int msgGroupId, List<Guid>msgIds, int readstatus, int userNumber)
+        public void UpdateMessageStatus(DbTransaction tran, int msgGroupId, List<Guid> msgIds, int readstatus, int userNumber)
         {
             List<DbParameter> parm = new List<DbParameter>();
-                string sql = @"Update crm_sys_message_receiver set readstatus = @readstatus 
+            string sql = @"Update crm_sys_message_receiver set readstatus = @readstatus 
 where userid = @userid and msgid IN (SELECT msgid from crm_sys_message where msggroupid = @msggroupids) and readstatus != 3 and readstatus != @readstatus "; // readstatus != 3 不对已有删除标识的数据做处理
-                parm.Add(new NpgsqlParameter("readstatus", readstatus));
-                parm.Add(new NpgsqlParameter("userid", userNumber));
-                parm.Add(new NpgsqlParameter("msggroupids", msgGroupId));
-                if (msgIds != null && msgIds.Count() > 0)
-                {
-                    sql += " and msgid = ANY(@msgid)";
-                    parm.Add(new NpgsqlParameter("msgid", msgIds.ToArray()));
-                }
-            int result = ExecuteNonQuery(sql, parm.ToArray(), tran);
-            if (result <= 0)
-                throw new Exception("回写消息失败");
+            parm.Add(new NpgsqlParameter("readstatus", readstatus));
+            parm.Add(new NpgsqlParameter("userid", userNumber));
+            parm.Add(new NpgsqlParameter("msggroupids", msgGroupId));
+            if (msgIds != null && msgIds.Count() > 0)
+            {
+                sql += " and msgid = ANY(@msgid)";
+                parm.Add(new NpgsqlParameter("msgid", msgIds.ToArray()));
+            }
+            ExecuteNonQuery(sql, parm.ToArray(), tran);
         }
 
     }
