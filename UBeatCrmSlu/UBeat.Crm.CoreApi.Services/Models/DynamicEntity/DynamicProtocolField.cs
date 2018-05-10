@@ -334,6 +334,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 默认值
         /// </summary>
         public string DefaultValue { get; set; }
+        /// <summary>
+        /// 嵌套表格字段时记录嵌套实体的id
+        /// </summary>
+        public Guid EntityId { get; set; }
     }
 
     public class DynamicProtocolValidResult

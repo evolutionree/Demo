@@ -528,7 +528,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Guid entityid = Guid.Empty;
                 if (!Guid.TryParse(formData.Key, out entityid))
                     return ShowError<object>("实体id必须是guid类型");
-                sheetDefine = GeneralDynamicTemplate(entityid, formData.OperateType, userno);
+                sheetDefine = GeneralDynamicTemplate(entityid,null, formData.OperateType, userno);
 
                 taskName = _repository.GetEntityName(entityid);
             }
@@ -660,7 +660,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 if (data.DynamicModel == null)
                     throw new Exception("DynamicQuery必须有值");
-                sheetDefine = GeneralDynamicTemplate(data.DynamicModel.EntityId, ExcelOperateType.Export, data.UserId);
+                sheetDefine = GeneralDynamicTemplate(data.DynamicModel.EntityId,data.NestTableList, ExcelOperateType.Export, data.UserId);
             }
 
             var sheets = new List<ExportSheetData>();
@@ -696,7 +696,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var isAdvance = data.DynamicModel.IsAdvanceQuery == 1;
                     var dataList = _entityServices.DataList2(data.DynamicModel, isAdvance, data.UserId);
                     var queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
-                    //if (queryResult == null ) queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
+                    var typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(data.DynamicModel.EntityId.ToString(), data.UserId);
+                    if (!typeVisibleFields.ContainsKey("FieldVisible"))
+                        throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
                     var pageDataTemp = queryResult["PageData"];
 
                     var tempFields = template.Headers.Where(o => o.FieldType == FieldType.Image
@@ -866,7 +868,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public ExportModel GenerateImportTemplate(Guid entityid, int userNumber)
         {
 
-            var defines = GeneralDynamicTemplate(entityid, ExcelOperateType.ImportAdd, userNumber);
+            var defines = GeneralDynamicTemplate(entityid, null,ExcelOperateType.ImportAdd, userNumber);
             var sheetsdata = new List<ExportSheetData>();
 
 
@@ -1074,27 +1076,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --生成动态模板--
-        private List<SheetDefine> GeneralDynamicTemplate(Guid entityId, ExcelOperateType operateType, int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate(Guid entityId, List<string> nestTableList,ExcelOperateType operateType, int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
             switch (operateType)
             {
                 case ExcelOperateType.ImportAdd:
                 case ExcelOperateType.ImportUpdate:
-                    defines = GeneralDynamicTemplate_Import(entityId, operateType, userNumber);
+                    defines = GeneralDynamicTemplate_Import(entityId, nestTableList,operateType, userNumber);
                     break;
                 default:
-                    defines = GeneralDynamicTemplate_Export(entityId, operateType, userNumber);
+                    defines = GeneralDynamicTemplate_Export(entityId, nestTableList,operateType, userNumber);
                     break;
             }
 
             return defines;
         }
         #region --生成动态模板的导出模板定义--
-        private List<SheetDefine> GeneralDynamicTemplate_Export(Guid entityId, ExcelOperateType operateType, int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate_Export(Guid entityId, List<string> nestTableList, ExcelOperateType operateType, int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
-
+            if (nestTableList == null) nestTableList = new List<string>();
             try
             {
                 var typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(entityId.ToString(), userNumber);
@@ -1106,6 +1108,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var modelType = Convert.ToInt32(entityInfo["modeltype"].ToString());
                 var typeFields = typeVisibleFields["FieldVisible"];
                 List<SimpleHeader> headers = new List<SimpleHeader>();
+                
                 foreach (var field in typeFields)
                 {
                     if (!field.ContainsKey("displayname") || !field.ContainsKey("fieldname") || !field.ContainsKey("controltype"))
@@ -1115,6 +1118,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var displayname = field["displayname"].ToString();
                     var fieldname = field["fieldname"].ToString();
                     var controltype = field["controltype"].ToString();
+                    
                     FieldType fieldTypetemp = FieldType.Text;
                     if (modelType == 3 && field["fieldname"].ToString() == "recrelateid")//动态实体走别的逻辑
                     {
@@ -1128,7 +1132,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         ConstructField(controltype, out fieldTypetemp);
                     }
-                    headers.Add(new SimpleHeader() { FieldName = fieldname, HeaderText = displayname, Width = 150, FieldType = fieldTypetemp });
+                    MultiHeader header = new MultiHeader() { FieldName = fieldname, HeaderText = displayname, Width = 150, FieldType = fieldTypetemp };
+                    headers.Add(header);
+                    if (int.Parse(controltype) == (int)EntityFieldControlType.LinkeTable && nestTableList.Exists((string s) => s.Equals(fieldname)))
+                    {
+                        var fieldConfig = field["fieldconfig"].ToString();
+                        DynamicProtocolFieldConfig fieldConfigInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(fieldConfig);
+                        if (fieldConfigInfo.EntityId != null && !fieldConfigInfo.EntityId.Equals(Guid.Empty))
+                        {
+                            var sub_typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(fieldConfigInfo.EntityId.ToString(), userNumber);
+                            if (!typeVisibleFields.ContainsKey("FieldVisible"))
+                                throw new Exception("获取嵌套实体显示字段接口报错，缺少FieldVisible参数的结果集");
+                            var sub_entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(fieldConfigInfo.EntityId, userNumber);
+                            if (entityInfo == null)
+                                throw new Exception("嵌套实体信息不存在");
+                            var sub_typeFields = sub_typeVisibleFields["FieldVisible"];
+                            foreach (var sub_field in sub_typeFields)
+                            {
+                                if (!sub_field.ContainsKey("displayname") || !sub_field.ContainsKey("fieldname") || !sub_field.ContainsKey("controltype"))
+                                    throw new Exception("获取实体显示字段接口缺少必要参数");
+                                if (sub_field["displayname"] == null || sub_field["fieldname"] == null || sub_field["controltype"] == null)
+                                    throw new Exception("获取实体显示字段接口必要参数数据不允许为空");
+                                var sub_displayname = field["displayname"].ToString();
+                                var sub_fieldname = field["fieldname"].ToString();
+                                var sub_controltype = field["controltype"].ToString();
+                                FieldType sub_fieldTypetemp = FieldType.Text;
+                                ConstructField(sub_controltype, out sub_fieldTypetemp);
+                                sub_fieldname = fieldname + "." + sub_fieldname;
+                                MultiHeader sub_header = new MultiHeader() { FieldName = sub_fieldname, HeaderText = sub_displayname, Width = 150, FieldType = sub_fieldTypetemp };
+                                header.SubHeaders.Add(sub_header);
+                            }
+                            //嵌套表格，需要处理嵌套表格内部字段
+                        }
+                    }
                 }
                 defines.Add(new SimpleSheetTemplate()
                 {
@@ -1206,7 +1242,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --生成动态模板的导入模板定义--
-        private List<SheetDefine> GeneralDynamicTemplate_Import(Guid entityId, ExcelOperateType operateType, int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate_Import(Guid entityId, List<string> nestTableList,  ExcelOperateType operateType, int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
             EntityTypeQueryMapper entityType = new EntityTypeQueryMapper()

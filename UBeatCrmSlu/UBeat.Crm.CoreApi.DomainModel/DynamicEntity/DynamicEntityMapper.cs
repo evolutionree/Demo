@@ -103,6 +103,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public string SearchOrder { get; set; }
         public int? NeedPower { get; set; }
         public Dictionary<string,object> RelInfo { get; set; }
+
         protected override IValidator GetValidator()
         {
             return new DynamicEntityListMapperValidator();

@@ -47,7 +47,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// </summary>
         public DynamicEntityListModel DynamicModel { set; get; }
         
-
+        /// <summary>
+        /// 标注哪些嵌套表格字段要导出/导出
+        /// </summary>
+        public List<string> NestTableList { get; set; }
        
         #endregion
 
