@@ -297,6 +297,30 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
                 throw new Exception("回写消息失败");
 
         }
+        /// <summary>
+        /// 修改消息状态
+        /// </summary>
+        /// <param name="msgGroupIds"></param>
+        /// <param name="readstatus">消息状态，0未读 1已查 2已读 3删除</param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public void UpdateMessageStatus(DbTransaction tran ,int msgGroupId, List<Guid>msgIds, int readstatus, int userNumber)
+        {
+            List<DbParameter> parm = new List<DbParameter>();
+                string sql = @"Update crm_sys_message_receiver set readstatus = @readstatus 
+where userid = @userid and msgid IN (SELECT msgid from crm_sys_message where msggroupid = @msggroupids) and readstatus != 3 and readstatus != @readstatus "; // readstatus != 3 不对已有删除标识的数据做处理
+                parm.Add(new NpgsqlParameter("readstatus", readstatus));
+                parm.Add(new NpgsqlParameter("userid", userNumber));
+                parm.Add(new NpgsqlParameter("msggroupids", msgGroupId));
+                if (msgIds != null && msgIds.Count() > 0)
+                {
+                    sql += " and msgid = ANY(@msgid)";
+                    parm.Add(new NpgsqlParameter("msgid", msgIds.ToArray()));
+                }
+            int result = ExecuteNonQuery(sql, parm.ToArray(), tran);
+            if (result <= 0)
+                throw new Exception("回写消息失败");
+        }
 
     }
 }

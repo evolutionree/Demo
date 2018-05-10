@@ -35,5 +35,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="messages"></param>
         /// <param name="userNumber"></param>
         void UpdateMessageStatus(List<MsgWriteBackInfo> messages, int userNumber);
+
+        void UpdateMessageStatus(DbTransaction tran, int msgGroupId, List<Guid> msgIds, int readstatus, int userNumber);
     }
 }

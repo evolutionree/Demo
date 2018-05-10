@@ -10,6 +10,7 @@ using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Models.Message;
 using UBeat.Crm.CoreApi.DomainModel.Message;
 using Microsoft.AspNetCore.Authorization;
+using System.IO;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -93,6 +94,32 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (data == null) return ResponseError<object>("参数格式错误");
             return _notifyServices.WriteMessageAsyn(data, UserId);
+        }
+
+        [HttpPost]
+        [Route("messageread")]
+        public OutputResult<object> MessageRead([FromBody] MsgStuausParameter data)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _notifyServices.MessageRead(data, UserId);
+        }
+
+        [HttpPost]
+        [Route("deletemessage")]
+        public OutputResult<object> DeleteMessage([FromBody] MsgStuausParameter data)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            if (!string.IsNullOrEmpty(data.MessageIds))
+            {
+                var ids = data.MessageIds.Split(',');
+                var newGuid = Guid.Empty;
+                for (int i = 0; i < ids.Count(); i++)
+                {
+                    if (!Guid.TryParse(ids[i], out newGuid))
+                        return ResponseError<object>("<MsgId>格式（guid）错误]");
+                }
+            }
+            return _notifyServices.DeleteMessage(data, UserId);
         }
     }
 }

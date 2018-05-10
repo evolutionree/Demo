@@ -55,4 +55,18 @@ namespace UBeat.Crm.CoreApi.Services.Models.Message
         /// </summary>
         public int PageSize { set; get; }
     }
+
+    public class MsgStuausParameter
+    {
+        public int MsgGroupId { set; get; }
+        public string MessageIds { get; set; }
+    }
+
+    public enum MsgStatus
+    {
+        Unread = 0, //未读
+        Checked = 1, //已查
+        Read = 2, //已读
+        Del = 3 //删除
+    }
 }
