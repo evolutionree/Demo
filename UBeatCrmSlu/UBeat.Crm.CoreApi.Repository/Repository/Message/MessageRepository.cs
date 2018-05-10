@@ -187,7 +187,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
                                 LEFT JOIN crm_sys_message AS m ON m.msgid= mr.msgid
                                 LEFT JOIN crm_sys_userinfo AS u ON m.reccreator = u.userid
                                 LEFT JOIN crm_sys_entity AS e ON e.entityid = m.entityid
-                                WHERE (mr.userid=@userid ) {0} {1} {2} {3} {4}
+                                WHERE (mr.userid=@userid and mr.readstatus != 3) {0} {1} {2} {3} {4}
                                 ORDER BY m.recversion {5}
                                 {6};", versionSql, entityIdSql, businessIdSql, msgGroupIdSql, msgStyleTypeSql, orderby, limitSql);
 
