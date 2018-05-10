@@ -648,6 +648,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public ExportModel ExportData(ExportDataModel data)
         {
             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+            if (data.NestTableList == null) data.NestTableList = new List<string>();
             var userData = HasFunctionAccess(data.UserId);
 
 
@@ -693,87 +694,72 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     var entityname = _repository.GetEntityName(data.DynamicModel.EntityId);
                     filename = string.Format("{0}导出数据.xlsx", entityname);
+                    #region 获取并处理主表数据
                     var isAdvance = data.DynamicModel.IsAdvanceQuery == 1;
                     var dataList = _entityServices.DataList2(data.DynamicModel, isAdvance, data.UserId);
                     var queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
-                    var typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(data.DynamicModel.EntityId.ToString(), data.UserId);
-                    if (!typeVisibleFields.ContainsKey("FieldVisible"))
-                        throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
                     var pageDataTemp = queryResult["PageData"];
-
                     var tempFields = template.Headers.Where(o => o.FieldType == FieldType.Image
                                                             || o.FieldType == FieldType.Address
                                                             || o.FieldType == FieldType.reference
                                                             || o.FieldType == FieldType.TimeDate
                                                             );
-                    if (tempFields.Count() > 0)
+                    foreach (var item in tempFields)
                     {
-                        foreach (var item in tempFields)
+                        foreach (var mdata in pageDataTemp)
                         {
-                            foreach (var mdata in pageDataTemp)
+                            if (mdata.ContainsKey(item.FieldName) == false) continue;//第一层忽略表格内容字段
+                            switch (item.FieldType)
                             {
-
-                                switch (item.FieldType)
-                                {
-                                    case FieldType.TimeDate:
+                                case FieldType.TimeDate:
+                                    {
+                                        var values = mdata[item.FieldName];
+                                        DateTime dt;
+                                        if (values != null && DateTime.TryParse(values.ToString(), out dt))
                                         {
-                                            var values = mdata[item.FieldName];
-                                            DateTime dt;
-                                            if (values != null && DateTime.TryParse(values.ToString(), out dt))
+                                            mdata[item.FieldName] = dt.ToString("yyyy-MM-dd");
+                                        }
+                                    }
+                                    break;
+                                case FieldType.Image:
+                                    {
+                                        var values = mdata[item.FieldName];
+                                        if (values != null)
+                                        {
+                                            var urlArray = values.ToString().Split(',');
+                                            StringBuilder urlContent = new StringBuilder();
+                                            int rowheight = 0;
+                                            foreach (var str in urlArray)
                                             {
-                                                mdata[item.FieldName] = dt.ToString("yyyy-MM-dd");
+                                                urlContent.Append(string.Format(_fileServices.UrlConfig.ReadUrl, str));
+                                                urlContent.Append("\r\n");
+                                                rowheight += 25;
                                             }
+                                            mdata[item.FieldName] = new OXSExcelDataCell(urlContent.ToString(), rowheight);
+                                            template.Headers.FirstOrDefault(o => o.FieldName.Equals(item.FieldName)).Width = 700;
                                         }
-                                        break;
-                                    case FieldType.Image:
-                                        {
-                                            var values = mdata[item.FieldName];
-                                            if (values != null)
-                                            {
-                                                var urlArray = values.ToString().Split(',');
-                                                StringBuilder urlContent = new StringBuilder();
-                                                int rowheight = 0;
-                                                foreach (var str in urlArray)
-                                                {
-                                                    urlContent.Append(string.Format(_fileServices.UrlConfig.ReadUrl, str));
-                                                    urlContent.Append("\r\n");
-                                                    rowheight += 25;
-                                                }
-                                                mdata[item.FieldName] = new OXSExcelDataCell(urlContent.ToString(), rowheight);
-                                                template.Headers.FirstOrDefault(o => o.FieldName.Equals(item.FieldName)).Width = 700;
-                                            }
-                                        }
-                                        break;
-                                    case FieldType.Address:
-                                    case FieldType.reference:
-                                        if (mdata.ContainsKey(item.FieldName + "_name"))
-                                        {
-                                            var _namevalues = mdata[item.FieldName + "_name"];
-                                            if (mdata.ContainsKey(item.FieldName))
-                                                mdata[item.FieldName] = _namevalues;
-                                            else mdata.Add(item.FieldName, _namevalues);
-                                        }
-                                        break;
-                                    //case FieldType.Related:
-                                    //    var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(data.DynamicModel.EntityId, data.UserId);
-                                    //    if (entityInfo != null)
-                                    //    {
-                                    //        if (Convert.ToInt32(entityInfo["modeltype"].ToString()) == 3)
-                                    //        {
-
-                                    //        }
-                                    //    }
-                                    //    break;
-                                }
-
-
+                                    }
+                                    break;
+                                case FieldType.Address:
+                                case FieldType.reference:
+                                    if (mdata.ContainsKey(item.FieldName + "_name"))
+                                    {
+                                        var _namevalues = mdata[item.FieldName + "_name"];
+                                        if (mdata.ContainsKey(item.FieldName))
+                                            mdata[item.FieldName] = _namevalues;
+                                        else mdata.Add(item.FieldName, _namevalues);
+                                    }
+                                    break;
                             }
+
+
                         }
                     }
-
+                    
                     // pageData = new List<Dictionary<string, object>>();
                     foreach (var item1 in pageDataTemp)
                     {
+                        
                         var dic = new Dictionary<string, object>();
                         foreach (var item2 in item1)
                         {
@@ -782,7 +768,152 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         pageData.Add(dic);
                     }
+                    #endregion
+                    #region 开始处理嵌套表格数据问题
+                    Dictionary<string, Dictionary<string, Dictionary<string, object>>> allSubTableDict = new Dictionary<string, Dictionary<string, Dictionary<string, object>>>();
+                    List<Guid> MainIds = new List<Guid>();//如果涉及嵌套表格，这个变量是记录所有主实体的id，虽然性能查了一点，但不是绝对的问题
+                    foreach (var item1 in pageDataTemp)//这个遍历不合并到上面的遍历的原因是因为代码的可阅读性，虽然降低了一点点可以忽略的性能。
+                    {
+                        if (item1.ContainsKey("recid"))
+                        {
+                            Guid tmpid = Guid.Empty;
+                            if (Guid.TryParse(item1["recid"].ToString(), out tmpid))
+                            {
+                                MainIds.Add(tmpid);
+                            }
+                        }
+                    }
+                    var typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(data.DynamicModel.EntityId.ToString(), data.UserId);
+                    if (!typeVisibleFields.ContainsKey("FieldVisible"))
+                        throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
+                    var typeFields = typeVisibleFields["FieldVisible"];
+                    Dictionary<string, List<Dictionary<string, object>>> list = new Dictionary<string, List<Dictionary<string, object>>>();
+                    foreach (var field in typeFields)
+                    {
+                        if (!field.ContainsKey("displayname") || !field.ContainsKey("fieldname") || !field.ContainsKey("controltype"))
+                            throw new Exception("获取实体显示字段接口缺少必要参数");
+                        if (field["displayname"] == null || field["fieldname"] == null || field["controltype"] == null)
+                            throw new Exception("获取实体显示字段接口必要参数数据不允许为空");
+                        var displayname = field["displayname"].ToString();
+                        var fieldname = field["fieldname"].ToString();
+                        var controltype = field["controltype"].ToString();
+                        if (int.Parse(controltype) == (int)DynamicProtocolControlType.LinkeTable
+                            && data.NestTableList.Exists((string s) => s.Equals(fieldname)))
+                        {
+                            var sFieldConfig = field["fieldconfig"].ToString();
+                            DynamicProtocolFieldConfig fieldConfigInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(sFieldConfig);
+                            if (fieldConfigInfo != null && fieldConfigInfo.EntityId != null && fieldConfigInfo.EntityId.Equals(Guid.Empty) == false)
+                            {
+                                //确实是需要输出的嵌套表格
+                                DynamicEntityListModel query = new DynamicEntityListModel()
+                                {
+                                    EntityId = fieldConfigInfo.EntityId,
+                                    ViewType = (int)DynamicProtocolViewType.Web,
+                                    SearchData = new Dictionary<string, object>(),
+                                    ExtraData = new Dictionary<string, object>(),
+                                    SearchDataXOR = new Dictionary<string, object>(),
+                                    PageIndex = 1,
+                                    PageSize = 1024 * 1024,
+                                    IsAdvanceQuery = 1,
+                                    MainIds = MainIds
+                                };
+                                var sub_dataList = _entityServices.DataList2(data.DynamicModel, true, data.UserId);
+                                var sub_queryResult = sub_dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
+                                var sub_pageDataTemp = sub_queryResult["PageData"];
+                                var sub_tempFields = template.Headers.Where(o => o.FieldType == FieldType.Image
+                                                            || o.FieldType == FieldType.Address
+                                                            || o.FieldType == FieldType.reference
+                                                            || o.FieldType == FieldType.TimeDate
+                                                            );
+                                foreach (var item in sub_tempFields)
+                                {
+                                    foreach (var mdata in sub_pageDataTemp)
+                                    {
+                                        string thisfieldname = item.FieldName.Substring(fieldname.Length + 1);
+                                        if (mdata.ContainsKey(thisfieldname) == false) continue;//第一层忽略表格内容字段
+                                        switch (item.FieldType)
+                                        {
+                                            case FieldType.TimeDate:
+                                                {
+                                                    var values = mdata[thisfieldname];
+                                                    DateTime dt;
+                                                    if (values != null && DateTime.TryParse(values.ToString(), out dt))
+                                                    {
+                                                        mdata[thisfieldname] = dt.ToString("yyyy-MM-dd");
+                                                    }
+                                                }
+                                                break;
+                                            case FieldType.Image:
+                                                {
+                                                    var values = mdata[thisfieldname];
+                                                    if (values != null)
+                                                    {
+                                                        var urlArray = values.ToString().Split(',');
+                                                        StringBuilder urlContent = new StringBuilder();
+                                                        int rowheight = 0;
+                                                        foreach (var str in urlArray)
+                                                        {
+                                                            urlContent.Append(string.Format(_fileServices.UrlConfig.ReadUrl, str));
+                                                            urlContent.Append("\r\n");
+                                                            rowheight += 25;
+                                                        }
+                                                        mdata[thisfieldname] = new OXSExcelDataCell(urlContent.ToString(), rowheight);
+                                                        template.Headers.FirstOrDefault(o => o.FieldName.Equals(item.FieldName)).Width = 700;
+                                                    }
+                                                }
+                                                break;
+                                            case FieldType.Address:
+                                            case FieldType.reference:
+                                                if (mdata.ContainsKey(thisfieldname + "_name"))
+                                                {
+                                                    var _namevalues = mdata[thisfieldname + "_name"];
+                                                    if (mdata.ContainsKey(thisfieldname))
+                                                        mdata[thisfieldname] = _namevalues;
+                                                    else mdata.Add(thisfieldname, _namevalues);
+                                                }
+                                                break;
+                                        }
+
+
+                                    }
+                                }
+                                //
+                                var sub_pageData = new Dictionary<string,Dictionary<string, object>>();
+                                foreach (var item1 in sub_pageDataTemp)
+                                {
+
+                                    var dic = new Dictionary<string, object>();
+                                    foreach (var item2 in item1)
+                                    {
+
+                                        dic.Add(item2.Key, item2.Value);
+                                    }
+                                    if (dic.ContainsKey("recid") && dic["recid"] != null) {
+
+                                        sub_pageData.Add(dic["recid"].ToString(),dic);
+                                    }
+                                }
+                                allSubTableDict.Add(fieldname, sub_pageData);
+
+                            }
+                        }
+                    }
+                    #endregion
+
+                    #region 把主表的数据与每个嵌套实体的数据合并起来
+                    var new_PageData = new List<Dictionary<string, object>>();
+                    foreach (Dictionary<string, object> itemData in pageData) {
+                        int maxRow = 0;
+                        Dictionary<string, List<Dictionary<string, object>>> thisSubTableData = new Dictionary<string, List<Dictionary<string, object>>>();
+                        foreach (string fieldname in data.NestTableList)
+                        {
+                            if (itemData.ContainsKey("fieldname")) {
+                            }
+                        }
+                    }
+                    #endregion
                 }
+
 
                 //把IDictionary<string, object>转为Dictionary<string, object>类型
 
