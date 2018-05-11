@@ -163,5 +163,10 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<EntityProMapper> GetDynamicEntityList(int modelType = 3);
 
+        List<FuncEvent> GetFuncEvent(DbTransaction tran, Guid entityId, int userNumber);
+
+        List<ActionExtConfig> GetActionExtConfig(DbTransaction tran, Guid entityId, int userNumber);
+
+        List<ExtFunction> GetExtFunction(DbTransaction tran, Guid entityId, int userNumber);
     }
 }

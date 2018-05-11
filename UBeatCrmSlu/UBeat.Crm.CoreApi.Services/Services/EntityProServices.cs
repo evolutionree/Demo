@@ -1238,5 +1238,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>("保存失败");
         }
 
+        
+        public OutputResult<object> GetFunctionConfig(FuncConfig data, int userNumber)
+        {
+            DbTransaction tran = null;
+            var funcEventData = new List<object>();
+            var funcEvent = _entityProRepository.GetFuncEvent(tran, data.EntityId, userNumber);
+            var distEvent = funcEvent.Select(r => r.TypeId).Distinct();
+            var typeIds = new List<object>();
+            foreach (var item in distEvent)
+            {
+                var EventDatas = new Dictionary<string, object>();
+                foreach (var o in funcEvent.Where(r => r.TypeId == item))
+                {
+                    typeIds.Add(o);
+                }
+                EventDatas.Add(item.ToString(), typeIds);
+                funcEventData.Add(EventDatas);
+            }
+            
+            var acConfig = _entityProRepository.GetActionExtConfig(tran, data.EntityId, userNumber);
+            var extFunction = _entityProRepository.GetExtFunction(tran, data.EntityId, userNumber);
+            var funcConfigList = new Dictionary<string, object>();
+            funcConfigList.Add("funcEvent", funcEventData);
+            funcConfigList.Add("acConfig", acConfig);
+            funcConfigList.Add("extFunction", extFunction);
+            return new OutputResult<object>(funcConfigList);
+        }
+
     }
 }

@@ -180,4 +180,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     }
 
+    public class FuncConfig
+    {
+        public Guid EntityId { get; set; }
+    }
 }

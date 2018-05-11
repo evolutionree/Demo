@@ -573,5 +573,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         #endregion
+
+
+        #region 扩展配置
+        [HttpPost]
+        [Route("getfunctionconfig")]
+        public OutputResult<object> GetFunctionConfig([FromBody] FuncConfig data)
+        {
+            if (data == null || data.EntityId == Guid.Empty)
+                return ResponseError<object>("参数格式错误");
+            return _entityProService.GetFunctionConfig(data, UserId);
+        }
+        #endregion
     }
 }

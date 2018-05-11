@@ -1556,5 +1556,36 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             return DataBaseHelper.Query<EntityProMapper>(sql, param);
         }
 
+        #region 扩展配置
+        public List<FuncEvent> GetFuncEvent(DbTransaction tran, Guid entityId, int userNumber)
+        {
+            var sql = @"select * from crm_sys_entity_func_event where typeid in 
+(select ec.categoryid from crm_sys_entity_category as ec where entityid = @entityid)";
+
+            var param = new DbParameter[] { new NpgsqlParameter("entityid", entityId) };
+
+            return ExecuteQuery<FuncEvent>(sql, param, tran);
+        }
+
+        public List<ActionExtConfig> GetActionExtConfig(DbTransaction tran, Guid entityId, int userNumber)
+        {
+            var sql = @"select * from crm_sys_actionext_config where entityid = @entityid";
+
+            var param = new DbParameter[] { new NpgsqlParameter("entityid", entityId) };
+
+            return ExecuteQuery<ActionExtConfig>(sql, param, tran);
+        }
+
+        public List<ExtFunction> GetExtFunction(DbTransaction tran, Guid entityId, int userNumber)
+        {
+            var sql = @"select * from crm_sys_entity_extfunction where entityid = @entityid";
+
+            var param = new DbParameter[] { new NpgsqlParameter("entityid", entityId) };
+
+            return ExecuteQuery<ExtFunction>(sql, param, tran);
+        }
+        #endregion
+
+
     }
 }
