@@ -75,11 +75,20 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 
         #region --创建文本单元格--
 
-        public static Cell InsertText(WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, string text, Row row = null)
+        public static Cell InsertText(WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, string text, Row row = null, CellTypeSelfDefined cellType = CellTypeSelfDefined.Normal)
         {
             Cell cell = InsertCellInWorksheet(columnIdex, rowIndex, worksheetPart, row);
             cell.CellValue = new CellValue(text);
-            cell.DataType = new EnumValue<CellValues>(CellValues.String);
+            if (cellType == CellTypeSelfDefined.Number)
+            {
+                cell.DataType = new EnumValue<CellValues>(CellValues.Number);
+            }
+            else if (cellType == CellTypeSelfDefined.Date) {
+                cell.DataType = new EnumValue<CellValues>(CellValues.Date);
+            }else
+            {
+                cell.DataType = new EnumValue<CellValues>(CellValues.String);
+            }
             return cell;
         }
         public static Cell InsertSharedText(WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, string text, Row row = null)
@@ -597,6 +606,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         }
         #endregion
 
-
+        public enum CellTypeSelfDefined {
+            Normal = 0 ,
+            String  =1,
+            Number =2,
+            Date = 3
+        }
     }
 }

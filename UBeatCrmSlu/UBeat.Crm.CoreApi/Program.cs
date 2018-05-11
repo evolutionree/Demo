@@ -38,6 +38,7 @@ namespace UBeat.Crm.CoreApi
 
 
             StartScheduler();//启动主Scheler
+
             host.Run();
         }
 

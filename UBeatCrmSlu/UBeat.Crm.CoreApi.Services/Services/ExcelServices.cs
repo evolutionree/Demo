@@ -242,7 +242,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var i1 = i;
                         var length = numThreads - 1 == i ? m.DataRows.Count - i * count : count;
                         var rangdata = m.DataRows.GetRange(i * count, length);
-                        
+
                         ThreadPool.QueueUserWorkItem(delegate (object dataparam)
                         {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
@@ -389,16 +389,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var fileID = Guid.NewGuid().ToString();
                     //上传文档到文件服务器
                     progress.ResultFileId = _fileServices.UploadFile(null, fileID, string.Format("{0}导入结果.xlsx", taskData.TaskName), errorExcleBytes);
-                   
+
                 }
                 //var taskDataTemp = _cache.Get(taskDataId_prefix + taskid) as TaskDataModel;
                 if (taskData != null)
                 {
-                    
+
                     Guid entityid = Guid.Empty;
                     Guid.TryParse(taskData.FormDataKey, out entityid);
                     SendMessage(entityid, progress, hasError, taskData.UserNo);
-                    
+
                 }
             });
 
@@ -528,7 +528,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Guid entityid = Guid.Empty;
                 if (!Guid.TryParse(formData.Key, out entityid))
                     return ShowError<object>("实体id必须是guid类型");
-                sheetDefine = GeneralDynamicTemplate(entityid,null, formData.OperateType, userno);
+                sheetDefine = GeneralDynamicTemplate(entityid, null, formData.OperateType,ExportDataColumnSourceEnum.WEB_Standard, userno);
 
                 taskName = _repository.GetEntityName(entityid);
             }
@@ -661,7 +661,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 if (data.DynamicModel == null)
                     throw new Exception("DynamicQuery必须有值");
-                sheetDefine = GeneralDynamicTemplate(data.DynamicModel.EntityId,data.NestTableList, ExcelOperateType.Export, data.UserId);
+                sheetDefine = GeneralDynamicTemplate(data.DynamicModel.EntityId, data.NestTableList, ExcelOperateType.Export,data.ColumnSource, data.UserId);
             }
 
             var sheets = new List<ExportSheetData>();
@@ -683,7 +683,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 else //动态实体配置方式导出
                 {
-                    var template = m as SimpleSheetTemplate;
+                    var template = m as MultiHeaderSheetTemplate;
                     if (template.Headers.Count == 0)
                     {
                         throw new Exception("请设置web列表显示字段");
@@ -699,11 +699,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var dataList = _entityServices.DataList2(data.DynamicModel, isAdvance, data.UserId);
                     var queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
                     var pageDataTemp = queryResult["PageData"];
-                    var tempFields = template.Headers.Where(o => o.FieldType == FieldType.Image
-                                                            || o.FieldType == FieldType.Address
-                                                            || o.FieldType == FieldType.reference
-                                                            || o.FieldType == FieldType.TimeDate
-                                                            );
+                    var tempFields = GetExportSpecFields(template.Headers);
+                    var AllExportFields = GetExportFields(template.Headers);
+                    bool HasDetailTable = false;
+                    List<MergeCellInfo> MergeList = new List<MergeCellInfo>();
                     foreach (var item in tempFields)
                     {
                         foreach (var mdata in pageDataTemp)
@@ -755,11 +754,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                         }
                     }
-                    
+
                     // pageData = new List<Dictionary<string, object>>();
                     foreach (var item1 in pageDataTemp)
                     {
-                        
+
                         var dic = new Dictionary<string, object>();
                         foreach (var item2 in item1)
                         {
@@ -771,18 +770,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     #endregion
                     #region 开始处理嵌套表格数据问题
                     Dictionary<string, Dictionary<string, Dictionary<string, object>>> allSubTableDict = new Dictionary<string, Dictionary<string, Dictionary<string, object>>>();
-                    List<Guid> MainIds = new List<Guid>();//如果涉及嵌套表格，这个变量是记录所有主实体的id，虽然性能查了一点，但不是绝对的问题
-                    foreach (var item1 in pageDataTemp)//这个遍历不合并到上面的遍历的原因是因为代码的可阅读性，虽然降低了一点点可以忽略的性能。
-                    {
-                        if (item1.ContainsKey("recid"))
-                        {
-                            Guid tmpid = Guid.Empty;
-                            if (Guid.TryParse(item1["recid"].ToString(), out tmpid))
-                            {
-                                MainIds.Add(tmpid);
-                            }
-                        }
-                    }
                     var typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(data.DynamicModel.EntityId.ToString(), data.UserId);
                     if (!typeVisibleFields.ContainsKey("FieldVisible"))
                         throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
@@ -804,6 +791,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             DynamicProtocolFieldConfig fieldConfigInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(sFieldConfig);
                             if (fieldConfigInfo != null && fieldConfigInfo.EntityId != null && fieldConfigInfo.EntityId.Equals(Guid.Empty) == false)
                             {
+                                HasDetailTable = true;
+                                List<Guid> MainIds = new List<Guid>();//如果涉及嵌套表格，这个变量是记录所有主实体的id，虽然性能查了一点，但不是绝对的问题
+                                foreach (var item1 in pageDataTemp)//这个遍历不合并到上面的遍历的原因是因为代码的可阅读性，虽然降低了一点点可以忽略的性能。
+                                {
+                                    if (item1.ContainsKey(fieldname) && item1[fieldname]!= null)
+                                    {
+                                        string tmp = item1[fieldname].ToString();
+                                        string[] ids = tmp.Split(",");
+                                        foreach (string id in ids) {
+                                            Guid tmpid = Guid.Empty;
+                                            if (Guid.TryParse(id, out tmpid))
+                                            {
+                                                MainIds.Add(tmpid);
+                                            }
+                                        }
+
+                                       
+                                    }
+                                }
                                 //确实是需要输出的嵌套表格
                                 DynamicEntityListModel query = new DynamicEntityListModel()
                                 {
@@ -817,19 +823,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     IsAdvanceQuery = 1,
                                     MainIds = MainIds
                                 };
-                                var sub_dataList = _entityServices.DataList2(data.DynamicModel, true, data.UserId);
+                                var sub_dataList = _entityServices.DataList2(query, true, data.UserId);
                                 var sub_queryResult = sub_dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
                                 var sub_pageDataTemp = sub_queryResult["PageData"];
-                                var sub_tempFields = template.Headers.Where(o => o.FieldType == FieldType.Image
-                                                            || o.FieldType == FieldType.Address
-                                                            || o.FieldType == FieldType.reference
-                                                            || o.FieldType == FieldType.TimeDate
-                                                            );
-                                foreach (var item in sub_tempFields)
+                                foreach (var item in tempFields)
                                 {
+                                    if (item.FieldName.StartsWith(fieldname + ".") == false) continue;
                                     foreach (var mdata in sub_pageDataTemp)
                                     {
-                                        string thisfieldname = item.FieldName.Substring(fieldname.Length + 1);
+                                       
+                                        string thisfieldname =item.FieldName.Substring(fieldname.Length + 1);
                                         if (mdata.ContainsKey(thisfieldname) == false) continue;//第一层忽略表格内容字段
                                         switch (item.FieldType)
                                         {
@@ -872,13 +875,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                     else mdata.Add(thisfieldname, _namevalues);
                                                 }
                                                 break;
+
                                         }
 
 
                                     }
                                 }
                                 //
-                                var sub_pageData = new Dictionary<string,Dictionary<string, object>>();
+                                var sub_pageData = new Dictionary<string, Dictionary<string, object>>();
                                 foreach (var item1 in sub_pageDataTemp)
                                 {
 
@@ -890,7 +894,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     }
                                     if (dic.ContainsKey("recid") && dic["recid"] != null) {
 
-                                        sub_pageData.Add(dic["recid"].ToString(),dic);
+                                        sub_pageData.Add(dic["recid"].ToString(), dic);
                                     }
                                 }
                                 allSubTableDict.Add(fieldname, sub_pageData);
@@ -902,35 +906,89 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     #region 把主表的数据与每个嵌套实体的数据合并起来
                     var new_PageData = new List<Dictionary<string, object>>();
+                    int curRow =3;
                     foreach (Dictionary<string, object> itemData in pageData) {
-                        int maxRow = 0;
+                        int maxRow = 1;
                         Dictionary<string, List<Dictionary<string, object>>> thisSubTableData = new Dictionary<string, List<Dictionary<string, object>>>();
                         foreach (string fieldname in data.NestTableList)
                         {
-                            if (itemData.ContainsKey("fieldname")) {
+                            List<Dictionary<string, object>> detailList = new List<Dictionary<string, object>>();
+                            if (itemData.ContainsKey(fieldname)&& itemData[fieldname] !=null  && allSubTableDict.ContainsKey(fieldname))
+                            {
+                                string details = itemData[fieldname].ToString();
+                                if (details != null && details.Length > 0)
+                                {
+                                    Dictionary<string, Dictionary<string, object>> orgSubTableData = allSubTableDict[fieldname];
+                                    string[] subids = details.Split(',');
+                                    foreach (string id in subids) {
+                                        if (orgSubTableData.ContainsKey(id)) {
+                                            detailList.Add(orgSubTableData[id]);
+                                        }
+                                    }
+                                    if (detailList.Count > maxRow) maxRow = detailList.Count;
+                                }
+                            }
+                            thisSubTableData.Add(fieldname, detailList);
+                        }
+                        if (data.RowMode == ExportDataRowModeEnum.MergeRow&&maxRow > 1) {
+                            int curCol = 0;
+                            foreach (var field in AllExportFields) {
+                                
+                                if (field.FieldName.IndexOf('.') < 0) {
+                                    MergeCellInfo mergeCellInfo = new MergeCellInfo()
+                                    {
+                                        FromColIndex = curCol,
+                                        FromRowIndex = curRow,
+                                        RowCount = maxRow,
+                                        ColCount = 1
+                                    };
+                                    MergeList.Add(mergeCellInfo);
+                                }
+                                curCol++;
                             }
                         }
+                        for (int i = 0; i < maxRow; i++) {
+                            curRow++;
+                            Dictionary<string, object> newData = null;
+                            if (data.RowMode == ExportDataRowModeEnum.FullFill)
+                            {
+                                newData = copyDictionary(itemData);
+                            }
+                            else if (data.RowMode == ExportDataRowModeEnum.KeepEmpty)
+                            {
+                                if (i == 0)
+                                {
+                                    newData = copyDictionary(itemData);
+                                }
+                                else {
+                                    newData = new Dictionary<string, object>();
+                                }
+                            }
+                            else {
+                                if (i == 0)
+                                {
+                                    newData = copyDictionary(itemData);
+                                }
+                                else
+                                {
+                                    newData = new Dictionary<string, object>();
+                                }
+                            }
+                            foreach (string key in thisSubTableData.Keys) {
+                                List<Dictionary<string, object>> subList = thisSubTableData[key];
+                                if (subList.Count >i) {
+                                    Dictionary<string, object> subItem = subList[i];
+                                    appendDictionary(subItem, newData, key+".");
+                                }
+                            }
+                            new_PageData.Add(newData);
+                        }
                     }
+                    pageData = new_PageData;
                     #endregion
+                    sheetdata.MergeList = MergeList;
                 }
-
-
-                //把IDictionary<string, object>转为Dictionary<string, object>类型
-
-
-                //foreach (var crmRow in pageData)
-                //{
-
-                //	//把IDictionary<string, object>转为Dictionary<string, object>类型
-                //	var dic = new Dictionary<string, object>();
-                //	foreach (var item in crmRow)
-                //	{
-                //		dic.Add(item.Key, item.Value);
-                //	}
-                //	sheetdata.DataRows.Add(dic);
-                //}
                 sheetdata.DataRows = pageData;
-
                 sheetdata.SheetDefines = m;
                 sheets.Add(sheetdata);
             }
@@ -941,8 +999,51 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ExcelFile = OXSExcelWriter.GenerateExcel(sheets)
             };
         }
+        public List<MultiHeader> GetExportSpecFields(List<MultiHeader> headers) {
+            List<MultiHeader> ret = new List<MultiHeader>();
+            foreach (MultiHeader o in headers) {
+                if (o.FieldType == FieldType.Image
+                || o.FieldType == FieldType.Address
+                || o.FieldType == FieldType.reference
+                || o.FieldType == FieldType.TimeDate) {
+                    ret.Add(o);
+                }
+                if (o.SubHeaders != null && o.SubHeaders.Count > 0) {
+                    ret.AddRange(GetExportSpecFields(o.SubHeaders));
+                }
+            }
 
+            return ret;
+        }
+        public List<MultiHeader > GetExportFields(List<MultiHeader> headers){
+            List<MultiHeader> ret = new List<MultiHeader>();
+            foreach (MultiHeader o in headers)
+            {
+                if (o.SubHeaders != null && o.SubHeaders.Count > 0)
+                {
+                    ret.AddRange(GetExportFields(o.SubHeaders));
+                }
+                else {
+                    ret.Add(o);
+                }
+            }
 
+            return ret;
+        }
+        public Dictionary<string, object> copyDictionary(Dictionary<string, object> orgDict) {
+            if (orgDict == null) return null;
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            foreach (string key in orgDict.Keys) {
+                retDict.Add(key, orgDict[key]);
+            }
+            return retDict;
+        }
+        public void appendDictionary(Dictionary<string, object> orgDict, Dictionary<string, object> resultDict, string prefix) {
+            foreach (string key in orgDict.Keys)
+            {
+                resultDict.Add(prefix+key, orgDict[key]);
+            }
+        }
         #endregion
 
         #region --生成导入模板--
@@ -999,7 +1100,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public ExportModel GenerateImportTemplate(Guid entityid, int userNumber)
         {
 
-            var defines = GeneralDynamicTemplate(entityid, null,ExcelOperateType.ImportAdd, userNumber);
+            var defines = GeneralDynamicTemplate(entityid, null,ExcelOperateType.ImportAdd, ExportDataColumnSourceEnum.WEB_Standard, userNumber);
             var sheetsdata = new List<ExportSheetData>();
 
 
@@ -1207,7 +1308,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --生成动态模板--
-        private List<SheetDefine> GeneralDynamicTemplate(Guid entityId, List<string> nestTableList,ExcelOperateType operateType, int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate(Guid entityId, List<string> nestTableList,ExcelOperateType operateType,ExportDataColumnSourceEnum columnSource , int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
             switch (operateType)
@@ -1217,28 +1318,89 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     defines = GeneralDynamicTemplate_Import(entityId, nestTableList,operateType, userNumber);
                     break;
                 default:
-                    defines = GeneralDynamicTemplate_Export(entityId, nestTableList,operateType, userNumber);
+                    defines = GeneralDynamicTemplate_Export(entityId, nestTableList,operateType, columnSource,userNumber);
                     break;
             }
 
             return defines;
         }
         #region --生成动态模板的导出模板定义--
-        private List<SheetDefine> GeneralDynamicTemplate_Export(Guid entityId, List<string> nestTableList, ExcelOperateType operateType, int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate_Export(Guid entityId, List<string> nestTableList, ExcelOperateType operateType, ExportDataColumnSourceEnum columnSource , int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
             if (nestTableList == null) nestTableList = new List<string>();
             try
             {
-                var typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(entityId.ToString(), userNumber);
-                if (!typeVisibleFields.ContainsKey("FieldVisible"))
-                    throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
+                List<IDictionary<string, object>> typeFields = null;
+                #region 根据列来源参数，获取主表所需显示的列
+                if (columnSource == ExportDataColumnSourceEnum.WEB_Standard)
+                {
+                    //根据WEB列表标准选项导出
+                    Dictionary<string, List<IDictionary<string, object>>> typeVisibleFields = null;
+                    typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(entityId.ToString(), userNumber);
+                    if (!typeVisibleFields.ContainsKey("FieldVisible"))
+                        throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
+                    typeFields = typeVisibleFields["FieldVisible"];
+                }
+                else if (columnSource == ExportDataColumnSourceEnum.WEB_Personal)
+                {
+                    //这种情况是根据个人情况导出
+                    Dictionary<string, List<IDictionary<string, object>>> typeVisibleFields = null;
+                    typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(entityId.ToString(), userNumber);
+                    if (!typeVisibleFields.ContainsKey("FieldVisible"))
+                        throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
+                    List<IDictionary<string, object>>  standardFields  = typeVisibleFields["FieldVisible"];
+                    Dictionary<string, object> detail =  _dynamicEntityRepository.GetPersonalWebListColumnsSetting(entityId, userNumber, null);
+                    if (detail != null && detail.ContainsKey("viewconfig") && detail["viewconfig"] != null)
+                    {
+                        typeFields = new List<IDictionary<string, object>>();
+                        WebListPersonalViewSettingInfo view = Newtonsoft.Json.JsonConvert.DeserializeObject<WebListPersonalViewSettingInfo>(detail["viewconfig"].ToString());
+                        foreach (WebListPersonalViewColumnSettingInfo column in view.Columns) {
+                            //判断是否在标准列表中
+                            if (column.IsDisplay != 1) continue;
+                            if (standardFields.Exists((IDictionary<string, object> o) => o["fieldid"].ToString().Equals(column.FieldId.ToString()))){
+                                IDictionary<string, object> item = standardFields.Where<IDictionary<string, object>>((IDictionary<string, object> o) => o["fieldid"].ToString().Equals(column.FieldId.ToString())).First();
+                                if (item != null)
+                                    typeFields.Add(item);
+                            }
+                        }
+                        //把没有的补在最后
+                        foreach (IDictionary<string, object> item in standardFields) {
+                            string fieldid = item["fieldid"].ToString();
+                            if (view.Columns.Exists((WebListPersonalViewColumnSettingInfo o) => o.FieldId.ToString().Equals(fieldid))) continue;
+                            typeFields.Add(item);
+                        }
+                    }
+                    else {
+                        typeFields = standardFields;
+                    }
+                }
+                else if (columnSource == ExportDataColumnSourceEnum.All_Columns)
+                {
+                    //导出全部字段
+                    typeFields = new List<IDictionary<string, object>>();
+                    List<DynamicEntityFieldSearch>  tmp = _dynamicEntityRepository.GetEntityFields(entityId, userNumber);
+                    foreach (DynamicEntityFieldSearch item in tmp) {
+                        Dictionary<string, object> newItem = new Dictionary<string, object>();
+                        //fieldid,displayname,fieldname,controltype,fieldconfig
+                        newItem.Add("fieldid", item.EntityId);
+                        newItem.Add("fieldname", item.FieldName);
+                        newItem.Add("controltype", item.ControlType);
+                        newItem.Add("fieldconfig", item.FieldConfig);
+                        newItem.Add("displayname", item.DisplayName);
+                        typeFields.Add(newItem);
+                    }
+                }
+                else {
+                    throw (new Exception("参数异常"));
+                }
+                #endregion
+
                 var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(entityId, userNumber);
                 if (entityInfo == null)
                     throw new Exception("实体信息不存在");
                 var modelType = Convert.ToInt32(entityInfo["modeltype"].ToString());
-                var typeFields = typeVisibleFields["FieldVisible"];
-                List<SimpleHeader> headers = new List<SimpleHeader>();
+                List<MultiHeader> headers = new List<MultiHeader>();
                 
                 foreach (var field in typeFields)
                 {
@@ -1263,7 +1425,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         ConstructField(controltype, out fieldTypetemp);
                     }
-                    MultiHeader header = new MultiHeader() { FieldName = fieldname, HeaderText = displayname, Width = 150, FieldType = fieldTypetemp };
+                    MultiHeader header = new MultiHeader() {HeaderType=1, FieldName = fieldname, HeaderText = displayname, Width = 150, FieldType = fieldTypetemp,SubHeaders = new List<MultiHeader>() };
                     headers.Add(header);
                     if (int.Parse(controltype) == (int)EntityFieldControlType.LinkeTable && nestTableList.Exists((string s) => s.Equals(fieldname)))
                     {
@@ -1271,33 +1433,54 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         DynamicProtocolFieldConfig fieldConfigInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(fieldConfig);
                         if (fieldConfigInfo.EntityId != null && !fieldConfigInfo.EntityId.Equals(Guid.Empty))
                         {
-                            var sub_typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(fieldConfigInfo.EntityId.ToString(), userNumber);
-                            if (!typeVisibleFields.ContainsKey("FieldVisible"))
-                                throw new Exception("获取嵌套实体显示字段接口报错，缺少FieldVisible参数的结果集");
-                            var sub_entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(fieldConfigInfo.EntityId, userNumber);
-                            if (entityInfo == null)
-                                throw new Exception("嵌套实体信息不存在");
-                            var sub_typeFields = sub_typeVisibleFields["FieldVisible"];
+                            List<IDictionary<string, object>> sub_typeFields = null;
+                            if (columnSource == ExportDataColumnSourceEnum.WEB_Personal || columnSource == ExportDataColumnSourceEnum.WEB_Standard)
+                            {
+                                var sub_typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(fieldConfigInfo.EntityId.ToString(), userNumber);
+                                if (!sub_typeVisibleFields.ContainsKey("FieldVisible"))
+                                    throw new Exception("获取嵌套实体显示字段接口报错，缺少FieldVisible参数的结果集");
+                                var sub_entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(fieldConfigInfo.EntityId, userNumber);
+                                if (entityInfo == null)
+                                    throw new Exception("嵌套实体信息不存在");
+                                sub_typeFields = sub_typeVisibleFields["FieldVisible"];
+                            }
+                            else {
+                                sub_typeFields = new List<IDictionary<string, object>>();
+                                List<DynamicEntityFieldSearch> tmp = _dynamicEntityRepository.GetEntityFields(fieldConfigInfo.EntityId, userNumber);
+                                foreach (DynamicEntityFieldSearch item in tmp)
+                                {
+                                    Dictionary<string, object> newItem = new Dictionary<string, object>();
+                                    //fieldid,displayname,fieldname,controltype,fieldconfig
+                                    newItem.Add("fieldid", item.EntityId);
+                                    newItem.Add("fieldname", item.FieldName);
+                                    newItem.Add("controltype", item.ControlType);
+                                    newItem.Add("fieldconfig", item.FieldConfig);
+                                    newItem.Add("displayname", item.DisplayName);
+                                    sub_typeFields.Add(newItem);
+                                }
+                            }
+                            
+                            header.HeaderType = 0;
                             foreach (var sub_field in sub_typeFields)
                             {
                                 if (!sub_field.ContainsKey("displayname") || !sub_field.ContainsKey("fieldname") || !sub_field.ContainsKey("controltype"))
                                     throw new Exception("获取实体显示字段接口缺少必要参数");
                                 if (sub_field["displayname"] == null || sub_field["fieldname"] == null || sub_field["controltype"] == null)
                                     throw new Exception("获取实体显示字段接口必要参数数据不允许为空");
-                                var sub_displayname = field["displayname"].ToString();
-                                var sub_fieldname = field["fieldname"].ToString();
-                                var sub_controltype = field["controltype"].ToString();
+                                var sub_displayname = sub_field["displayname"].ToString();
+                                var sub_fieldname = sub_field["fieldname"].ToString();
+                                var sub_controltype = sub_field["controltype"].ToString();
                                 FieldType sub_fieldTypetemp = FieldType.Text;
                                 ConstructField(sub_controltype, out sub_fieldTypetemp);
                                 sub_fieldname = fieldname + "." + sub_fieldname;
-                                MultiHeader sub_header = new MultiHeader() { FieldName = sub_fieldname, HeaderText = sub_displayname, Width = 150, FieldType = sub_fieldTypetemp };
+                                MultiHeader sub_header = new MultiHeader() { HeaderType = 1, FieldName = sub_fieldname, HeaderText = sub_displayname, Width = 150, FieldType = sub_fieldTypetemp };
                                 header.SubHeaders.Add(sub_header);
                             }
                             //嵌套表格，需要处理嵌套表格内部字段
                         }
                     }
                 }
-                defines.Add(new SimpleSheetTemplate()
+                defines.Add(new MultiHeaderSheetTemplate()
                 {
                     SheetName = "Sheet 1",
                     ExecuteSQL = "",
@@ -1362,6 +1545,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case DynamicProtocolControlType.TipText:
                 case DynamicProtocolControlType.LinkeTable:
                 case DynamicProtocolControlType.FileAttach:
+                    break;
+                case DynamicProtocolControlType.NumberDecimal:
+                    fieldTypetemp = FieldType.NumberDecimal;
+                    break;
+                case DynamicProtocolControlType.NumberInt:
+
+                    fieldTypetemp = FieldType.NumberInt;
                     break;
                     //case DynamicProtocolControlType.RecId:
                     //case DynamicProtocolControlType.RecItemid:

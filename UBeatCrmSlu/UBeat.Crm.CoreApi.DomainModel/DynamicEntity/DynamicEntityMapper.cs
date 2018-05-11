@@ -116,7 +116,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public DynamicEntityListMapperValidator()
         {
             RuleFor(d => d.EntityId).NotNull().WithMessage("实体ID不能为NULL");
-            RuleFor(d => d.MenuId).NotNull().WithMessage("菜单ID不能为NULL");
+            //RuleFor(d => d.MenuId).NotNull().WithMessage("菜单ID不能为NULL");
             RuleFor(d => d.ViewType).NotNull().WithMessage("视图类型不能为NULL");
         }
     }

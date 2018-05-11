@@ -51,11 +51,33 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// 标注哪些嵌套表格字段要导出/导出
         /// </summary>
         public List<string> NestTableList { get; set; }
-       
+
+        /// <summary>
+        /// Excel导出是，如果涉及嵌套实体时，主表记录的表达方式
+        /// fullfill表示每行重复
+        /// KeepEmpty表示只是在第一行显示
+        /// Merge表示合并主表的数据
+        /// </summary>
+        public ExportDataRowModeEnum RowMode { get; set; }
+        /// <summary>
+        /// 导出列的来源
+        /// </summary>
+        public ExportDataColumnSourceEnum ColumnSource { get; set; }
+
+
         #endregion
-
-
-
-       
+    }
+    /// <summary>
+    /// 实体导出Excel时，标记主表行的显示模式
+    /// </summary>
+    public enum ExportDataRowModeEnum {
+        FullFill = 0,//每行填充
+        KeepEmpty = 1,//留空白
+        MergeRow = 2//合并
+    }
+    public enum ExportDataColumnSourceEnum {
+        WEB_Standard = 0,
+        WEB_Personal = 1,
+        All_Columns = 2
     }
 }

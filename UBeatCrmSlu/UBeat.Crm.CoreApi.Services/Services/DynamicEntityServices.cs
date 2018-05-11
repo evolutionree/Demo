@@ -2148,11 +2148,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 string sqlMainId = "";
                 if (SpecFuncName != null)
                 {
-                    sqlMainId = " and t.recrelateid::text in ";
+                    sqlMainId = " and t.recid::text in ";
                 }
                 else
                 {
-                    sqlMainId = " and t.recrelateid::text in ";
+                    sqlMainId = " and e.recid::text in ";
                 }
                 string sids = "";
                 foreach (Guid id in dynamicModel.MainIds)
