@@ -25,6 +25,8 @@ using App.Metrics.Extensions.Reporting.InfluxDB;
 using App.Metrics.Extensions.Reporting.InfluxDB.Client;
 using App.Metrics;
 using UBeat.Crm.CoreApi.Models;
+using System.Net.WebSockets;
+using UBeat.Crm.CoreApi.Services.webchat;
 
 namespace UBeat.Crm.CoreApi
 {
@@ -136,6 +138,8 @@ namespace UBeat.Crm.CoreApi
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseMvc();
+            app.UseWebSockets();
+            app.UseMiddleware<WebChatHandler>();
         }
         /// <summary>
         /// 配置监控程序Metric

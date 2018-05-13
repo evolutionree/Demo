@@ -10,6 +10,7 @@ using UBeat.Crm.CoreApi.Services.Models.Excels;
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
+using System.IO;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -103,9 +104,41 @@ namespace UBeat.Crm.CoreApi.Controllers
 			return File(model.ExcelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", model.FileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
 
 		}
-		 
-		#region --test--
-		[HttpPost("importdata2")]
+
+        /// <summary>
+        /// 以Post方式导出数据，返回文件ID
+        /// </summary>
+        /// <param name="queryParam"></param>
+        /// <returns></returns>
+        [HttpPost("exportdata")]
+		[AllowAnonymous]
+        public OutputResult<object> ExportData_ForPost([FromQuery]ExportDataModel queryParam)
+        {
+            if (!string.IsNullOrEmpty(queryParam.DynamicQuery))
+                queryParam.DynamicModel = JsonConvert.DeserializeObject<DynamicEntityListModel>(queryParam.DynamicQuery);
+            ExportModel model = _service.ExportData(queryParam);
+            try
+            {
+                string curDir = Directory.GetCurrentDirectory();
+                string tmppath = Path.Combine(curDir, "reportexports");
+                string tmpFile = Guid.NewGuid().ToString();
+                if (Directory.Exists(curDir))
+                {
+                    Directory.CreateDirectory(tmppath);
+                }
+                string fileFullPath = Path.Combine(tmppath, tmpFile + ".xlsx");
+                FileStream fs = new FileStream(fileFullPath, FileMode.Create);
+                fs.Write(model.ExcelFile, 0, model.ExcelFile.Length);
+                fs.Dispose();
+                return new OutputResult<object>(tmpFile);
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+        }
+
+        #region --test--
+        [HttpPost("importdata2")]
 		public OutputResult<object> ImportData2([FromForm] ImportDataModel formData)
 		{
 			List<ExcelHeader> headers = new List<ExcelHeader>();
