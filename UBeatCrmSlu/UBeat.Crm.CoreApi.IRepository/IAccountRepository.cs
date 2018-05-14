@@ -71,5 +71,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <returns></returns>
         EnterpriseInfo GetEnterpriseInfo();
+        //查询密码策略
+        Dictionary<string, object> GetPwdPolicy(int userNumber,DbTransaction tran);
+        //保存密码策略
+        void SavePwdPolicy(PwdPolicy data, int userNumber, DbTransaction tran);
     }
 }
