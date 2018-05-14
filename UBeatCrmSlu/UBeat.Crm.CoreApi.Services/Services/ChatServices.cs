@@ -11,6 +11,7 @@ using UBeat.Crm.CoreApi.DomainModel.PushService;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.Chat;
+using UBeat.Crm.CoreApi.Services.webchat;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -505,7 +506,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
 
                 var pushResult = _pushServices.PushMessage(pushAccounts, titile, message, customContent, messageType, DateTime.Now.AddDays(-1).ToString());
-
+                WebChatResponseHandler.getInstance().addMessages(pushAccounts, titile, message, customContent);//web聊天
             });
             return new OutputResult<object>(customContent);
         }

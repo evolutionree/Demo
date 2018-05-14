@@ -53,7 +53,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 List<Task> ts = new List<Task>();
                 foreach (WebSocket socket in sockets)
                 {
-                    Task task = SendStringAsync(socket, pkg.msg);
+                    Task task = SendStringAsync(socket, pkg.CmdMsg);
                     if (task != null )
                         ts.Add(task);
                 }
@@ -83,6 +83,29 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             lock (operatorLock) {
                 this.queue.Enqueue(msg);
                 this._wh.Set();
+            }
+        }
+        public void addMessages(string accountList,string title,string message, Dictionary<string, object> customContent)
+        {
+            if (accountList == null) return;
+            try
+            {
+                string[] tmp = accountList.Split(",");
+                foreach (string account in tmp) {
+                    WebResponsePackage msg = new WebResponsePackage();
+                    msg.ReceiverId = int.Parse(account);
+                    msg.MessageType = WebChatMsgType.ChatMessage;
+                    msg.ChatMsg = new WebChatMsgInfo()
+                    {
+                        Title = title,
+                        Message = message,
+                        CustomContent = customContent
+                    };
+                    Enqueue(msg);
+                }
+            }
+            catch (Exception ex) {
+
             }
         }
 

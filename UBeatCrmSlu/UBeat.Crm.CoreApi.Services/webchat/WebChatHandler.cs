@@ -59,7 +59,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 WebResponsePackage pkg = new WebResponsePackage()
                 {
                     WebSock = currentSocket,
-                    msg = responseMsg
+                    CmdMsg = responseMsg,
+                    MessageType = WebChatMsgType.Command//命令回复数据
                 };
                 WebChatResponseHandler.getInstance().Enqueue(pkg);
 
@@ -101,25 +102,5 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             }
         }
     }
-    public class WebChatMsgTemplate
-    {
-        public WebChatCommandType Cmd { get; set; }
-        public object Data { get; set; }
-    }
-    public enum WebChatCommandType {
-        WebChatLogin = 1 ,
-        WebChatLogout =2,
-        WebChatSendMsg = 3,
-        WebChatListMsg = 4
-    }
-    public class WebChatResponseMsg {
-        public int ResultCode { get; set; }
-        public string ErrorMsg { get; set; }
-        public object Data { get; set; }
-    }
-    public class WebResponsePackage {
-        public int ReceiverId { get; set; }
-        public WebSocket WebSock { get; set; }
-        public WebChatResponseMsg msg { get; set;}
-    }
+    
 }
