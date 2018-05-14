@@ -590,7 +590,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _entityProService.GetFunctionConfig(data, UserId);
         }
 
-
+        /// <summary>
+        /// 保存扩展配置
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("updatefuncconfig")]
         public OutputResult<object> UpdateFuncConfig([FromBody]FuncConfigData data)
