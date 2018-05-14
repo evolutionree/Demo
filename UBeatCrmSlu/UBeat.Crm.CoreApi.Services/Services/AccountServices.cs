@@ -262,7 +262,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="pwdModel"></param>
         /// <param name="userNumber"></param>
         /// <returns></returns>
-        public OutputResult<object> PwdUser(AccountPasswordModel pwdModel, int userNumber)
+        public OutputResult<object> PwdUser(AccountPasswordModel pwdModel,string authorizedCode , int userNumber)
         {
             var pwdEntity = _mapper.Map<AccountPasswordModel, AccountUserPwdMapper>(pwdModel);
             if (pwdEntity == null || !pwdEntity.IsValid())
@@ -275,10 +275,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 pwdEntity.AccountPwd = DecryptAccountPwd(pwdModel.AccountPwd, out timeStamp);
                 pwdEntity.OrginPwd = DecryptAccountPwd(pwdModel.OrginPwd, out timeStamp);
             }
-
+            string checkValid = this.CheckPasswordValidForPolicy(userNumber, pwdModel.AccountPwd, _accountRepository.EncryPwd(pwdModel.AccountPwd, userNumber), userNumber);
+            if (checkValid != null && checkValid.Length > 0) {
+                throw (new Exception(checkValid));//不满足密码策略
+            }
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.PwdUser(pwdEntity, userNumber);
+                this.ForceLogoutButThis(userNumber, authorizedCode, userNumber);//注销本人但不是本次登陆的
                 return HandleResult(result);
             }, pwdModel, userNumber);
 
@@ -289,7 +293,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="model"></param>
         /// <param name="userNumber"></param>
         /// <returns></returns>
-        public OutputResult<object> ReConvertPwd(AccountModel model, int userNumber)
+        public OutputResult<object> ReConvertPwd(AccountModel model,string authorizedCode , int userNumber)
         {
             var entity = _mapper.Map<AccountModel, AccountMapper>(model);
             if (entity == null || !entity.IsValid())
@@ -301,10 +305,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 long timeStamp = 0;
                 entity.Pwd = DecryptAccountPwd(entity.Pwd, out timeStamp);
             }
-
+            string CheckPassResult = CheckPasswordValidForPolicy(int.Parse(entity.UserId), entity.Pwd, _accountRepository.EncryPwd(entity.Pwd, userNumber),userNumber);
+            if (CheckPassResult != null && CheckPassResult.Length > 0) {
+                throw (new Exception(CheckPassResult));//有异常就抛出
+            }
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.ReConvertPwd(arg, userNumber);
+                this.ForceLogoutButThis(int.Parse(entity.UserId), authorizedCode, userNumber);//重置密码，注销所有设备，但不包括本身
                 return HandleResult(result);
             }, entity, userNumber);
 
@@ -537,6 +545,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             _accountRepository.SavePwdPolicy(data, userNumber, null);
             return new OutputResult<object>("保存成功");
+        }
+        /// <summary>
+        /// 判断密码是否符合密码规则
+        /// </summary>
+        /// <param name="userid">被修改密码的用户id</param>
+        /// <param name="plantextpassword">加密前的密码</param>
+        /// <param name="encryptpwd">加密后的密码，主要用于判断密码的历史版本信息</param>
+        /// <param name="operatorUserId">操作的用户</param>
+        /// <returns>如果返回是null或者空字符串，表示验证成功，否则返回验证错误信息，如：密码长度不足等</returns>
+        public string CheckPasswordValidForPolicy(int userid,string plantextpassword, string encryptpwd, int operatorUserId)
+        {
+            //throw (new NotImplementedException());
+            return "";
+        }
+        /// <summary>
+        /// 注销除指定的Session以外的登陆信息，主要用于修改密码后强制大部分设备退出重新登陆
+        /// </summary>
+        /// <param name="userId">被操作的用户id</param>
+        /// <param name="thisSession">需要排除的authorizedcode</param>
+        /// <param name="operatorUserId">操作者id</param>
+        public void ForceLogoutButThis(int userId, string thisSession, int operatorUserId) {
+            throw (new NotImplementedException());
         }
         #endregion
     }

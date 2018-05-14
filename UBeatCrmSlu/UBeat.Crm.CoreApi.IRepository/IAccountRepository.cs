@@ -75,5 +75,6 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, object> GetPwdPolicy(int userNumber,DbTransaction tran);
         //保存密码策略
         void SavePwdPolicy(PwdPolicy data, int userNumber, DbTransaction tran);
+        string EncryPwd(string plaintext, int userNumber);
     }
 }

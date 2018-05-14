@@ -538,6 +538,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             ExecuteNonQuery(insertSql, param, tran);
             #endregion
         }
-        #endregion 
+
+        public string EncryPwd(string plaintext, int userNumber)
+        {
+            return SecurityHash.GetPwdSecurity(plaintext, _passwordSalt);
+        }
+        #endregion
     }
 }

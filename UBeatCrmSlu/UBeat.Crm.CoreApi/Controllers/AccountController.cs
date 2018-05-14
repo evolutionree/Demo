@@ -382,7 +382,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (pwdModel == null) return ResponseError<object>("参数格式错误");
             WriteOperateLog("修改用户密码", pwdModel);
-            return _accountServices.PwdUser(pwdModel, UserId);
+            string requestAuthorization = HttpContext.Request.Headers["Authorization"];
+            return _accountServices.PwdUser(pwdModel, requestAuthorization, UserId);
         }
         [HttpPost]
         [Route("reconvertpwd")]
@@ -391,7 +392,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (model == null) return ResponseError<object>("参数格式错误");
             if (string.IsNullOrEmpty(model.UserId)) return ResponseError<object>("用户Id不能为空");
             if (string.IsNullOrEmpty(model.Pwd)) return ResponseError<object>("用户重置密码不能为空");
-            return _accountServices.ReConvertPwd(model, UserId);
+            string requestAuthorization = HttpContext.Request.Headers["Authorization"];
+            return _accountServices.ReConvertPwd(model, requestAuthorization, UserId);
         }
         [HttpPost]
         [Route("userlist")]
