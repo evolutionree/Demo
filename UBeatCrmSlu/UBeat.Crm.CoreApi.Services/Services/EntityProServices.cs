@@ -1238,5 +1238,66 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>("保存失败");
         }
 
+
+        /// <summary>
+        /// 获取扩展配置信息
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public OutputResult<object> GetFunctionConfig(FuncConfig data, int userNumber)
+        {
+            DbTransaction tran = null;
+            var funcEventData = new List<object>();
+            var funcEvent = _entityProRepository.GetFuncEvent(tran, data.EntityId, userNumber);
+            var distEvent = funcEvent.Select(r => r.TypeId).Distinct();
+            var typeIds = new List<object>();
+            foreach (var item in distEvent)
+            {
+                var EventDatas = new Dictionary<string, object>();
+                foreach (var o in funcEvent.Where(r => r.TypeId == item))
+                {
+                    typeIds.Add(o);
+                }
+                EventDatas.Add(item.ToString(), typeIds);
+                funcEventData.Add(EventDatas);
+            }
+            
+            var acConfig = _entityProRepository.GetActionExtConfig(tran, data.EntityId, userNumber);
+            var extFunction = _entityProRepository.GetExtFunction(tran, data.EntityId, userNumber);
+            var funcConfigList = new Dictionary<string, object>();
+            funcConfigList.Add("funcEvent", funcEventData);
+            funcConfigList.Add("acConfig", acConfig);
+            funcConfigList.Add("extFunction", extFunction);
+            return new OutputResult<object>(funcConfigList);
+        }
+
+        public OutputResult<object> UpdateFuncConfig(FuncConfigData data,int userNumber)
+        {
+            using (var conn= GetDbConnect())
+            {
+                conn.Open();
+                DbTransaction tran = conn.BeginTransaction();
+                try
+                {
+                    _entityProRepository.UpdateFuncEvent(tran, data.entityId, data.funcEvents, userNumber);
+                    _entityProRepository.UpdateActionExt(tran, data.entityId, data.actionExts, userNumber);
+                    _entityProRepository.UpdateExtFunction(tran, data.entityId, data.extFunctions, userNumber);
+                    tran.Commit();
+                    return new OutputResult<object>("修改成功");
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    return new OutputResult<object>("修改失败");
+                }
+                finally
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
+        }
+
     }
 }

@@ -180,4 +180,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     }
 
+    public class FuncConfig
+    {
+        public Guid EntityId { get; set; }
+    }
+
+    public class FuncConfigData
+    {
+        public Guid entityId { get; set; }
+        public List<FuncEvent> funcEvents { get; set; }
+        public List<ActionExtConfig> actionExts { get; set; }
+        public List<ExtFunction> extFunctions { get; set; }
+    }
 }

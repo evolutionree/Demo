@@ -15,6 +15,7 @@ using System.Collections;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UBeat.Crm.CoreApi.DomainModel.Vocation;
+using NpgsqlTypes;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 {
@@ -1555,6 +1556,125 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
             return DataBaseHelper.Query<EntityProMapper>(sql, param);
         }
+
+        #region 扩展配置
+        /// <summary>
+        /// 获取事件表信息
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="entityId"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public List<FuncEvent> GetFuncEvent(DbTransaction tran, Guid entityId, int userNumber)
+        {
+            var sql = @"select * from crm_sys_entity_func_event where typeid in 
+(select ec.categoryid from crm_sys_entity_category as ec where entityid = @entityid)";
+
+            var param = new DbParameter[] { new NpgsqlParameter("entityid", entityId) };
+
+            return ExecuteQuery<FuncEvent>(sql, param, tran);
+        }
+
+        /// <summary>
+        /// 获取配置表信息
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="entityId"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public List<ActionExtConfig> GetActionExtConfig(DbTransaction tran, Guid entityId, int userNumber)
+        {
+            var sql = @"select * from crm_sys_actionext_config where entityid = @entityid";
+
+            var param = new DbParameter[] { new NpgsqlParameter("entityid", entityId) };
+
+            return ExecuteQuery<ActionExtConfig>(sql, param, tran);
+        }
+
+        /// <summary>
+        /// 获取方法信息
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="entityId"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public List<ExtFunction> GetExtFunction(DbTransaction tran, Guid entityId, int userNumber)
+        {
+            var sql = @"select * from crm_sys_entity_extfunction where entityid = @entityid";
+
+            var param = new DbParameter[] { new NpgsqlParameter("entityid", entityId) };
+
+            return ExecuteQuery<ExtFunction>(sql, param, tran);
+        }
+
+        public void UpdateFuncEvent(DbTransaction tran, Guid entityId, List<FuncEvent> data, int userNumber)
+        {
+            #region sql
+            string delSQL = @"Delete from crm_sys_entity_func_event where typeid in 
+(select ec.categoryid from crm_sys_entity_category as ec where entityid = @entityid)";
+            string insertSql = string.Format(@"INSERT INTO crm_sys_entity_func_event(funceventid,typeid,operatetype,funcname)
+                                   SELECT uuid_generate_v4(),typeid,operatetype,funcname
+                                   FROM json_populate_recordset(null::crm_sys_entity_func_event,@condition)");
+            #endregion
+            #region 删除
+            var param = new DbParameter[]
+            {
+                    new NpgsqlParameter("@entityid",entityId)
+            };
+            ExecuteNonQuery(delSQL, param, tran);
+            #endregion
+
+            #region 插入
+            DbParameter[] rulesparams = new DbParameter[] { new NpgsqlParameter("condition", JsonConvert.SerializeObject(data)) { NpgsqlDbType = NpgsqlDbType.Json } };
+            ExecuteNonQuery(insertSql, rulesparams, tran);
+            #endregion
+        }
+
+        public void UpdateActionExt(DbTransaction tran, Guid entityId, List<ActionExtConfig> data, int userNumber)
+        {
+                #region sql
+                string delSQL = @"Delete from crm_sys_actionext_config where entityid = @entityid";
+                string insertSql = string.Format(@"INSERT INTO crm_sys_actionext_config(recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid)
+                                   SELECT uuid_generate_v4(),routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid
+                                   FROM json_populate_recordset(null::crm_sys_actionext_config,@condition)");
+                #endregion
+                #region 删除
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("@entityid",entityId)
+                };
+                ExecuteNonQuery(delSQL, param, tran);
+                #endregion
+
+                #region 插入
+                DbParameter[] rulesparams = new DbParameter[] { new NpgsqlParameter("condition", JsonConvert.SerializeObject(data)) { NpgsqlDbType = NpgsqlDbType.Json } };
+                ExecuteNonQuery(insertSql, rulesparams, tran);
+                #endregion
+        }
+
+        public void UpdateExtFunction(DbTransaction tran, Guid entityId, List<ExtFunction> data, int userNumber)
+        {
+            #region sql
+            string delSQL = @"Delete from crm_sys_entity_extfunction where entityid = @entityid";
+            string insertSql = string.Format(@"INSERT INTO crm_sys_entity_extfunction(dbfuncid,functionname,entityid,parameters,recorder,returntype,recstatus,remark)
+                                   SELECT uuid_generate_v4(),functionname,entityid,parameters,recorder,returntype,recstatus,remark
+                                   FROM json_populate_recordset(null::crm_sys_entity_extfunction,@condition)");
+            #endregion
+            #region 删除
+            var param = new DbParameter[]
+            {
+                    new NpgsqlParameter("@entityid",entityId)
+            };
+            ExecuteNonQuery(delSQL, param, tran);
+            #endregion
+
+            #region 插入
+            DbParameter[] rulesparams = new DbParameter[] { new NpgsqlParameter("condition", JsonConvert.SerializeObject(data)) { NpgsqlDbType = NpgsqlDbType.Json } };
+            ExecuteNonQuery(insertSql, rulesparams, tran);
+            #endregion
+        }
+        #endregion
+
 
     }
 }
