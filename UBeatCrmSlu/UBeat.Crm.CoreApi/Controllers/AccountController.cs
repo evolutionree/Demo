@@ -634,5 +634,32 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return strResult.Replace("-", "").ToUpper();
             }
         }
+
+        #region 安全机制
+        /// <summary>
+        /// 获取密码策略
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("getpwdpolicy")]
+        public OutputResult<object> GetPwdPolicy()
+        {
+            return _accountServices.GetPwdPolicy(UserId);
+        }
+        /// <summary>
+        /// 保存密码策略
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("savepwdpolicy")]
+        public OutputResult<object> SavePwdPolicy([FromBody] PwdPolicy data)
+        {
+            if (data == null) return ResponseError<object>("参数有误");
+            if (data.IsSetPwdLength > 0 && data.SetPwdLength < 3) return ResponseError<object>("密码长度不得低于3");
+            if (data.IsPwdExpiry > 0 && data.CueUserDate > (data.PwdExpiry / 2)) return ResponseError<object>("提前多少个月必须小于有效期的一半");
+            return _accountServices.SavePwdPolicy(data, UserId);
+        }
+        #endregion
     }
 }
