@@ -256,6 +256,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return resulttemp;
         }
 
+        /// <summary>
+        /// 修改密码
+        /// </summary>
+        /// <param name="pwdModel"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
         public OutputResult<object> PwdUser(AccountPasswordModel pwdModel, int userNumber)
         {
             var pwdEntity = _mapper.Map<AccountPasswordModel, AccountUserPwdMapper>(pwdModel);
@@ -277,6 +283,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }, pwdModel, userNumber);
 
         }
+        /// <summary>
+        /// 重置密码
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
         public OutputResult<object> ReConvertPwd(AccountModel model, int userNumber)
         {
             var entity = _mapper.Map<AccountModel, AccountMapper>(model);
@@ -296,6 +308,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleResult(result);
             }, entity, userNumber);
 
+        }
+       /// <summary>
+       /// 
+       /// </summary>
+       /// <param name="NextUpdatePwdUserIds"></param>
+       /// <param name="IsForceLogout"></param>
+       /// <param name="userNumber"></param>
+       /// <returns></returns>
+        public OutputResult<object> SetToNextUpdatePwd(List<int> NextUpdatePwdUserIds,bool IsForceLogout,int userNumber) {
+            return null;
         }
         public OutputResult<object> ModifyPhoto(AccountModifyPhotoModel photoModel, int userNumber)
         {
