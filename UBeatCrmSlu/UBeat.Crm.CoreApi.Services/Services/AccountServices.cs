@@ -487,5 +487,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
             dic.Add("allowregcount", LicenseInstance.Instance.LimitPersonNum - userCount);
             return new OutputResult<object>(dic);
         }
+
+        #region 安全机制
+        /// <summary>
+        /// 获取密码策略
+        /// </summary>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public OutputResult<object> GetPwdPolicy(int userNumber)
+        {
+            DbTransaction tran = null;
+            var policy = string.Empty;
+            var data = _accountRepository.GetPwdPolicy(userNumber, tran);
+            if (data.ContainsKey("policy"))
+            {
+                policy = data["policy"].ToString();
+            }
+            return new OutputResult<object>(Newtonsoft.Json.JsonConvert.DeserializeObject(policy));
+        }
+        /// <summary>
+        /// 保存密码策略
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public OutputResult<object> SavePwdPolicy(PwdPolicy data, int userNumber)
+        {
+            _accountRepository.SavePwdPolicy(data, userNumber, null);
+            return new OutputResult<object>("保存成功");
+        }
+        #endregion
     }
 }

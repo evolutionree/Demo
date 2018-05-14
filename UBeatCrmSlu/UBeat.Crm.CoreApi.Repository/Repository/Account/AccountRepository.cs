@@ -502,5 +502,42 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
            
             return ExecuteQuery<EnterpriseInfo>(sql, null).FirstOrDefault();
         }
+
+        #region 安全机制
+        /// <summary>
+        /// 查询密码策略
+        /// </summary>
+        /// <param name="userNumber"></param>
+        /// <param name="tran"></param>
+        /// <returns></returns>
+        public Dictionary<string,object> GetPwdPolicy(int userNumber, DbTransaction tran)
+        {
+            string sql = @"select * from crm_sys_security_pwdpolicy";
+            return ExecuteQuery<Dictionary<string,object>>(sql, new DbParameter[] { }, tran).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 保存密码策略
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <param name="tran"></param>
+        public void SavePwdPolicy(PwdPolicy data, int userNumber, DbTransaction tran)
+        {
+            #region 删除
+            string delSql = @"delete from crm_sys_security_pwdpolicy";
+            ExecuteNonQuery(delSql, new DbParameter[] { }, tran);
+            #endregion
+            #region 添加
+            string insertSql = @"insert into crm_sys_security_pwdpolicy(Policy,RecUpdated,RecUpdator) values(@Policy,@RecUpdated,@RecUpdator)";
+            var param = new DbParameter[] {
+                new NpgsqlParameter ("Policy",Newtonsoft.Json.JsonConvert.SerializeObject(data)),
+                new NpgsqlParameter("RecUpdated",DateTime.Now),
+                new NpgsqlParameter("RecUpdator",userNumber)
+            };
+            ExecuteNonQuery(insertSql, param, tran);
+            #endregion
+        }
+        #endregion 
     }
 }
