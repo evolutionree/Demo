@@ -132,6 +132,49 @@ namespace UBeat.Crm.CoreApi.Controllers
                 SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration, requestTimeStamp, true);
                 //CacheService.Repository.Add($"WEB_{userInfo.UserId.ToString()}", $"Bearer {token}", expiration - DateTime.UtcNow);
             }
+            #region 检查是否符合账号安全限制(包含两部分1、账号是否被设定了下次登陆必须修改密码，2、密码是否已经过期或者临近过期)
+            int policy_reuslt = 0;
+            string policy_msg = "";
+            if (userInfo.NextMustChangepwd == 1)
+            {
+                policy_reuslt = 2;
+                policy_msg = "您必须修改密码后才能正常使用系统";
+            }
+            else
+            {
+                try
+                {
+                    OutputResult<object> policyResult = this._accountServices.GetPwdPolicy(userInfo.UserId);
+                    PwdPolicy policy = Newtonsoft.Json.JsonConvert.DeserializeObject<PwdPolicy>(Newtonsoft.Json.JsonConvert.SerializeObject(policyResult.DataBody));
+                    if (policy != null && policy.IsUserPolicy == 1) {
+                        //密码策略存在且已经启用了
+                        if (policy.IsPwdExpiry == 1 && userInfo.LastChangedPwdTime != null ) {
+                            if ((System.DateTime.Now - userInfo.LastChangedPwdTime).TotalDays >= policy.PwdExpiry)
+                            {
+                                //已经过期
+                                policy_reuslt = 2;
+                                policy_msg = "您的密码已经过期， 请修改密码后再使用系统";
+                            }
+                            else {
+                                if (policy.IsCueUser == 1 && userInfo.LastChangedPwdTime != null) {
+                                    int totalDay = (int)(System.DateTime.Now - userInfo.LastChangedPwdTime).TotalDays;
+                                    if (totalDay >= policy.CueUserDate) {
+
+                                        policy_reuslt = 1;
+                                        policy_msg = "您的密码即将过期， 请尽快修改个人密码";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex) {
+
+                }
+
+            }
+            
+            #endregion
             //result
             var result = (handleResult.DataBody as AccountUserMapper);
             var response = new
@@ -139,7 +182,11 @@ namespace UBeat.Crm.CoreApi.Controllers
                 access_token = token,
                 AccessType = result.AccessType,
                 usernumber = userInfo.UserId,
-                servertime = DateTime.Now
+                servertime = DateTime.Now,
+                security = new {
+                    policy_reuslt = policy_reuslt,
+                    policy_msg = policy_msg
+                }
             };
             //清理旧缓存，且获取个人用户数据到缓存中
             _accountServices.GetUserData(userInfo.UserId, true);

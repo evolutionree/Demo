@@ -1,6 +1,7 @@
 -- 表crm_sys_account 新增《nextmustchangepwd》字段 （）
 
-ALTER TABLE crm_sys_account ADD COLUMN nextmustchangepwd  int default 0
+ALTER TABLE crm_sys_account ADD COLUMN nextmustchangepwd  int default 0;
+alter table crm_sys_account add COLUMN lastchangedpwdtime date default now();//最后修改密码时间
 
 
 
@@ -12,7 +13,7 @@ CREATE TABLE crm_sys_security_pwdpolicy(
 "Policy" VARCHAR(1000),
 "RecUpdated" date,
 "RecUpdator" INT
-)
+);
 
 
 -- 密码历史表
@@ -26,5 +27,5 @@ CREATE TABLE crm_sys_security_historyPwd(
 "changeype" int,
 "reccreator" INT,
 "reccreated" date
-)
+);
 
