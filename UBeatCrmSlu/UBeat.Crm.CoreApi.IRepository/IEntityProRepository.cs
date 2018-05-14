@@ -163,10 +163,19 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<EntityProMapper> GetDynamicEntityList(int modelType = 3);
 
+        #region 获取扩展配置信息
+        //获取事件表信息
         List<FuncEvent> GetFuncEvent(DbTransaction tran, Guid entityId, int userNumber);
-
+        //获取方法配置表信息
         List<ActionExtConfig> GetActionExtConfig(DbTransaction tran, Guid entityId, int userNumber);
-
+        //获取方法信息
         List<ExtFunction> GetExtFunction(DbTransaction tran, Guid entityId, int userNumber);
+
+        void UpdateFuncEvent(DbTransaction tran, Guid entityId, List<FuncEvent> data, int userNumber);
+
+        void UpdateActionExt(DbTransaction tran, Guid entityId, List<ActionExtConfig> data, int userNumber);
+
+        void UpdateExtFunction(DbTransaction tran, Guid entityId, List<ExtFunction> data, int userNumber);
+        #endregion
     }
 }

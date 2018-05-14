@@ -1238,7 +1238,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>("保存失败");
         }
 
-        
+
+        /// <summary>
+        /// 获取扩展配置信息
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
         public OutputResult<object> GetFunctionConfig(FuncConfig data, int userNumber)
         {
             DbTransaction tran = null;
@@ -1264,6 +1270,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
             funcConfigList.Add("acConfig", acConfig);
             funcConfigList.Add("extFunction", extFunction);
             return new OutputResult<object>(funcConfigList);
+        }
+
+        public OutputResult<object> UpdateFuncConfig(FuncConfigData data,int userNumber)
+        {
+            using (var conn= GetDbConnect())
+            {
+                conn.Open();
+                DbTransaction tran = conn.BeginTransaction();
+                try
+                {
+                    _entityProRepository.UpdateFuncEvent(tran, data.entityId, data.funcEvents, userNumber);
+                    _entityProRepository.UpdateActionExt(tran, data.entityId, data.actionExts, userNumber);
+                    _entityProRepository.UpdateExtFunction(tran, data.entityId, data.extFunctions, userNumber);
+                    tran.Commit();
+                    return new OutputResult<object>("修改成功");
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    return new OutputResult<object>("修改失败");
+                }
+                finally
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
         }
 
     }

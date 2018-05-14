@@ -576,6 +576,11 @@ namespace UBeat.Crm.CoreApi.Controllers
 
 
         #region 扩展配置
+        /// <summary>
+        /// 获取扩展配置信息
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("getfunctionconfig")]
         public OutputResult<object> GetFunctionConfig([FromBody] FuncConfig data)
@@ -583,6 +588,15 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (data == null || data.EntityId == Guid.Empty)
                 return ResponseError<object>("参数格式错误");
             return _entityProService.GetFunctionConfig(data, UserId);
+        }
+
+
+        [HttpPost]
+        [Route("updatefuncconfig")]
+        public OutputResult<object> UpdateFuncConfig([FromBody]FuncConfigData data)
+        {
+            if (data == null || data.entityId == Guid.Empty) return ResponseError<object>("参数格式错误");
+            return _entityProService.UpdateFuncConfig(data, UserId);
         }
         #endregion
     }
