@@ -9,10 +9,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
     {
         public static WebSockChatSocketManager instance = null;
         public static object instanceObject = new object();
-        private Dictionary<string,WebSocket> AllSockets = new Dictionary<string, WebSocket>();
         private Dictionary<int, List<WebSocket>> UserSockets = new Dictionary<int, List<WebSocket>>();
-        private HashSet<string> UnLoginSockets = new HashSet<string>();
-        private Dictionary<string, int> SocketUserMap = new Dictionary<string, int>();
+        private Dictionary<WebSocket, int> SocketUserMap = new Dictionary<WebSocket, int>();
         private object operatorobject = new object();
         private WebSockChatSocketManager() {
 
@@ -29,6 +27,58 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 if (UserSockets.ContainsKey(userId))
                     return UserSockets[userId];
                 return null;
+            }
+        }
+        /// <summary>
+        /// socket绑定用户
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="UserId"></param>
+        public void MapSocketToUser(WebSocket socket, int UserId) {
+            lock (operatorobject) {
+                //先判断Socket是否已经在别的用户中绑定了
+                if (SocketUserMap.ContainsKey(socket)) {
+                    int oldUserId = SocketUserMap[socket];
+                    if (UserSockets.ContainsKey(oldUserId)) {
+                        List<WebSocket> list = UserSockets[oldUserId];
+                        list.Remove(socket);
+                    }
+                }
+                if (UserSockets.ContainsKey(UserId))
+                {
+                    List<WebSocket> list = UserSockets[UserId];
+                    list.Add(socket);
+                    SocketUserMap.Add(socket, UserId);
+                }
+                else {
+                    List<WebSocket> list = new List<WebSocket>();
+                    list.Add(socket);
+                    UserSockets.Add(UserId, list);
+                    SocketUserMap.Add(socket, UserId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 解绑用户
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="UserId"></param>
+        public void UnbindSocketWithUser(WebSocket socket, int UserId) {
+            lock (operatorobject) {
+                if (SocketUserMap.ContainsKey(socket)) {
+                    int oldUserId = SocketUserMap[socket];
+                    if (oldUserId != UserId) {
+                        if (UserSockets.ContainsKey(oldUserId)) {
+                            List<WebSocket> list = UserSockets[oldUserId];
+                            list.Remove(socket);
+                        }
+                    }
+                }
+                if (UserSockets.ContainsKey(UserId)) {
+                    List<WebSocket> list = UserSockets[UserId];
+                    list.Remove(socket);
+                }
             }
         }
     }

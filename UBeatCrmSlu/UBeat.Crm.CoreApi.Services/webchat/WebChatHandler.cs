@@ -13,8 +13,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
 {
     public class WebChatHandler
     {
-        private static ConcurrentDictionary<string, System.Net.WebSockets.WebSocket> _sockets = new ConcurrentDictionary<string, System.Net.WebSockets.WebSocket>();
-
+      
         private readonly RequestDelegate _next;
         public WebChatHandler(RequestDelegate next)
         {
@@ -27,19 +26,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 await _next.Invoke(context);
                 return;
             }
-            System.Net.WebSockets.WebSocket dummy;
-
             CancellationToken ct = context.RequestAborted;
             var currentSocket = await context.WebSockets.AcceptWebSocketAsync();
-            //string socketId = Guid.NewGuid().ToString();
-            string socketId = context.Request.Query["sid"].ToString();
-            if (!_sockets.ContainsKey(socketId))
-            {
-                _sockets.TryAdd(socketId, currentSocket);
-            }
-            //_sockets.TryRemove(socketId, out dummy);
-            //_sockets.TryAdd(socketId, currentSocket);
-
             while (true)
             {
                 if (ct.IsCancellationRequested)
@@ -48,29 +36,33 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 }
 
                 string response = await ReceiveStringAsync(currentSocket, ct);
-                MsgTemplate msg = JsonConvert.DeserializeObject<MsgTemplate>(response);
-
-                if (string.IsNullOrEmpty(response))
-                {
-                    if (currentSocket.State != WebSocketState.Open)
-                    {
-                        break;
-                    }
-
+                WebChatMsgTemplate msg = JsonConvert.DeserializeObject<WebChatMsgTemplate>(response);
+                if (msg == null) {
+                    //发送格式错误的回复消息
                     continue;
+                };
+                WebChatResponseMsg responseMsg  = null;
+                switch (msg.Cmd) {
+                    case WebChatCommandType.WebChatLogin:
+                        break;
+                    case WebChatCommandType.WebChatLogout:
+                        break;
+                    case WebChatCommandType.WebChatListMsg:
+                        break;
+                    case WebChatCommandType.WebChatSendMsg:
+                        break;
                 }
-                
-                foreach (var socket in _sockets)
+                responseMsg = new WebChatResponseMsg() {
+                    ResultCode = -1,
+                    ErrorMsg = "请登录"
+                };
+                WebResponsePackage pkg = new WebResponsePackage()
                 {
-                    if (socket.Value.State != WebSocketState.Open)
-                    {
-                        continue;
-                    }
-                    if (socket.Key == msg.ReceiverID || socket.Key == socketId)
-                    {
-                        await SendStringAsync(socket.Value, JsonConvert.SerializeObject(msg), ct);
-                    }
-                }
+                    WebSock = currentSocket,
+                    msg = responseMsg
+                };
+                WebChatResponseHandler.getInstance().Enqueue(pkg);
+
             }
 
             //_sockets.TryRemove(socketId, out dummy);
@@ -79,12 +71,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             currentSocket.Dispose();
         }
 
-        private static Task SendStringAsync(System.Net.WebSockets.WebSocket socket, string data, CancellationToken ct = default(CancellationToken))
-        {
-            var buffer = Encoding.UTF8.GetBytes(data);
-            var segment = new ArraySegment<byte>(buffer);
-            return socket.SendAsync(segment, WebSocketMessageType.Text, true, ct);
-        }
+        
 
         private static async Task<string> ReceiveStringAsync(System.Net.WebSockets.WebSocket socket, CancellationToken ct = default(CancellationToken))
         {
@@ -114,11 +101,25 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             }
         }
     }
-    public class MsgTemplate
+    public class WebChatMsgTemplate
     {
-        public string SenderID { get; set; }
-        public string ReceiverID { get; set; }
-        public string MessageType { get; set; }
-        public string Content { get; set; }
+        public WebChatCommandType Cmd { get; set; }
+        public object Data { get; set; }
+    }
+    public enum WebChatCommandType {
+        WebChatLogin = 1 ,
+        WebChatLogout =2,
+        WebChatSendMsg = 3,
+        WebChatListMsg = 4
+    }
+    public class WebChatResponseMsg {
+        public int ResultCode { get; set; }
+        public string ErrorMsg { get; set; }
+        public object Data { get; set; }
+    }
+    public class WebResponsePackage {
+        public int ReceiverId { get; set; }
+        public WebSocket WebSock { get; set; }
+        public WebChatResponseMsg msg { get; set;}
     }
 }
