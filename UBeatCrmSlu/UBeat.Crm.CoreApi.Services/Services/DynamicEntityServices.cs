@@ -2142,8 +2142,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             #endregion
-            //处理排序语句
-            if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
+            #region 处理嵌套表格批量查询问题
+            if (dynamicModel.MainIds != null && dynamicModel.MainIds.Count > 0)
+            {
+                string sqlMainId = "";
+                if (SpecFuncName != null)
+                {
+                    sqlMainId = " and t.recid::text in ";
+                }
+                else
+                {
+                    sqlMainId = " and e.recid::text in ";
+                }
+                string sids = "";
+                foreach (Guid id in dynamicModel.MainIds)
+                {
+                    sids = sids + ",'" + id.ToString() + "'";
+                }
+                sids = sids.Substring(1);
+                sqlMainId = sqlMainId + "(" + sids + ") ";
+                dynamicEntity.SearchQuery = dynamicEntity.SearchQuery + sqlMainId;
+            }
+                #endregion
+                //处理排序语句
+                if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
             {
                 dynamicEntity.SearchOrder = "";
             }

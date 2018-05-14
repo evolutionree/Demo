@@ -13,12 +13,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// </summary>
         public string ExecuteSQL { set; get; }
 
-		public string DefaultDataSql { set; get; }
+        public string DefaultDataSql { set; get; }
 
-		/// <summary>
-		/// 是否游标返回,是=1，否=0
-		/// </summary>
-		public int IsStoredProcCursor { set; get; }
+        /// <summary>
+        /// 是否游标返回,是=1，否=0
+        /// </summary>
+        public int IsStoredProcCursor { set; get; }
 
         public SheetDefine Clone()
         {
@@ -115,9 +115,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// <summary>
         /// 共享数据的表数据
         /// </summary>
-        public string SharedStringTableOuterXml { set; get; } 
-	}
-    
+        public string SharedStringTableOuterXml { set; get; }
+    }
+
 
 
     /// <summary>
@@ -128,16 +128,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
 
         public string StylesheetXml { set; get; }
         public string ColumnsOuterXml { get; set; }
-        
+
         public HeadersTemplate HeadersTemplate { get; set; }
         /// <summary>
         /// 列的映射对象集合,与模板对应的
         /// </summary>
         public List<ColumnMapModel> ColumnMap { set; get; } = new List<ColumnMapModel>();
 
-		public object DataObject { set; get; }
+        public object DataObject { set; get; }
 
-	}
+    }
     public class ColumnMapModel
     {
         /// <summary>
@@ -230,7 +230,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// </summary>
         reference = 16,
 
-        Related=17
+        Related = 17
     }
 
     public class ImportSheetData
@@ -260,6 +260,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
     {
         public SheetDefine SheetDefines { get; set; }
         public List<Dictionary<string, object>> DataRows { get; set; }
+        public List<MergeCellInfo> MergeList { get; set; }
         /// <summary>
         /// 数据行的错误信息提示，如导入失败的数据行的提示内容，按照下标和DataRows的数据行一一对应
         /// </summary>
@@ -271,6 +272,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
             RowErrors = new List<string>();
         }
     }
+    public class MergeCellInfo {
+        public int FromRowIndex { get; set; }
+        public int RowCount { get; set; }
+        public int FromColIndex { get; set; }
+        public int ColCount { get; set; }
+    }
+
     public class CellModel
     {
 

@@ -11,320 +11,320 @@ using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 {
-	public class OXSExcelWriter
-	{
-		public static byte[] GenerateExcelTemplate(ExcelTemplate templates)
-		{
-			if (templates == null || templates.DataSheets == null || templates.DataSheets.Count <= 0)
-				throw new Exception("模板对象解析错误");
-			var stream = new MemoryStream();
-			//创建文档对象
-			var document = SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook);
+    public class OXSExcelWriter
+    {
+        public static byte[] GenerateExcelTemplate(ExcelTemplate templates)
+        {
+            if (templates == null || templates.DataSheets == null || templates.DataSheets.Count <= 0)
+                throw new Exception("模板对象解析错误");
+            var stream = new MemoryStream();
+            //创建文档对象
+            var document = SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook);
 
-			//创建Workbook（工作簿）
-			var rootbookpart = document.AddWorkbookPart();
-			rootbookpart.Workbook = new Workbook();
-			//Add Sheets to the Workbook.
-			var sheets = rootbookpart.Workbook.AppendChild(new Sheets());
-			var stylesPart = rootbookpart.AddNewPart<WorkbookStylesPart>();
-			stylesPart.Stylesheet = new Stylesheet();
-			stylesPart.Stylesheet.Save();
-			//判断是否加载模板中的样式设计
-			var sheetTemplate = templates.DataSheets.FirstOrDefault();
-			if (sheetTemplate != null && sheetTemplate.StylesheetXml != null)
-			{
-				stylesPart.Stylesheet = new Stylesheet(sheetTemplate.StylesheetXml);
-				stylesPart.Stylesheet.Save();
-			}
-			//如果有共享数据，则写入共享数据字段字符串表
-			if (!string.IsNullOrEmpty(templates.SharedStringTableOuterXml))
-			{
-				SharedStringTablePart shareStringPart = rootbookpart.AddNewPart<SharedStringTablePart>();
-				shareStringPart.SharedStringTable = new SharedStringTable(templates.SharedStringTableOuterXml);
-			}
+            //创建Workbook（工作簿）
+            var rootbookpart = document.AddWorkbookPart();
+            rootbookpart.Workbook = new Workbook();
+            //Add Sheets to the Workbook.
+            var sheets = rootbookpart.Workbook.AppendChild(new Sheets());
+            var stylesPart = rootbookpart.AddNewPart<WorkbookStylesPart>();
+            stylesPart.Stylesheet = new Stylesheet();
+            stylesPart.Stylesheet.Save();
+            //判断是否加载模板中的样式设计
+            var sheetTemplate = templates.DataSheets.FirstOrDefault();
+            if (sheetTemplate != null && sheetTemplate.StylesheetXml != null)
+            {
+                stylesPart.Stylesheet = new Stylesheet(sheetTemplate.StylesheetXml);
+                stylesPart.Stylesheet.Save();
+            }
+            //如果有共享数据，则写入共享数据字段字符串表
+            if (!string.IsNullOrEmpty(templates.SharedStringTableOuterXml))
+            {
+                SharedStringTablePart shareStringPart = rootbookpart.AddNewPart<SharedStringTablePart>();
+                shareStringPart.SharedStringTable = new SharedStringTable(templates.SharedStringTableOuterXml);
+            }
 
-			//添加具体数据的模板页
-			foreach (var m in templates.DataSheets)
-			{
-				var datarows = new List<Dictionary<string, object>>();
+            //添加具体数据的模板页
+            foreach (var m in templates.DataSheets)
+            {
+                var datarows = new List<Dictionary<string, object>>();
 
-				var fieldRrow = new Dictionary<string, object>();
-				var isNotEmptyRrow = new Dictionary<string, object>();
-				var fieldTypeRrow = new Dictionary<string, object>();
-				foreach (var mapitem in m.ColumnMap)
-				{
-					fieldRrow.Add(mapitem.FieldName, mapitem.FieldName);
-					isNotEmptyRrow.Add(mapitem.FieldName, mapitem.IsNotEmpty ? 1 : 0);
-					fieldTypeRrow.Add(mapitem.FieldName, (int)mapitem.FieldType);
-				}
-				datarows.Add(fieldRrow);
-				datarows.Add(isNotEmptyRrow);
-				datarows.Add(fieldTypeRrow);
-				var sheetData = new ExportSheetData()
-				{
-					SheetDefines = m,
-					DataRows = datarows
-				};
-				CreateWorksheetPart(rootbookpart, sheetData);
-			}
-			//添加注意事项页签
-			var worksheetPart1 = rootbookpart.AddNewPart<WorksheetPart>();
-			worksheetPart1.Worksheet = new Worksheet(templates.AttentionOuterXml);//一张工作表的根元素
-			sheets.AppendChild(new Sheet()
-			{
-				Id = rootbookpart.GetIdOfPart(worksheetPart1),
-				SheetId = new UInt32Value((uint)sheets.Count() + 1),
-				Name = "注意事项"
-			});
-			//添加sqldefine页签
-			var worksheetPart2 = rootbookpart.AddNewPart<WorksheetPart>();
-			worksheetPart2.Worksheet = new Worksheet(templates.SQLDefineOuterXml);//一张工作表的根元素 
-			sheets.AppendChild(new Sheet()
-			{
-				Id = rootbookpart.GetIdOfPart(worksheetPart2),
-				SheetId = new UInt32Value((uint)sheets.Count() + 1),
-				Name = "SQLDefine"
-			});
-			//添加模板定义说明页签
-			var worksheetPart3 = rootbookpart.AddNewPart<WorksheetPart>();
-			worksheetPart3.Worksheet = new Worksheet(templates.TemplateDefineOuterXml);//一张工作表的根元素 
-			sheets.AppendChild(new Sheet()
-			{
-				Id = rootbookpart.GetIdOfPart(worksheetPart3),
-				SheetId = new UInt32Value((uint)sheets.Count() + 1),
-				Name = "模板定义说明"
-			});
-			rootbookpart.Workbook.Save();
-			document.Close();
-			return stream.ToArray();
-		}
-		public static byte[] GenerateImportTemplate(ExcelTemplate templates, Dictionary<string, List<Dictionary<string, object>>> sheetRows)
-		{
-			if (templates == null || templates.DataSheets == null || templates.DataSheets.Count <= 0)
-				throw new Exception("模板对象解析错误");
-			var stream = new MemoryStream();
-			//创建文档对象
-			var document = SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook);
+                var fieldRrow = new Dictionary<string, object>();
+                var isNotEmptyRrow = new Dictionary<string, object>();
+                var fieldTypeRrow = new Dictionary<string, object>();
+                foreach (var mapitem in m.ColumnMap)
+                {
+                    fieldRrow.Add(mapitem.FieldName, mapitem.FieldName);
+                    isNotEmptyRrow.Add(mapitem.FieldName, mapitem.IsNotEmpty ? 1 : 0);
+                    fieldTypeRrow.Add(mapitem.FieldName, (int)mapitem.FieldType);
+                }
+                datarows.Add(fieldRrow);
+                datarows.Add(isNotEmptyRrow);
+                datarows.Add(fieldTypeRrow);
+                var sheetData = new ExportSheetData()
+                {
+                    SheetDefines = m,
+                    DataRows = datarows
+                };
+                CreateWorksheetPart(rootbookpart, sheetData);
+            }
+            //添加注意事项页签
+            var worksheetPart1 = rootbookpart.AddNewPart<WorksheetPart>();
+            worksheetPart1.Worksheet = new Worksheet(templates.AttentionOuterXml);//一张工作表的根元素
+            sheets.AppendChild(new Sheet()
+            {
+                Id = rootbookpart.GetIdOfPart(worksheetPart1),
+                SheetId = new UInt32Value((uint)sheets.Count() + 1),
+                Name = "注意事项"
+            });
+            //添加sqldefine页签
+            var worksheetPart2 = rootbookpart.AddNewPart<WorksheetPart>();
+            worksheetPart2.Worksheet = new Worksheet(templates.SQLDefineOuterXml);//一张工作表的根元素 
+            sheets.AppendChild(new Sheet()
+            {
+                Id = rootbookpart.GetIdOfPart(worksheetPart2),
+                SheetId = new UInt32Value((uint)sheets.Count() + 1),
+                Name = "SQLDefine"
+            });
+            //添加模板定义说明页签
+            var worksheetPart3 = rootbookpart.AddNewPart<WorksheetPart>();
+            worksheetPart3.Worksheet = new Worksheet(templates.TemplateDefineOuterXml);//一张工作表的根元素 
+            sheets.AppendChild(new Sheet()
+            {
+                Id = rootbookpart.GetIdOfPart(worksheetPart3),
+                SheetId = new UInt32Value((uint)sheets.Count() + 1),
+                Name = "模板定义说明"
+            });
+            rootbookpart.Workbook.Save();
+            document.Close();
+            return stream.ToArray();
+        }
+        public static byte[] GenerateImportTemplate(ExcelTemplate templates, Dictionary<string, List<Dictionary<string, object>>> sheetRows)
+        {
+            if (templates == null || templates.DataSheets == null || templates.DataSheets.Count <= 0)
+                throw new Exception("模板对象解析错误");
+            var stream = new MemoryStream();
+            //创建文档对象
+            var document = SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook);
 
-			//创建Workbook（工作簿）
-			var rootbookpart = document.AddWorkbookPart();
-			rootbookpart.Workbook = new Workbook();
-			//Add Sheets to the Workbook.
-			var sheets = rootbookpart.Workbook.AppendChild(new Sheets());
-			var stylesPart = rootbookpart.AddNewPart<WorkbookStylesPart>();
-			stylesPart.Stylesheet = new Stylesheet();
-			stylesPart.Stylesheet.Save();
-			//判断是否加载模板中的样式设计
-			var sheetTemplate = templates.DataSheets.FirstOrDefault();
-			if (sheetTemplate != null && sheetTemplate.StylesheetXml != null)
-			{
-				stylesPart.Stylesheet = new Stylesheet(sheetTemplate.StylesheetXml);
-				stylesPart.Stylesheet.Save();
-			}
-			//如果有共享数据，则写入共享数据字段字符串表
-			if (!string.IsNullOrEmpty(templates.SharedStringTableOuterXml))
-			{
-				SharedStringTablePart shareStringPart = rootbookpart.AddNewPart<SharedStringTablePart>();
-				shareStringPart.SharedStringTable = new SharedStringTable(templates.SharedStringTableOuterXml);
-			}
+            //创建Workbook（工作簿）
+            var rootbookpart = document.AddWorkbookPart();
+            rootbookpart.Workbook = new Workbook();
+            //Add Sheets to the Workbook.
+            var sheets = rootbookpart.Workbook.AppendChild(new Sheets());
+            var stylesPart = rootbookpart.AddNewPart<WorkbookStylesPart>();
+            stylesPart.Stylesheet = new Stylesheet();
+            stylesPart.Stylesheet.Save();
+            //判断是否加载模板中的样式设计
+            var sheetTemplate = templates.DataSheets.FirstOrDefault();
+            if (sheetTemplate != null && sheetTemplate.StylesheetXml != null)
+            {
+                stylesPart.Stylesheet = new Stylesheet(sheetTemplate.StylesheetXml);
+                stylesPart.Stylesheet.Save();
+            }
+            //如果有共享数据，则写入共享数据字段字符串表
+            if (!string.IsNullOrEmpty(templates.SharedStringTableOuterXml))
+            {
+                SharedStringTablePart shareStringPart = rootbookpart.AddNewPart<SharedStringTablePart>();
+                shareStringPart.SharedStringTable = new SharedStringTable(templates.SharedStringTableOuterXml);
+            }
 
-			//添加具体数据的模板页
-			foreach (var m in templates.DataSheets)
-			{
-				var sheetData = new ExportSheetData()
-				{
-					SheetDefines = m,
-					DataRows = sheetRows.ContainsKey(m.SheetName) ? sheetRows[m.SheetName] : new List<Dictionary<string, object>>()
-				};
-				CreateWorksheetPart(rootbookpart, sheetData);
-			}
-			//添加注意事项页签
-			var worksheetPart1 = rootbookpart.AddNewPart<WorksheetPart>();
-			worksheetPart1.Worksheet = new Worksheet(templates.AttentionOuterXml);//一张工作表的根元素
-			sheets.AppendChild(new Sheet()
-			{
-				Id = rootbookpart.GetIdOfPart(worksheetPart1),
-				SheetId = new UInt32Value((uint)sheets.Count() + 1),
-				Name = "注意事项"
-			});
-			rootbookpart.Workbook.Save();
-			document.Close();
-			return stream.ToArray();
-		}
+            //添加具体数据的模板页
+            foreach (var m in templates.DataSheets)
+            {
+                var sheetData = new ExportSheetData()
+                {
+                    SheetDefines = m,
+                    DataRows = sheetRows.ContainsKey(m.SheetName) ? sheetRows[m.SheetName] : new List<Dictionary<string, object>>()
+                };
+                CreateWorksheetPart(rootbookpart, sheetData);
+            }
+            //添加注意事项页签
+            var worksheetPart1 = rootbookpart.AddNewPart<WorksheetPart>();
+            worksheetPart1.Worksheet = new Worksheet(templates.AttentionOuterXml);//一张工作表的根元素
+            sheets.AppendChild(new Sheet()
+            {
+                Id = rootbookpart.GetIdOfPart(worksheetPart1),
+                SheetId = new UInt32Value((uint)sheets.Count() + 1),
+                Name = "注意事项"
+            });
+            rootbookpart.Workbook.Save();
+            document.Close();
+            return stream.ToArray();
+        }
 
-		//public static byte[] GenerateExcelTemplate(List<SheetDefine> sheetTemplates)
-		//{
-		//    var sqltemp = new SimpleSheetTemplate();
-		//    sqltemp.SheetName = "SQLDefine";
-		//    string firstHeader = "sheetname";
-		//    string secondHeader = "是否游标返回数据（是=1，否=0）";
-		//    string thirdHeader = "sqltemplate(sql查询语句，必须使用系统规范的标准返回值定义执行函数，其中参数名必须和Excel字段映射表对应，而且不能包含系统默认的参数名：@userno";
-		//    sqltemp.Headers = new List<SimpleHeader>()
-		//        {
-		//            new SimpleHeader(){ HeaderText=firstHeader, Width=100 , FieldName=firstHeader, IsNotEmpty=false},
-		//            new SimpleHeader(){ HeaderText=secondHeader, Width=230, FieldName=secondHeader, IsNotEmpty=false},
-		//            new SimpleHeader(){ HeaderText=thirdHeader, Width=1080, FieldName=thirdHeader, IsNotEmpty=false},
-		//        };
-
-
-		//    var sqldatarows = new List<Dictionary<string, object>>();
-		//    var sheetsData = new List<ExportSheetData>();
-
-		//    foreach (var m in sheetTemplates)
-		//    {
-		//        var datarows = new List<Dictionary<string, object>>();
-
-		//        var fieldRrow = new Dictionary<string, object>();
-		//        var isNotEmptyRrow = new Dictionary<string, object>();
-		//        var columnMap = new List<ColumnMapModel>();
-		//        if (m is SheetTemplate)
-		//        {
-		//            columnMap = (m as SheetTemplate).ColumnMap;
-		//        }
-		//        else
-		//        {
-		//            var template = m as SimpleSheetTemplate;
-		//            int indextemp = 0;
-		//            foreach (var item in template.Headers)
-		//            {
-		//                columnMap.Add(new ColumnMapModel() { Index = indextemp++, FieldName = item.FieldName, IsNotEmpty = item.IsNotEmpty });
-		//            }
-		//        }
-		//        foreach (var mapitem in columnMap)
-		//        {
-		//            fieldRrow.Add(mapitem.FieldName, mapitem.FieldName);
-		//            isNotEmptyRrow.Add(mapitem.FieldName, mapitem.IsNotEmpty ? 1 : 0);
-		//        }
-		//        datarows.Add(fieldRrow);
-		//        datarows.Add(isNotEmptyRrow);
-		//        sheetsData.Add(new ExportSheetData()
-		//        {
-		//            SheetDefines = m,
-		//            DataRows = datarows
-		//        });
-		//        //生成sql sheet表的行数据
-		//        var sqlrowDic = new Dictionary<string, object>();
-		//        sqlrowDic.Add(firstHeader, m.SheetName);
-		//        sqlrowDic.Add(thirdHeader, m.IsStoredProcCursor);
-		//        sqlrowDic.Add(secondHeader, m.ExecuteSQL);
-		//        sqldatarows.Add(sqlrowDic);
-		//    }
-		//    sheetsData.Add(new ExportSheetData()
-		//    {
-		//        SheetDefines = sqltemp,
-		//        DataRows = sqldatarows
-		//    });
-		//    return GenerateExcel(sheetsData);
-		//}
+        //public static byte[] GenerateExcelTemplate(List<SheetDefine> sheetTemplates)
+        //{
+        //    var sqltemp = new SimpleSheetTemplate();
+        //    sqltemp.SheetName = "SQLDefine";
+        //    string firstHeader = "sheetname";
+        //    string secondHeader = "是否游标返回数据（是=1，否=0）";
+        //    string thirdHeader = "sqltemplate(sql查询语句，必须使用系统规范的标准返回值定义执行函数，其中参数名必须和Excel字段映射表对应，而且不能包含系统默认的参数名：@userno";
+        //    sqltemp.Headers = new List<SimpleHeader>()
+        //        {
+        //            new SimpleHeader(){ HeaderText=firstHeader, Width=100 , FieldName=firstHeader, IsNotEmpty=false},
+        //            new SimpleHeader(){ HeaderText=secondHeader, Width=230, FieldName=secondHeader, IsNotEmpty=false},
+        //            new SimpleHeader(){ HeaderText=thirdHeader, Width=1080, FieldName=thirdHeader, IsNotEmpty=false},
+        //        };
 
 
-		public static byte[] GenerateExcel(ExportSheetData sheetData)
-		{
-			var list = new List<ExportSheetData>();
-			list.Add(sheetData);
-			return GenerateExcel(list);
-		}
+        //    var sqldatarows = new List<Dictionary<string, object>>();
+        //    var sheetsData = new List<ExportSheetData>();
 
-		public static byte[] GenerateExcel(List<ExportSheetData> sheetsData)
-		{
-			if (sheetsData == null || sheetsData.Count <= 0)
-				throw new Exception("SheetsData 不可为空");
-			var stream = new MemoryStream();
-			//创建文档对象
-			var document = SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook);
+        //    foreach (var m in sheetTemplates)
+        //    {
+        //        var datarows = new List<Dictionary<string, object>>();
 
-			//创建Workbook（工作簿）
-			var rootbookpart = document.AddWorkbookPart();
-			rootbookpart.Workbook = new Workbook();
-			//Add Sheets to the Workbook.
-			var sheets = rootbookpart.Workbook.AppendChild(new Sheets());
-			var stylesPart = rootbookpart.AddNewPart<WorkbookStylesPart>();
-			stylesPart.Stylesheet = new Stylesheet();
-			//stylesPart.Stylesheet.Save();
+        //        var fieldRrow = new Dictionary<string, object>();
+        //        var isNotEmptyRrow = new Dictionary<string, object>();
+        //        var columnMap = new List<ColumnMapModel>();
+        //        if (m is SheetTemplate)
+        //        {
+        //            columnMap = (m as SheetTemplate).ColumnMap;
+        //        }
+        //        else
+        //        {
+        //            var template = m as SimpleSheetTemplate;
+        //            int indextemp = 0;
+        //            foreach (var item in template.Headers)
+        //            {
+        //                columnMap.Add(new ColumnMapModel() { Index = indextemp++, FieldName = item.FieldName, IsNotEmpty = item.IsNotEmpty });
+        //            }
+        //        }
+        //        foreach (var mapitem in columnMap)
+        //        {
+        //            fieldRrow.Add(mapitem.FieldName, mapitem.FieldName);
+        //            isNotEmptyRrow.Add(mapitem.FieldName, mapitem.IsNotEmpty ? 1 : 0);
+        //        }
+        //        datarows.Add(fieldRrow);
+        //        datarows.Add(isNotEmptyRrow);
+        //        sheetsData.Add(new ExportSheetData()
+        //        {
+        //            SheetDefines = m,
+        //            DataRows = datarows
+        //        });
+        //        //生成sql sheet表的行数据
+        //        var sqlrowDic = new Dictionary<string, object>();
+        //        sqlrowDic.Add(firstHeader, m.SheetName);
+        //        sqlrowDic.Add(thirdHeader, m.IsStoredProcCursor);
+        //        sqlrowDic.Add(secondHeader, m.ExecuteSQL);
+        //        sqldatarows.Add(sqlrowDic);
+        //    }
+        //    sheetsData.Add(new ExportSheetData()
+        //    {
+        //        SheetDefines = sqltemp,
+        //        DataRows = sqldatarows
+        //    });
+        //    return GenerateExcel(sheetsData);
+        //}
 
-			//如果是从模板导出，则判断是否加载模板中的样式设计
-			if (sheetsData.FirstOrDefault().SheetDefines is SheetTemplate)
-			{
-				var sheetTemplate = sheetsData.FirstOrDefault().SheetDefines as SheetTemplate;
-				if (sheetTemplate != null && sheetTemplate.StylesheetXml != null)
-				{
-					stylesPart.Stylesheet = new Stylesheet(sheetTemplate.StylesheetXml);
 
-					//stylesPart.Stylesheet.Save();
-				}
-				else
-				{
-					stylesPart.Stylesheet = OpenXMLExcelHelper.GenerateStyleSheet();
-					//stylesPart.Stylesheet.Save();
-				}
-			}
-			else
-			{
-				stylesPart.Stylesheet = OpenXMLExcelHelper.GenerateStyleSheet();
-				//stylesPart.Stylesheet.Save();
-			}
+        public static byte[] GenerateExcel(ExportSheetData sheetData)
+        {
+            var list = new List<ExportSheetData>();
+            list.Add(sheetData);
+            return GenerateExcel(list);
+        }
 
-			foreach (var data in sheetsData)
-			{
-				CreateWorksheetPart(rootbookpart, data);
-			}
-			rootbookpart.Workbook.Save();
-			document.Close();
-			return stream.ToArray();
-		}
+        public static byte[] GenerateExcel(List<ExportSheetData> sheetsData)
+        {
+            if (sheetsData == null || sheetsData.Count <= 0)
+                throw new Exception("SheetsData 不可为空");
+            var stream = new MemoryStream();
+            //创建文档对象
+            var document = SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook);
 
-		private static uint CreateErrorTipStyleIndex(WorkbookPart rootbookpart)
-		{
-			var stylesPart = rootbookpart.GetPartsOfType<WorkbookStylesPart>().FirstOrDefault();
-			if (stylesPart == null)
-				return 1;
+            //创建Workbook（工作簿）
+            var rootbookpart = document.AddWorkbookPart();
+            rootbookpart.Workbook = new Workbook();
+            //Add Sheets to the Workbook.
+            var sheets = rootbookpart.Workbook.AppendChild(new Sheets());
+            var stylesPart = rootbookpart.AddNewPart<WorkbookStylesPart>();
+            stylesPart.Stylesheet = new Stylesheet();
+            //stylesPart.Stylesheet.Save();
 
-			var redfont = stylesPart.Stylesheet.Fonts.AppendChild(new DocumentFormat.OpenXml.Spreadsheet.Font());
-			redfont.FontSize = new FontSize() { Val = 10 };
-			redfont.Color = new DocumentFormat.OpenXml.Spreadsheet.Color() { Rgb = new HexBinaryValue() { Value = "FF3030" } };
-			redfont.FontName = new FontName() { Val = "Calibri" };
-			var redFontId = stylesPart.Stylesheet.Fonts.Count() - 1;
-			CellFormat cf = stylesPart.Stylesheet.CellFormats.AppendChild(new CellFormat());
-			cf.Alignment = new Alignment()
-			{
-				Horizontal = HorizontalAlignmentValues.Left,
-				Vertical = VerticalAlignmentValues.Center
-			};
-			cf.ApplyAlignment = true;
-			cf.NumberFormatId = 0;
-			cf.FontId = (uint)redFontId;
-			cf.BorderId = 0;
-			cf.FillId = 0;
+            //如果是从模板导出，则判断是否加载模板中的样式设计
+            if (sheetsData.FirstOrDefault().SheetDefines is SheetTemplate)
+            {
+                var sheetTemplate = sheetsData.FirstOrDefault().SheetDefines as SheetTemplate;
+                if (sheetTemplate != null && sheetTemplate.StylesheetXml != null)
+                {
+                    stylesPart.Stylesheet = new Stylesheet(sheetTemplate.StylesheetXml);
 
-			return (uint)stylesPart.Stylesheet.CellFormats.Count() - 1;
-		}
+                    //stylesPart.Stylesheet.Save();
+                }
+                else
+                {
+                    stylesPart.Stylesheet = OpenXMLExcelHelper.GenerateStyleSheet();
+                    //stylesPart.Stylesheet.Save();
+                }
+            }
+            else
+            {
+                stylesPart.Stylesheet = OpenXMLExcelHelper.GenerateStyleSheet();
+                //stylesPart.Stylesheet.Save();
+            }
 
-		private static void CreateWorksheetPart(WorkbookPart rootbookpart, ExportSheetData data)
-		{
+            foreach (var data in sheetsData)
+            {
+                CreateWorksheetPart(rootbookpart, data);
+            }
+            rootbookpart.Workbook.Save();
+            document.Close();
+            return stream.ToArray();
+        }
 
-			var sheets = rootbookpart.Workbook.Sheets;
-			if (sheets == null)
-				sheets = rootbookpart.Workbook.AppendChild(new Sheets());
+        private static uint CreateErrorTipStyleIndex(WorkbookPart rootbookpart)
+        {
+            var stylesPart = rootbookpart.GetPartsOfType<WorkbookStylesPart>().FirstOrDefault();
+            if (stylesPart == null)
+                return 1;
 
-			//创建Worksheet（工作表）到Workbook，表示包含文本、数字、日期或公式的单元格网格的工作表类型
-			var worksheetPart = rootbookpart.AddNewPart<WorksheetPart>();
+            var redfont = stylesPart.Stylesheet.Fonts.AppendChild(new DocumentFormat.OpenXml.Spreadsheet.Font());
+            redfont.FontSize = new FontSize() { Val = 10 };
+            redfont.Color = new DocumentFormat.OpenXml.Spreadsheet.Color() { Rgb = new HexBinaryValue() { Value = "FF3030" } };
+            redfont.FontName = new FontName() { Val = "Calibri" };
+            var redFontId = stylesPart.Stylesheet.Fonts.Count() - 1;
+            CellFormat cf = stylesPart.Stylesheet.CellFormats.AppendChild(new CellFormat());
+            cf.Alignment = new Alignment()
+            {
+                Horizontal = HorizontalAlignmentValues.Left,
+                Vertical = VerticalAlignmentValues.Center
+            };
+            cf.ApplyAlignment = true;
+            cf.NumberFormatId = 0;
+            cf.FontId = (uint)redFontId;
+            cf.BorderId = 0;
+            cf.FillId = 0;
 
-			//创建SheetData（单元格表）到Worksheet
-			var sheetData = new SheetData();//表数据对象
-			worksheetPart.Worksheet = new Worksheet();//一张工作表的根元素
+            return (uint)stylesPart.Stylesheet.CellFormats.Count() - 1;
+        }
 
-			//worksheetPart.Worksheet.AppendChild(AutoFitColumns(data));
-			worksheetPart.Worksheet.AppendChild(sheetData);
+        private static void CreateWorksheetPart(WorkbookPart rootbookpart, ExportSheetData data)
+        {
 
-			var sheet = new Sheet()
-			{
-				Id = rootbookpart.GetIdOfPart(worksheetPart),
-				SheetId = new UInt32Value((uint)sheets.Count() + 1),
-				Name = data.SheetDefines.SheetName ?? string.Format("Sheet {0}", sheets.Count() + 1)
-			};
-			sheets.AppendChild(sheet);
-			//列映射关系
-			var columnMap = new List<ColumnMapModel>();
+            var sheets = rootbookpart.Workbook.Sheets;
+            if (sheets == null)
+                sheets = rootbookpart.Workbook.AppendChild(new Sheets());
+
+            //创建Worksheet（工作表）到Workbook，表示包含文本、数字、日期或公式的单元格网格的工作表类型
+            var worksheetPart = rootbookpart.AddNewPart<WorksheetPart>();
+
+            //创建SheetData（单元格表）到Worksheet
+            var sheetData = new SheetData();//表数据对象
+            worksheetPart.Worksheet = new Worksheet();//一张工作表的根元素
+
+            //worksheetPart.Worksheet.AppendChild(AutoFitColumns(data));
+            worksheetPart.Worksheet.AppendChild(sheetData);
+
+            var sheet = new Sheet()
+            {
+                Id = rootbookpart.GetIdOfPart(worksheetPart),
+                SheetId = new UInt32Value((uint)sheets.Count() + 1),
+                Name = data.SheetDefines.SheetName ?? string.Format("Sheet {0}", sheets.Count() + 1)
+            };
+            sheets.AppendChild(sheet);
+            //列映射关系
+            var columnMap = new List<ColumnMapModel>();
             // Add header
             if (data.SheetDefines is SimpleSheetTemplate)
             {
@@ -359,25 +359,28 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 }
             }
 
-			//如果有错误提示内容，则在最后创建一列错误提示列
-			var errorColumnName = Guid.NewGuid().ToString();
-			if (data.RowErrors != null && data.RowErrors.Count > 0)
-			{
-				uint errorTipStyleIndex = CreateErrorTipStyleIndex(rootbookpart);
-				columnMap.Add(new ColumnMapModel()
-				{
-					FieldName = errorColumnName,
-					Index = columnMap.Select(m => m.Index).Max() + 1,
-					IsNotEmpty = false,
-					StyleIndex = errorTipStyleIndex
-				});
-			}
-			// Add sheet data
-			if (columnMap != null && columnMap.Count > 0)
-				InsertRowsData(rootbookpart, worksheetPart, columnMap, data.DataRows, errorColumnName, data.RowErrors);
+            //如果有错误提示内容，则在最后创建一列错误提示列
+            var errorColumnName = Guid.NewGuid().ToString();
+            if (data.RowErrors != null && data.RowErrors.Count > 0)
+            {
+                uint errorTipStyleIndex = CreateErrorTipStyleIndex(rootbookpart);
+                columnMap.Add(new ColumnMapModel()
+                {
+                    FieldName = errorColumnName,
+                    Index = columnMap.Select(m => m.Index).Max() + 1,
+                    IsNotEmpty = false,
+                    StyleIndex = errorTipStyleIndex
+                });
+            }
+            // Add sheet data
+            if (columnMap != null && columnMap.Count > 0)
+                InsertRowsData(rootbookpart, worksheetPart, columnMap, data.DataRows, errorColumnName, data.RowErrors);
+            if (data.MergeList != null && data.MergeList.Count > 0) {
+                MergeCells(rootbookpart, worksheetPart, data.MergeList);
+            }
 
-			//rootbookpart.Workbook.Save();
-		}
+            //rootbookpart.Workbook.Save();
+        }
 
         #region --创建表格头部--
         #region 处理多表头
@@ -389,7 +392,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         /// <param name="curColIndex"></param>
         /// <param name="MaxRowCount"></param>
         /// <returns></returns>
-        private static int CalcMultiHeaderSpan(List<MultiHeader> headers, int curRowIndex, int curColIndex ,ref int MaxRowCount) {
+        private static int CalcMultiHeaderSpan(List<MultiHeader> headers, int curRowIndex, int curColIndex, ref int MaxRowCount) {
             if (MaxRowCount < curRowIndex) MaxRowCount = curRowIndex;
             for (int i = 0; i < headers.Count; i++) {
                 if (headers[i].HeaderType == 1)
@@ -398,7 +401,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                     headers[i].ColIndex = curColIndex;
                     curColIndex++;
                     headers[i].ColSpan = 1;
-                    headers[i].RowSpan = MaxRowCount-curRowIndex+1;
+                    headers[i].RowSpan = MaxRowCount - curRowIndex + 1;
                 }
                 else {
 
@@ -406,7 +409,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                     headers[i].RowIndex = curRowIndex;
                     headers[i].ColIndex = curColIndex;
                     headers[i].ColSpan = endColIndex - curColIndex;
-                    headers[i].RowSpan =  1;
+                    headers[i].RowSpan = 1;
                     curColIndex = endColIndex;
                 }
             }
@@ -430,7 +433,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         /// <param name="rowIndex"></param>
         /// <param name="colIndex"></param>
         /// <returns></returns>
-        private static string  getCellName(int rowIndex, int colIndex) {
+        private static string getCellName(int rowIndex, int colIndex) {
             return OpenXMLExcelHelper.GetColumnName((uint)colIndex) + rowIndex.ToString();
         }
         /// <summary>
@@ -446,7 +449,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 string headerText = item.HeaderText;
                 for (int r = 0; r < item.RowSpan; r++) {
                     for (int c = 0; c < item.ColSpan; c++) {
-                        var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, (uint)(item.ColIndex+c), (uint)(item.RowIndex+r), headerText);
+                        var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, (uint)(item.ColIndex + c), (uint)(item.RowIndex + r), headerText);
                         cell.StyleIndex = 6;
                         headerText = "";
                     }
@@ -462,7 +465,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                     columnMap.Add(new ColumnMapModel() {
                         Index = (int)item.ColIndex,
                         FieldName = item.FieldName,
-                        IsNotEmpty = item.IsNotEmpty ,
+                        IsNotEmpty = item.IsNotEmpty,
                         Width = item.Width,
                         HeaderText = item.HeaderText
                     });
@@ -484,7 +487,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         {
             try
             {
-                
+
                 List<ColumnMapModel> columnMap = new List<ColumnMapModel>();
                 Worksheet worksheet = worksheetPart.Worksheet;
                 if (headers == null || headers.Count <= 0)
@@ -502,34 +505,34 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         }
         #endregion
         private static List<ColumnMapModel> CreateHeaders(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<SimpleHeader> headers)
-		{
-			try
-			{
-				List<ColumnMapModel> columnMap = new List<ColumnMapModel>();
-				Worksheet worksheet = worksheetPart.Worksheet;
-				if (headers == null || headers.Count <= 0)
-					throw new Exception("Excel 必须包含Header数据");
-				uint columnIndex = 0;
-				foreach (var m in headers)
-				{
+        {
+            try
+            {
+                List<ColumnMapModel> columnMap = new List<ColumnMapModel>();
+                Worksheet worksheet = worksheetPart.Worksheet;
+                if (headers == null || headers.Count <= 0)
+                    throw new Exception("Excel 必须包含Header数据");
+                uint columnIndex = 0;
+                foreach (var m in headers)
+                {
 
-					var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIndex, 1, m.HeaderText ?? "");
-					if (m.IsNotEmpty)
-					{
-						cell.StyleIndex = 5;
-					}
-					else cell.StyleIndex = 4;
+                    var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIndex, 1, m.HeaderText ?? "");
+                    if (m.IsNotEmpty)
+                    {
+                        cell.StyleIndex = 5;
+                    }
+                    else cell.StyleIndex = 4;
 
-					columnMap.Add(new ColumnMapModel() { Index = (int)columnIndex, FieldName = m.FieldName, IsNotEmpty = m.IsNotEmpty });
-					columnIndex++;
-				}
-				return columnMap;
-			}
-			catch (Exception ex)
-			{
-				throw ex;
-			}
-		}
+                    columnMap.Add(new ColumnMapModel() { Index = (int)columnIndex, FieldName = m.FieldName, IsNotEmpty = m.IsNotEmpty });
+                    columnIndex++;
+                }
+                return columnMap;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
         private static List<ColumnMapModel> CreateHeaders2(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<MultiHeader> headers)
         {
             try
@@ -560,42 +563,51 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             }
         }
         private static void CreateHeaders(WorkbookPart workbookPart, WorksheetPart worksheetPart, HeadersTemplate template)
-		{
-			Worksheet worksheet = worksheetPart.Worksheet;
-			if (template == null || template.RowCellsTemplate == null)
-				throw new Exception("Excel 必须包含Header数据");
+        {
+            Worksheet worksheet = worksheetPart.Worksheet;
+            if (template == null || template.RowCellsTemplate == null)
+                throw new Exception("Excel 必须包含Header数据");
 
-			foreach (var m in template.RowCellsTemplate)
-			{
-				var rowIndex = OpenXMLExcelHelper.GetRowIndex(m.CellReference);
-				string columnName = OpenXMLExcelHelper.GetColumnName(m.CellReference);
-				var columnIndex = OpenXMLExcelHelper.GetColumnIndex(columnName);
-				var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIndex, rowIndex, m.CellValue.ToString());
-				if (m.CellFormula != null)
-					cell.CellFormula = new CellFormula(m.CellFormula);
-				if (m.StyleIndex.HasValue)
-					cell.StyleIndex = m.StyleIndex.Value;
-				if (m.CellMetaIndex.HasValue)
-					cell.CellMetaIndex = m.CellMetaIndex;
-				if (m.ValueMetaIndex.HasValue)
-					cell.ValueMetaIndex = m.ValueMetaIndex;
-				if (m.InlineString != null)
-					cell.InlineString = new InlineString(m.InlineString);
-				if (m.ExtensionList != null)
-					cell.ExtensionList = new DocumentFormat.OpenXml.Spreadsheet.ExtensionList(m.ExtensionList);
-			}
-			if (template.MergeCellsOuterXmls != null)
-			{
-				foreach (var m in template.MergeCellsOuterXmls)
-				{
-					OpenXMLExcelHelper.InsertMergeCells(worksheet, new MergeCells(m));
-				}
-			}
-		}
-		#endregion
+            foreach (var m in template.RowCellsTemplate)
+            {
+                var rowIndex = OpenXMLExcelHelper.GetRowIndex(m.CellReference);
+                string columnName = OpenXMLExcelHelper.GetColumnName(m.CellReference);
+                var columnIndex = OpenXMLExcelHelper.GetColumnIndex(columnName);
+                var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIndex, rowIndex, m.CellValue.ToString());
+                if (m.CellFormula != null)
+                    cell.CellFormula = new CellFormula(m.CellFormula);
+                if (m.StyleIndex.HasValue)
+                    cell.StyleIndex = m.StyleIndex.Value;
+                if (m.CellMetaIndex.HasValue)
+                    cell.CellMetaIndex = m.CellMetaIndex;
+                if (m.ValueMetaIndex.HasValue)
+                    cell.ValueMetaIndex = m.ValueMetaIndex;
+                if (m.InlineString != null)
+                    cell.InlineString = new InlineString(m.InlineString);
+                if (m.ExtensionList != null)
+                    cell.ExtensionList = new DocumentFormat.OpenXml.Spreadsheet.ExtensionList(m.ExtensionList);
+            }
+            if (template.MergeCellsOuterXmls != null)
+            {
+                foreach (var m in template.MergeCellsOuterXmls)
+                {
+                    OpenXMLExcelHelper.InsertMergeCells(worksheet, new MergeCells(m));
+                }
+            }
+        }
+        #endregion
+        #region 合并单元格
+        private static void MergeCells(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<MergeCellInfo> mergeList) {
+            foreach (MergeCellInfo mergeInfo in mergeList) {
+                string FirstCellName = getCellName(mergeInfo.FromRowIndex, mergeInfo.FromColIndex);
+                string SecondCellName = getCellName(mergeInfo.FromRowIndex + mergeInfo.RowCount - 1, mergeInfo.FromColIndex + mergeInfo.ColCount - 1);
+                OpenXMLExcelHelper.MergeTwoCells(worksheetPart.Worksheet, FirstCellName, SecondCellName);
+            }
 
-		#region --插入每行数据--
-		private static void InsertRowsData(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<ColumnMapModel> columnMap, List<Dictionary<string, object>> rowsdata, string errorColumnName = null, List<string> rowErrors = null)
+        }
+        #endregion 
+        #region --插入每行数据--
+        private static void InsertRowsData(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<ColumnMapModel> columnMap, List<Dictionary<string, object>> rowsdata, string errorColumnName = null, List<string> rowErrors = null)
 		{
 			if (columnMap == null || columnMap.Count <= 0)
 				throw new Exception("Excel 必须包含columnMap数据");
@@ -605,18 +617,20 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 			var columnMapOrderBy = columnMap.OrderBy(m => m.Index);
 			uint rowIdex = (UInt32)sheetData.Descendants<Row>().Count();
 			uint cellIdex = 0;
+            OpenXMLExcelHelper.CellTypeSelfDefined celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Normal;
 
-			if (rowsdata == null)
+            if (rowsdata == null)
 				return;
 			for (int i = 0; i < rowsdata.Count; i++)
 			{
-				var row = rowsdata[i];
+                var row = rowsdata[i];
 				cellIdex = 0;
 				var newrow = new Row { RowIndex = ++rowIdex };
 				List<OXSExcelDataCell> cellList = new List<OXSExcelDataCell>();
 				foreach (var column in columnMapOrderBy)
-				{
-					object cellValue = null;
+                {
+                    celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Normal;
+                    object cellValue = null;
 					uint styleIndex = 0;
 					//判断是否是错误提示列
 					if (column.FieldName.Equals(errorColumnName) && rowErrors != null)
@@ -634,11 +648,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 					{
                         
                         if (cellValue is decimal)
+                        {
                             cellValue = Decimal.ToDouble((decimal)cellValue);
+                            celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Number;
+                        }
                         celldata = new OXSExcelDataCell(cellValue == null ? "" : cellValue.ToString());
 					}
 					cellList.Add(celldata);
-					InsertCellData(celldata, workbookPart, worksheetPart, cellIdex++, rowIdex, newrow, styleIndex);
+
+					InsertCellData(celldata, workbookPart, worksheetPart, cellIdex++, rowIdex, newrow, styleIndex, celltype);
 				}
 
 				var maxrowheight = GetMaxRowHeight(cellList);
@@ -653,11 +671,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 		#endregion
 
 		#region --插入单元格数据--
-		private static void InsertCellData(OXSExcelDataCell callData, WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, Row row = null, uint styleIndex = 0)
+		private static void InsertCellData(OXSExcelDataCell callData, WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, Row row = null, uint styleIndex = 0, OpenXMLExcelHelper.CellTypeSelfDefined celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Normal)
 		{
 			if (callData.DataType == OXSDataItemType.String)
 			{
-				var newcell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIdex, rowIndex, callData.Data == null ? string.Empty : callData.Data.ToString(), row);
+				var newcell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIdex, rowIndex, callData.Data == null ? string.Empty : callData.Data.ToString(), row,celltype);
 				newcell.StyleIndex = styleIndex;
 			}
 			else if (callData.DataType == OXSDataItemType.Hyperlink)

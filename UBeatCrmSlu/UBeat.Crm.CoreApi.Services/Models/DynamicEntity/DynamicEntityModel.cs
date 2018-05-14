@@ -60,6 +60,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// </summary>
         public Dictionary<string,object>  RelInfo { get; set; }
         public Dictionary<string, string> ColumnFilter { get; set; }
+        /// <summary>
+        /// 专用于获取嵌套表格列表时，通过对应的主实体id列表获取其所有的嵌套表格的记录
+        /// 
+        /// </summary>
+        public List<Guid> MainIds { get; set; }
     }
 
 

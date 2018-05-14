@@ -103,6 +103,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public string SearchOrder { get; set; }
         public int? NeedPower { get; set; }
         public Dictionary<string,object> RelInfo { get; set; }
+
         protected override IValidator GetValidator()
         {
             return new DynamicEntityListMapperValidator();
@@ -115,7 +116,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public DynamicEntityListMapperValidator()
         {
             RuleFor(d => d.EntityId).NotNull().WithMessage("实体ID不能为NULL");
-            RuleFor(d => d.MenuId).NotNull().WithMessage("菜单ID不能为NULL");
+            //RuleFor(d => d.MenuId).NotNull().WithMessage("菜单ID不能为NULL");
             RuleFor(d => d.ViewType).NotNull().WithMessage("视图类型不能为NULL");
         }
     }
