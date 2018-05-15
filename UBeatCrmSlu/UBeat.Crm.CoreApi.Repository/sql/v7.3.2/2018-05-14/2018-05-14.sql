@@ -20,11 +20,11 @@ CREATE TABLE crm_sys_security_pwdpolicy(
 
 
 CREATE TABLE crm_sys_security_historyPwd(
-"RecId" uuid PRIMARY KEY not null,
-"UserId" int not null,
-"oldPwd" VARCHAR(50) ,
+"recid" uuid PRIMARY KEY not null,
+"userid" int not null,
+"oldpwd" VARCHAR(50) ,
 "newpwd" VARCHAR(50),
-"changeype" int,
+"changetype" int,
 "reccreator" INT,
 "reccreated" date
 );

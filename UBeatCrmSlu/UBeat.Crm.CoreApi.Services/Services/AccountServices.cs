@@ -17,6 +17,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.Account;
 using UBeat.Crm.CoreApi.Services.Models.FileService;
 using UBeat.Crm.LicenseCore;
+using System.Linq;
 using static MessagePack.MessagePackSerializer;
 
 namespace UBeat.Crm.CoreApi.Services.Services
@@ -524,7 +525,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         /// <param name="userNumber"></param>
         /// <returns></returns>
-        public OutputResult<object> GetPwdPolicy(int userNumber)
+        public PwdPolicy GetPwdPolicy(int userNumber)
         {
             DbTransaction tran = null;
             var policy = string.Empty;
@@ -533,7 +534,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 policy = data["policy"].ToString();
             }
-            return new OutputResult<object>(Newtonsoft.Json.JsonConvert.DeserializeObject(policy));
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<PwdPolicy>(policy);
         }
         /// <summary>
         /// 保存密码策略
@@ -556,7 +557,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns>如果返回是null或者空字符串，表示验证成功，否则返回验证错误信息，如：密码长度不足等</returns>
         public string CheckPasswordValidForPolicy(int userid,string plantextpassword, string encryptpwd, int operatorUserId)
         {
-            //throw (new NotImplementedException());
+            PwdPolicy pwdPolicy = GetPwdPolicy(userid);
+            string userName = _accountRepository.GetAccountName(userid);
+            List<HistoryPwd> historyPwd = _accountRepository.GetHistoryPwd(userid);
+            var pwds = historyPwd.Select(r => r.NewPwd).ToList(); 
+            if (pwdPolicy.IsSetPwdLength > 0)
+            {
+                if (pwdPolicy.SetPwdLength > 0 && plantextpassword.Length < pwdPolicy.SetPwdLength)
+                    return "密码长度不符，必须包含" + pwdPolicy.SetPwdLength + "个字符";
+                if (pwdPolicy.IsNumber > 0 && !Regex.IsMatch(plantextpassword, "[0-9]"))
+                    return "密码必须包含数字";
+                if (pwdPolicy.IsUpper > 0 && !Regex.IsMatch(plantextpassword, "^(?:(?=.*[A-Z])(?=.*[a-z])).*$"))
+                    return "密码必须包含大小写";
+                if (pwdPolicy.IsSpecialStr > 0 && Regex.IsMatch(plantextpassword, "^[a-zA-Z0-9]*$"))
+                    return "密码必须包含特殊字符";
+            }
+            if (pwdPolicy.IsLikeLetter > 0)
+            {
+                if (pwdPolicy.LikeLetter > 0 && Regex.IsMatch(plantextpassword, @"(.)\1{" + (pwdPolicy.LikeLetter) + "}"))
+                    return "密码不得连续多于" + pwdPolicy.LikeLetter + "位相同的字母";
+            }
+            if (pwdPolicy.IsContainAccount > 0 && plantextpassword.Contains(userName))
+                return "密码不得包含用户名";
+            if (pwds.Contains(plantextpassword))
+                return "不能用近三次使用过的密码";
             return "";
         }
         /// <summary>
@@ -566,7 +590,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="thisSession">需要排除的authorizedcode</param>
         /// <param name="operatorUserId">操作者id</param>
         public void ForceLogoutButThis(int userId, string thisSession, int operatorUserId) {
-            throw (new NotImplementedException());
+            //   throw (new NotImplementedException());
+           // LoginSessionModel loginSession = CacheService.Repository.Get<LoginSessionModel>(sessionKey);
+
         }
         #endregion
     }

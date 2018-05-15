@@ -543,6 +543,35 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         {
             return SecurityHash.GetPwdSecurity(plaintext, _passwordSalt);
         }
+        /// <summary>
+        /// 获取账户名
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public string GetAccountName(int userId)
+        {
+            string sql = @"select accountname from crm_sys_account where accountid = (select accountid from crm_sys_account_userinfo_relate where userid = @userid)";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("userid",userId)
+            };
+            return ExecuteScalar(sql, param, null).ToString();
+        }
+
+        /// <summary>
+        /// 获取历史密码
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public List<HistoryPwd> GetHistoryPwd(int userId)
+        {
+            string sql = @"select * from crm_sys_security_historypwd where userid = @userid order by reccreated desc limit 3";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("userid",userId)
+            };
+            return ExecuteQuery<HistoryPwd>(sql, param, null);
+        }
         #endregion
     }
 }
