@@ -144,8 +144,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 try
                 {
-                    OutputResult<object> policyResult = this._accountServices.GetPwdPolicy(userInfo.UserId);
-                    PwdPolicy policy = Newtonsoft.Json.JsonConvert.DeserializeObject<PwdPolicy>(Newtonsoft.Json.JsonConvert.SerializeObject(policyResult.DataBody));
+                    PwdPolicy policy = this._accountServices.GetPwdPolicy(userInfo.UserId);
                     if (policy != null && policy.IsUserPolicy == 1) {
                         //密码策略存在且已经启用了
                         if (policy.IsPwdExpiry == 1 && userInfo.LastChangedPwdTime != null ) {
@@ -691,10 +690,12 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("getpwdpolicy")]
-        public OutputResult<object> GetPwdPolicy()
+        public OutputResult<PwdPolicy> GetPwdPolicy()
         {
-            return _accountServices.GetPwdPolicy(UserId);
+            PwdPolicy pwdPolicy = _accountServices.GetPwdPolicy(UserId);
+            return new OutputResult<PwdPolicy>(pwdPolicy);
         }
+
         /// <summary>
         /// 保存密码策略
         /// </summary>

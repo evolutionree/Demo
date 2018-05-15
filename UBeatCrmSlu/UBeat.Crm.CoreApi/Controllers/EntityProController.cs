@@ -600,6 +600,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> UpdateFuncConfig([FromBody]FuncConfigData data)
         {
             if (data == null || data.entityId == Guid.Empty) return ResponseError<object>("参数格式错误");
+            if (data.acConfig.Where(r => r.RoutePath == null).Count() > 0)
+                return ResponseError<object>("RoutePath不能为空");
             return _entityProService.UpdateFuncConfig(data, UserId);
         }
         #endregion

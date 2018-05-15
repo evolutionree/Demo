@@ -14,7 +14,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         /// </summary>
         public int IsUserPolicy { get; set; }
         /// <summary>
-        /// 是否启动包含*个字母
+        /// 是否启动包含条件
         /// </summary>
         public int IsSetPwdLength { get; set; }
         /// <summary>
@@ -65,5 +65,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         /// 提前*月通知用户（提前月份需小于有效月份一半）
         /// </summary>
         public int CueUserDate { get; set; }
+        /// <summary>
+        /// 是否不允许使用历史密码
+        /// </summary>
+        public int IsHistoryPwd { get; set; }
     }
 }
