@@ -33,6 +33,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         public string AccountPwd { get; set; }
 
         public int RecStatus { get; set; }
+        public int NextMustChangepwd { get; set; }
+        public DateTime LastChangedPwdTime { get; set; }
     }
 
     public class AccountUserRegistMapper : BaseEntity
