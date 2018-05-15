@@ -64,6 +64,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// </summary>
         public ExportDataColumnSourceEnum ColumnSource { get; set; }
 
+        public Guid EntityId { get; set; }
 
         #endregion
     }

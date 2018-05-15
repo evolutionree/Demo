@@ -112,7 +112,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost("exportdata")]
 		[AllowAnonymous]
-        public OutputResult<object> ExportData_ForPost([FromQuery]ExportDataModel queryParam)
+        public OutputResult<object> ExportData_ForPost([FromBody]ExportDataModel queryParam)
         {
             if (!string.IsNullOrEmpty(queryParam.DynamicQuery))
                 queryParam.DynamicModel = JsonConvert.DeserializeObject<DynamicEntityListModel>(queryParam.DynamicQuery);

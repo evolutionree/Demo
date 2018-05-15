@@ -649,7 +649,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
             if (data.NestTableList == null) data.NestTableList = new List<string>();
-            var userData = HasFunctionAccess(data.UserId);
+            var userData = HasFunctionAccess(data.UserId, data.EntityId);
 
 
             string filename = null;

@@ -28,6 +28,22 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             }
             CancellationToken ct = context.RequestAborted;
             var currentSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+            WebChatResponseMsg responseMsg = null;
+            WebResponsePackage pkg = null;
+            responseMsg = new WebChatResponseMsg()
+            {
+                ResultCode = -1,
+                ErrorMsg = "请登录"
+            };
+            pkg = new WebResponsePackage()
+            {
+                WebSock = currentSocket,
+                CmdMsg = responseMsg,
+                MessageType = WebChatMsgType.Command//命令回复数据
+            };
+
+            WebChatResponseHandler.getInstance().Enqueue(pkg);
             while (true)
             {
                 if (ct.IsCancellationRequested)
@@ -35,13 +51,31 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                     break;
                 }
 
+
                 string response = await ReceiveStringAsync(currentSocket, ct);
-                WebChatMsgTemplate msg = JsonConvert.DeserializeObject<WebChatMsgTemplate>(response);
+                WebChatMsgTemplate msg = null;
+                try
+                {
+                    msg = JsonConvert.DeserializeObject<WebChatMsgTemplate>(response);
+                } catch (Exception ex) {
+                }
                 if (msg == null) {
                     //发送格式错误的回复消息
+                    responseMsg = new WebChatResponseMsg()
+                    {
+                        ResultCode = -2,
+                        ErrorMsg = "消息格式异常"
+                    };
+                    pkg = new WebResponsePackage()
+                    {
+                        WebSock = currentSocket,
+                        CmdMsg = responseMsg,
+                        MessageType = WebChatMsgType.Command//命令回复数据
+                    };
+
+                    WebChatResponseHandler.getInstance().Enqueue(pkg);
                     continue;
                 };
-                WebChatResponseMsg responseMsg  = null;
                 switch (msg.Cmd) {
                     case WebChatCommandType.WebChatLogin:
                         break;
@@ -52,11 +86,12 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                     case WebChatCommandType.WebChatSendMsg:
                         break;
                 }
-                responseMsg = new WebChatResponseMsg() {
+                responseMsg = new WebChatResponseMsg()
+                {
                     ResultCode = -1,
                     ErrorMsg = "请登录"
                 };
-                WebResponsePackage pkg = new WebResponsePackage()
+                pkg = new WebResponsePackage()
                 {
                     WebSock = currentSocket,
                     CmdMsg = responseMsg,
