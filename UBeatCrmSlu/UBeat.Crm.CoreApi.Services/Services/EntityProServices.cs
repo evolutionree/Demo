@@ -1289,7 +1289,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 catch (Exception ex)
                 {
                     tran.Rollback();
-                    return new OutputResult<object>("修改失败");
+                    return new OutputResult<object>(null, "修改失败！", 1);
                 }
                 finally
                 {
