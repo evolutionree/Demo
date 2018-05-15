@@ -1279,14 +1279,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 conn.Open();
                 DbTransaction tran = conn.BeginTransaction();
                 List<FuncEvent> funcEvents = new List<FuncEvent>();
+                List<ActionExtConfig> acConfigs = new List<ActionExtConfig>();
                 try
                 {
                     foreach (var item in data.funcEvent.Keys)
                     {
                         funcEvents.AddRange(data.funcEvent[item]);
                     }
+                    acConfigs = data.acConfig.Where(r => r.ImplementType != -1).ToList();
                     _entityProRepository.UpdateFuncEvent(tran, data.entityId, funcEvents, userNumber);
-                    _entityProRepository.UpdateActionExt(tran, data.entityId, data.acConfig, userNumber);
+                    _entityProRepository.UpdateActionExt(tran, data.entityId, acConfigs, userNumber);
                     _entityProRepository.UpdateExtFunction(tran, data.entityId, data.extFunction, userNumber);
                     tran.Commit();
                     return new OutputResult<object>("修改成功");
