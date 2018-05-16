@@ -673,6 +673,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             _accountServices.GetUserData(userInfo.UserId, true);
             return new OutputResult<object>(response);
         }
+        
         private string GetMD5HashToUpper(String inputValue)
         {
             using (var md5 = MD5.Create())
@@ -710,6 +711,20 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (data.IsPwdExpiry > 0 && data.CueUserDate > (data.PwdExpiry / 2)) return ResponseError<object>("提前多少个月必须小于有效期的一半");
             return _accountServices.SavePwdPolicy(data, UserId);
         }
+        [HttpPost("forcelogout")]
+        public OutputResult<object> ForUseLogout([FromBody] List<ForceUserLogoutParamInfo> paramList) {
+            if (paramList == null || paramList.Count == 0) {
+                return ResponseError<object>("参数异常或者未提供参数");
+            }
+            string requestAuthorization = HttpContext.Request.Headers["Authorization"];
+            this._accountServices.ForUserLogout(paramList, requestAuthorization,UserId);
+            return new OutputResult<object>("完成");
+        }
+        [HttpPost("passwordvalid")]
+        public OutputResult<object> PasswordValid([FromBody] List<int> UserList) {
+            return null;
+        }
         #endregion
     }
+    
 }

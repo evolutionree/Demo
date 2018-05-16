@@ -299,7 +299,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.PwdUser(pwdEntity, userNumber);
-                this.ForceLogoutButThis(userNumber, authorizedCode, userNumber);//注销本人但不是本次登陆的
+                this.ForceLogoutButThis(userNumber, authorizedCode,null,ForceUserLogoutTypeEnum.All, userNumber);//注销本人但不是本次登陆的
                 return HandleResult(result);
             }, pwdModel, userNumber);
 
@@ -329,7 +329,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.ReConvertPwd(arg, userNumber);
-                this.ForceLogoutButThis(int.Parse(entity.UserId), authorizedCode, userNumber);//重置密码，注销所有设备，但不包括本身
+                this.ForceLogoutButThis(int.Parse(entity.UserId), authorizedCode,null,ForceUserLogoutTypeEnum.All, userNumber);//重置密码，注销所有设备，但不包括本身
                 return HandleResult(result);
             }, entity, userNumber);
 
@@ -610,11 +610,163 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="userId">被操作的用户id</param>
         /// <param name="thisSession">需要排除的authorizedcode</param>
         /// <param name="operatorUserId">操作者id</param>
-        public void ForceLogoutButThis(int userId, string thisSession, int operatorUserId) {
+        public void ForceLogoutButThis(int userId, string thisSession, string logoutSession, ForceUserLogoutTypeEnum forcetype, int operatorUserId) {
             //   throw (new NotImplementedException());
-           // LoginSessionModel loginSession = CacheService.Repository.Get<LoginSessionModel>(sessionKey);
+            LoginSessionModel_ForInner loginSession = CacheService.Repository.Get<LoginSessionModel_ForInner>(MobileLoginSessionKey(userId));
+            if (loginSession != null && (forcetype == ForceUserLogoutTypeEnum.All || forcetype == ForceUserLogoutTypeEnum.AllMobile || forcetype == ForceUserLogoutTypeEnum.SpecialDevice)) {
+                List<string> removeKeys = new List<string>();
+                foreach (string key in loginSession.Sessions.Keys) {
+                    TokenInfo_ForInner tokenInfo = loginSession.Sessions[key];
+                    if (tokenInfo.Token.Equals(thisSession) == false && (logoutSession == null || logoutSession.Length == 0 || logoutSession.Equals(tokenInfo.Token))) {
+                        removeKeys.Add(key);
+                    }
+                }
+                foreach (string key in removeKeys) {
+                    loginSession.Sessions.Remove(key);
+                }
+                if (!(loginSession.LatestSession != null && loginSession.LatestSession.Equals(thisSession)))
+                {
+                    if (loginSession.Sessions.Count > 0)
+                    {
+                        loginSession.LatestSession = loginSession.Sessions.Last().Value.Token;
+                    }
+                    else
+                    {
+                        loginSession.LatestSession = "";
+                    }
+                }
+                else {
+                    loginSession.LatestSession = "";
+                }
+                if (loginSession.Sessions.Count == 0)
+                {
+                    CacheService.Repository.Remove(MobileLoginSessionKey(userId));
+                }
+                else {
 
+                    CacheService.Repository.Replace(MobileLoginSessionKey(userId), loginSession);
+                }
+            }
+            loginSession = CacheService.Repository.Get<LoginSessionModel_ForInner>(WebLoginSessionKey(userId));
+            if (loginSession != null && (forcetype == ForceUserLogoutTypeEnum.All || forcetype == ForceUserLogoutTypeEnum.AllWeb || forcetype == ForceUserLogoutTypeEnum.SpecialDevice))
+            {
+                List<string> removeKeys = new List<string>();
+                foreach (string key in loginSession.Sessions.Keys)
+                {
+                    TokenInfo_ForInner tokenInfo = loginSession.Sessions[key];
+                    if (tokenInfo.Token.Equals(thisSession) == false && (logoutSession == null || logoutSession.Length == 0 || logoutSession.Equals(tokenInfo.Token)))
+                    {
+                        removeKeys.Add(key);
+                    }
+                }
+                foreach (string key in removeKeys)
+                {
+                    loginSession.Sessions.Remove(key);
+                }
+                if (!(loginSession.LatestSession != null && loginSession.LatestSession.Equals(thisSession)))
+                {
+                    if (loginSession.Sessions.Count > 0)
+                    {
+                        loginSession.LatestSession = loginSession.Sessions.Last().Value.Token;
+                    }
+                    else
+                    {
+                        loginSession.LatestSession = "";
+                    }
+                }
+                else
+                {
+                    loginSession.LatestSession = "";
+                }
+                if (loginSession.Sessions.Count == 0)
+                {
+                    CacheService.Repository.Remove(WebLoginSessionKey(userId));
+                }
+                else
+                {
+
+                    CacheService.Repository.Replace(WebLoginSessionKey(userId), loginSession);
+                }
+            }
+        }
+
+        public void ForUserLogout(List<ForceUserLogoutParamInfo> paramList,string thisSession, int userId)
+        {
+            foreach (ForceUserLogoutParamInfo item in paramList) {
+                switch (item.ForceType) {
+                    case ForceUserLogoutTypeEnum.All:
+                    case ForceUserLogoutTypeEnum.AllMobile:
+                    case ForceUserLogoutTypeEnum.AllWeb:
+                        ForceLogoutButThis(item.UserId, thisSession, null, item.ForceType, userId);
+                        break;
+                    case ForceUserLogoutTypeEnum.SpecialDevice:
+                        ForceLogoutButThis(item.UserId, thisSession, item.DeviceId, item.ForceType, userId);
+                        break;
+                }
+            }
+        }
+
+        protected string WebLoginSessionKey(int userid)
+        {
+                return string.Format("WebLoginSession_{0}", userid.ToString());
+        }
+
+        protected string MobileLoginSessionKey(int userid)
+        {
+                return string.Format("MobileLoginSession_{0}", userid.ToString());
+            
         }
         #endregion
+    }
+    public class LoginSessionModel_ForInner
+    {
+        public Dictionary<string, TokenInfo_ForInner> Sessions { set; get; } = new Dictionary<string, TokenInfo_ForInner>();
+
+        public TimeSpan Expiration { set; get; }
+
+        /// <summary>
+        /// 是否多设备同时登陆
+        /// </summary>
+        public bool IsMultipleLogin { set; get; }
+
+
+        /// <summary>
+        /// 最新登陆session
+        /// </summary>
+        public string LatestSession { set; get; }
+
+
+
+
+    }
+    public class TokenInfo_ForInner
+    {
+        public string Token { set; get; }
+
+        public DateTime Expiration { set; get; }
+        /// <summary>
+        /// 记录本次登录的时间戳
+        /// </summary>
+        public long RequestTimeStamp { set; get; }
+
+        public TokenInfo_ForInner(string token, DateTime expiration, long requestTimeStamp)
+        {
+            Token = token;
+            Expiration = expiration;
+            RequestTimeStamp = requestTimeStamp;
+        }
+    }
+    public class ForceUserLogoutParamInfo
+    {
+        public int UserId { get; set; }
+        public ForceUserLogoutTypeEnum ForceType { get; set; }
+        public string DeviceId { get; set; }
+    }
+    public enum ForceUserLogoutTypeEnum
+    {
+        All = 0,
+        AllWeb = 1,
+        AllMobile = 2,
+        SpecialDevice = 3
     }
 }
