@@ -582,7 +582,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 if (pwdPolicy.IsContainAccount > 0 && plantextpassword.Contains(userName))
                     return "密码不得包含用户名";
-                if (pwds.Contains(plantextpassword))
+                if (pwds.Contains(encryptpwd))
                     return "不能用近三次使用过的密码";
             }
             return "";
