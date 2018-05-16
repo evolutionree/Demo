@@ -155,7 +155,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                                 policy_msg = "您的密码已经过期， 请修改密码后再使用系统";
                             }
                             else {
-                                if (policy.IsCueUser == 1 && userInfo.LastChangedPwdTime != null) {
+                                if (policy.IsCueUserDate == 1 && userInfo.LastChangedPwdTime != null) {
                                     int totalDay = (int)(System.DateTime.Now - userInfo.LastChangedPwdTime).TotalDays;
                                     if (totalDay >= policy.CueUserDate) {
 

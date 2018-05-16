@@ -60,7 +60,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         /// <summary>
         /// 是否提前通知用户
         /// </summary>
-        public int IsCueUser { get; set; }
+        public int IsCueUserDate { get; set; }
         /// <summary>
         /// 提前*月通知用户（提前月份需小于有效月份一半）
         /// </summary>
