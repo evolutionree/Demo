@@ -513,7 +513,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         public Dictionary<string,object> GetPwdPolicy(int userNumber, DbTransaction tran)
         {
             string sql = @"select * from crm_sys_security_pwdpolicy";
-            return ExecuteQuery<Dictionary<string,object>>(sql, new DbParameter[] { }, tran).FirstOrDefault();
+            return ExecuteQuery(sql, new DbParameter[] { }, tran).FirstOrDefault();
         }
 
         /// <summary>
@@ -529,8 +529,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             ExecuteNonQuery(delSql, new DbParameter[] { }, tran);
             #endregion
             #region 添加
-            string insertSql = @"insert into crm_sys_security_pwdpolicy(Policy,RecUpdated,RecUpdator) values(@Policy,@RecUpdated,@RecUpdator)";
+            string insertSql = @"insert into crm_sys_security_pwdpolicy(recid,policy,recupdated,recupdator) values (@RecId,@Policy,@RecUpdated,@RecUpdator)";
             var param = new DbParameter[] {
+                new NpgsqlParameter("RecId",Guid.NewGuid()),
                 new NpgsqlParameter ("Policy",Newtonsoft.Json.JsonConvert.SerializeObject(data)),
                 new NpgsqlParameter("RecUpdated",DateTime.Now),
                 new NpgsqlParameter("RecUpdator",userNumber)

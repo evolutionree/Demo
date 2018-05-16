@@ -530,6 +530,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbTransaction tran = null;
             var policy = string.Empty;
             var data = _accountRepository.GetPwdPolicy(userNumber, tran);
+            if (data == null) return new PwdPolicy();
             if (data.ContainsKey("policy"))
             {
                 policy = data["policy"].ToString();
