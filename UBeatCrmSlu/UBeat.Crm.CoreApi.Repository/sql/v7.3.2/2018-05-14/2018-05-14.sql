@@ -9,10 +9,10 @@ alter table crm_sys_account add COLUMN lastchangedpwdtime date default now();//×
 
 
 CREATE TABLE crm_sys_security_pwdpolicy(
-"RecId" uuid PRIMARY KEY not NULL,
-"Policy" VARCHAR(1000),
-"RecUpdated" date,
-"RecUpdator" INT
+"recid" uuid PRIMARY KEY not NULL,
+"policy" VARCHAR(1000),
+"reccreated" date,
+"reccreator" INT
 );
 
 
