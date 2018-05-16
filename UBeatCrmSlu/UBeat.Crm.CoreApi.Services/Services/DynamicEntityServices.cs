@@ -33,6 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IWorkFlowRepository _workFlowRepository;
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IAccountRepository _accountRepository;
+        private readonly IDataSourceRepository _dataSourceRepository;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService;
@@ -40,7 +41,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         private readonly IMapper _mapper;
 
-        public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository, IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository)
+        public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository,
+                IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
+                IDataSourceRepository dataSourceRepository)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
             _entityProRepository = entityProRepository;
@@ -48,7 +51,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _mapper = mapper;
             _dynamicRepository = dynamicRepository;
             _accountRepository = accountRepository;
-
+            _dataSourceRepository = dataSourceRepository;
             //_workflowService = workflowService;
         }
 
@@ -432,11 +435,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public void SavePersonalWebListColumnsSetting(SaveWebListColumnsForPersonalParamInfo paramInfo, int userId)
         {
             DbTransaction tran = null;
-            Dictionary<string,object> detail = this._dynamicEntityRepository.GetPersonalWebListColumnsSetting(paramInfo.EntityId, userId, tran);
+            Dictionary<string, object> detail = this._dynamicEntityRepository.GetPersonalWebListColumnsSetting(paramInfo.EntityId, userId, tran);
             if (detail == null || detail.ContainsKey("recid") == false || detail["recid"] == null)
             {
                 this._dynamicEntityRepository.AddPersonalWebListColumnsSetting(paramInfo.EntityId, paramInfo.ViewConfig, userId, tran);
-                }
+            }
             else {
                 this._dynamicEntityRepository.UpdatePersonalWebListColumnsSetting(Guid.Parse(detail["recid"].ToString()), paramInfo.ViewConfig, userId, tran);
 
@@ -457,7 +460,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, object> detail = this._dynamicEntityRepository.GetPersonalWebListColumnsSetting(paramInfo.EntityId, userId, tran);
             if (detail == null || detail.ContainsKey("viewconfig") == false || detail["viewconfig"] == null)
             {
-                view= new WebListPersonalViewSettingInfo();
+                view = new WebListPersonalViewSettingInfo();
                 view.FixedColumnCount = 0;
                 view.Columns = new List<WebListPersonalViewColumnSettingInfo>();
                 return view;
@@ -998,7 +1001,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             //获取该实体分类的字段
             var fields = GetWebFields(dynamicModel.TypeId, (DynamicProtocolOperateType)dynamicModel.OperateType, userNumber);
-
+            #region 需要对字段进行整理，并对数据源进行整理，增加补充entityid
+            DataSourceListMapper dsListMapper = new DataSourceListMapper() {
+                PageIndex = 1,
+                DatasourceName = "",
+                PageSize = 1000,
+                RecStatus = 1
+            };
+            Dictionary<string, List<IDictionary<string, object>>> dataSourceListDict = this._dataSourceRepository.SelectDataSource(dsListMapper, userNumber);
+            List<IDictionary<string, object>> allDataSourceList = dataSourceListDict["PageData"];
+            Dictionary<string, IDictionary<string, object>> allDataSourceDict = new Dictionary<string, IDictionary<string, object>>();
+            foreach (IDictionary<string, object> item in allDataSourceList) {
+                string id = item["datasourceid"].ToString();
+                allDataSourceDict[id] = item;
+            }
+            foreach (DynamicEntityWebFieldMapper field in fields)
+            {
+                if (field.ControlType == 18)//数据源控件才处理
+                {
+                    try
+                    {
+                        DynamicProtocolFieldConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(field.FieldConfig);
+                        if (config.DataSource.SourceId != null && config.DataSource.SourceId.Length > 0) {
+                            if (allDataSourceDict.ContainsKey(config.DataSource.SourceId)) {
+                                IDictionary<string, object> item = allDataSourceDict[config.DataSource.SourceId];
+                                if (item.ContainsKey("entityid") && item["entityid"] != null) {
+                                    config.DataSource.EntityId = Guid.Parse(item["entityid"].ToString());
+                                    field.FieldConfig = Newtonsoft.Json.JsonConvert.SerializeObject(config);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex) {
+                    }
+                }
+            }
+            #endregion 
             if (fields.Count == 0)
             {
                 return ShowError<object>("该实体没有配置列表字段");

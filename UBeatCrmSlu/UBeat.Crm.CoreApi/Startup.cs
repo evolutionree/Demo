@@ -27,6 +27,7 @@ using App.Metrics;
 using UBeat.Crm.CoreApi.Models;
 using System.Net.WebSockets;
 using UBeat.Crm.CoreApi.Services.webchat;
+using UBeat.Crm.CoreApi.Controllers;
 
 namespace UBeat.Crm.CoreApi
 {
@@ -137,9 +138,9 @@ namespace UBeat.Crm.CoreApi
             });
             app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseMvc();
             app.UseWebSockets();
             app.UseMiddleware<WebChatHandler>();
+            app.UseMvc();
         }
         /// <summary>
         /// 配置监控程序Metric

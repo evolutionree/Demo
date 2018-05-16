@@ -37,7 +37,14 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         }
         public  void WaitAndSendResponse() {
             while (true) {
-                WebResponsePackage pkg = queue.Dequeue();
+                WebResponsePackage pkg = null;
+                try
+                {
+                    pkg = queue.Dequeue();
+                }
+                catch (Exception ex) {
+
+                }
                 if (pkg == null) {
                     _wh.WaitOne(10 * 1000);//最多等待10秒钟
                     continue;

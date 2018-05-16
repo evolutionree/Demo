@@ -19,21 +19,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
     {
         protected UserData HasFunctionAccess(int usernumber)
         {
+            return HasFunctionAccess(usernumber, Guid.Empty);
+        }
+        protected UserData HasFunctionAccess(int usernumber,Guid entityid )
+        {
             //获取公共缓存数据
             var commonData = GetCommonCacheData(usernumber);
             //获取个人用户数据
             UserData userData = GetUserData(usernumber);
 
 
-            //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
-            if (commonData.TotalFunctions.Exists(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath)))
-            {
-                if (!userData.HasFunction(RoutePath, Guid.Empty, DeviceClassic))
-                {
-                    throw new Exception("对不起，您没有该功能的权限");
-                }
 
-            }
+
+                //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
+                if (commonData.TotalFunctions.Exists(a => a.EntityId == entityid &&  a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath)))
+                {
+                    if (!userData.HasFunction(RoutePath, entityid, DeviceClassic))
+                    {
+                        throw new Exception("对不起，您没有该功能的权限");
+                    }
+
+                }
             return userData;
         }
         protected Dictionary<string, FunctionInfo> AllMyFunctionIds( int userNumber) {
