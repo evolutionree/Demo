@@ -276,7 +276,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 pwdEntity.AccountPwd = DecryptAccountPwd(pwdModel.AccountPwd, out timeStamp);
                 pwdEntity.OrginPwd = DecryptAccountPwd(pwdModel.OrginPwd, out timeStamp);
             }
-            string checkValid = this.CheckPasswordValidForPolicy(userNumber, pwdModel.AccountPwd, _accountRepository.EncryPwd(pwdModel.AccountPwd, userNumber), userNumber);
+            string checkValid = this.CheckPasswordValidForPolicy(userNumber, pwdEntity.AccountPwd, _accountRepository.EncryPwd(pwdModel.AccountPwd, userNumber), userNumber);
             if (checkValid != null && checkValid.Length > 0) {
                 throw (new Exception(checkValid));//不满足密码策略
             }
