@@ -231,6 +231,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 long timeStamp = 0;
                 registEntity.AccountPwd = DecryptAccountPwd(registEntity.AccountPwd, out timeStamp);
             }
+            #region 检查密码策略，是否符合密码策略，检查是否需要下次首次登陆是否需要修改密码
+            registEntity.NextMustChangePwd = 0;
+            PwdPolicy pwdPolicy = GetPwdPolicy(userNumber);
+            if (pwdPolicy != null && pwdPolicy.IsUserPolicy == 1 ) {
+                //启用密码策略
+                string passresult =  CheckPasswordValidForPolicy(0, registEntity.AccountPwd,_accountRepository.EncryPwd( registEntity.AccountPwd,userNumber), userNumber);
+                if (passresult != null && passresult.Length > 0) {
+                    throw (new Exception("密码不符合密码策略要求:" + passresult));
+                }
+                if (pwdPolicy.IsFirstUpdatePwd == 1) {
+                    registEntity.NextMustChangePwd = 1;
+                }
+            }
+
+
+            #endregion
             var resulttemp = ExcuteAction((transaction, arg, userData) =>
              {
                  result = _accountRepository.RegistUser(registEntity, userNumber);
@@ -561,7 +577,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             PwdPolicy pwdPolicy = GetPwdPolicy(userid);
             if (pwdPolicy.IsUserPolicy > 0)
             {
-                string userName = _accountRepository.GetAccountName(userid);
+                AccountUserInfo accountInfo = this._accountRepository.GetAccountUserInfo(userid);
+                string userName = accountInfo.AccountName;
                 List<HistoryPwd> historyPwd = _accountRepository.GetHistoryPwd(userid);
                 var pwds = historyPwd.Select(r => r.NewPwd).ToList();
                 if (pwdPolicy.IsSetPwdLength > 0)
@@ -582,7 +599,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 if (pwdPolicy.IsContainAccount > 0 && plantextpassword.Contains(userName))
                     return "密码不得包含用户名";
-                if (pwds.Contains(plantextpassword))
+                if (pwds.Contains(encryptpwd))
                     return "不能用近三次使用过的密码";
             }
             return "";

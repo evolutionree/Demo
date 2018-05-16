@@ -65,6 +65,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
         public int Sex { get; set; }
         public string Tel { get; set; }
         public int Status { get; set; }
+        public int NextMustChangePwd { get; set; }
     }
 
     public class AccountEditModel

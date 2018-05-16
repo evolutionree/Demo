@@ -111,7 +111,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         public OperateResult RegistUser(AccountUserRegistMapper registEntity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_account_userinfo_add(@accountName, @accountPwd, @accessType, @userName, @userIcon, @userPhone, @userJob, @deptid,@namepinyin, @email,@joineddate,@birthday,@remark,@sex,@tel, @status,@workCode,@userNo)
+                SELECT * FROM crm_func_account_userinfo_add(@accountName, @accountPwd, @accessType, @userName, @userIcon, @userPhone, @userJob, @deptid,@namepinyin, @email,@joineddate,@birthday,@remark,@sex,@tel, @status,@workCode,@NextMustChangePwd,@userNo)
             ";
 
             //pwd salt security
@@ -135,6 +135,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
                 Tel = registEntity.Tel,
                 Status = registEntity.Status,
                 WorkCode = registEntity.WorkCode,
+                NextMustChangePwd  = registEntity.NextMustChangePwd,
                 UserNo = userNumber
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
@@ -544,21 +545,6 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         {
             return SecurityHash.GetPwdSecurity(plaintext, _passwordSalt);
         }
-        /// <summary>
-        /// 获取账户名
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public string GetAccountName(int userId)
-        {
-            string sql = @"select accountname from crm_sys_account where accountid = (select accountid from crm_sys_account_userinfo_relate where userid = @userid)";
-            var param = new DbParameter[]
-            {
-                new NpgsqlParameter("userid",userId)
-            };
-            return ExecuteScalar(sql, param, null).ToString();
-        }
-
         /// <summary>
         /// 获取历史密码
         /// </summary>

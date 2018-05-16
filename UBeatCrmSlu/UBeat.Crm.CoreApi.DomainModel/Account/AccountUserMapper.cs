@@ -64,6 +64,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         public string Tel { get; set; }
 
         public int Status { get; set; }
+        public int NextMustChangePwd { get; set; }
         protected override IValidator GetValidator()
         {
             return new AccountUserRegistMapperValidator();
