@@ -820,10 +820,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
                                          inner JOIN crm_sys_entity c on c.entityid=a.relentityid
                                          inner join crm_sys_entity_fields b on  b.fieldid=a.fieldid
-                                          where relid=@relid ";
+                                          where c.entityid=@entityid ";
             var param = new DbParameter[]
             {
-              new NpgsqlParameter("relid",config.RelId)
+              new NpgsqlParameter("entityid",config.RelentityId)
             };
             var parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
 
@@ -851,10 +851,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
             else if (config.CalcuteType == 1)
             {
-                selectClause = string.Format(@"sum({0})::decimal ", childTableInfo["fieldname"]);
+                selectClause = string.Format(@"COALESCE(SUM({0}),0):: DECIMAL ", childTableInfo["fieldname"]);
             }
             else if (config.CalcuteType == 2) {
-                selectClause = string.Format(@"avg({0})::decimal ", childTableInfo["fieldname"]);
+                selectClause = string.Format(@"COALESCE(avg({0}),0):: DECIMAL ", childTableInfo["fieldname"]);
             } else if (config.CalcuteType == 3) {
                 selectClause = string.Format(@"count({0})::decimal ", childTableInfo["fieldname"]);
             } else {
