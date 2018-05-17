@@ -687,7 +687,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         {
             string sql = "select a.entityid,a.entityname from crm_sys_entity a inner join crm_sys_entity_fields b on a.entityid=b.entityid " +
                 "inner join crm_sys_entity_datasource c on c.datasrcid::TEXT = jsonb_extract_path_text(b.fieldconfig, 'dataSource', 'sourceId') " +
-                "inner join crm_sys_entity d on d.entityid = c.entityid where a.recstatus = 1 and b.controltype = 18  " +
+                "inner join crm_sys_entity d on d.entityid = c.entityid where a.recstatus = 1 and b.recstatus=1 and b.controltype = 18  " +
                 "and d.entityid =@entityid group by a.entityid,a.entityname";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
