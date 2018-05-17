@@ -78,5 +78,6 @@ namespace UBeat.Crm.CoreApi.IRepository
         string EncryPwd(string plaintext, int userNumber);
         //获取历史密码数据
         List<HistoryPwd> GetHistoryPwd(int userId);
+        void SetPasswordInvalid(List<int> userList, int userId, DbTransaction tran);
     }
 }

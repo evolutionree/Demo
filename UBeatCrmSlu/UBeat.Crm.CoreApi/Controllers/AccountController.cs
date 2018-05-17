@@ -722,6 +722,11 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [HttpPost("passwordvalid")]
         public OutputResult<object> PasswordValid([FromBody] List<int> UserList) {
+            if (UserList == null || UserList.Count == 0) {
+                return ResponseError<object>("参数异常或者未提供参数");
+            }
+            this._accountServices.SetPasswordInvalid(UserList, UserId);
+            return new OutputResult<object>("完成");
             return null;
         }
         #endregion

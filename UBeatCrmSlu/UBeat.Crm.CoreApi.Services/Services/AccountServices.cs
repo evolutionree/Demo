@@ -690,6 +690,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+        public void SetPasswordInvalid(List<int> userList, int userId)
+        {
+            DbTransaction tran = null;
+            this._accountRepository.SetPasswordInvalid(userList, userId, tran);
+        }
+
         public void ForUserLogout(List<ForceUserLogoutParamInfo> paramList,string thisSession, int userId)
         {
             foreach (ForceUserLogoutParamInfo item in paramList) {

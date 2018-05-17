@@ -559,6 +559,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             };
             return ExecuteQuery<HistoryPwd>(sql, param, null);
         }
+
+        public void SetPasswordInvalid(List<int> userList, int userId, DbTransaction tran)
+        {
+            try
+            {
+                string strSQL = @"update crm_sys_account a  set nextmustchangepwd =1 where a.accountid  in (
+                                    select b.userid from crm_sys_account_userinfo_relate b
+                                    where b.recstatus = 1 and b.userid in @userids
+                                    ) ";
+                DbParameter[] ps = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@userids",userList)
+                };
+                ExecuteNonQuery(strSQL, ps, tran);
+            }
+            catch (Exception ex) {
+                
+            }
+        }
         #endregion
     }
 }
