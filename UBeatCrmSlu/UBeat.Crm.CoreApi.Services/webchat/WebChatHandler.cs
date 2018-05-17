@@ -8,6 +8,8 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using UBeat.Crm.CoreApi.Core.Utility;
+using UBeat.Crm.CoreApi.Services.Services;
 
 namespace UBeat.Crm.CoreApi.Services.webchat
 {
@@ -100,14 +102,27 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 WebChatResponseHandler.getInstance().Enqueue(pkg);
 
             }
-
-            //_sockets.TryRemove(socketId, out dummy);
-
             await currentSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", ct);
             currentSocket.Dispose();
         }
 
         
+        public void Login(WebChatMsgTemplate cmd)
+        {
+            AccountServices _service = ServiceLocator.Current.GetInstance<AccountServices>();
+            try
+            {
+                Dictionary<string, object> data = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(cmd.Data));
+                int userid = 0;
+                string authcode = "";
+                if (data.ContainsKey("userid")) {
+
+                }
+            }catch(Exception ex)
+            {
+
+            }
+        }
 
         private static async Task<string> ReceiveStringAsync(System.Net.WebSockets.WebSocket socket, CancellationToken ct = default(CancellationToken))
         {

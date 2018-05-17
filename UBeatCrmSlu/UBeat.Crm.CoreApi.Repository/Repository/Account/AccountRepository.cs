@@ -564,12 +564,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         {
             try
             {
+                string ids = string.Join(',', userList);
                 string strSQL = @"update crm_sys_account a  set nextmustchangepwd =1 where a.accountid  in (
-                                    select b.userid from crm_sys_account_userinfo_relate b
-                                    where b.recstatus = 1 and b.userid in @userids
+                                    select b.accountid from crm_sys_account_userinfo_relate b
+                                    where b.recstatus = 1 and b.userid in ("+ ids+ @")
                                     ) ";
                 DbParameter[] ps = new DbParameter[] {
-                    new Npgsql.NpgsqlParameter("@userids",userList)
+                    
                 };
                 ExecuteNonQuery(strSQL, ps, tran);
             }

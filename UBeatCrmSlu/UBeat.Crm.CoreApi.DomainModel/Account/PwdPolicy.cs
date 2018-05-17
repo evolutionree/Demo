@@ -69,5 +69,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         /// 是否不允许使用历史密码
         /// </summary>
         public int IsHistoryPwd { get; set; }
+        /// <summary>
+        /// 设定历史密码重复限制次数
+        /// </summary>
+        public int HistoryPwdCount { get; set; }
     }
 }

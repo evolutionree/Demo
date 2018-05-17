@@ -694,6 +694,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             DbTransaction tran = null;
             this._accountRepository.SetPasswordInvalid(userList, userId, tran);
+            
         }
 
         public void ForUserLogout(List<ForceUserLogoutParamInfo> paramList,string thisSession, int userId)
@@ -710,6 +711,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                 }
             }
+        }
+        public bool CheckAuthorizedCodeValid(int UserId, string authorizedCode) {
+            LoginSessionModel_ForInner loginSession = CacheService.Repository.Get<LoginSessionModel_ForInner>(WebLoginSessionKey(UserId));
+            if (loginSession != null && loginSession.Sessions.Count > 0)
+            {
+                if (loginSession.Sessions.ContainsKey(authorizedCode)) {
+                    TokenInfo_ForInner sessionInfo = loginSession.Sessions[authorizedCode];
+                    if (sessionInfo.Expiration > System.DateTime.Now)
+                        return true;
+                }
+            }
+            return false;
         }
 
         protected string WebLoginSessionKey(int userid)
