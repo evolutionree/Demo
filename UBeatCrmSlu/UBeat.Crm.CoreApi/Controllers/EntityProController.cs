@@ -7,6 +7,7 @@ using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.EntityPro;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
+using Microsoft.AspNetCore.Authorization;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -604,6 +605,16 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("RoutePath不能为空");
             return _entityProService.UpdateFuncConfig(data, UserId);
         }
+        /// <summary>
+        /// 获取已经配置数据源的实体
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("querywithdatasource")]
+        public OutputResult<object> QueryAllEntityWithDataSource() {
+            List < Dictionary<string, object> > datas=  this._entityProService.QueryEntityWithDataSource(UserId);
+            return new OutputResult<object>(datas);
+        }
+
         #endregion
     }
 }

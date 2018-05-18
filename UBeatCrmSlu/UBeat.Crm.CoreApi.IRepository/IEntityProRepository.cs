@@ -176,6 +176,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         void UpdateActionExt(DbTransaction tran, Guid entityId, List<ActionExtConfig> data, int userNumber);
 
         void UpdateExtFunction(DbTransaction tran, Guid entityId, List<ExtFunction> data, int userNumber);
+        List<Dictionary<string, object>> QueryEntityWithDataSource(DbTransaction tran, int userId);
         #endregion
     }
 }

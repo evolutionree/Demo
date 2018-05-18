@@ -1105,6 +1105,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         lastNodeId = nextnode.NodeId;
 
                 }
+                //流程审批过程修改实体字段时，更新关联实体的字段数据
+                _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
+
+
                 //如果不是自由流程，或者自由流程的第一个节点，需要验证是否有附加函数
                 if (workflowInfo.FlowType != WorkFlowType.FreeFlow || nodeid == freeFlowBeginNodeId)
                 {
@@ -1113,9 +1117,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
 
                 }
-                //流程审批过程修改实体字段时，更新关联实体的字段数据
-                _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
-
+                
                 if (casefinish)//审批已经到达了最后一步
                 {
                     _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);

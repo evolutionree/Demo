@@ -1673,6 +1673,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             ExecuteNonQuery(insertSql, rulesparams, tran);
             #endregion
         }
+
+        public List<Dictionary<string, object>> QueryEntityWithDataSource(DbTransaction tran, int userId)
+        {
+            try {
+                string strSQL = @"select * from crm_sys_entity where
+                             entityid in (
+                            select entityid
+                            from crm_sys_entity_datasource
+                            where recstatus = 1 ) order by entityname ";
+                return ExecuteQuery(strSQL, new DbParameter[] { }, tran);
+            }
+            catch(Exception ex)
+            {
+
+                return new List<Dictionary<string, object>>();
+            }
+        }
         #endregion
 
 

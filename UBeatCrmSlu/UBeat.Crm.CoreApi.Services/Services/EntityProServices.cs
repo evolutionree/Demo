@@ -27,13 +27,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
         private readonly IMapper _mapper;
         private readonly IVocationRepository _vocationRepository;
+        private readonly IDataSourceRepository _dataSourceRepository;
 
-        public EntityProServices(IMapper mapper, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, CacheServices cacheService, IVocationRepository vocationRepository)
+        public EntityProServices(IMapper mapper, IEntityProRepository entityProRepository, 
+            IDynamicEntityRepository dynamicEntityRepository, CacheServices cacheService, 
+            IVocationRepository vocationRepository, IDataSourceRepository dataSourceRepository)
         {
             _entityProRepository = entityProRepository;
             _dynamicEntityRepository = dynamicEntityRepository;
             _mapper = mapper;
             _vocationRepository = vocationRepository;
+            _dataSourceRepository = dataSourceRepository;
         }
 
         public OutputResult<object> EntityProQuery(EntityProQueryModel entityQuery, int userNumber)
@@ -432,6 +436,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
         }
+
+        public List<Dictionary<string, object>> QueryEntityWithDataSource(int userId)
+        {
+            DbTransaction tran = null;
+            List < Dictionary<string, object> > entitys =  this._entityProRepository.QueryEntityWithDataSource(tran, userId);
+            DataSourceListMapper listMapper = new DataSourceListMapper() {
+                PageIndex = 1,
+                PageSize = 10000,
+                DatasourceName = null,
+                RecStatus = 1
+            };
+            Dictionary<string,List <IDictionary<string, object> >> datasourcesmap  =   this._dataSourceRepository.SelectDataSource(listMapper, userId);
+            List<IDictionary<string, object>> datasources = datasourcesmap["PageData"];
+            foreach (Dictionary<string, object> entity in entitys) {
+                string entityid = "";
+                if (entity.ContainsKey("entityid") == false || entity["entityid"] == null) continue;
+                entityid = entity["entityid"].ToString();
+                List<IDictionary<string, object>> subSource = new List<IDictionary<string, object>>();
+                foreach (IDictionary<string, object> item in datasources) {
+                    if (item != null && item.ContainsKey("entityid") && item["entityid"] != null
+                        && item["entityid"].ToString().Equals(entityid)) {
+                        subSource.Add(item);
+                    }
+                }
+
+                entity.Add("datasources", subSource);
+            }
+            return entitys;
+        }
+
         public OutputResult<object> SetRepeatList(SetRepeatModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<SetRepeatModel, SetRepeatMapper>(entityModel);
