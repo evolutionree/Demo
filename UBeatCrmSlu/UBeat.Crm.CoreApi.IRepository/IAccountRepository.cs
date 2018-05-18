@@ -77,7 +77,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         void SavePwdPolicy(PwdPolicy data, int userNumber, DbTransaction tran);
         string EncryPwd(string plaintext, int userNumber);
         //获取历史密码数据
-        List<HistoryPwd> GetHistoryPwd(int userId);
+        List<HistoryPwd> GetHistoryPwd(int count ,int userId);
         void SetPasswordInvalid(List<int> userList, int userId, DbTransaction tran);
     }
 }

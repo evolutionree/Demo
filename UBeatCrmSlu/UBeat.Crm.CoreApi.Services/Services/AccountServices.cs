@@ -292,7 +292,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 pwdEntity.AccountPwd = DecryptAccountPwd(pwdModel.AccountPwd, out timeStamp);
                 pwdEntity.OrginPwd = DecryptAccountPwd(pwdModel.OrginPwd, out timeStamp);
             }
-            string checkValid = this.CheckPasswordValidForPolicy(userNumber, pwdEntity.AccountPwd, _accountRepository.EncryPwd(pwdModel.AccountPwd, userNumber), userNumber);
+            string checkValid = this.CheckPasswordValidForPolicy(userNumber, pwdEntity.AccountPwd, _accountRepository.EncryPwd(pwdEntity.AccountPwd, userNumber), userNumber);
             if (checkValid != null && checkValid.Length > 0) {
                 throw (new Exception(checkValid));//不满足密码策略
             }
@@ -579,8 +579,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 AccountUserInfo accountInfo = this._accountRepository.GetAccountUserInfo(userid);
                 string userName = accountInfo.AccountName;
-                List<HistoryPwd> historyPwd = _accountRepository.GetHistoryPwd(userid);
-                var pwds = historyPwd.Select(r => r.NewPwd).ToList();
+                List<HistoryPwd> historyPwd = _accountRepository.GetHistoryPwd(pwdPolicy.HistoryPwdCount,userid);
+                if (pwdPolicy.HistoryPwdCount <= 0) pwdPolicy.HistoryPwdCount = 2;
+                 var pwds = historyPwd.Select(r => r.NewPwd).ToList();
                 if (pwdPolicy.IsSetPwdLength > 0)
                 {
                     if (pwdPolicy.SetPwdLength > 0 && plantextpassword.Length < pwdPolicy.SetPwdLength)
@@ -600,7 +601,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (pwdPolicy.IsContainAccount > 0 && plantextpassword.Contains(userName))
                     return "密码不得包含用户名";
                 if (pwds.Contains(encryptpwd))
-                    return "不能用近三次使用过的密码";
+                    return "不能用近"+ pwdPolicy.HistoryPwdCount+ "次使用过的密码";
             }
             return "";
         }
@@ -612,6 +613,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="operatorUserId">操作者id</param>
         public void ForceLogoutButThis(int userId, string thisSession, string logoutSession, ForceUserLogoutTypeEnum forcetype, int operatorUserId) {
             //   throw (new NotImplementedException());
+            if (thisSession != null && thisSession.StartsWith("Bearer ")) {
+                thisSession = thisSession.Substring("Bearer ".Length);
+            }
+            if (logoutSession != null && logoutSession.StartsWith("Bearer "))
+            {
+                logoutSession = logoutSession.Substring("Bearer ".Length);
+            }
             LoginSessionModel_ForInner loginSession = CacheService.Repository.Get<LoginSessionModel_ForInner>(MobileLoginSessionKey(userId));
             if (loginSession != null && (forcetype == ForceUserLogoutTypeEnum.All || forcetype == ForceUserLogoutTypeEnum.AllMobile || forcetype == ForceUserLogoutTypeEnum.SpecialDevice)) {
                 List<string> removeKeys = new List<string>();
@@ -713,6 +721,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
         public bool CheckAuthorizedCodeValid(int UserId, string authorizedCode) {
+            if (authorizedCode == null) authorizedCode = "";
+            if (authorizedCode.StartsWith("Bearer "))
+                authorizedCode = authorizedCode.Substring("Bearer ".Length);
             LoginSessionModel_ForInner loginSession = CacheService.Repository.Get<LoginSessionModel_ForInner>(WebLoginSessionKey(UserId));
             if (loginSession != null && loginSession.Sessions.Count > 0)
             {

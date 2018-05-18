@@ -550,9 +550,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<HistoryPwd> GetHistoryPwd(int userId)
+        public List<HistoryPwd> GetHistoryPwd(int count,int userId)
         {
-            string sql = @"select * from crm_sys_security_historypwd where userid = @userid order by reccreated desc limit 3";
+            if (count <= 0) count =3; 
+            string sql = @"select * from crm_sys_security_historypwd where userid = @userid order by reccreated desc limit "+ count;
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid",userId)

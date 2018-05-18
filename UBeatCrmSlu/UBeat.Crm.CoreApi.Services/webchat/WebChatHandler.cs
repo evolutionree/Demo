@@ -76,6 +76,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 catch (Exception ex) {
                     //已经连接异常了，需要把服务删除
                     WebSockChatSocketManager.getInstance().UnbindSocketWithUser(currentSocket, -1);
+
+                    Console.WriteLine(ex.StackTrace);
                     break;
                 }
 
@@ -134,12 +136,16 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 await currentSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", ct);
             }
             catch (Exception ex) {
+
+                Console.WriteLine(ex.StackTrace);
             }
             try
             {
                 currentSocket.Dispose();
             }
             catch (Exception ex) {
+
+                Console.WriteLine(ex.StackTrace);
             }
         }
 

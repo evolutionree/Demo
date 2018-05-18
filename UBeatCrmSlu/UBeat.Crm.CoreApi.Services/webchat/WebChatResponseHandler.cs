@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using NLog;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -83,6 +85,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 return socket.SendAsync(segment, WebSocketMessageType.Text, true, ct);
             }
             catch (Exception ex) {
+                Console.WriteLine(ex.StackTrace);
+                WebSockChatSocketManager.getInstance().UnbindSocketWithUser(socket,-1);
             }
             return null;
         }
