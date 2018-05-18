@@ -3137,7 +3137,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 {
                                     expressionStr = expressionStr.Replace(queryVal.Key, queryVal.Value.ToString());
                                 }
-                                string calcSql = string.Format(@"select {0} as result", expressionStr);
+                                string calcSql = string.Format(@"select round({0},4) as result", expressionStr);
                                 var calcRet = this._dynamicEntityRepository.ExecuteQuery(calcSql, null).FirstOrDefault();
                                 listObj.Add("title", expressionTitleStr);
                                 listObj.Add("value", calcRet["result"].ToString());
