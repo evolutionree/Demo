@@ -824,12 +824,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
                         }
                     }
-                    //判断是否有附加函数_event_func
-                    var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
-                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
 
                     //流程审批过程修改实体字段时，更新关联实体的字段数据
                     _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
+
+                    //判断是否有附加函数_event_func
+                    var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
+                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
 
                     //走完审批所有操作，获取下一步数据
                     result = GetNextNodeData(tran, caseInfo, workflowInfo, flowNodeInfo, userinfo);
