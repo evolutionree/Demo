@@ -7,6 +7,7 @@ using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
 using System.Linq;
 using DocumentFormat.OpenXml;
 using UBeat.Crm.CoreApi.IRepository;
+using UBeat.Crm.CoreApi.Services.Models.EntityPro;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -17,13 +18,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private Dictionary<string, int> DictNeedCreate = new Dictionary<string, int>();
         private Dictionary<string, Dictionary<string, object>> DataSourceInDb = new Dictionary<string, Dictionary<string, object>>();
         private Dictionary<string, string> DataSourceNeedCreate = new Dictionary<string, string>();
+        private Dictionary<string, ExcelEntityInfo> dictEntity = null;
+        private Dictionary<string, string> dictTable = null;
         private readonly IEntityProRepository _entityProRepository;
         private readonly IDataSourceRepository _dataSourceRepository;
+        private readonly EntityProServices _entityProServices;
+
         public EntityExcelImportServices(IEntityProRepository entityProRepository,
-                            IDataSourceRepository dataSourceRepository)
+                            IDataSourceRepository dataSourceRepository,
+                            EntityProServices entityProServices)
         {
             _entityProRepository = entityProRepository;
             _dataSourceRepository = dataSourceRepository;
+            _entityProServices = entityProServices;
         }
         #region 通过Excel导入实体配置,这里将会是一个大的代码块 
         public void ImportEntityFromExcel()
@@ -40,21 +47,92 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ExcelEntityInfo entityInfo = DealWithOneSheet(workbookPart, sheet);
                 List<ExcelEntityInfo> listEntity = new List<ExcelEntityInfo>();
                 listEntity.Add(entityInfo);
+                CheckEntityAndField(listEntity);
+                //先建立所有相关表的实体
+
             }
             catch (Exception ex)
             {
             }
             r.Close();
         }
+        /// <summary>
+        /// 仅仅是创建实体的基本信息，包含基本字段
+        /// </summary>
+        /// <param name="listEntity"></param>
+        private void CreateAllMainEntityInfo(List<ExcelEntityInfo> listEntity) {
+            Queue<ExcelEntityInfo> queue = new Queue<ExcelEntityInfo>();
+            foreach (ExcelEntityInfo entity in dictEntity.Values) {
+                queue.Enqueue(entity);
+            }
+            while (queue.Count > 0) {
+                ExcelEntityInfo entityInfo = queue.Dequeue();
+                if (entityInfo == null) break;
+                if (entityInfo.EntityTypeName.StartsWith("简单") || entityInfo.EntityTypeName.StartsWith("嵌套") || entityInfo.EntityTypeName.StartsWith("动态")) {
+                    if (entityInfo.RelEntityName != null && entityInfo.RelEntityName.Length > 0) {
+                        if (dictEntity.ContainsKey(entityInfo.RelEntityName))
+                        {
+                            ExcelEntityInfo relEntityInfo = dictEntity[entityInfo.RelEntityName];
+                            if (relEntityInfo.EntityId.Equals(Guid.Empty))
+                            {
+                                queue.Enqueue(entityInfo);///关联对象尚未生成
+                            }
+                            else
+                            {
+                                entityInfo.RelEntityId = relEntityInfo.EntityId;//赋值。
+                                //这里还需要处理fieldid
+                            }
+                        }
+                        else {
+                            //不是本次创建的额，实体已经在库中了，而且已经转化为entityid,所以可以直接使用了
+                        }
+                    }
+
+                }
+                int TypeId = 0;
+                if (entityInfo.EntityTypeName.StartsWith("独立")) {
+                    TypeId = 0;
+                } else if (entityInfo.EntityTypeName.StartsWith("简单")) {
+                    TypeId = 2;
+                } else if (entityInfo.EntityTypeName.StartsWith("动态")) {
+                    TypeId = 3;
+                } else {
+                    TypeId = 1;
+                }
+                string RelEntityId = "";
+                Guid RelFieldId = Guid.Empty;
+                int Relaudit = 0;
+                if (entityInfo.IsLinkToWorkFlow != null && entityInfo.IsLinkToWorkFlow.Equals("√")) {
+                    Relaudit = 1;
+                }
+                RelEntityId = entityInfo.RelEntityId.ToString();
+                RelFieldId = entityInfo.RelFieldId;
+                if (entityInfo.EntityTypeName.StartsWith("简单")) {
+                    
+                }
+                EntityProModel model = new EntityProModel() {
+                    EntityName = entityInfo.EntityName,
+                    EntityTable = entityInfo.TableName,
+                    TypeId = TypeId,
+                    RecStatus = 1,
+                    Icons = "00000000-0000-0000-0000-200000000001",
+                    RelEntityId = RelEntityId,
+                    RelFieldId = RelFieldId,
+                    Relaudit = Relaudit
+
+                };
+                this._entityProServices.InsertEntityPro(model, 1);
+            }
+
+        }
         private void CheckEntityAndField(List<ExcelEntityInfo> listEntity) {
-            Dictionary<string, ExcelEntityInfo> dictEntity = new Dictionary<string, ExcelEntityInfo>();
-            Dictionary<string, string> dictTable = new Dictionary<string, string>();
+            dictEntity = new Dictionary<string, ExcelEntityInfo>();
+            dictTable  = new Dictionary<string, string>();
             CheckSaveEntityNameInMem(ref dictEntity, ref dictTable, listEntity);
 
             //检查实体有有效性
             foreach (ExcelEntityInfo entityInfo in listEntity) {
                 CheckOneEntityInDb(entityInfo, dictEntity, dictTable);
-
             }
 
         }
@@ -421,6 +499,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (fieldInfo.DataSourceName == null) throw (new Exception("表格用对象异常"));
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
                 if (tmp.Length != 2) throw (new Exception("表格对象异常2"));
+                fieldInfo.Table_EntityName = tmp[0];
+                fieldInfo.Table_TitleFieldName = tmp[1];
+                ExcelEntityInfo tableEntityInfo = null;
+                if (entityInfo.SubEntitys == null) throw (new Exception("表格对应的嵌套实体不存在"));
+                foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
+                    if (subEntityInfo.EntityName.Equals(fieldInfo.Table_EntityName)) {
+                        tableEntityInfo = subEntityInfo;
+                        break;
+                    }
+                }
+                if (tableEntityInfo == null ) throw (new Exception("表格对应的嵌套实体不存在"));
+                bool isFoundField = false;
+                foreach (ExcelEntityColumnInfo subFieldInfo in tableEntityInfo.Fields)
+                {
+                    if (subFieldInfo.DisplayName.Equals(fieldInfo.Table_TitleFieldName))
+                    {
+                        isFoundField = true;
+                        break;
+                    }
+                }
+                if (!isFoundField) throw (new Exception("表格对应的嵌套实体不存在"));
             }
         }
         private Guid GetDataSourceIdFromName(string datasourceName) {
@@ -1444,8 +1543,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             catch (Exception exp)
             {
-                //string expMessage = string.Format("Excel中{0}位置数据有误,请确认填写正确！", cellRefId);
-                //throw new Exception(expMessage);
                 cellValue = "N/A";
             }
             return cellValue;
@@ -1527,6 +1624,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string RelField_originFieldId { get; set; }
         public string RelField_ControlFieldName { get; set; }
         public string RelField_ControlFieldId { get; set; }
+        public string Table_EntityName { get; set; }
+        public string Table_EntityId { get; set; }
+        public string Table_TitleFieldName { get; set; }
+        public string Table_TitleFieldId { get; set; }
         public string ErrorMsg { get; set; }
         public Dictionary<string, ExcelEntityFieldViewInfo> ViewSet { get; set; }
         public ExcelEntityColumnInfo() {

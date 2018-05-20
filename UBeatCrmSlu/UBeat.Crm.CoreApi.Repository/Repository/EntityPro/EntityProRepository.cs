@@ -1693,17 +1693,59 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public Dictionary<string, object> GetEntityInfoByEntityName(DbTransaction tran, string entityName, int userId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string strSQL = "select* from crm_sys_entity where entityname =@entityname limit 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@entityname",entityName)
+                };
+                List<Dictionary<string, object>> ret = ExecuteQuery(strSQL, p, tran);
+                if (ret == null || ret.Count == 0) return null;
+                return ret.ElementAt(0);
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
         public Dictionary<string, object> GetEntityInfoByTableName(DbTransaction tran, string tablename, int userId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string strSQL = "select* from crm_sys_entity where entitytable =@entitytable limit 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@entitytable",tablename)
+                };
+                List<Dictionary<string, object>> ret = ExecuteQuery(strSQL, p, tran);
+                if (ret == null || ret.Count == 0) return null;
+                return ret.ElementAt(0);
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
         public Dictionary<string, object> GetFieldInfoByFieldName(DbTransaction tran, string fieldName, Guid entityId, int userId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string strSQL = @"select * from crm_sys_entity_fields 
+                            where entityid = @entityid and displayname = @displayname
+                            limit 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@entityid",entityId),
+                    new Npgsql.NpgsqlParameter("@displayname",fieldName)
+                };
+                List<Dictionary<string, object>> ret = ExecuteQuery(strSQL, p, tran);
+                if (ret == null || ret.Count == 0) return null;
+                return ret.ElementAt(0);
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
         #endregion
 
