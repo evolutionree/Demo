@@ -178,5 +178,12 @@ namespace UBeat.Crm.CoreApi.IRepository
         void UpdateExtFunction(DbTransaction tran, Guid entityId, List<ExtFunction> data, int userNumber);
         List<Dictionary<string, object>> QueryEntityWithDataSource(DbTransaction tran, int userId);
         #endregion
+
+        #region 与实体定义的导入有关的操作
+        Dictionary<string, object> GetEntityInfoByEntityName(DbTransaction tran, string entityName, int userId);
+        Dictionary<string, object> GetEntityInfoByTableName(DbTransaction tran, string tablename, int userId);
+        
+        Dictionary<string, object> GetFieldInfoByFieldName(DbTransaction tran, string fieldName, Guid entityId,int userId);
+        #endregion
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
@@ -12,10 +13,13 @@ namespace UBeat.Crm.CoreApi.Controllers
     public class DynamicEntityController : BaseController
     {
         private readonly DynamicEntityServices _dynamicEntityServices;
+        private readonly EntityExcelImportServices _entityExcelImportServices;
 
-        public DynamicEntityController(DynamicEntityServices dynamicEntityServices) : base(dynamicEntityServices)
+        public DynamicEntityController(DynamicEntityServices dynamicEntityServices,
+            EntityExcelImportServices entityExcelImportServices) : base(dynamicEntityServices)
         {
             _dynamicEntityServices = dynamicEntityServices;
+            _entityExcelImportServices = entityExcelImportServices;
         }
 
         [HttpPost]
@@ -582,8 +586,15 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
             return new OutputResult<object>("success");
-        } 
+        }
         #endregion
+
+        [HttpPost("test")]
+        [AllowAnonymous]
+        public OutputResult<object> test() {
+            this._entityExcelImportServices.ImportEntityFromExcel();
+            return new OutputResult<object>("ok");
+        }
         [Route("sendtomule")]
 
         #region 用于测试安居宝，过后会删除

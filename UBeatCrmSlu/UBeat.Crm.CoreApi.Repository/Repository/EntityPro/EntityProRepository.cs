@@ -1690,6 +1690,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 return new List<Dictionary<string, object>>();
             }
         }
+
+        public Dictionary<string, object> GetEntityInfoByEntityName(DbTransaction tran, string entityName, int userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Dictionary<string, object> GetEntityInfoByTableName(DbTransaction tran, string tablename, int userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Dictionary<string, object> GetFieldInfoByFieldName(DbTransaction tran, string fieldName, Guid entityId, int userId)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
 
 

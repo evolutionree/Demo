@@ -46,5 +46,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<DataSourceEntityModel> GetEntityDataSources(Guid entityid );
 
         bool checkDataSourceInUsed(Guid datasourceid, int userNumber, DbTransaction trans = null);
+        Dictionary<string, object> GetDictTypeByName(string dictTypeName);
+        int GetDictValueByName(int dictype,string dictValueName);
+
+        Dictionary<string, object> GetDataSourceByName(DbTransaction tran, string datasourcename, int userId);
     }
 }

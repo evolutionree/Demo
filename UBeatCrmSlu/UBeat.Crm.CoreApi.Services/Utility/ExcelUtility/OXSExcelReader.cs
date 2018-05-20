@@ -100,7 +100,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 var document = SpreadsheetDocument.Open(file, false);
                 workbookPart = document.WorkbookPart;
                 var sheet = workbookPart.Workbook.Descendants<Sheet>().FirstOrDefault();
-                
+                return ReadSheet(workbookPart, sheet);
             }
             catch (Exception ex) {
             }
@@ -352,110 +352,30 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             return dataRow;
         }
 
-        private static ImportSheetData ReadSheet(WorkbookPart workbookPart, Sheet sheet)
+        private static List<Dictionary<string, object>> ReadSheet(WorkbookPart workbookPart, Sheet sheet)
         {
-            var data = new ImportSheetData();
-            data.SheetName = sheet.Name;
+            List<Dictionary<string, object>> DataRows = new List<Dictionary<string, object>>();
+
             var workSheet = ((WorksheetPart)workbookPart.GetPartById(sheet.Id)).Worksheet;
             int headerRowsCount = 0;
             var sheetData = workSheet.Elements<SheetData>().First();
             List<Row> rows = sheetData.Elements<Row>().ToList();
             if (rows.Count <= 0)
             {
-                return data;
-                //throw new Exception(string.Format("导入Excel中不允许包含空表，但{0}为空", sheet.Name));
+                return DataRows;
             }
-           
-                //获取最后一行非空行的下标
-                var lastNotEmptyRowIndex = rows.Last(m => !IsEmptyRow(m, workbookPart)).RowIndex.Value;
+            foreach (Row row in rows) {
+                Dictionary<string, object> rowData = new Dictionary<string, object>();
+                int columnIndex = 0;
+                foreach (Cell cell in row.Descendants<Cell>()) {
 
-                //每个线程处理的最大条数
-                var numThreads = 5;
-                //每个线程处理的最大条数
-                var count = (int)((lastNotEmptyRowIndex - headerRowsCount) / (numThreads - 1));
-
-                List<Dictionary<string, object>> dataRows1 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows2 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows3 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows4 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows5 = new List<Dictionary<string, object>>();
-                var finished = new CountdownEvent(1);
-
-                //从表头下面一行开始读取数据，直到最后一行非空行
-                for (int i = 0; i < numThreads; i++)
-                {
-
-                    int index = i;
-                    var length = (int)(numThreads - 1 == i ? lastNotEmptyRowIndex - 1 - i * count : count);
-
-                    var rangdata = rows.GetRange(headerRowsCount + i * count, length).ToList();
-
-                    finished.AddCount();
-
-                    ThreadPool.QueueUserWorkItem(delegate (object dataparam)
-                    {
-                        //Thread.CurrentThread
-
-                        Thread.CurrentThread.IsBackground = true;
-                        var datarows = dataparam as List<Row>;
-                        if (datarows == null)
-                            return;
-                        foreach (var row in datarows)
-                        {
-                            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-                            stopwatch.Start(); // 开始监视代码
-                            var rowdata = ReadRowDataToDictionary(row, workbookPart, sheet, null);
-
-                            stopwatch.Stop(); // 停止监视
-                            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
-                            stopwatch.Reset();
-                            stopwatch.Restart();
-
-
-                            if (rowdata != null)
-                            {
-                                switch (index)
-                                {
-                                    case 0:
-                                        dataRows1.Add(rowdata);
-                                        break;
-                                    case 1:
-                                        dataRows2.Add(rowdata);
-                                        break;
-                                    case 2:
-                                        dataRows3.Add(rowdata);
-                                        break;
-                                    case 3:
-                                        dataRows4.Add(rowdata);
-                                        break;
-                                    case 4:
-                                        dataRows5.Add(rowdata);
-                                        break;
-                                }
-
-                            }
-                        }
-                        finished.Signal();
-                        //for (var j = headerRowsCount; j < lastNotEmptyRowIndex; j++)
-                        //{
-                        //    var rowdata = ReadRowDataToDictionary(rows[j], workbookPart, sheet, columnMap);
-                        //    if (rowdata != null)
-                        //        data.DataRows.Add(rowdata);
-                        //}
-                    }, rangdata);
+                    rowData.Add(columnIndex.ToString(), cell.CellValue.Text);
+                    columnIndex++;
                 }
-                finished.Signal();
-                finished.Wait();
-                finished.Dispose();
-
-                data.DataRows.AddRange(dataRows1);
-                data.DataRows.AddRange(dataRows2);
-                data.DataRows.AddRange(dataRows3);
-                data.DataRows.AddRange(dataRows4);
-                data.DataRows.AddRange(dataRows5);
-
-            
-            return data;
+                DataRows.Add(rowData);
+                
+            }
+            return DataRows;
         }
         private static ImportSheetData ReadSheet(WorkbookPart workbookPart, Sheet sheet, SheetDefine templateDefine)
         {
@@ -597,7 +517,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             }
             return data;
         }
-
+        
 
         private static Dictionary<string, object> ReadRowDataToDictionary(Row row, WorkbookPart workbookPart, Sheet sheet, List<ColumnMapModel> columnMap)
         {

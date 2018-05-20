@@ -23,6 +23,7 @@ using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Message;
 using UBeat.Crm.CoreApi.Services.Models.WorkFlow;
 using UBeat.Crm.CoreApi.Services.Utility;
+using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -34,7 +35,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IAccountRepository _accountRepository;
         private readonly IDataSourceRepository _dataSourceRepository;
-        private readonly ExcelServices _excelServices; 
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService;
@@ -44,8 +44,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository,
                 IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
-                IDataSourceRepository dataSourceRepository,
-                ExcelServices excelServices)
+                IDataSourceRepository dataSourceRepository)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
             _entityProRepository = entityProRepository;
@@ -54,7 +53,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dynamicRepository = dynamicRepository;
             _accountRepository = accountRepository;
             _dataSourceRepository = dataSourceRepository;
-            _excelServices = excelServices;
             //_workflowService = workflowService;
         }
 
@@ -3425,11 +3423,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
 
         }
-        #region 通过Excel导入实体配置,这里将会是一个大的代码块 
-        public void ImportEntityFromExcel() {
-            //this._excelServices
-        }
-        #endregion
+        
 
 
         #region 用于安居宝测试表单传输

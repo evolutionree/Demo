@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 {
     [Produces("application/json")]
     [Route("api/[controller]")]
-    public class RedisTest1Controller : DynamicEntityController
+    public class RedisTest1Controller : BaseController
     {
         private readonly ICacheRepositoryHelper _cacheRepository;
         private readonly DynamicEntityServices _dynamicEntityServices;
@@ -33,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
 
             //do pre action
-            OutputResult<object> result = base.Add(dynamicModel);
+            OutputResult<object> result = ResponseError<object>("no action");// base.Add(dynamicModel);
             //do post action
             return result;
         }

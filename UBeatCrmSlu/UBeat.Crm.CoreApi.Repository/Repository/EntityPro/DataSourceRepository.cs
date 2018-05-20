@@ -312,5 +312,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             }
             return true;
         }
+
+        public Dictionary<string, object> GetDictTypeByName(string dictTypeName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int GetDictValueByName(int dictype, string dictValueName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Dictionary<string, object> GetDataSourceByName(DbTransaction tran, string datasourcename, int userId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
