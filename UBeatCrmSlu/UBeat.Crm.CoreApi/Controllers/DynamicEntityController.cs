@@ -592,7 +592,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         [HttpPost("test")]
         [AllowAnonymous]
         public OutputResult<object> test() {
-            this._entityExcelImportServices.ImportEntityFromExcel();
+            try
+            {
+                this._entityExcelImportServices.ImportEntityFromExcel();
+
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
             return new OutputResult<object>("ok");
         }
         [Route("sendtomule")]

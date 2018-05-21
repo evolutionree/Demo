@@ -8,6 +8,10 @@ using System.Linq;
 using DocumentFormat.OpenXml;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models.EntityPro;
+using UBeat.Crm.CoreApi.Services.Models;
+using UBeat.Crm.CoreApi.DomainModel.EntityPro;
+using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.Services.Models.DataSource;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -16,6 +20,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public static string[] DefaultFieldName = new string[] { "recid", "recname", "recmananger", "reccreator", "reccreated", "recupdator", "recupdated", "recstatus", "recversion" };
         private Dictionary<string, int> DictInDb = new Dictionary<string, int>();
         private Dictionary<string, int> DictNeedCreate = new Dictionary<string, int>();
+        private List<Dictionary<string, object>> DictValueNeedCreate = new List<Dictionary<string, object>>();
         private Dictionary<string, Dictionary<string, object>> DataSourceInDb = new Dictionary<string, Dictionary<string, object>>();
         private Dictionary<string, string> DataSourceNeedCreate = new Dictionary<string, string>();
         private Dictionary<string, ExcelEntityInfo> dictEntity = null;
@@ -23,14 +28,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IEntityProRepository _entityProRepository;
         private readonly IDataSourceRepository _dataSourceRepository;
         private readonly EntityProServices _entityProServices;
+        private readonly DataSourceServices _dataSourceServices;
 
         public EntityExcelImportServices(IEntityProRepository entityProRepository,
                             IDataSourceRepository dataSourceRepository,
-                            EntityProServices entityProServices)
+                            EntityProServices entityProServices,
+                            DataSourceServices dataSourceServices)
         {
             _entityProRepository = entityProRepository;
             _dataSourceRepository = dataSourceRepository;
             _entityProServices = entityProServices;
+            _dataSourceServices = dataSourceServices;
         }
         #region 通过Excel导入实体配置,这里将会是一个大的代码块 
         public void ImportEntityFromExcel()
@@ -49,12 +57,553 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 listEntity.Add(entityInfo);
                 CheckEntityAndField(listEntity);
                 //先建立所有相关表的实体
+                CreateAllMainEntityInfo(listEntity);
+                //处理所有的数据源
+                CreateAllDataSource();
+                //处理所有的字典
+                CreateAllDictType();
+                CreateAllDict();
+                //处理所有的字段
+                CreateAllFieldInfo(listEntity);
+                //创建分类
+                CreateAllCatelog(listEntity);
+                //处理所有的字段可见规则
+                UpdateAllViewSetting(listEntity);
+                //处理WEB列表查看
+                //处理查重条件
 
             }
             catch (Exception ex)
             {
+                throw (ex);
             }
-            r.Close();
+            finally
+            {
+                r.Close();
+            }
+        }
+        private void UpdateAllViewSetting(List<ExcelEntityInfo> listEntities)
+        {
+            foreach (ExcelEntityInfo entityInfo in listEntities)
+            {
+                Dictionary<string, List<IDictionary<string, object>>> dataDict=this._entityProRepository.EntityFieldProQuery(entityInfo.EntityId.ToString(), 1);
+                List<IDictionary<string, object>> data = dataDict["EntityFieldPros"];
+                int catelogcount = entityInfo.TypeNameDict.Count;
+                for (int  i= 0; i < catelogcount; i++) {
+                    foreach (Guid catelogid in entityInfo.TypeNameDict[i.ToString()].CatelogIds) {
+                        List<EntityFieldRulesSaveModel> ll = new List<EntityFieldRulesSaveModel>();
+                        foreach (IDictionary<string, object> field in data) {
+                            EntityFieldRulesSaveModel item = new EntityFieldRulesSaveModel();
+                            string fieldId = field["fieldid"].ToString();
+
+                            ExcelEntityColumnInfo fieldInfo = null;
+                            try
+                            {
+                                fieldInfo = entityInfo.Fields.Where(o => o.FieldId.Equals(Guid.Parse(fieldId))).First();
+                            }
+                            catch (Exception ex) { }
+                            item.Rules = new List<FieldRulesDetailModel>();
+                            item.RecStatus = 1;
+                            if (fieldInfo == null)
+                            {
+                                item.FieldId = field["fieldid"].ToString();
+                                item.FieldLabel = field["fieldlabel"].ToString();
+                                item.RecStatus = 1;
+                                //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
+                                FieldRulesDetailModel addnew = new FieldRulesDetailModel()
+                                {
+                                    OperateType = 0,
+                                    IsReadOnly = 0,
+                                    IsRequired = 0,
+                                    IsVisible = 0 
+                                };
+                                CalcFieldViewRule(addnew);
+                                item.Rules.Add(addnew);
+                                FieldRulesDetailModel edit = new FieldRulesDetailModel()
+                                {
+                                    OperateType = 1,
+                                    IsReadOnly = 0,
+                                    IsRequired = 0,
+                                    IsVisible = 0
+                                };
+                                CalcFieldViewRule(edit);
+                                item.Rules.Add(edit);
+                                FieldRulesDetailModel view = new FieldRulesDetailModel()
+                                {
+                                    OperateType = 2,
+                                    IsReadOnly = 0,
+                                    IsRequired = 0,
+                                    IsVisible = 1
+                                };
+                                CalcFieldViewRule(view);
+                                item.Rules.Add(view);
+                                if (entityInfo.TypeNameDict[i.ToString()].IsImport) {
+                                    FieldRulesDetailModel import = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 4,
+                                        IsReadOnly = 0,
+                                        IsRequired = 0,
+                                        IsVisible = 0
+                                    };
+                                    CalcFieldViewRule(import);
+                                    item.Rules.Add(import);
+                                }
+
+                            }
+                            else
+                            {
+                                item.FieldId = fieldInfo.FieldId.ToString();
+                                item.FieldLabel = fieldInfo.DisplayName;
+                                item.RecStatus = 1;
+                                ExcelEntityFieldViewInfo viewtype = fieldInfo.ViewSet[entityInfo.TypeNameDict[i.ToString()].TypeName];
+                                //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
+                                FieldRulesDetailModel addnew = new FieldRulesDetailModel()
+                                {
+                                    OperateType = 0,
+                                    IsReadOnly = viewtype.AddNew_Readonly ? 1 : 0,
+                                    IsRequired = viewtype.AddNew_Must ? 1 : 0,
+                                    IsVisible = viewtype.AddNew_Display ? 1 : 0,
+
+                                };
+                                CalcFieldViewRule(addnew);
+                                item.Rules.Add(addnew);
+                                FieldRulesDetailModel edit = new FieldRulesDetailModel()
+                                {
+                                    OperateType =1,
+                                    IsReadOnly = viewtype.Edit_Readonly ? 1 : 0,
+                                    IsRequired = viewtype.Edit_Must ? 1 : 0,
+                                    IsVisible = viewtype.Edit_Display ? 1 : 0
+                                };
+                                CalcFieldViewRule(edit);
+                                item.Rules.Add(edit);
+                                FieldRulesDetailModel view = new FieldRulesDetailModel()
+                                {
+                                    OperateType =2,
+                                    IsReadOnly = 0,
+                                    IsRequired = 0,
+                                    IsVisible = viewtype.View_Display ? 1 : 0
+                                };
+                                CalcFieldViewRule(view);
+                                item.Rules.Add(view);
+                                if (entityInfo.TypeNameDict[i.ToString()].IsImport)
+                                {
+                                    FieldRulesDetailModel import = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 4,
+                                        IsReadOnly = 0,
+                                        IsRequired = viewtype.Import_Must ? 1 : 0,
+                                        IsVisible = viewtype.Import_Display ? 1 : 0
+                                    };
+                                    CalcFieldViewRule(import);
+                                    item.Rules.Add(import);
+                                }
+                            }
+                            item.TypeId = catelogid.ToString();
+                            ll.Add(item);
+                        }
+                        this._entityProRepository.DeleteEntityFieldRules(catelogid, 1);
+                        this._entityProServices.SaveEntityFieldRules(ll, 1);
+                    } 
+                }
+                if (entityInfo.SubEntitys == null) continue;
+                foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
+                {
+                    catelogcount = subEntityInfo.TypeNameDict.Count;
+                    for (int i = 0; i < catelogcount; i++)
+                    {
+                        foreach (Guid catelogid in subEntityInfo.TypeNameDict[i.ToString()].CatelogIds)
+                        {
+                            List<EntityFieldRulesSaveModel> ll = new List<EntityFieldRulesSaveModel>();
+                            foreach (IDictionary<string, object> field in data)
+                            {
+                                EntityFieldRulesSaveModel item = new EntityFieldRulesSaveModel();
+                                string fieldId = field["fieldid"].ToString();
+
+                                ExcelEntityColumnInfo fieldInfo = null;
+                                try
+                                {
+                                    fieldInfo = subEntityInfo.Fields.Where(o => o.FieldId.Equals(Guid.Parse(fieldId))).First();
+                                }
+                                catch (Exception ex) { }
+                                item.Rules = new List<FieldRulesDetailModel>();
+                                item.RecStatus = 1;
+                                if (fieldInfo == null)
+                                {
+                                    item.FieldId = field["fieldid"].ToString();
+                                    item.FieldLabel = field["fieldlabel"].ToString();
+                                    item.RecStatus = 1;
+                                    //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
+                                    FieldRulesDetailModel addnew = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 0,
+                                        IsReadOnly = 0,
+                                        IsRequired = 0,
+                                        IsVisible = 0
+                                    };
+                                    CalcFieldViewRule(addnew);
+                                    item.Rules.Add(addnew);
+                                    FieldRulesDetailModel edit = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 1,
+                                        IsReadOnly = 0,
+                                        IsRequired = 0,
+                                        IsVisible = 0
+                                    };
+                                    CalcFieldViewRule(edit);
+                                    item.Rules.Add(edit);
+                                    FieldRulesDetailModel view = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 2,
+                                        IsReadOnly = 0,
+                                        IsRequired = 0,
+                                        IsVisible = 1
+                                    };
+                                    CalcFieldViewRule(view);
+                                    item.Rules.Add(view);
+                                    if (subEntityInfo.TypeNameDict[i.ToString()].IsImport)
+                                    {
+                                        FieldRulesDetailModel import = new FieldRulesDetailModel()
+                                        {
+                                            OperateType = 4,
+                                            IsReadOnly = 0,
+                                            IsRequired = 0,
+                                            IsVisible = 0
+                                        };
+                                        CalcFieldViewRule(import);
+                                        item.Rules.Add(import);
+                                    }
+
+                                }
+                                else
+                                {
+                                    item.FieldId = fieldInfo.FieldId.ToString();
+                                    item.FieldLabel = fieldInfo.DisplayName;
+                                    item.RecStatus = 1;
+
+                                    ExcelEntityFieldViewInfo viewtype = null;
+                                    if (fieldInfo.ViewSet.ContainsKey(subEntityInfo.TypeNameDict[i.ToString()].TypeName))
+                                    {
+                                        viewtype = fieldInfo.ViewSet[subEntityInfo.TypeNameDict[i.ToString()].TypeName];
+                                    }
+                                    else {
+                                        viewtype = fieldInfo.ViewSet.First().Value;
+                                    }
+                                    //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
+                                    FieldRulesDetailModel addnew = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 0,
+                                        IsReadOnly = viewtype.AddNew_Readonly ? 1 : 0,
+                                        IsRequired = viewtype.AddNew_Must ? 1 : 0,
+                                        IsVisible = viewtype.AddNew_Display ? 1 : 0,
+
+                                    };
+                                    CalcFieldViewRule(addnew);
+                                    item.Rules.Add(addnew);
+                                    FieldRulesDetailModel edit = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 1,
+                                        IsReadOnly = viewtype.Edit_Readonly ? 1 : 0,
+                                        IsRequired = viewtype.Edit_Must ? 1 : 0,
+                                        IsVisible = viewtype.Edit_Display ? 1 : 0
+                                    };
+                                    CalcFieldViewRule(edit);
+                                    item.Rules.Add(edit);
+                                    FieldRulesDetailModel view = new FieldRulesDetailModel()
+                                    {
+                                        OperateType = 2,
+                                        IsReadOnly = 0,
+                                        IsRequired = 0,
+                                        IsVisible = viewtype.View_Display ? 1 : 0
+                                    };
+                                    CalcFieldViewRule(view);
+                                    item.Rules.Add(view);
+                                    if (subEntityInfo.TypeNameDict[i.ToString()].IsImport)
+                                    {
+                                        FieldRulesDetailModel import = new FieldRulesDetailModel()
+                                        {
+                                            OperateType = 4,
+                                            IsReadOnly = 0,
+                                            IsRequired = viewtype.Import_Must ? 1 : 0,
+                                            IsVisible = viewtype.Import_Display ? 1 : 0
+                                        };
+                                        CalcFieldViewRule(import);
+                                        item.Rules.Add(import);
+                                    }
+                                }
+                                item.TypeId = catelogid.ToString();
+                                ll.Add(item);
+                            }
+                            this._entityProRepository.DeleteEntityFieldRules(catelogid, 1);
+                            this._entityProServices.SaveEntityFieldRules(ll, 1);
+                        }
+                    }
+                }
+            }
+        }
+        private void CalcFieldViewRule(FieldRulesDetailModel viewRule) {
+            viewRule.ViewRuleStr = "{\"style\":0,\"isVisible\":" + viewRule.IsVisible + ",\"isReadOnly\":" + viewRule.IsReadOnly + "}";
+            viewRule.ValidRuleStr = "{\"isRequired\":" + viewRule.IsRequired + "}";
+        }
+        private void CreateAllCatelog(List<ExcelEntityInfo> listEntities) {
+            foreach(ExcelEntityInfo entityInfo in listEntities)
+            {
+                if (entityInfo.EntityTypeName.StartsWith("独立") == false) continue;
+                int catelogcount = entityInfo.TypeNameDict.Count;
+                for (int i = 0; i < catelogcount; i++) {
+                    EntityTypeSettingInfo typeInfo = entityInfo.TypeNameDict[i.ToString()];
+                    string[] names = typeInfo.TypeName.Split(",，".ToCharArray());
+                    if (i == 0)
+                    {
+                        typeInfo.CatelogIds.Add(entityInfo.EntityId);
+                        //更新名称
+                        EntityTypeModel model = new EntityTypeModel() {
+                            RecStatus = 1,
+                            RecOrder = 1,
+                            CategoryId = entityInfo.EntityId.ToString(),
+                            CategoryName = names[0],
+                            EntityId = entityInfo.EntityId.ToString()
+                        };
+                        this._entityProServices.UpdateEntityTypePro(model, 1);
+                        for (int j = 1; j < names.Length; j++) {
+                            SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                            {
+                                CategoryName = names[j],
+                                EntityId = entityInfo.EntityId.ToString()
+                            };
+                            OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                            if (result.Flag != 1) {
+                                throw (new Exception("新增分类失败:"+result.Msg));
+                            }
+                            typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                        }
+
+                    }
+                    else {
+                        for (int j = 0; j < names.Length; j++)
+                        {
+                            SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                            {
+                                CategoryName = names[j],
+                                EntityId = entityInfo.EntityId.ToString()
+                            };
+                            OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                            if (result.Flag != 1)
+                            {
+                                throw (new Exception("新增分类失败:" + result.Msg));
+                            }
+                            typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                        }
+                    }
+                }
+                #region 处理嵌套实体的分类
+                if (entityInfo.SubEntitys == null) continue;
+                foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
+                {
+                    catelogcount = entityInfo.TypeNameDict.Count;
+                    subEntityInfo.TypeNameDict = new Dictionary<string, EntityTypeSettingInfo>();
+                    for (int i = 0; i < catelogcount; i++)
+                    {
+                        EntityTypeSettingInfo mainSetting = entityInfo.TypeNameDict[i.ToString()];
+                        EntityTypeSettingInfo subSetting = new EntityTypeSettingInfo()
+                        {
+                            TypeName = mainSetting.TypeName,
+                            IsImport = mainSetting.IsImport
+                        };
+                        subEntityInfo.TypeNameDict.Add(i.ToString(), subSetting);
+                        string[] names = subSetting.TypeName.Split(",，".ToCharArray());
+                        if (i == 0)
+                        {
+                            subSetting.CatelogIds.Add(entityInfo.EntityId);
+                            //更新名称
+                            EntityTypeModel model = new EntityTypeModel()
+                            {
+                                RecStatus = 1,
+                                RecOrder = 1,
+                                CategoryId = subEntityInfo.EntityId.ToString(),
+                                CategoryName = names[0],
+                                EntityId = subEntityInfo.EntityId.ToString()
+                            };
+                            this._entityProServices.UpdateEntityTypePro(model, 1);
+                            this._entityProRepository.MapEntityType(subEntityInfo.EntityId, entityInfo.EntityId);
+                            for (int j = 1; j < names.Length; j++)
+                            {
+                                SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                {
+                                    CategoryName = names[j],
+                                    EntityId = subEntityInfo.EntityId.ToString()
+                                };
+                                OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                                if (result.Flag != 1)
+                                {
+                                    throw (new Exception("新增分类失败:" + result.Msg));
+                                }
+                                subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                this._entityProRepository.MapEntityType(Guid.Parse(result.Id), mainSetting.CatelogIds[j]);
+                            }
+
+                        }
+                        else
+                        {
+                            for (int j = 0; j < names.Length; j++)
+                            {
+                                SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                {
+                                    CategoryName = names[j],
+                                    EntityId = subEntityInfo.EntityId.ToString()
+                                };
+                                OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                                if (result.Flag != 1)
+                                {
+                                    throw (new Exception("新增分类失败:" + result.Msg));
+                                }
+                                subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                this._entityProRepository.MapEntityType(Guid.Parse(result.Id), mainSetting.CatelogIds[j]);
+                            }
+                        }
+                    }
+
+                }
+                #endregion 
+            }
+        }
+        private void CreateAllDict() {
+            foreach (Dictionary<string, object> item in DictValueNeedCreate) {
+                int dictypeid = 0;
+                string dictypename = "";
+                string dictname = "";
+                int dictid = 0;
+                if (item.ContainsKey("dictypeid")) {
+                    dictypeid = (int)item["dictypeid"];
+                }
+                if (item.ContainsKey("dictypename")) {
+                    dictypename = (string)item["dictypename"];
+                }
+                dictname = (string)item["dictname"];
+                if (dictypeid <= 0) {
+                    if (DictInDb.ContainsKey(dictypename))
+                    {
+                        dictypeid = DictInDb[dictypename];
+                    }
+                    else {
+                        throw (new Exception("配置异常"));
+                    }
+                }
+                dictid = this._dataSourceRepository.GetDictValueByName(dictypeid, dictname);
+                if (dictid <= 0) {
+                    DictionaryMapper model = new DictionaryMapper() {
+                        DicTypeId = dictypeid,
+                        DataValue = dictname
+                    };
+                    this._dataSourceRepository.SaveFieldOptValue(model,1);
+                }
+            }
+        }
+        private void CreateAllDictType() {
+            foreach (string dictypename in DictNeedCreate.Keys) {
+                DictionaryTypeModel model = new DictionaryTypeModel()
+                {
+                    DicTypeName = dictypename,
+                    RecStatus = 1,
+                    DicRemark = "导入系统自动创建"
+                };
+                this._dataSourceServices.SaveFieldDicType(model, 1);
+
+                Dictionary<string, object>  tmp = this._dataSourceRepository.GetDictTypeByName(dictypename);
+                if (tmp == null || tmp.Count == 0) {
+                    throw (new Exception("创建字典类型失败"));
+                }
+                int dictypeid = int.Parse(tmp["dictypeid"].ToString());
+                DictInDb.Add(dictypename, dictypeid);
+            }
+        }
+
+        private void CreateAllDataSource() {
+            foreach (string datasourcename in DataSourceNeedCreate.Keys) {
+                //根据名称创建数据源
+                Guid EntityId = Guid.Empty;
+                string entitytable = "";
+                if (dictEntity.ContainsKey(datasourcename))
+                {
+                    ExcelEntityInfo entityInfo = dictEntity[datasourcename];
+                    EntityId = entityInfo.EntityId;
+                    entitytable = entityInfo.TableName;
+                }
+                else {
+                    Dictionary<string, object> entityInfo = this._entityProRepository.GetEntityInfoByEntityName(null, datasourcename, 1);
+                    if (entityInfo == null) {
+                        throw (new Exception("创建数据源时无法查找实体信息"));
+                    }
+                    EntityId = Guid.Parse(entityInfo["entityid"].ToString());
+                    entitytable = entityInfo["entitytable"].ToString();
+                }
+                DataSourceMapper mapper = new DataSourceMapper() {
+                    DatasourceName = datasourcename,
+                    EntityId = EntityId.ToString(),
+                    IsPro = 1,
+                    IsRelatePower = 0,
+                    RecStatus = 1 ,
+                    Srcmark = "导入系统自动创建",
+                    SrcType = 0 
+                };
+                OperateResult result =  this._dataSourceRepository.InsertSaveDataSource(mapper, 1);
+                if (result.Flag!=1) {
+                    throw (new Exception("创建数据源失败：" + result.Msg));
+                }
+                Guid DataSoruceId = Guid.Parse(result.Id);
+                string RuleSql = string.Format("Select recid as id ,recname as name from {0} where ",entitytable)+" {queryData}";
+
+                InsertDataSourceConfigMapper detailMapper = new InsertDataSourceConfigMapper() {
+                    DataSourceId = DataSoruceId.ToString(),
+                    ColNames = "name",
+                    Colors = "#666666,#666666,#666666,#666666,#666666,#666666",
+                    Fonts = "14,14,14,14,14,14",
+                    RuleSql = RuleSql,
+                    ViewStyleId =201,
+                };
+
+                result = this._dataSourceRepository.InsertSaveDataSourceDetail(detailMapper, 1);
+                if (result.Flag !=1) {
+                    throw (new Exception("创建数据源失败:" + result.Msg));
+                }
+                DataSourceInDb.Add(datasourcename, this._dataSourceRepository.GetDataSourceByName(null, datasourcename, 1));
+            }
+
+        }
+        private void CreateAllFieldInfo(List<ExcelEntityInfo> listEntities)  {
+            foreach (ExcelEntityInfo entityInfo in listEntities) {
+                CreateOneEntityFieldInfo(entityInfo);
+            }
+
+        }
+        private void CreateOneEntityFieldInfo(ExcelEntityInfo entityInfo) {
+            foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
+                if (fieldInfo.FieldTypeName.Equals("系统字段")) continue;
+                //检查fieldconfig
+                checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                //新建字段
+                EntityFieldProModel model = new EntityFieldProModel()
+                {
+                    FieldName = fieldInfo.FieldName,
+                    EntityId = entityInfo.EntityId.ToString(),
+                    FieldLabel = fieldInfo.DisplayName,
+                    DisplayName = fieldInfo.DisplayName,
+                    ControlType = fieldInfo.ControlType,
+                    FieldType = fieldInfo.FieldType,
+                    RecStatus = 1,
+                    FieldConfig = Newtonsoft.Json.JsonConvert.SerializeObject(fieldInfo.FieldConfig)
+                };
+                OutputResult<object> result = this._entityProServices.InsertEntityField(model, 1);
+                if (result.Status != 0) {
+                    throw (new Exception(result.Message));
+                }
+                fieldInfo.FieldId = Guid.Parse(result.DataBody.ToString());
+            }
+            if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
+                foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
+                {
+                    CreateOneEntityFieldInfo(subEntityInfo);
+                }
+            }
         }
         /// <summary>
         /// 仅仅是创建实体的基本信息，包含基本字段
@@ -118,10 +667,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Icons = "00000000-0000-0000-0000-200000000001",
                     RelEntityId = RelEntityId,
                     RelFieldId = RelFieldId,
-                    Relaudit = Relaudit
+                    Relaudit = Relaudit,
+                    Remark = "",
+                    Styles = ""
 
                 };
-                this._entityProServices.InsertEntityPro(model, 1);
+                OutputResult<object>  result = this._entityProServices.InsertEntityPro(model, 1);
+                if (result.Status == 0)
+                {
+                    entityInfo.EntityId = Guid.Parse(result.DataBody.ToString());
+                }
+                else {
+                    throw (new Exception(result.Message));
+                }
             }
 
         }
@@ -268,6 +826,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
         }
+
         private void checkOneField(ExcelEntityColumnInfo fieldInfo, ExcelEntityInfo entityInfo, Dictionary<string, ExcelEntityInfo> dictEntity, Dictionary<string, string> dictTable) {
             if (fieldInfo.DisplayName.Length == 0 || fieldInfo.FieldName.Length == 0 || fieldInfo.FieldTypeName.Length == 0) throw (new Exception("字段显示名称和数据库名称都不能为空"));
             bool isInRevert = DefaultFieldName.Contains(fieldInfo.FieldName);
@@ -306,6 +865,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     else
                     {
                         fieldInfo.FieldConfig = MakeDictFieldConfig(dictType, -1);
+                    }
+                }
+                else
+                {
+                    if (fieldInfo.DefaultValue != null && fieldInfo.DefaultValue.Length > 0)
+                    {
+                        Dictionary<string, object> tmp = new Dictionary<string, object>();
+                        tmp.Add("dictypename", fieldInfo.DataSourceName);
+                        tmp.Add("dictname", fieldInfo.DefaultValue);
+                        DictValueNeedCreate.Add(tmp);
                     }
                 }
             }
@@ -1336,7 +1905,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (cellValue.Length == 0) return null;//代表这一行已经是空行了
             int tmp = 0;
             if (int.TryParse(cellValue, out tmp) == false) {
-                columnInfo.ErrorMsg = string.Format("{0}\r\n 第{1}行第{2}列应该是数字，实际为{3}", columnInfo.ErrorMsg, row.RowIndex + 1, columnIndex + 1, cellValue);
+                // columnInfo.ErrorMsg = string.Format("{0}\r\n 第{1}行第{2}列应该是数字，实际为{3}", columnInfo.ErrorMsg, row.RowIndex + 1, columnIndex + 1, cellValue);
+                return null;
             }
             columnInfo.Index = tmp;
             columnIndex++;
@@ -1436,35 +2006,46 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 columnInfo.ViewSet.Add(typeSettingInfo.TypeName, viewInfo);
             }
 
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
-            cellValue = GetCellValue(cell, workbookPart);
-            if (cellValue == null) cellValue = "";
-            if (cellValue.Equals("√")) columnInfo.IsWebListField = true; else columnInfo.IsWebListField = false;
-            columnIndex++;
-
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
-            cellValue = GetCellValue(cell, workbookPart);
-            if (cellValue == null) cellValue = "";
-            columnInfo.DefaultValue = cellValue;
-            columnIndex++;
-
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
-            cellValue = GetCellValue(cell, workbookPart);
-            if (cellValue == null) cellValue = "";
-            if (cellValue.Equals("√")) columnInfo.IsAdvanceSearch = true; else columnInfo.IsAdvanceSearch = false;
-            columnIndex++;
-
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
-            cellValue = GetCellValue(cell, workbookPart);
-            if (cellValue == null) cellValue = "";
-            if (cellValue.Equals("√")) columnInfo.IsCheckSameField = true; else columnInfo.IsCheckSameField = false;
-            columnIndex++;
-
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
-            cellValue = GetCellValue(cell, workbookPart);
-            if (cellValue == null) cellValue = "";
-            columnInfo.Remark = cellValue;
-            columnIndex++;
+            if (row.Descendants<Cell>().Count() > columnIndex)
+            {
+                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cellValue = GetCellValue(cell, workbookPart);
+                if (cellValue == null) cellValue = "";
+                if (cellValue.Equals("√")) columnInfo.IsWebListField = true; else columnInfo.IsWebListField = false;
+                columnIndex++;
+            }
+            if (row.Descendants<Cell>().Count() > columnIndex)
+            {
+                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cellValue = GetCellValue(cell, workbookPart);
+                if (cellValue == null) cellValue = "";
+                columnInfo.DefaultValue = cellValue;
+                columnIndex++;
+            }
+            if (row.Descendants<Cell>().Count() > columnIndex)
+            {
+                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cellValue = GetCellValue(cell, workbookPart);
+                if (cellValue == null) cellValue = "";
+                if (cellValue.Equals("√")) columnInfo.IsAdvanceSearch = true; else columnInfo.IsAdvanceSearch = false;
+                columnIndex++;
+            }
+            if (row.Descendants<Cell>().Count() > columnIndex)
+            {
+                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cellValue = GetCellValue(cell, workbookPart);
+                if (cellValue == null) cellValue = "";
+                if (cellValue.Equals("√")) columnInfo.IsCheckSameField = true; else columnInfo.IsCheckSameField = false;
+                columnIndex++;
+            }
+            if (row.Descendants<Cell>().Count() > columnIndex)
+            {
+                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cellValue = GetCellValue(cell, workbookPart);
+                if (cellValue == null) cellValue = "";
+                columnInfo.Remark = cellValue;
+                columnIndex++;
+            }
             return columnInfo;
         }
 
@@ -1480,7 +2061,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             cellValue = cellInnerText;//指定默认值(其实用来处理Excel中的数字)
 
             //获取WorkbookPart中NumberingFormats样式集合
-            List<string> dicStyles = GetNumberFormatsStyle(workBookPart);
+            Dictionary<string,string> dicStyles = GetNumberFormatsStyle(workBookPart);
             //获取WorkbookPart中共享String数据
             SharedStringTable sharedTable = workBookPart.SharedStringTablePart.SharedStringTable;
 
@@ -1513,7 +2094,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (dicStyles.Count > 0 && cell.StyleIndex != null)//对于数字,cell.StyleIndex==null
                     {
                         int styleIndex = Convert.ToInt32(cell.StyleIndex.Value);
-                        string cellStyle = dicStyles[styleIndex - 1];//获取该索引的样式
+                        string cellStyle = "";
+                        if (dicStyles.ContainsKey(styleIndex.ToString())) {
+                            cellStyle = dicStyles[styleIndex.ToString()];
+                        }
                         if (cellStyle.Contains("yyyy") || cellStyle.Contains("h")
                             || cellStyle.Contains("dd") || cellStyle.Contains("ss"))
                         {
@@ -1534,9 +2118,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         else//其他的货币、数值
                         {
-                            cellStyle = cellStyle.Substring(cellStyle.LastIndexOf('.') - 1).Replace("\\", "");
-                            decimal decimalNum = decimal.Parse(cellInnerText);
-                            cellValue = decimal.Parse(decimalNum.ToString(cellStyle)).ToString();
+                            try
+                            {
+                                if (cellStyle.LastIndexOf('.') > 0)
+                                    cellStyle = cellStyle.Substring(cellStyle.LastIndexOf('.') - 1).Replace("\\", "");
+                                else
+                                    cellStyle = cellStyle.Replace("\\", "");
+                                decimal decimalNum = decimal.Parse(cellInnerText);
+                                cellValue = decimal.Parse(decimalNum.ToString(cellStyle)).ToString();
+                            }
+                            catch (Exception ex) { }
                         }
                     }
                 }
@@ -1552,9 +2143,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         /// <param name="workBookPart">WorkbookPart对象</param>
         /// <returns>NumberingFormats样式集合</returns>
-        private List<string> GetNumberFormatsStyle(WorkbookPart workBookPart)
+        private Dictionary<string,string> GetNumberFormatsStyle(WorkbookPart workBookPart)
         {
-            List<string> dicStyle = new List<string>();
+            Dictionary<string, string> dicStyle = new Dictionary<string, string>();
             Stylesheet styleSheet = workBookPart.WorkbookStylesPart.Stylesheet;
             OpenXmlElementList list = styleSheet.NumberingFormats.ChildElements;//获取NumberingFormats样式集合
 
@@ -1570,7 +2161,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 string numFmtId = reader.Attributes[0].Value;//格式化ID
                                 string formatCode = reader.Attributes[1].Value;//格式化Code
-                                dicStyle.Add(formatCode);//将格式化Code写入List集合
+                                dicStyle.Add(numFmtId,formatCode);//将格式化Code写入List集合
                             }
                         }
                     }
@@ -1602,6 +2193,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Fields = new List<ExcelEntityColumnInfo>();
             SubEntitys = new List<ExcelEntityInfo>();
             TypeNameDict = new Dictionary<string, EntityTypeSettingInfo>();
+            EntityId = Guid.Empty;
+            EntityName = "";
+            TableName = "";
+            EntityTypeName = "";
+            RelEntityId = Guid.Empty;
+            RelEntityName = "";
+            RelFieldName = "";
+
         }
     }
     public class ExcelEntityColumnInfo {
@@ -1649,8 +2248,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public bool Import_Must { get; set; }
     }
     public class EntityTypeSettingInfo {
+        public List<Guid> CatelogIds { get; set; }
         public string TypeName { get; set; }
         public bool IsImport { get; set; }
+
+        public EntityTypeSettingInfo() {
+            CatelogIds = new List<Guid>();
+        }
     }
     #endregion
 }

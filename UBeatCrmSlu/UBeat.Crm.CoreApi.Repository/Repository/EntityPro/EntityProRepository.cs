@@ -1747,6 +1747,35 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 return null;
             }
         }
+
+        public void DeleteEntityFieldRules(Guid catelogid, int userId)
+        {
+            try
+            {
+                string strSQL = "delete from crm_sys_entity_field_rules where typeid = @typeid";
+                DbParameter[] param = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@typeid",catelogid)
+                };
+                ExecuteNonQuery(strSQL, param, null);
+            }
+            catch (Exception ex) { }
+        }
+
+        public void MapEntityType(Guid subTypeId, Guid mainTypeId)
+        {
+
+            try
+            {
+                string strSQL = "update  crm_sys_entity_category set relcategoryid = @relcategoryid where categoryid =@categoryid ";
+                DbParameter[] param = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("relcategoryid",mainTypeId),
+                    new Npgsql.NpgsqlParameter("categoryid",subTypeId)
+                };
+                ExecuteNonQuery(strSQL, param, null);
+            }
+            catch (Exception ex) {
+            }
+        }
         #endregion
 
 

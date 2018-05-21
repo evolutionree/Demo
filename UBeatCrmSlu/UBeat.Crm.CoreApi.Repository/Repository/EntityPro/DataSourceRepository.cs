@@ -315,17 +315,56 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public Dictionary<string, object> GetDictTypeByName(string dictTypeName)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string strSQL = "select * from crm_sys_dictionary_type where dictypename =@dictypename";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@dictypename",dictTypeName)
+                };
+                List<Dictionary<string, object>> retList = ExecuteQuery(strSQL, p, null);
+                if (retList == null || retList.Count == 0) return null;
+                return retList[0];
+            }
+            catch (Exception ex) {
+                return null;
+            }
         }
 
         public int GetDictValueByName(int dictype, string dictValueName)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string strSQL = "select * from crm_sys_dictionary where dictypeid = @dictypeid and dataval = @dataval limit 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@dictypeid",dictype),
+                    new Npgsql.NpgsqlParameter("@dataval",dictValueName)
+                };
+                List<Dictionary<string, object>> retList = ExecuteQuery(strSQL, p, null);
+                if (retList == null || retList.Count == 0) return -1;
+                return int.Parse(retList[0]["dataid"].ToString());
+            }
+            catch (Exception ex)
+            {
+                return -1;
+            }
         }
 
         public Dictionary<string, object> GetDataSourceByName(DbTransaction tran, string datasourcename, int userId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string strSQL = "select * from crm_sys_entity_datasource  where datasrcname =@datasrcname limit 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@datasrcname",datasourcename)
+                };
+                List<Dictionary<string, object>> retList = ExecuteQuery(strSQL, p, null);
+                if (retList == null || retList.Count == 0) return null;
+                return retList[0];
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
     }
 }
