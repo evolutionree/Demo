@@ -65,6 +65,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 CreateAllDict();
                 //处理所有的字段
                 CreateAllFieldInfo(listEntity);
+                UpdateReferenceAndTableFieldInfo(listEntity);
                 //创建分类
                 CreateAllCatelog(listEntity);
                 //处理所有的字段可见规则
@@ -81,6 +82,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 r.Close();
             }
+        }
+        private void UpdateReferenceAndTableFieldInfo(List<ExcelEntityInfo> listEntry) {
+            foreach (ExcelEntityInfo entityInfo in listEntry) {
+                foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
+                    if (fieldInfo.IsUpdate) continue;
+                    if (fieldInfo.ControlType != 23 && fieldInfo.ControlType != 31) continue;
+                    if (fieldInfo.ControlType == 23)
+                    {
+                        //表格控件
+                        if (fieldInfo.Table_EntityId == null || fieldInfo.Table_EntityId.Length == 0)
+                        {
+                            checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                            this._entityProRepository.UpdateEntityFieldConfig(fieldInfo.FieldId, fieldInfo.FieldConfig, 1);
+                        }
+                    }
+                    else if (fieldInfo.ControlType == 31)
+                    {
+                        //引用控件
+                        if (fieldInfo.RelField_ControlFieldId == null || fieldInfo.RelField_ControlFieldId.Length == 0
+                            || fieldInfo.RelField_OriginEntityId == null || fieldInfo.RelField_OriginEntityId.Length == 0
+                            || fieldInfo.RelField_originFieldId == null || fieldInfo.RelField_originFieldId.Length == 0) {
+                            checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                            this._entityProRepository.UpdateEntityFieldConfig(fieldInfo.FieldId, fieldInfo.FieldConfig, 1);
+                        }
+                    }
+                }
+            }
+        }
+        private void SaveFieldConfig(Guid fieldid, string fieldconfig) {
+            
         }
         private void UpdateAllViewSetting(List<ExcelEntityInfo> listEntities)
         {
@@ -1050,18 +1081,49 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
                 if (tmp.Length != 2) throw (new Exception("引用对象异常2"));
                 fieldInfo.RelField_ControlFieldName = tmp[0];
+                
                 fieldInfo.RelField_originFieldName = tmp[1];
                 //检查是否存在
                 bool isExists = false;
+                ExcelEntityColumnInfo foundFieldInfo = null;
                 foreach (ExcelEntityColumnInfo fi in entityInfo.Fields) {
                     if (fi.DisplayName.Equals(fieldInfo.RelField_ControlFieldName)) {
-                        if (fi.ControlType != 18) {
+                        if (fi.ControlType != 18)
+                        {
                             throw (new Exception("引用控件的控制控件只能是数据源控件"));
                         }
+                        else if (fi.FieldId != Guid.Empty) {
+                            fieldInfo.RelField_ControlFieldId = fi.FieldId.ToString();
+                        }
+                        foundFieldInfo = fi;
                         isExists = true;
                         break;
                     }
                 }
+                #region 处理引用对象的字段fieldInfo.RelField_originFieldName
+                if (foundFieldInfo != null && foundFieldInfo.FieldId != Guid.Empty) {
+                    Dictionary<string,object> tmpField =   this._entityProRepository.GetFieldInfo(foundFieldInfo.FieldId, 1);
+                    if (tmpField != null) {
+                        Guid datasourceid = GetDataSourceIdFromFieldDict(tmpField);
+                        if (datasourceid != Guid.Empty) {
+                            //找到DATa Source就开始找entityid
+                            Dictionary<string, object> datasourcetmp = this._dataSourceRepository.GetDataSourceInfo(datasourceid, 1);
+                            if (datasourcetmp != null && datasourcetmp.ContainsKey("entityid")) {
+                                string tmp_entityid = datasourcetmp["entityid"].ToString() ;
+                                fieldInfo.RelField_OriginEntityId = tmp_entityid;
+                            }
+                        }
+                    }
+                }
+                if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0) {
+                    //通过originentityid 和rel_fieldname 获取fieldInfo.relfield_originfieldid 
+                    Dictionary<string, object> tmpFielddict = this._entityProRepository.GetFieldInfoByFieldName(null,fieldInfo.RelField_originFieldName,Guid.Parse(fieldInfo.RelField_OriginEntityId),1);
+                    if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldid")) {
+                        fieldInfo.RelField_originFieldId = tmpFielddict["fieldid"].ToString();
+                    }
+                }
+                fieldInfo.FieldConfig = MakeReferenceFieldConfig(fieldInfo);
+                #endregion
             }
             else if (fieldInfo.FieldTypeName.Equals("表格")) {
                 fieldInfo.ControlType = 23; fieldInfo.FieldType = 2;
@@ -1069,7 +1131,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
                 if (tmp.Length != 2) throw (new Exception("表格对象异常2"));
                 fieldInfo.Table_EntityName = tmp[0];
-                fieldInfo.Table_TitleFieldName = tmp[1];
+                fieldInfo.Table_TitleDisplayName = tmp[1];
                 ExcelEntityInfo tableEntityInfo = null;
                 if (entityInfo.SubEntitys == null) throw (new Exception("表格对应的嵌套实体不存在"));
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
@@ -1079,17 +1141,78 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                 }
                 if (tableEntityInfo == null ) throw (new Exception("表格对应的嵌套实体不存在"));
-                bool isFoundField = false;
+                if (tableEntityInfo.EntityId != null && tableEntityInfo.EntityId != Guid.Empty) {
+                    fieldInfo.Table_EntityId = tableEntityInfo.EntityId.ToString();
+                }
+                ExcelEntityColumnInfo foundField = null;
                 foreach (ExcelEntityColumnInfo subFieldInfo in tableEntityInfo.Fields)
                 {
-                    if (subFieldInfo.DisplayName.Equals(fieldInfo.Table_TitleFieldName))
+                    if (subFieldInfo.DisplayName.Equals(fieldInfo.Table_TitleDisplayName))
                     {
-                        isFoundField = true;
+                        foundField = subFieldInfo;
                         break;
                     }
                 }
-                if (!isFoundField) throw (new Exception("表格对应的嵌套实体不存在"));
+                if (foundField == null ) throw (new Exception("表格对应的嵌套实体不存在"));
+                fieldInfo.Table_TitleFieldName = foundField.FieldName;
+                fieldInfo.FieldConfig = MakeTableFieldConfig(fieldInfo);
             }
+        }
+
+        private Dictionary<string, object> MakeTableFieldConfig(ExcelEntityColumnInfo fieldInfo) {
+            Dictionary<string, object> retDict = MakeCommonTextFieldConfig("");
+            return retDict;
+        }
+        private Dictionary<string, object> MakeReferenceFieldConfig(ExcelEntityColumnInfo fieldInfo )
+        {
+            Dictionary<string, object> retDict = MakeCommonTextFieldConfig("");
+            if (fieldInfo.RelField_originFieldId != null && fieldInfo.RelField_originFieldId.Length > 0)
+            {
+
+                retDict.Add("originEntity", fieldInfo.RelField_originFieldId);
+            }
+            else {
+
+                retDict.Add("originEntity", Guid.Empty.ToString());
+            }
+            if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0)
+            {
+
+                retDict.Add("originField", fieldInfo.RelField_OriginEntityId);
+            }
+            else
+            {
+
+                retDict.Add("originField", Guid.Empty.ToString());
+            }
+            if (fieldInfo.RelField_ControlFieldId != null && fieldInfo.RelField_ControlFieldId.Length > 0)
+            {
+
+                retDict.Add("controlField", fieldInfo.RelField_ControlFieldId);
+            }
+            else
+            {
+
+                retDict.Add("controlField", Guid.Empty.ToString());
+            }
+            return retDict;
+        }
+        private Guid GetDataSourceIdFromFieldDict(Dictionary<string, object> data)
+        {
+            if (data.ContainsKey("fieldconfig")) {
+                string s_fieldConfig = data["fieldconfig"].ToString();
+                Dictionary<string, object> fieldConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(s_fieldConfig);
+                if (fieldConfig != null && fieldConfig.ContainsKey("datasource")) {
+                    string s_datasource = Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfig["datasource"]);
+                    Dictionary<string,object> datasource = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(s_datasource);
+                    if (datasource != null && datasource.ContainsKey("sourceId")) {
+                        Guid tmp = Guid.Empty;
+                        if (Guid.TryParse(datasource["sourceId"].ToString(), out tmp))
+                            return tmp;
+                    }
+                }
+            }
+            return Guid.Empty;
         }
         private Guid GetDataSourceIdFromName(string datasourceName) {
             if (DataSourceInDb.ContainsKey(datasourceName))
@@ -2188,6 +2311,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public List<ExcelEntityColumnInfo> Fields { get; set; }
         public List<ExcelEntityInfo> SubEntitys { get; set; }
+        public bool IsUpdate { get; set; }
         public Dictionary<string, EntityTypeSettingInfo> TypeNameDict { get; set; }
         public ExcelEntityInfo() {
             Fields = new List<ExcelEntityColumnInfo>();
@@ -2200,6 +2324,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             RelEntityId = Guid.Empty;
             RelEntityName = "";
             RelFieldName = "";
+            IsUpdate = false;
 
         }
     }
@@ -2225,13 +2350,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string RelField_ControlFieldId { get; set; }
         public string Table_EntityName { get; set; }
         public string Table_EntityId { get; set; }
+        public string Table_TitleDisplayName { get; set; }
         public string Table_TitleFieldName { get; set; }
-        public string Table_TitleFieldId { get; set; }
         public string ErrorMsg { get; set; }
+        public bool IsUpdate { get; set; }
         public Dictionary<string, ExcelEntityFieldViewInfo> ViewSet { get; set; }
         public ExcelEntityColumnInfo() {
             ViewSet = new Dictionary<string, ExcelEntityFieldViewInfo>();
             FieldConfig = new Dictionary<string, object>();
+            IsUpdate = false;
         }
     }
     public class ExcelEntityFieldViewInfo {

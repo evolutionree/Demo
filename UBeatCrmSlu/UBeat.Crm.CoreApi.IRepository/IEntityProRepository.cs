@@ -82,6 +82,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult CheckFieldRepeat(string entityId, string fieldId, string dataId, string dataValue, int userId);
         List<EntityFieldProMapper> NeedCheckFieldRepeat(string entityId, int userId);
         dynamic GetEntityInfo(Guid typeId, int userNumber);
+        void UpdateEntityFieldConfig(Guid fieldId, Dictionary<string, object> fieldConfig, int v);
 
         /// <summary>
         /// 获取实体部分信息

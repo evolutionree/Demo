@@ -1776,6 +1776,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             catch (Exception ex) {
             }
         }
+
+        public void UpdateEntityFieldConfig(Guid fieldId, Dictionary<string, object> fieldConfig, int v)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_entity_fields set fieldconfig = @fieldconfig where fieldid = @fieldid";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@fieldconfig",Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfig)){ NpgsqlDbType = NpgsqlDbType.Jsonb},
+                    new Npgsql.NpgsqlParameter("@fieldid",fieldId)
+                };
+                ExecuteNonQuery(strSQL, p, null);
+            }
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+            }
+        }
         #endregion
 
 
