@@ -1126,7 +1126,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 #endregion
             }
             else if (fieldInfo.FieldTypeName.Equals("表格")) {
-                fieldInfo.ControlType = 23; fieldInfo.FieldType = 2;
+                fieldInfo.ControlType = 24; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName == null) throw (new Exception("表格用对象异常"));
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
                 if (tmp.Length != 2) throw (new Exception("表格对象异常2"));
@@ -1161,6 +1161,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         private Dictionary<string, object> MakeTableFieldConfig(ExcelEntityColumnInfo fieldInfo) {
             Dictionary<string, object> retDict = MakeCommonTextFieldConfig("");
+            retDict.Add("entityId", fieldInfo.Table_EntityId);
+            retDict.Add("titleField", fieldInfo.Table_TitleFieldName);
             return retDict;
         }
         private Dictionary<string, object> MakeReferenceFieldConfig(ExcelEntityColumnInfo fieldInfo )
@@ -1450,7 +1452,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 mainEntityInfo.Fields.Add(columInfo);
             }
             #endregion 
-            if (rowEnumerator.MoveNext() == false) {
+            if (rowEnumerator.Current == null) {
                 return mainEntityInfo;
             }
             //继续往下查找嵌套表格
@@ -1458,7 +1460,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 #region 找到开始标志位
                 EntityDefinedRow = null;
-                while (rowEnumerator.MoveNext())
+                while(true)
                 {
                     curRowIndex++;
                     var row = rowEnumerator.Current;
@@ -1470,6 +1472,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         EntityDefinedRow = row;
                         break;
                     }
+                    if (rowEnumerator.MoveNext() == false) break;
                 }
                 if (EntityDefinedRow == null)
                 {
