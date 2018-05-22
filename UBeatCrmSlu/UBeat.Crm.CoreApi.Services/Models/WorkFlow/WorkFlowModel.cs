@@ -153,6 +153,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid FlowId { get; set; }
     }
 
+    public class WorkFlowTitleConfigModel {
+        public Guid FlowId { get; set; }
+        public string TitleConfig { get; set; }
+    }
+
     public class WorkFlowAddModel
     {
         public string FlowName { get; set; }

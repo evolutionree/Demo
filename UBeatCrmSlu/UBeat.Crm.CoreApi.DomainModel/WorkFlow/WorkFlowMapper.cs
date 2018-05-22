@@ -13,6 +13,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public Guid RecId { get; set; }
         public Guid? RelEntityId { get; set; }
         public Guid? RelRecId { get; set; }
+        public string Title { get; set; }
         public Dictionary<string, object> CaseData { get; set; }
         protected override IValidator GetValidator()
         {

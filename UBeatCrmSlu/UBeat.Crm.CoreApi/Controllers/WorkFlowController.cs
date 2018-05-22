@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.WorkFlow;
@@ -236,6 +237,34 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             return _workFlowServices.GetRules(paramInfo, UserId);
         }
+        #region 处理工作流主题问题
+        [HttpPost("titlefields")]
+        public OutputResult<object> GetTitleFieldList([FromBody] WorkFlowDetailModel paramInfo) {
+            if (paramInfo == null || paramInfo.FlowId == null || paramInfo.FlowId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            return _workFlowServices.GetTitleFieldList(paramInfo, UserId);
+        }
+        [HttpPost("savetitleconfig")]
+        [AllowAnonymous]
+        public OutputResult<object> SaveTitleConfig([FromBody] WorkFlowTitleConfigModel paramInfo)
+        {
+            if (paramInfo == null || paramInfo.FlowId == null || paramInfo.FlowId == Guid.Empty)
+            {
+                return ResponseError<object>("参数异常");
+            }
+            try
+            {
+
+                return _workFlowServices.SaveTitleConfig(paramInfo, UserId);
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+        }
+
+
+        #endregion
     }
 }
  

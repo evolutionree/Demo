@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Models.Account;
 using UBeat.Crm.CoreApi.DomainModel.Rule;
+using System.Text.RegularExpressions;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -223,6 +224,125 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+        public OutputResult<object> SaveTitleConfig(WorkFlowTitleConfigModel paramInfo, int userId)
+        {
+            return new OutputResult<object> (_workFlowRepository.SaveTitleConfig(paramInfo.FlowId,paramInfo.TitleConfig, userId));
+        }
+
+        public OutputResult<object> GetTitleFieldList(WorkFlowDetailModel paramInfo, int userId)
+        {
+            try
+            {
+                List<string> fields = new List<string>();
+
+                GetWorkflowFieldForWorkflowTitle(fields);
+                Dictionary<string, List<IDictionary<string, object>>> detailResult  = _workFlowRepository.Detail(paramInfo.FlowId, userId);
+                if (detailResult == null) return new OutputResult<object>("无法找到工作流定义", "无法找到工作流定义",-1);
+                List<IDictionary<string, object>> workflowlist = detailResult["data"];
+                if (workflowlist.Count == 0) {
+                    return new OutputResult<object>("无法找到工作流定义", "无法找到工作流定义", -1);
+                }
+                IDictionary<string, object> workflowInfo = workflowlist[0];
+                Guid entityid = Guid.Parse(workflowInfo["entityid"].ToString());
+                if(entityid == Guid.Empty) return new OutputResult<object>("无法找到工作流定义", "无法找到工作流定义", -1);
+                IDictionary<string, object> entityInfo = this._entityProRepository.GetEntityInfo(entityid, userId);
+                if (entityInfo == null) return new OutputResult<object>("无法找到工作流绑定的实体定义信息", "无法找到工作流绑定的实体定义信息", -1);
+                int modeltype = int.Parse(entityInfo["modeltype"].ToString());
+                if (modeltype == 0)
+                {
+                    //独立实体,只需要考虑本实体信息
+                    GetEntityFieldForWorkflowTitle(fields, entityid, entityInfo["entityname"].ToString(), userId);
+                    
+                }
+                else if (modeltype == 2)
+                {
+                    //简单实体，需要判断是否存在关联实体
+                    GetEntityFieldForWorkflowTitle(fields, entityid, entityInfo["entityname"].ToString(),userId);
+                    if (entityInfo.ContainsKey("relentityid") && entityInfo["relentityid"] != null) {
+                        Guid mainEntityId = Guid.Empty;
+                        if (Guid.TryParse(entityInfo["relentityid"].ToString(), out mainEntityId)) {
+                            IDictionary<string, object> mainEntityInfo = this._entityProRepository.GetEntityInfo(entityid, userId);
+                            if (mainEntityInfo != null) {
+                                GetEntityFieldForWorkflowTitle(fields, mainEntityId, mainEntityInfo["entityname"].ToString(), userId);
+                            }
+                        }
+                    }
+                }
+                else if (modeltype == 3)
+                {
+                    //动态实体 ,需要判断是否存在关联实体
+                    GetEntityFieldForWorkflowTitle(fields, entityid, entityInfo["entityname"].ToString(), userId);
+                    if (entityInfo.ContainsKey("relentityid") && entityInfo["relentityid"] != null)
+                    {
+                        Guid mainEntityId = Guid.Empty;
+                        if (Guid.TryParse(entityInfo["relentityid"].ToString(), out mainEntityId))
+                        {
+                            IDictionary<string, object> mainEntityInfo = this._entityProRepository.GetEntityInfo(mainEntityId, userId);
+                            if (mainEntityInfo != null)
+                            {
+                                GetEntityFieldForWorkflowTitle(fields, mainEntityId, mainEntityInfo["entityname"].ToString(), userId);
+                            }
+                        }
+                    }
+                }
+                else {
+                    return new OutputResult<object>("无法找到工作流绑定的实体定义信息", "无法找到工作流绑定的实体定义信息",-1);
+                }
+                return new OutputResult<object>(fields);
+            }
+            catch (Exception ex) {
+                return new OutputResult<object>(ex.Message, ex.Message, -1);
+            }
+        }
+        private void GetEntityFieldForWorkflowTitle(List<string> result, Guid entityid, string entityName, int userid) {
+
+            Dictionary<string, List<IDictionary<string, object>>> fieldDetail = this._entityProRepository.EntityFieldProQuery(entityid.ToString(), userid);
+            if (fieldDetail == null) throw (new Exception("获取字段名称失败"));
+            List<IDictionary<string, object>> fields = fieldDetail["EntityFieldPros"];
+            foreach (IDictionary<string, object> field in fields) {
+                int controltype = 0;
+                if (int.TryParse(field["controltype"].ToString(), out controltype) == false) continue;
+                switch (controltype) {
+                    case (int)DynamicProtocolControlType.Address:
+                    case (int)DynamicProtocolControlType.DataSourceMulti:
+                    case (int)DynamicProtocolControlType.DataSourceSingle:
+                    case (int)DynamicProtocolControlType.Department:
+                    case (int)DynamicProtocolControlType.EmailAddr:
+                    case (int)DynamicProtocolControlType.Location:
+                    case (int)DynamicProtocolControlType.NumberDecimal:
+                    case (int)DynamicProtocolControlType.NumberInt:
+                    case (int)DynamicProtocolControlType.PersonSelectMulti:
+                    case (int)DynamicProtocolControlType.PersonSelectSingle:
+                    case (int)DynamicProtocolControlType.PhoneNum:
+                    case (int)DynamicProtocolControlType.Product:
+                    case (int)DynamicProtocolControlType.ProductSet:
+                    case (int)DynamicProtocolControlType.QuoteControl:
+                    case (int)DynamicProtocolControlType.RecCreated:
+                    case (int)DynamicProtocolControlType.RecCreator:
+                    case (int)DynamicProtocolControlType.RecId:
+                    case (int)DynamicProtocolControlType.RecManager:
+                    case (int)DynamicProtocolControlType.RecOnlive:
+                    case (int)DynamicProtocolControlType.RecName:
+                    case (int)DynamicProtocolControlType.RecUpdated:
+                    case (int)DynamicProtocolControlType.RecUpdator:
+                    case (int)DynamicProtocolControlType.RelateControl:
+                    case (int)DynamicProtocolControlType.SalesStage:
+                    case (int)DynamicProtocolControlType.SelectMulti:
+                    case (int)DynamicProtocolControlType.SelectSingle:
+                    case (int)DynamicProtocolControlType.Text:
+                    case (int)DynamicProtocolControlType.TimeDate:
+                    case (int)DynamicProtocolControlType.TimeStamp:
+                        result.Add(entityName + "." + field["displayname"].ToString());
+                        break;
+
+                }
+            }
+        }
+        private void GetWorkflowFieldForWorkflowTitle(List<string> result) {
+            result.Add("工作流.工作流名称");
+            result.Add("工作流.发起时间");
+            result.Add("工作流.发起人");
+        }
         #region --AddCase--（new）
 
         #region --流程预提交--
@@ -341,6 +461,119 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #endregion
 
+        #region 根据定义，获取工作流的标题的定义，并根据已有的数据，进行相关的替换
+        private string GenerateWorkflowCaseTitle(DbTransaction tran, WorkFlowCaseAddModel caseModel, WorkFlowInfo workflowInfo, UserInfo userinfo) {
+            if (workflowInfo == null || workflowInfo.TitleConfig == null || workflowInfo.TitleConfig.Length == 0) return workflowInfo.FlowName;///默认情况的处理
+            Dictionary<string, string> ValueDict = new Dictionary<string, string>();
+            GenerateWorkflowTitleValueDict(ValueDict, caseModel, workflowInfo, userinfo);
+            GenerateEntityTitleValueDict(ValueDict, tran, caseModel.CaseModel.EntityId, caseModel.CaseModel.RecId, userinfo.UserId);
+            if (caseModel.CaseModel.RelEntityId != null && caseModel.CaseModel.RelEntityId != Guid.Empty
+                 && caseModel.CaseModel.RelRecId != null && caseModel.CaseModel.RelRecId != Guid.Empty)
+            {
+                GenerateEntityTitleValueDict(ValueDict, tran, (System.Guid)caseModel.CaseModel.RelEntityId, (System.Guid)caseModel.CaseModel.RelRecId, userinfo.UserId);
+            }
+            string title = workflowInfo.TitleConfig;
+            foreach (string key in ValueDict.Keys) {
+                title =  title.Replace("{" + key + "}", ValueDict[key]);
+            }
+            //把没有在字典的值也清空
+            string pattern = @"(?<=\{)[^}]*(?=\})";
+            string replacement = "";
+            title = Regex.Replace(title, pattern, replacement);
+            return title;
+        }
+        private void GenerateWorkflowTitleValueDict(Dictionary<string, string> dict, WorkFlowCaseAddModel caseModel, WorkFlowInfo workflowInfo, UserInfo userinfo) {
+
+            dict.Add("工作流.工作流名称", workflowInfo.FlowName);
+
+            dict.Add("工作流.发起时间", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+            dict.Add("工作流.发起人", userinfo.UserName);
+        }
+        private void GenerateEntityTitleValueDict(Dictionary<string,string> dict,  DbTransaction tran,Guid entityId,Guid recid, int usserId) {
+
+            IDictionary<string, object> entityInfo = this._entityProRepository.GetEntityInfo(entityId, usserId);
+            string entityname = entityInfo["entityname"].ToString();
+            Dictionary<string, List<IDictionary<string, object>>> fieldDetail = this._entityProRepository.EntityFieldProQuery(entityId.ToString(), usserId);
+            List<IDictionary<string, object>> fields = fieldDetail["EntityFieldPros"];
+            DynamicEntityDetailtMapper dynamicEntityDetailtMapper = new DynamicEntityDetailtMapper()
+            {
+                EntityId = entityId,
+                RecId = recid
+            };
+            IDictionary<string, object> detailInfo = this._dynamicEntityRepository.Detail(dynamicEntityDetailtMapper, usserId, tran);
+            if (detailInfo == null) {
+                return;
+            }
+            foreach (IDictionary<string, object> field in fields) {
+                int controltype = 0;
+                if (int.TryParse(field["controltype"].ToString(), out controltype) == false) continue;
+                string displayname = field["displayname"].ToString();
+                string fieldname = field["fieldname"].ToString();
+                string key = entityname + "." + displayname;
+                bool found = false;
+                switch (controltype)
+                {
+                    case (int)DynamicProtocolControlType.Address:
+                    case (int)DynamicProtocolControlType.DataSourceMulti:
+                    case (int)DynamicProtocolControlType.DataSourceSingle:
+                    case (int)DynamicProtocolControlType.Department:
+                    case (int)DynamicProtocolControlType.Location:
+                    case (int)DynamicProtocolControlType.PersonSelectMulti:
+                    case (int)DynamicProtocolControlType.PersonSelectSingle:
+                    case (int)DynamicProtocolControlType.Product:
+                    case (int)DynamicProtocolControlType.ProductSet:
+                    case (int)DynamicProtocolControlType.RecCreator:
+                    case (int)DynamicProtocolControlType.RecUpdator:
+                    case (int)DynamicProtocolControlType.RelateControl:
+                    case (int)DynamicProtocolControlType.SalesStage:
+                    case (int)DynamicProtocolControlType.SelectMulti:
+                    case (int)DynamicProtocolControlType.SelectSingle:
+                    case (int)DynamicProtocolControlType.QuoteControl:
+                    case (int)DynamicProtocolControlType.RecManager:
+                        if (detailInfo.ContainsKey(fieldname + "_name") && detailInfo[fieldname + "_name"] != null)
+                        {
+                            dict.Add(key, detailInfo[fieldname + "_name"].ToString());
+                            found = true;
+                        }
+                        break;
+                    case (int)DynamicProtocolControlType.EmailAddr:
+                    case (int)DynamicProtocolControlType.RecId:
+                    case (int)DynamicProtocolControlType.PhoneNum:
+                    case (int)DynamicProtocolControlType.RecName:
+                    case (int)DynamicProtocolControlType.Text:
+                  
+                        if (detailInfo.ContainsKey(fieldname ) && detailInfo[fieldname  ] != null)
+                        {
+                            dict.Add(key, detailInfo[fieldname  ].ToString());
+                            found = true;
+                        }
+                        break;
+                    case (int)DynamicProtocolControlType.NumberDecimal:
+                    case (int)DynamicProtocolControlType.NumberInt:
+                        if (detailInfo.ContainsKey(fieldname) && detailInfo[fieldname] != null)
+                        {
+                            dict.Add(key, detailInfo[fieldname].ToString());
+                            found = true;
+                        }
+                        break;
+                    case (int)DynamicProtocolControlType.RecCreated:
+                    case (int)DynamicProtocolControlType.RecOnlive:
+                    case (int)DynamicProtocolControlType.RecUpdated:
+                    case (int)DynamicProtocolControlType.TimeDate:
+                    case (int)DynamicProtocolControlType.TimeStamp:
+                        if (detailInfo.ContainsKey(fieldname) && detailInfo[fieldname] != null)
+                        {
+                            dict.Add(key, detailInfo[fieldname].ToString());
+                            found = true;
+                        }
+                        break;
+
+                }
+                if (found ==false ) dict.Add(key, "");//未赋值的清空
+            }
+        }
+        #endregion
+
         #region --新增流程case数据--
 
         private Guid AddWorkFlowCase(bool ispresubmit, DbTransaction tran, WorkFlowCaseAddModel caseModel, WorkFlowInfo workflowInfo, UserInfo userinfo, out WorkFlowNodeInfo firstNodeInfo)
@@ -350,7 +583,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 throw new Exception(caseEntity.ValidationState.Errors.First());
             }
-
+            caseEntity.Title = GenerateWorkflowCaseTitle(tran, caseModel, workflowInfo, userinfo);
             var newcaseid = _workFlowRepository.AddWorkflowCase(tran, workflowInfo, caseEntity, userinfo.UserId);
             if (newcaseid == Guid.Empty)
             {

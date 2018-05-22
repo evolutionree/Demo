@@ -40,14 +40,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
         public Guid AddWorkflowCase(DbTransaction tran, WorkFlowInfo workflowinfo, WorkFlowAddCaseMapper caseMapper, int userNumber)
         {
             Guid caseid = Guid.NewGuid();
-            var executeSql = @"INSERT INTO crm_sys_workflow_case (caseid,flowid, recid, vernum, reccreator, recupdator,auditstatus) 
-                               VALUES (@caseid,@flowid, @recid, @flowvernum, @userno, @userno,3)";
+            var executeSql = @"INSERT INTO crm_sys_workflow_case (caseid,flowid, recid, title,vernum, reccreator, recupdator,auditstatus) 
+                               VALUES (@caseid,@flowid, @recid,@title, @flowvernum, @userno, @userno,3)";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("caseid", caseid),
                 new NpgsqlParameter("flowid", caseMapper.FlowId),
                 new NpgsqlParameter("recid", caseMapper.RecId),
+                new NpgsqlParameter("title", caseMapper.Title),
                 new NpgsqlParameter("flowvernum", workflowinfo.VerNum),
                 new NpgsqlParameter("userno", userNumber),
             };
@@ -1555,6 +1556,23 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             }
             catch (Exception ex)
             {
+            }
+        }
+
+        public string SaveTitleConfig(Guid flowId, string titleConfig, int userId)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_workflow set titleconfig = @titleconfig where flowid = @flowid ";
+                DbParameter[] p = new DbParameter[] {
+                    new NpgsqlParameter("@titleconfig",titleConfig),
+                    new NpgsqlParameter("@flowid",flowId)
+                };
+                ExecuteNonQuery(strSQL, p, null);
+                return titleConfig;
+            }
+            catch (Exception ex) {
+                throw (ex);
             }
         }
     }

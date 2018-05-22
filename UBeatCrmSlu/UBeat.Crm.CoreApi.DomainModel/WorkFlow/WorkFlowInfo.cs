@@ -83,5 +83,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public long RecVersion { set; get; }
 
         public int Recstatus { set; get; }
+        /// <summary>
+        /// 流程定义的标题设置 
+        /// </summary>
+        public string TitleConfig { get; set; }
     }
 }
