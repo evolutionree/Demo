@@ -6,6 +6,8 @@ alter table crm_sys_workflow add titleconfig text null;
 alter table crm_sys_workflow_case add title text null ;
 update crm_sys_workflow_case a set title = (select flowname from crm_sys_workflow  where flowid = a.flowid )
 where a.title is null ;
+INSERT INTO "public"."crm_sys_entity_fields" ( "fieldname", "entityid", "fieldlabel", "displayname", "controltype", "fieldtype", "fieldconfig", "recorder", "recstatus", "reccreator", "recupdator", "reccreated", "recupdated",  "expandjs", "filterjs") 
+VALUES ('title', '00000000-0000-0000-0000-000000000001', '审批主题', '审批主题', '1', '0', '{}', '0', '1', '14', '14', now(), now(), '', '');
 
 CREATE OR REPLACE FUNCTION "public"."crm_func_workflow_detail"("_flowid" uuid, "_userno" int4)
   RETURNS SETOF "pg_catalog"."refcursor" AS $BODY$
