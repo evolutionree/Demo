@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.Utility
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if ((value as  string == null ) && IsJsonObjectString(value.ToString()))
+            if ( IsJsonObjectString(value.ToString()))
             {
                 writer.WriteRawValue(value.ToString());
             }
@@ -40,7 +40,18 @@ namespace UBeat.Crm.CoreApi.Utility
 
         public bool IsJsonObjectString(string input)
         {
-            return input.Trim().StartsWith("{") && input.EndsWith("}");
+            if (input.Trim().StartsWith("{") && input.EndsWith("}"))
+            {
+                try
+                {
+
+                    Newtonsoft.Json.JsonConvert.DeserializeObject(input);
+                    return true;
+                } catch (Exception ex) {
+
+                }
+            }
+            return false;
         }
     }
 }

@@ -71,7 +71,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 //处理所有的字段可见规则
                 UpdateAllViewSetting(listEntity);
                 //处理WEB列表查看
+                SetWebListColumnView(listEntity);
                 //处理查重条件
+                SetCheckSameCondition(listEntity);
 
             }
             catch (Exception ex)
@@ -81,6 +83,44 @@ namespace UBeat.Crm.CoreApi.Services.Services
             finally
             {
                 r.Close();
+            }
+        }
+
+        private void SetCheckSameCondition(List<ExcelEntityInfo> listEntry) {
+            foreach (ExcelEntityInfo entityInfo in listEntry) {
+                if (entityInfo.EntityTypeName.StartsWith("简单") || entityInfo.EntityTypeName.StartsWith("独立"))
+                {
+                    List<string> ids = new List<string>();
+                    foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields)
+                    {
+                        if (fieldInfo.FieldId != null && fieldInfo.FieldId != Guid.Empty && fieldInfo.IsWebListField)
+                        {
+                            ids.Add(fieldInfo.FieldId.ToString());
+                        }
+                    }
+                    //只有独立和简单实体才有查重条件
+                    this._entityProRepository.SaveSetRepeat(entityInfo.EntityId.ToString(), string.Join(',', ids.ToArray()), 1);
+                }
+            }
+        }
+
+        private void SetWebListColumnView(List<ExcelEntityInfo> listEntry){
+            foreach (ExcelEntityInfo entityInfo in listEntry) {
+                List<string> ids = new List<string>();
+                foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
+                    if (fieldInfo.FieldId != null && fieldInfo.FieldId != Guid.Empty && fieldInfo.IsWebListField) {
+                        ids.Add(fieldInfo.FieldId.ToString());
+                    }
+                }
+                SaveListViewColumnMapper mapper = new SaveListViewColumnMapper() {
+                    ViewType = 0,
+                    EntityId = entityInfo.EntityId.ToString(),
+                    FieldIds = string.Join(',', ids.ToArray())
+                };
+                this._entityProRepository.SaveWebFieldVisible(mapper, 1);
+                if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
+                    SetWebListColumnView(entityInfo.SubEntitys);
+                }
             }
         }
         private void UpdateReferenceAndTableFieldInfo(List<ExcelEntityInfo> listEntry) {
