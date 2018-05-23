@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.Utility
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (IsJsonObjectString(value.ToString()))
+            if ((value as  string == null ) && IsJsonObjectString(value.ToString()))
             {
                 writer.WriteRawValue(value.ToString());
             }
