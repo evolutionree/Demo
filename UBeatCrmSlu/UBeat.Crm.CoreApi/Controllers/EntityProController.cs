@@ -615,6 +615,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>(datas);
         }
 
+        [HttpPost("getreffieldsbyfield")]
+        [AllowAnonymous]
+        public OutputResult<object> QueryAllEntityWithDataSource([FromBody] EntityFieldProModel paramInfo )
+        {
+            Dictionary<string, object> datas = this._entityProService.getRefFieldsByFieldId(paramInfo.FieldId,UserId);
+            return new OutputResult<object>(datas);
+        }
+
         #endregion
     }
 }

@@ -847,15 +847,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             //开始检查实体定义是否在表中存在
-            Dictionary<string, object> oldEntityInDb = this._entityProRepository.GetEntityInfoByEntityName(null, entityInfo.EntityName, 1);
-            if (oldEntityInDb != null) {
-                throw (new Exception("实体【" + entityInfo.EntityName + "】已经存在"));
-            }
+            Dictionary<string, object> oldEntityInDb = null;
             oldEntityInDb = this._entityProRepository.GetEntityInfoByTableName(null, entityInfo.TableName, 1);
             if (oldEntityInDb != null)
             {
-                throw (new Exception("实体【" + entityInfo.TableName + "】已经存在"));
+                entityInfo.EntityId = Guid.Parse(oldEntityInDb["entityid"].ToString());
+                entityInfo.IsUpdate = true;
             }
+            if (!entityInfo.IsUpdate)
+            {
+                oldEntityInDb = this._entityProRepository.GetEntityInfoByEntityName(null, entityInfo.EntityName, 1);
+                if (oldEntityInDb != null)
+                {
+                    throw (new Exception("实体【" + entityInfo.EntityName + "】已经存在"));
+                }
+            }
+            
             if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
                     if (subEntityInfo.TypeNameDict.Count > 1) {
@@ -872,15 +879,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             throw (new Exception("嵌套实体的分类定义必须跟主实体一致"));
                         }
                     }
-                    oldEntityInDb = this._entityProRepository.GetEntityInfoByEntityName(null, subEntityInfo.EntityName, 1);
-                    if (oldEntityInDb != null)
-                    {
-                        throw (new Exception("实体【" + subEntityInfo.EntityName + "】已经存在"));
-                    }
+
                     oldEntityInDb = this._entityProRepository.GetEntityInfoByTableName(null, subEntityInfo.TableName, 1);
                     if (oldEntityInDb != null)
                     {
-                        throw (new Exception("实体【" + subEntityInfo.TableName + "】已经存在"));
+
+                        subEntityInfo.EntityId = Guid.Parse(oldEntityInDb["entityid"].ToString());
+                        subEntityInfo.IsUpdate = false;
+                    }
+                    if (!subEntityInfo.IsUpdate)
+                    {
+                        oldEntityInDb = this._entityProRepository.GetEntityInfoByEntityName(null, subEntityInfo.EntityName, 1);
+                        if (oldEntityInDb != null)
+                        {
+                            throw (new Exception("实体【" + subEntityInfo.EntityName + "】已经存在"));
+                        }
                     }
                 }
             }

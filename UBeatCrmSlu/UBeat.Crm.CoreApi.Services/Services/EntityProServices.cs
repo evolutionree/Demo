@@ -466,6 +466,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return entitys;
         }
 
+        public Dictionary<string, object> getRefFieldsByFieldId(string fieldId, int userId)
+        {
+            IDictionary<string, object>  fieldInfo = this._entityProRepository.GetFieldInfo(Guid.Parse(fieldId), userId);
+            if (fieldInfo == null) {
+                throw (new Exception("无法获取字段信息"));
+            }
+            Dictionary<string, object> ds =  Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo["fieldconfig"].ToString());
+            Dictionary<string, object> dstmp = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(ds["dataSource"]));
+            string datasourceid = dstmp["sourceId"].ToString();
+            IDictionary<string, object>  datasourceinfo = this._dataSourceRepository.GetDataSourceInfo(Guid.Parse(datasourceid), userId);
+            string entityid = datasourceinfo["entityid"].ToString();
+            IDictionary<string, object> entityInfo = this._entityProRepository.GetEntityInfo(Guid.Parse(entityid), userId);
+            List < EntityFieldProMapper >  fields = this._entityProRepository.FieldQuery(entityid, userId);
+            Dictionary<string, object> retdict = new Dictionary<string, object>();
+            retdict.Add("entity", entityInfo);
+            retdict.Add("fields", fields);
+            return retdict;
+        }
+
         public OutputResult<object> SetRepeatList(SetRepeatModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<SetRepeatModel, SetRepeatMapper>(entityModel);
