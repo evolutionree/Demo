@@ -185,8 +185,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, object> GetEntityInfoByTableName(DbTransaction tran, string tablename, int userId);
         
         Dictionary<string, object> GetFieldInfoByFieldName(DbTransaction tran, string fieldName, Guid entityId,int userId);
+        Dictionary<string, object> GetFieldInfoByDisplayName(DbTransaction tran, string displayName, Guid entityId, int userId);
         void DeleteEntityFieldRules(Guid catelogid, int userId);
         void MapEntityType(Guid subTypeId, Guid mainTypeId);
+        void UpdateEntityFieldName(DbTransaction tran,Guid fieldId, string fieldName, int userId);
         #endregion
     }
 }

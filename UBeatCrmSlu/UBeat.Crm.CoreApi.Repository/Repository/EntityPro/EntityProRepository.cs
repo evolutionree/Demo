@@ -1632,24 +1632,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public void UpdateActionExt(DbTransaction tran, Guid entityId, List<ActionExtConfig> data, int userNumber)
         {
-                #region sql
-                string delSQL = @"Delete from crm_sys_actionext_config where entityid = @entityid";
-                string insertSql = string.Format(@"INSERT INTO crm_sys_actionext_config(recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid)
+            #region sql
+            string delSQL = @"Delete from crm_sys_actionext_config where entityid = @entityid";
+            string insertSql = string.Format(@"INSERT INTO crm_sys_actionext_config(recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid)
                                    SELECT uuid_generate_v4(),routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid
                                    FROM json_populate_recordset(null::crm_sys_actionext_config,@condition)");
-                #endregion
-                #region 删除
-                var param = new DbParameter[]
-                {
+            #endregion
+            #region 删除
+            var param = new DbParameter[]
+            {
                     new NpgsqlParameter("@entityid",entityId)
-                };
-                ExecuteNonQuery(delSQL, param, tran);
-                #endregion
+            };
+            ExecuteNonQuery(delSQL, param, tran);
+            #endregion
 
-                #region 插入
-                DbParameter[] rulesparams = new DbParameter[] { new NpgsqlParameter("condition", JsonConvert.SerializeObject(data)) { NpgsqlDbType = NpgsqlDbType.Json } };
-                ExecuteNonQuery(insertSql, rulesparams, tran);
-                #endregion
+            #region 插入
+            DbParameter[] rulesparams = new DbParameter[] { new NpgsqlParameter("condition", JsonConvert.SerializeObject(data)) { NpgsqlDbType = NpgsqlDbType.Json } };
+            ExecuteNonQuery(insertSql, rulesparams, tran);
+            #endregion
         }
 
         public void UpdateExtFunction(DbTransaction tran, Guid entityId, List<ExtFunction> data, int userNumber)
@@ -1684,7 +1684,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                             where recstatus = 1 ) order by entityname ";
                 return ExecuteQuery(strSQL, new DbParameter[] { }, tran);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
 
                 return new List<Dictionary<string, object>>();
@@ -1732,7 +1732,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             try
             {
                 string strSQL = @"select * from crm_sys_entity_fields 
-                            where entityid = @entityid and displayname = @displayname
+                            where entityid = @entityid and fieldname = @displayname
                             limit 1 ";
                 DbParameter[] p = new DbParameter[] {
                     new Npgsql.NpgsqlParameter("@entityid",entityId),
@@ -1790,6 +1790,41 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             }
             catch (Exception ex) {
                 Console.WriteLine(ex.Message);
+            }
+        }
+
+        public void UpdateEntityFieldName(DbTransaction tran, Guid fieldId, string displayname, int userId)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_entity_fields set displayname=@displayname where fieldid=@fieldid";
+                DbParameter[] p = new DbParameter[] {
+                    new NpgsqlParameter("@fieldid",fieldId),
+                    new NpgsqlParameter("@displayname",displayname)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+
+            }
+            catch (Exception ex) { }
+        }
+
+        public Dictionary<string, object> GetFieldInfoByDisplayName(DbTransaction tran, string displayName, Guid entityId, int userId)
+        {
+            try
+            {
+                string strSQL = @"select * from crm_sys_entity_fields where( fieldlabel = @displayname or  displayname = @displayname  )and entityid =@entityid
+                            limit 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@entityid",entityId),
+                    new Npgsql.NpgsqlParameter("@displayname",displayName)
+                };
+                List<Dictionary<string, object>> ret = ExecuteQuery(strSQL, p, tran);
+                if (ret == null || ret.Count == 0) return null;
+                return ret.ElementAt(0);
+            }
+            catch (Exception ex)
+            {
+                return null;
             }
         }
         #endregion

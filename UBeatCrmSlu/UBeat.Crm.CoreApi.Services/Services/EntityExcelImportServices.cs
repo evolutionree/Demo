@@ -51,10 +51,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 var document = SpreadsheetDocument.Open(r, false);
                 workbookPart = document.WorkbookPart;
-                var sheet = workbookPart.Workbook.Descendants<Sheet>().FirstOrDefault();
-                ExcelEntityInfo entityInfo = DealWithOneSheet(workbookPart, sheet);
                 List<ExcelEntityInfo> listEntity = new List<ExcelEntityInfo>();
-                listEntity.Add(entityInfo);
+                
+                foreach (var sheet in workbookPart.Workbook.Descendants<Sheet>()) {
+
+                    ExcelEntityInfo entityInfo = DealWithOneSheet(workbookPart, sheet);
+                    listEntity.Add(entityInfo);
+                }
                 CheckEntityAndField(listEntity);
                 //先建立所有相关表的实体
                 CreateAllMainEntityInfo(listEntity);
@@ -418,7 +421,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private void CreateAllCatelog(List<ExcelEntityInfo> listEntities) {
             foreach(ExcelEntityInfo entityInfo in listEntities)
             {
-                if (entityInfo.EntityTypeName.StartsWith("独立") == false) continue;
+                //if (entityInfo.EntityTypeName.StartsWith("独立") == false) continue;
+
+                EntityTypeQueryMapper queryMapper = new EntityTypeQueryMapper() {
+                    EntityId = entityInfo.EntityId.ToString()
+                };
+                Dictionary<string, List<IDictionary<string, object>>>  tmp =   this._entityProRepository.EntityTypeQuery(queryMapper, 1);
+                Dictionary<string, string> typeDict = new Dictionary<string, string>();
+                foreach (IDictionary<string, object> item in tmp["EntityTypePros"]) {
+                    typeDict.Add(item["categoryname"].ToString(), item["categoryid"].ToString());
+                } 
                 int catelogcount = entityInfo.TypeNameDict.Count;
                 for (int i = 0; i < catelogcount; i++) {
                     EntityTypeSettingInfo typeInfo = entityInfo.TypeNameDict[i.ToString()];
@@ -436,33 +448,48 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         };
                         this._entityProServices.UpdateEntityTypePro(model, 1);
                         for (int j = 1; j < names.Length; j++) {
-                            SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
-                            {
-                                CategoryName = names[j],
-                                EntityId = entityInfo.EntityId.ToString()
-                            };
-                            OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
-                            if (result.Flag != 1) {
-                                throw (new Exception("新增分类失败:"+result.Msg));
+                            if (typeDict.ContainsKey(names[j])) {
+                                typeInfo.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
                             }
-                            typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                            else
+                            {
+                                SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                {
+                                    CategoryName = names[j],
+                                    EntityId = entityInfo.EntityId.ToString()
+                                };
+                                OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                                if (result.Flag != 1)
+                                {
+                                    throw (new Exception("新增分类失败:" + result.Msg));
+                                }
+                                typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                            }
+                            
                         }
 
                     }
                     else {
                         for (int j = 0; j < names.Length; j++)
                         {
-                            SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                            if (typeDict.ContainsKey(names[j]))
                             {
-                                CategoryName = names[j],
-                                EntityId = entityInfo.EntityId.ToString()
-                            };
-                            OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
-                            if (result.Flag != 1)
-                            {
-                                throw (new Exception("新增分类失败:" + result.Msg));
+                                typeInfo.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
                             }
-                            typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                            else
+                            {
+                                SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                {
+                                    CategoryName = names[j],
+                                    EntityId = entityInfo.EntityId.ToString()
+                                };
+                                OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                                if (result.Flag != 1)
+                                {
+                                    throw (new Exception("新增分类失败:" + result.Msg));
+                                }
+                                typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                            }
                         }
                     }
                 }
@@ -498,18 +525,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             this._entityProRepository.MapEntityType(subEntityInfo.EntityId, entityInfo.EntityId);
                             for (int j = 1; j < names.Length; j++)
                             {
-                                SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                if (typeDict.ContainsKey(names[j]))
                                 {
-                                    CategoryName = names[j],
-                                    EntityId = subEntityInfo.EntityId.ToString()
-                                };
-                                OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
-                                if (result.Flag != 1)
-                                {
-                                    throw (new Exception("新增分类失败:" + result.Msg));
+                                    subSetting.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
                                 }
-                                subSetting.CatelogIds.Add(Guid.Parse(result.Id));
-                                this._entityProRepository.MapEntityType(Guid.Parse(result.Id), mainSetting.CatelogIds[j]);
+                                else
+                                {
+                                    SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                    {
+                                        CategoryName = names[j],
+                                        EntityId = subEntityInfo.EntityId.ToString()
+                                    };
+                                    OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                                    if (result.Flag != 1)
+                                    {
+                                        throw (new Exception("新增分类失败:" + result.Msg));
+                                    }
+                                    subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                }
                             }
 
                         }
@@ -517,18 +550,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             for (int j = 0; j < names.Length; j++)
                             {
-                                SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                if (typeDict.ContainsKey(names[j]))
                                 {
-                                    CategoryName = names[j],
-                                    EntityId = subEntityInfo.EntityId.ToString()
-                                };
-                                OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
-                                if (result.Flag != 1)
-                                {
-                                    throw (new Exception("新增分类失败:" + result.Msg));
+                                    subSetting.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
                                 }
-                                subSetting.CatelogIds.Add(Guid.Parse(result.Id));
-                                this._entityProRepository.MapEntityType(Guid.Parse(result.Id), mainSetting.CatelogIds[j]);
+                                else
+                                {
+                                    SaveEntityTypeMapper mapper = new SaveEntityTypeMapper()
+                                    {
+                                        CategoryName = names[j],
+                                        EntityId = subEntityInfo.EntityId.ToString()
+                                    };
+                                    OperateResult result = this._entityProRepository.InsertEntityTypePro(mapper, 1);
+                                    if (result.Flag != 1)
+                                    {
+                                        throw (new Exception("新增分类失败:" + result.Msg));
+                                    }
+                                    subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                }
                             }
                         }
                     }
@@ -648,9 +687,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         private void CreateOneEntityFieldInfo(ExcelEntityInfo entityInfo) {
             foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
-                if (fieldInfo.FieldTypeName.Equals("系统字段")) continue;
+                
                 //检查fieldconfig
                 checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                if (fieldInfo.FieldTypeName.Equals("系统字段"))
+                {
+                    if (fieldInfo.FieldId == null && fieldInfo.FieldId == Guid.Empty) {
+                        throw (new Exception("系统字段必须是存在的字段"));
+                    }
+                    fieldInfo.IsUpdate = true;
+                }
+
                 //新建字段
                 EntityFieldProModel model = new EntityFieldProModel()
                 {
@@ -663,11 +710,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     RecStatus = 1,
                     FieldConfig = Newtonsoft.Json.JsonConvert.SerializeObject(fieldInfo.FieldConfig)
                 };
-                OutputResult<object> result = this._entityProServices.InsertEntityField(model, 1);
-                if (result.Status != 0) {
-                    throw (new Exception(result.Message));
+                if (fieldInfo.IsUpdate)
+                {
+                    this._entityProRepository.UpdateEntityFieldName(null,fieldInfo.FieldId, fieldInfo.DisplayName, 1);
                 }
-                fieldInfo.FieldId = Guid.Parse(result.DataBody.ToString());
+                else {
+
+                    OutputResult<object> result = this._entityProServices.InsertEntityField(model, 1);
+                    if (result.Status != 0)
+                    {
+                        throw (new Exception(result.Message));
+                    }
+                    fieldInfo.FieldId = Guid.Parse(result.DataBody.ToString());
+                }
             }
             if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
@@ -688,6 +743,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             while (queue.Count > 0) {
                 ExcelEntityInfo entityInfo = queue.Dequeue();
                 if (entityInfo == null) break;
+                if (entityInfo.EntityId != null && entityInfo.EntityId != Guid.Empty) continue;
                 if (entityInfo.EntityTypeName.StartsWith("简单") || entityInfo.EntityTypeName.StartsWith("嵌套") || entityInfo.EntityTypeName.StartsWith("动态")) {
                     if (entityInfo.RelEntityName != null && entityInfo.RelEntityName.Length > 0) {
                         if (dictEntity.ContainsKey(entityInfo.RelEntityName))
@@ -885,7 +941,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
 
                         subEntityInfo.EntityId = Guid.Parse(oldEntityInDb["entityid"].ToString());
-                        subEntityInfo.IsUpdate = false;
+                        subEntityInfo.IsUpdate = true;
                     }
                     if (!subEntityInfo.IsUpdate)
                     {
@@ -913,10 +969,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         private void checkOneField(ExcelEntityColumnInfo fieldInfo, ExcelEntityInfo entityInfo, Dictionary<string, ExcelEntityInfo> dictEntity, Dictionary<string, string> dictTable) {
             if (fieldInfo.DisplayName.Length == 0 || fieldInfo.FieldName.Length == 0 || fieldInfo.FieldTypeName.Length == 0) throw (new Exception("字段显示名称和数据库名称都不能为空"));
-            bool isInRevert = DefaultFieldName.Contains(fieldInfo.FieldName);
-            if (isInRevert) {
-                if (fieldInfo.FieldTypeName.Equals("格式") == false) {
-                    throw (new Exception("不能使用系统预知字段"));
+            //bool isInRevert = DefaultFieldName.Contains(fieldInfo.FieldName);
+            //if (isInRevert) {
+            //    if (fieldInfo.FieldTypeName.Equals("格式") == false) {
+            //        throw (new Exception("不能使用系统预知字段"));
+            //    }
+            //}
+            //检查是否已经存在的表格
+            if (fieldInfo.FieldId == null || fieldInfo.FieldId == Guid.Empty) {
+                //尝试检查字段是否存在，如果存在，则只能更新字段名称（中文）和显示名称，其他都不能更改
+                if (entityInfo.EntityId != null && entityInfo.EntityId != Guid.Empty)
+                {
+                    Dictionary<string, object> tmpFieldInfo = this._entityProRepository.GetFieldInfoByFieldName(null, fieldInfo.FieldName,entityInfo.EntityId , 1);
+                    Dictionary<string, object> tmpFieldInfo2 = this._entityProRepository.GetFieldInfoByDisplayName(null, fieldInfo.DisplayName, entityInfo.EntityId, 1);
+                    if (tmpFieldInfo != null)
+                    {
+                        fieldInfo.FieldId = Guid.Parse(tmpFieldInfo["fieldid"].ToString());
+                        fieldInfo.IsUpdate = true;
+                    }
+                    else {
+                        if (tmpFieldInfo2 != null) throw (new Exception("字段的显示名称或者字段名称重复:"+ fieldInfo.DisplayName+":"+fieldInfo.FieldName));
+                    }
                 }
             }
             if (fieldInfo.FieldTypeName.Equals("文本"))
@@ -1104,14 +1177,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else
                     fieldInfo.FieldConfig = MakeDeptFieldConfig(false);
             }
-            else if (fieldInfo.FieldTypeName.Equals("单选数据源"))
+            else if (fieldInfo.FieldTypeName.Equals("单选数据源") || fieldInfo.FieldTypeName.Equals("数据源"))
             {
 
                 fieldInfo.ControlType = 18; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName == null || fieldInfo.DataSourceName.Length == 0)
-                    throw (new Exception("数据源配置错误"));
+                    throw (new Exception("数据源配置错误"+fieldInfo.FieldName));
                 Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
-                if (datasourceid != Guid.Empty) {
+                if (datasourceid != Guid.Empty)
+                {
                     fieldInfo.FieldConfig = MakeDataSourceFieldConfig(datasourceid.ToString(), false);
                 }
             }
@@ -1119,7 +1193,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 fieldInfo.ControlType = 18; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName == null || fieldInfo.DataSourceName.Length == 0)
-                    throw (new Exception("数据源配置错误"));
+                    throw (new Exception("数据源配置错误"+fieldInfo.FieldName));
                 Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
                 if (datasourceid != Guid.Empty)
                 {
@@ -1134,18 +1208,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
                 if (tmp.Length != 2) throw (new Exception("引用对象异常2"));
                 fieldInfo.RelField_ControlFieldName = tmp[0];
-                
+
                 fieldInfo.RelField_originFieldName = tmp[1];
                 //检查是否存在
                 bool isExists = false;
                 ExcelEntityColumnInfo foundFieldInfo = null;
-                foreach (ExcelEntityColumnInfo fi in entityInfo.Fields) {
-                    if (fi.DisplayName.Equals(fieldInfo.RelField_ControlFieldName)) {
+                foreach (ExcelEntityColumnInfo fi in entityInfo.Fields)
+                {
+                    if (fi.DisplayName.Equals(fieldInfo.RelField_ControlFieldName))
+                    {
                         if (fi.ControlType != 18)
                         {
                             throw (new Exception("引用控件的控制控件只能是数据源控件"));
                         }
-                        else if (fi.FieldId != Guid.Empty) {
+                        else if (fi.FieldId != Guid.Empty)
+                        {
                             fieldInfo.RelField_ControlFieldId = fi.FieldId.ToString();
                         }
                         foundFieldInfo = fi;
@@ -1154,31 +1231,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                 }
                 #region 处理引用对象的字段fieldInfo.RelField_originFieldName
-                if (foundFieldInfo != null && foundFieldInfo.FieldId != Guid.Empty) {
-                    Dictionary<string,object> tmpField =   this._entityProRepository.GetFieldInfo(foundFieldInfo.FieldId, 1);
-                    if (tmpField != null) {
+                if (foundFieldInfo != null && foundFieldInfo.FieldId != Guid.Empty)
+                {
+
+                    Dictionary<string, object> tmpField = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(foundFieldInfo.FieldId, 1)));
+                    if (tmpField != null)
+                    {
                         Guid datasourceid = GetDataSourceIdFromFieldDict(tmpField);
-                        if (datasourceid != Guid.Empty) {
+                        if (datasourceid != Guid.Empty)
+                        {
                             //找到DATa Source就开始找entityid
                             Dictionary<string, object> datasourcetmp = this._dataSourceRepository.GetDataSourceInfo(datasourceid, 1);
-                            if (datasourcetmp != null && datasourcetmp.ContainsKey("entityid")) {
-                                string tmp_entityid = datasourcetmp["entityid"].ToString() ;
+                            if (datasourcetmp != null && datasourcetmp.ContainsKey("entityid"))
+                            {
+                                string tmp_entityid = datasourcetmp["entityid"].ToString();
                                 fieldInfo.RelField_OriginEntityId = tmp_entityid;
                             }
                         }
                     }
                 }
-                if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0) {
+                if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0)
+                {
                     //通过originentityid 和rel_fieldname 获取fieldInfo.relfield_originfieldid 
-                    Dictionary<string, object> tmpFielddict = this._entityProRepository.GetFieldInfoByFieldName(null,fieldInfo.RelField_originFieldName,Guid.Parse(fieldInfo.RelField_OriginEntityId),1);
-                    if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldid")) {
+                    Dictionary<string, object> tmpFielddict = this._entityProRepository.GetFieldInfoByFieldName(null, fieldInfo.RelField_originFieldName, Guid.Parse(fieldInfo.RelField_OriginEntityId), 1);
+                    if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldid"))
+                    {
                         fieldInfo.RelField_originFieldId = tmpFielddict["fieldid"].ToString();
                     }
                 }
                 fieldInfo.FieldConfig = MakeReferenceFieldConfig(fieldInfo);
                 #endregion
             }
-            else if (fieldInfo.FieldTypeName.Equals("表格")) {
+            else if (fieldInfo.FieldTypeName.Equals("表格"))
+            {
                 fieldInfo.ControlType = 24; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName == null) throw (new Exception("表格用对象异常"));
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
@@ -1187,14 +1272,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 fieldInfo.Table_TitleDisplayName = tmp[1];
                 ExcelEntityInfo tableEntityInfo = null;
                 if (entityInfo.SubEntitys == null) throw (new Exception("表格对应的嵌套实体不存在"));
-                foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
-                    if (subEntityInfo.EntityName.Equals(fieldInfo.Table_EntityName)) {
+                foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
+                {
+                    if (subEntityInfo.EntityName.Equals(fieldInfo.Table_EntityName))
+                    {
                         tableEntityInfo = subEntityInfo;
                         break;
                     }
                 }
-                if (tableEntityInfo == null ) throw (new Exception("表格对应的嵌套实体不存在"));
-                if (tableEntityInfo.EntityId != null && tableEntityInfo.EntityId != Guid.Empty) {
+                if (tableEntityInfo == null) throw (new Exception("表格对应的嵌套实体不存在"));
+                if (tableEntityInfo.EntityId != null && tableEntityInfo.EntityId != Guid.Empty)
+                {
                     fieldInfo.Table_EntityId = tableEntityInfo.EntityId.ToString();
                 }
                 ExcelEntityColumnInfo foundField = null;
@@ -1206,9 +1294,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     }
                 }
-                if (foundField == null ) throw (new Exception("表格对应的嵌套实体不存在"));
+                if (foundField == null) throw (new Exception("表格对应的嵌套实体不存在"));
                 fieldInfo.Table_TitleFieldName = foundField.FieldName;
                 fieldInfo.FieldConfig = MakeTableFieldConfig(fieldInfo);
+            }
+            else {
+                if ((fieldInfo.FieldId == null || fieldInfo.FieldId == Guid.Empty) && !fieldInfo.FieldTypeName.Equals("系统字段")) {
+                    throw (new Exception("字段类型错误:"+fieldInfo.FieldTypeName));
+                }
             }
         }
 
