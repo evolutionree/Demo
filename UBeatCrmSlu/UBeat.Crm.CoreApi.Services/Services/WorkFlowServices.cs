@@ -332,6 +332,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     case (int)DynamicProtocolControlType.Text:
                     case (int)DynamicProtocolControlType.TimeDate:
                     case (int)DynamicProtocolControlType.TimeStamp:
+                    case (int)DynamicProtocolControlType.AreaRegion:
                         result.Add(entityName + "." + field["displayname"].ToString());
                         break;
 
@@ -530,6 +531,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     case (int)DynamicProtocolControlType.SelectSingle:
                     case (int)DynamicProtocolControlType.QuoteControl:
                     case (int)DynamicProtocolControlType.RecManager:
+                    case (int)DynamicProtocolControlType.AreaRegion:
                         if (detailInfo.ContainsKey(fieldname + "_name") && detailInfo[fieldname + "_name"] != null)
                         {
                             dict.Add(key, detailInfo[fieldname + "_name"].ToString());
