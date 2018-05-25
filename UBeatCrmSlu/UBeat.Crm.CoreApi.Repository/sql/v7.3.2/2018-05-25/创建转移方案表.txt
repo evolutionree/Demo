@@ -1,0 +1,11 @@
+CREATE table crm_sys_transfer_scheme
+(
+	transschemeid uuid primary key,
+	transschemename VARCHAR(100),
+	targettransferid uuid ,
+	AssociationTransfer text,
+	Remark text,
+	RecCreator int,
+	RecCreated Date,
+	RecStatus int
+)
