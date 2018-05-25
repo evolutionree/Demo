@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -594,13 +595,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> test() {
             try
             {
-                this._entityExcelImportServices.ImportEntityFromExcel();
 
+                Dictionary<string,object>  listEntity = _entityExcelImportServices.ImportEntityFromExcel();
+                listEntity.Add("allmessage", this._entityExcelImportServices.GenerateTotalMessage(listEntity));
+                return new OutputResult<object>(listEntity);
             }
             catch (Exception ex) {
                 return ResponseError<object>(ex.Message);
             }
-            return new OutputResult<object>("ok");
         }
         [Route("sendtomule")]
 
