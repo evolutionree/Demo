@@ -8,6 +8,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.EntityPro;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using Microsoft.AspNetCore.Authorization;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -19,11 +20,14 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         private readonly EntityProServices _entityProService;
         private readonly WebMenuServices _webMenuService;
+        private readonly EntityExcelImportServices _entityExcelImportServices;
 
-        public EntityProController(EntityProServices entityProService,WebMenuServices webMenuService) : base(entityProService)
+
+        public EntityProController(EntityProServices entityProService,WebMenuServices webMenuService, EntityExcelImportServices entityExcelImportServices) : base(entityProService)
         {
             _entityProService = entityProService;
             _webMenuService = webMenuService;
+            _entityExcelImportServices = entityExcelImportServices;
         }
 
         #region 协议
@@ -623,6 +627,21 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>(datas);
         }
 
+        [HttpPost("importentity")]
+        public OutputResult<object> ImportEntityDefine([FromForm] ImportTemplateModel formData)
+        {
+            try
+            {
+
+                Dictionary<string, object> listEntity = _entityExcelImportServices.ImportEntityFromExcel(formData.Data.OpenReadStream());
+                listEntity.Add("allmessage", this._entityExcelImportServices.GenerateTotalMessage(listEntity));
+                return new OutputResult<object>(listEntity);
+            }
+            catch (Exception ex)
+            {
+                return ResponseError<object>(ex.Message);
+            }
+        }
         #endregion
     }
 }

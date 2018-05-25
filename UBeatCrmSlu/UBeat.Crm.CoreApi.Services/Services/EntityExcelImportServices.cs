@@ -42,27 +42,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
         #region 通过Excel导入实体配置,这里将会是一个大的代码块 
-        public Dictionary<string,object> ImportEntityFromExcel()
-        {
+
+        public Dictionary<string, object> ImportEntityFromExcel(System.IO.Stream r ) {
             Dictionary<string, object> retDict = new Dictionary<string, object>();
             //this._excelServices
             List<ExcelEntityInfo> listEntity = new List<ExcelEntityInfo>();
             retDict.Add("entities", listEntity);
-            System.IO.Stream r = new System.IO.FileStream(@"d:\配置导入示例.xlsx", System.IO.FileMode.Open);
             WorkbookPart workbookPart;
             try
             {
                 var document = SpreadsheetDocument.Open(r, false);
                 workbookPart = document.WorkbookPart;
-                
 
-                foreach (var sheet in workbookPart.Workbook.Descendants<Sheet>()) {
+
+                foreach (var sheet in workbookPart.Workbook.Descendants<Sheet>())
+                {
                     ExcelEntityInfo entityInfo = DealWithOneSheet(workbookPart, sheet);
                     listEntity.Add(entityInfo);
                 }
                 CheckEntityAndField(listEntity);
                 //这里检查一下是否有问题，如果有问题就不继续了
-                if (IsPreCheckOK(listEntity) == false) {
+                if (IsPreCheckOK(listEntity) == false)
+                {
                     retDict.Add("result", -1);
                     return retDict;
                 }
@@ -75,16 +76,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return retDict;
                 }
                 //处理所有的数据源
-                List<ExcelDataSourceInfo> datasourceList=  CreateAllDataSource();
+                List<ExcelDataSourceInfo> datasourceList = CreateAllDataSource();
                 retDict.Add("datasource", datasourceList);
-                if (IsPreCheckOK(datasourceList) == false) {
+                if (IsPreCheckOK(datasourceList) == false)
+                {
                     retDict.Add("result", -1);
                     return retDict;
                 }
                 //处理所有的字典
                 List<ExcelDictTypeInfo> listDictType = CreateAllDictType();
                 retDict.Add("dicttype", listDictType);
-                if (IsPreCheckOK(listDictType) == false) {
+                if (IsPreCheckOK(listDictType) == false)
+                {
                     retDict.Add("result", -1);
                     return retDict;
                 }
@@ -113,47 +116,68 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 throw (ex);
             }
-            finally
+        }
+        public Dictionary<string,object> ImportEntityFromExcel()
+        {
+            
+            System.IO.Stream r = new System.IO.FileStream(@"d:\配置导入示例.xlsx", System.IO.FileMode.Open);
+            try
             {
+                return ImportEntityFromExcel(r);
+            }
+            catch (Exception ex)
+            {
+                throw (ex);
+            }
+            finally {
                 r.Close();
             }
+            
         }
         public string GenerateTotalMessage(Dictionary<string, object> result) {
             StringBuilder sb = new StringBuilder();
             List<ExcelEntityInfo> listEntity = (List<ExcelEntityInfo>)result["entities"];
             foreach (ExcelEntityInfo entityInfo in listEntity) {
                 if (entityInfo.actionResult.ResultCode < 0) {
-                    sb.Append("实体【" + entityInfo.EntityName + "】发生错误:" + entityInfo.actionResult.Message);
+                    sb.AppendLine("实体【" + entityInfo.EntityName + "】发生错误:" + entityInfo.actionResult.Message);
                 }
                 foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
                     if (fieldInfo.actionResult.ResultCode < 0)
-                        sb.Append("实体【" + entityInfo.EntityName + "】的字段【"+fieldInfo.DisplayName+"】发生错误:" + fieldInfo.actionResult.Message);
+                        sb.AppendLine("实体【" + entityInfo.EntityName + "】的字段【"+fieldInfo.DisplayName+"】发生错误:" + fieldInfo.actionResult.Message);
                 }
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
                     if (subEntityInfo.actionResult.ResultCode < 0)
                     {
-                        sb.Append("实体【" + subEntityInfo.EntityName + "】发生错误:" + subEntityInfo.actionResult.Message);
+                        sb.AppendLine("实体【" + subEntityInfo.EntityName + "】发生错误:" + subEntityInfo.actionResult.Message);
                     }
                     foreach (ExcelEntityColumnInfo fieldInfo in subEntityInfo.Fields)
                     {
                         if (fieldInfo.actionResult.ResultCode<0 )
-                            sb.Append("实体【" + subEntityInfo.EntityName + "】的字段【" + fieldInfo.DisplayName + "】发生错误:" + fieldInfo.actionResult.Message);
+                            sb.AppendLine("实体【" + subEntityInfo.EntityName + "】的字段【" + fieldInfo.DisplayName + "】发生错误:" + fieldInfo.actionResult.Message);
                     }
                 }
             }
-            
-            List<ExcelDictTypeInfo> dicttypes = (List<ExcelDictTypeInfo>)result["dicttype"];
-            foreach (ExcelDictTypeInfo info in dicttypes) {
-                if (info.actionResult.ResultCode < 0) {
-                    sb.Append("字典类型【" + info.DictTypeName + "】发生错误：" + info.actionResult.Message);
+            if (result.ContainsKey("dicttype"))
+            {
+
+                List<ExcelDictTypeInfo> dicttypes = (List<ExcelDictTypeInfo>)result["dicttype"];
+                foreach (ExcelDictTypeInfo info in dicttypes)
+                {
+                    if (info.actionResult.ResultCode < 0)
+                    {
+                        sb.AppendLine("字典类型【" + info.DictTypeName + "】发生错误：" + info.actionResult.Message);
+                    }
                 }
             }
-            List<ExcelDataSourceInfo> datasources = (List<ExcelDataSourceInfo>)result["datasource"];
-            foreach (ExcelDataSourceInfo info in datasources)
+            if (result.ContainsKey("datasource"))
             {
-                if (info.actionResult.ResultCode < 0)
+                List<ExcelDataSourceInfo> datasources = (List<ExcelDataSourceInfo>)result["datasource"];
+                foreach (ExcelDataSourceInfo info in datasources)
                 {
-                    sb.Append("字典类型【" + info.DataSourceName + "】发生错误：" + info.actionResult.Message);
+                    if (info.actionResult.ResultCode < 0)
+                    {
+                        sb.AppendLine("字典类型【" + info.DataSourceName + "】发生错误：" + info.actionResult.Message);
+                    }
                 }
             }
             return sb.ToString();
@@ -1279,6 +1303,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 ResultCode = -2,
                                 Message = "字段的显示名称或者字段名称重复:" + fieldInfo.DisplayName + ":" + fieldInfo.FieldName
                             };
+                            return;
                         }
                     }
                 }
@@ -1312,6 +1337,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 ResultCode = -2,
                                 Message = "字典值没有定义" + fieldInfo.DefaultValue
                             };
+                            return;
                         }
                         fieldInfo.FieldConfig = MakeDictFieldConfig(dictType, defaultid);
                     }
@@ -1354,6 +1380,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             ResultCode = -2,
                             Message = "默认值转换失败" + fieldInfo.DefaultValue
                         };
+                        return;
                     }
                     fieldInfo.FieldConfig = MakeDecimalFieldConfig(true, tmp);
                 }
@@ -1376,6 +1403,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             ResultCode = -2,
                             Message = "默认值转换失败" + fieldInfo.DefaultValue
                         };
+                        return;
                     }
                     fieldInfo.FieldConfig = MakeIntFieldConfig(true, tmp);
                 }
@@ -1495,6 +1523,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "数据源配置错误" + fieldInfo.FieldName
                     };
+                    return;
                 }
                 Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
                 if (datasourceid != Guid.Empty)
@@ -1513,6 +1542,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "数据源配置错误" + fieldInfo.FieldName
                     };
+                    return;
                 }
                 Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
                 if (datasourceid != Guid.Empty)
@@ -1531,6 +1561,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "引用对象异常"
                     };
+                    return;
                 }
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
                 if (tmp.Length != 2) {
@@ -1540,6 +1571,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "引用对象异常:" + fieldInfo.DataSourceName
                     };
+                    return;
                 }
                 fieldInfo.RelField_ControlFieldName = tmp[0];
 
@@ -1559,6 +1591,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 ResultCode = -2,
                                 Message = "引用控件的控制控件只能是数据源控件"
                             };
+                            return ;
                         }
                         else if (fi.FieldId != Guid.Empty)
                         {
@@ -1611,6 +1644,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "表格用对象异常"
                     };
+                    return;
                 } 
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
                 if (tmp.Length != 2) {
@@ -1620,6 +1654,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "表格用对象异常："+fieldInfo.DataSourceName
                     };
+                    return;
                 }
                 fieldInfo.Table_EntityName = tmp[0];
                 fieldInfo.Table_TitleDisplayName = tmp[1];
@@ -1631,6 +1666,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "表格对应的嵌套实体不存在：" + fieldInfo.DataSourceName
                     };
+                    return;
                 }
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
                 {
@@ -1647,6 +1683,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "表格对应的嵌套实体不存在：" + fieldInfo.Table_EntityName
                     };
+                    return;
                 }
                 if (tableEntityInfo.EntityId != null && tableEntityInfo.EntityId != Guid.Empty)
                 {
@@ -1668,6 +1705,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "表格对应的嵌套实体的字段不存在：" + fieldInfo.Table_TitleFieldName
                     };
+                    return;
                 }
                 fieldInfo.Table_TitleFieldName = foundField.FieldName;
                 fieldInfo.FieldConfig = MakeTableFieldConfig(fieldInfo);
@@ -1680,6 +1718,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ResultCode = -2,
                         Message = "字段类型错误:" + fieldInfo.FieldTypeName
                     };
+                    return;
                 }
             }
         }
