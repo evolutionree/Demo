@@ -362,6 +362,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
 
         }
+        [HttpPost("queryvaluefornewdata")]
+        public OutputResult<object> QueryValueForReltabAddNewData([FromBody] RelTabQueryDataSourceModel paramInfo ) {
+            if (paramInfo == null || paramInfo.EntityId == Guid.Empty || paramInfo.FieldId == Guid.Empty || paramInfo.RecId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            return this._dynamicEntityServices.QueryValueForRelTabAddNew(paramInfo, UserId);
+        }
 
         [HttpPost]
         [Route("editreltab")]

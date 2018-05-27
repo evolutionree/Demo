@@ -433,6 +433,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
             });
         }
 
+        public OutputResult<object> QueryValueForRelTabAddNew(RelTabQueryDataSourceModel paramInfo, int userId)
+        {
+            dynamic tmp = this._entityProRepository.GetFieldInfo(paramInfo.FieldId, userId);
+            Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(tmp));
+            if (fieldInfo == null) {
+                throw (new Exception("字段信息不存在"));
+            }
+            int ControlType = int.Parse(fieldInfo["controltype"].ToString());
+            if (ControlType != 18) {
+                throw (new Exception("目标字段必须是数据源字段"));
+            }
+            Dictionary<string, object> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(fieldInfo["fieldConfig"]));
+            Dictionary<string, object> DataSource = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(fieldConfig["dataSource"]));
+            string sourceId = DataSource["sourceId"].ToString();
+            //this._dataSourceRepository.DynamicDataSrcQuery
+            return null;
+        }
+
         public void SavePersonalWebListColumnsSetting(SaveWebListColumnsForPersonalParamInfo paramInfo, int userId)
         {
             DbTransaction tran = null;
