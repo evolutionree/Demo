@@ -71,5 +71,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var data = _transferSchemeRepository.TransferSchemeList(model.RecStatus, model.SearchName, userNumber);
             return new OutputResult<object>(data);
         }
+
     }
 }
