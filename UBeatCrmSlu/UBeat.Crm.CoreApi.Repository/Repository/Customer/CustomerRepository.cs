@@ -286,5 +286,22 @@ WHERE (wc.auditstatus=0 OR wc.auditstatus=3 ) AND cr.relrecid =ANY (@recids)
             }
             return true;
         }
+
+        public string getCommonIdByCustId(DbTransaction tran, string custid, int userId)
+        {
+            try
+            {
+                string strSQL = "select commonid from crm_sys_custcommon_customer_relate where custid::text =@custid  limit 1 ";
+                DbParameter[] param = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@custid",custid)
+                };
+                Dictionary<string, object> tmp = ExecuteQuery<Dictionary<string, object>>(strSQL, param, tran).FirstOrDefault();
+                if (tmp != null && tmp.ContainsKey("commonid") && tmp["commonid"] != null) return tmp["commonid"].ToString();
+                return null;
+            }
+            catch (Exception ex) {
+                return null;
+            }
+        }
     }
 }

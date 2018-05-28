@@ -50,5 +50,6 @@ namespace UBeat.Crm.CoreApi.IRepository
         int GetDictValueByName(int dictype,string dictValueName);
 
         Dictionary<string, object> GetDataSourceByName(DbTransaction tran, string datasourcename, int userId);
+        IDictionary<string, object> DynamicDataSrcQueryDetail(string sourceId, Guid recId, int userId);
     }
 }

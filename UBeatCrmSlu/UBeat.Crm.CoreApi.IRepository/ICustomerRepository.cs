@@ -45,5 +45,16 @@ namespace UBeat.Crm.CoreApi.IRepository
         string rewriteSaleClue(DbTransaction transaction, string recid, int userNum);
         bool checkNeedAddContact(DbTransaction transaction, string saleclueid, string custid);
 
+
+        /// <summary>
+        ///  根据客户id获取客户基础资料id
+        ///  
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="custid"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        string getCommonIdByCustId(DbTransaction tran, string custid, int userId);
+
     }
 }

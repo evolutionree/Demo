@@ -19,6 +19,7 @@ using UBeat.Crm.CoreApi.DomainModel.Vocation;
 using UBeat.Crm.CoreApi.DomainModel.WorkFlow;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
+using UBeat.Crm.CoreApi.Services.Models.DataSource;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Message;
 using UBeat.Crm.CoreApi.Services.Models.WorkFlow;
@@ -35,6 +36,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IAccountRepository _accountRepository;
         private readonly IDataSourceRepository _dataSourceRepository;
+        private readonly ICustomerRepository _customerRepository;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService;
@@ -44,7 +46,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository,
                 IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
-                IDataSourceRepository dataSourceRepository)
+                IDataSourceRepository dataSourceRepository,
+                ICustomerRepository customerRepository)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
             _entityProRepository = entityProRepository;
@@ -53,6 +56,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dynamicRepository = dynamicRepository;
             _accountRepository = accountRepository;
             _dataSourceRepository = dataSourceRepository;
+            _customerRepository = customerRepository;
             //_workflowService = workflowService;
         }
 
@@ -436,6 +440,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> QueryValueForRelTabAddNew(RelTabQueryDataSourceModel paramInfo, int userId)
         {
             dynamic tmp = this._entityProRepository.GetFieldInfo(paramInfo.FieldId, userId);
+            string dstEntityid = "";
             Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(tmp));
             if (fieldInfo == null) {
                 throw (new Exception("字段信息不存在"));
@@ -444,10 +449,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (ControlType != 18) {
                 throw (new Exception("目标字段必须是数据源字段"));
             }
-            Dictionary<string, object> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(fieldInfo["fieldConfig"]));
+
+            Dictionary<string, object> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string, object>>((string )fieldInfo["fieldconfig"]);
             Dictionary<string, object> DataSource = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(fieldConfig["dataSource"]));
+            
             string sourceId = DataSource["sourceId"].ToString();
-            //this._dataSourceRepository.DynamicDataSrcQuery
+            dynamic tmpsourceInfo = this._dataSourceRepository.GetDataSourceInfo(Guid.Parse(sourceId), userId);
+            Dictionary<string, object> sourceInfo = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(tmpsourceInfo));
+
+            string recid = paramInfo.RecId.ToString();
+            dstEntityid = sourceInfo["entityid"].ToString();
+            if (!dstEntityid.Equals(paramInfo.EntityId.ToString())) {
+                //这种情况主要是客户和客户基础资料的关系
+                if (dstEntityid.Equals("ac051b46-7a20-4848-9072-3b108f1de9b0")) {
+                    //这种情况要重新获取recid
+                    string relrecid = this._customerRepository.getCommonIdByCustId(null, recid, userId);
+                    if (relrecid != null) recid = relrecid;
+                }
+            }
+
+            IDictionary<string, object> result = this._dataSourceRepository.DynamicDataSrcQueryDetail(sourceId, paramInfo.RecId, userId);
+
             return null;
         }
 

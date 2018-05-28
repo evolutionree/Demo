@@ -366,5 +366,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 return null;
             }
         }
+
+        public IDictionary<string, object> DynamicDataSrcQueryDetail(string sourceId, Guid recId, int userId)
+        {
+            var procName = @"
+                SELECT    crm_func_business_ds_detail(@datasrckey,@recid, @userno)
+            ";
+
+            var dataNames = new List<string>();
+            var param = new DynamicParameters();
+            param.Add("datasrckey", sourceId);
+            param.Add("recid", recId.ToString());
+            param.Add("userno", userId);
+            Dictionary<string, List<IDictionary<string, object>>> result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
+            List<IDictionary<string, object>> data = result["data"];
+            if (data.Count > 0)
+                return data[0];
+            return null;
+        }
     }
 }
