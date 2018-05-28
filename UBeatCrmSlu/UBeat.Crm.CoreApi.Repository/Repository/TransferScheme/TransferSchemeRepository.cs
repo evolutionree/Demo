@@ -103,12 +103,13 @@ WHERE	transschemeid =@transschemeid";
 
         public List<Dictionary<string, object>> TransferSchemeList(int recStatus, string searchName, int userNumber)
         {
-            string sql = @"select  * from crm_sys_transfer_scheme where recStatus = @recStatus";
+            string sql = @"select a.transschemeid,a.transschemename,a.targettransferid,b.entityname,a.associationtransfer,a.remark
+  from crm_sys_transfer_scheme as a INNER JOIN  crm_sys_entity as b on a.targettransferid = b.entityid where a.recStatus = @recStatus";
             if (!string.IsNullOrWhiteSpace(searchName))
             {
                 sql += string.Format(" and transschemename like '%{0}%'", searchName);
             }
-            sql += " order by reccreated desc ";
+            sql += " order by a.reccreated desc ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("recStatus",recStatus)
