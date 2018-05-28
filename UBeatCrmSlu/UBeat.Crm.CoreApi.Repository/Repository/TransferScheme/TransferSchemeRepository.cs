@@ -103,7 +103,7 @@ WHERE	transschemeid =@transschemeid";
 
         public List<Dictionary<string, object>> TransferSchemeList(int recStatus, string searchName, int userNumber)
         {
-            string sql = @"select a.transschemeid,a.transschemename,a.targettransferid,b.entityname,a.associationtransfer,a.remark
+            string sql = @"select a.transschemeid,a.transschemename,a.targettransferid,b.entityname,a.associationtransfer,a.remark,a.recstatus
   from crm_sys_transfer_scheme as a INNER JOIN  crm_sys_entity as b on a.targettransferid = b.entityid where a.recStatus = @recStatus";
             if (!string.IsNullOrWhiteSpace(searchName))
             {
