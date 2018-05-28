@@ -29,6 +29,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 TransSchemeId = data.TransSchemeId,
                 TransSchemeName = data.TransSchemeName,
+                TargetTransferId = data.TargetTransferId,
                 AssociationTransfer = data.AssociationTransfer,
                 RecCreator = userNumber,
                 RecStatus = 1,

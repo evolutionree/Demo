@@ -30,7 +30,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.TransferScheme
                 new NpgsqlParameter("remark",data.Remark),
                 new NpgsqlParameter("reccreator",data.RecCreator),
                 new NpgsqlParameter("reccreated",data.RecCreated),
-                new NpgsqlParameter("reccreator",data.RecStatus)
+                new NpgsqlParameter("recstatus",data.RecStatus)
             };
             return ExecuteNonQuery(sql, param, tran) > 0;
         }
@@ -62,7 +62,7 @@ WHERE	transschemeid =@transschemeid";
                 new NpgsqlParameter("remark",data.Remark),
                 new NpgsqlParameter("reccreator",data.RecCreator),
                 new NpgsqlParameter("reccreated",data.RecCreated),
-                new NpgsqlParameter("reccreator",data.RecStatus)
+                new NpgsqlParameter("recstatus",data.RecStatus)
             };
             return ExecuteNonQuery(sql, param, tran) > 0;
         }

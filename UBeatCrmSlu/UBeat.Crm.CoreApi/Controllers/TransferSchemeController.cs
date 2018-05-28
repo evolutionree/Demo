@@ -8,6 +8,7 @@ using UBeat.Crm.CoreApi.Services.Services;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
+    [Route("api/[controller]")]
     public class TransferSchemeController : BaseController
     {
         private readonly TransferSchemeServices _transferScheme;
@@ -21,6 +22,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
+        [HttpPost("savetransferscheme")]
         public OutputResult<object> SaveTransferScheme([FromBody]TransferSchemeParam body)
         {
             if (body == null) return ResponseError<object>("参数格式有误");
@@ -35,6 +37,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
+        [HttpPost("gettransferscheme")]
         public OutputResult<TransferSchemeModel> GetTransferScheme([FromBody]GetTransParam body)
         {
             if (body == null || body.TransSchemeId == Guid.Empty) return ResponseError<TransferSchemeModel>("参数格式有误");
@@ -46,6 +49,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
+        [HttpPost]
+        [Route("setstatus")]
         public OutputResult<object> SetTransferSchemeStatus([FromBody] TransStatus body)
         {
             if (body == null) return ResponseError<object>("参数格式有误");
