@@ -28,7 +28,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (body == null) return ResponseError<object>("参数格式有误");
             if (string.IsNullOrWhiteSpace(body.TransSchemeName)) return ResponseError<object>("请填写转移方案名称");
             if (body.TargetTransferId == null) return ResponseError<object>("请选择目标对象");
-            if (string.IsNullOrEmpty(body.AssociationTransfer)) return ResponseError<object>("请选择关联转移");
+           // if (string.IsNullOrEmpty(body.AssociationTransfer)) return ResponseError<object>("请选择关联转移");
             return _transferScheme.SaveTransferScheme(body, UserId);
         }
 
@@ -68,11 +68,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _transferScheme.SetTransferSchemeStatus(list, body.Status, UserId);
         }
 
+        /// <summary>
+        /// 方案转移列表
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
         [HttpPost("transferschemelist")]
         public OutputResult<object> TransferSchemeList([FromBody] ListModel body)
         {
             if (body == null) return ResponseError<object>("参数格式错误");
             return _transferScheme.TransferSchemeList(body, UserId);
         }
+
     }
 }
