@@ -40,34 +40,65 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _entityProServices = entityProServices;
             _dataSourceServices = dataSourceServices;
         }
-        #region 通过Excel导入实体配置,这里将会是一个大的代码块 
-        public void ImportEntityFromExcel()
-        {
-            //this._excelServices
 
-            System.IO.Stream r = new System.IO.FileStream(@"d:\配置导入示例.xlsx", System.IO.FileMode.Open);
+        #region 通过Excel导入实体配置,这里将会是一个大的代码块 
+
+        public Dictionary<string, object> ImportEntityFromExcel(System.IO.Stream r ) {
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            //this._excelServices
+            List<ExcelEntityInfo> listEntity = new List<ExcelEntityInfo>();
+            retDict.Add("entities", listEntity);
             WorkbookPart workbookPart;
             try
             {
                 var document = SpreadsheetDocument.Open(r, false);
                 workbookPart = document.WorkbookPart;
-                List<ExcelEntityInfo> listEntity = new List<ExcelEntityInfo>();
-                
-                foreach (var sheet in workbookPart.Workbook.Descendants<Sheet>()) {
 
+
+                foreach (var sheet in workbookPart.Workbook.Descendants<Sheet>())
+                {
                     ExcelEntityInfo entityInfo = DealWithOneSheet(workbookPart, sheet);
                     listEntity.Add(entityInfo);
                 }
                 CheckEntityAndField(listEntity);
+                //这里检查一下是否有问题，如果有问题就不继续了
+                if (IsPreCheckOK(listEntity) == false)
+                {
+                    retDict.Add("result", -1);
+                    return retDict;
+                }
+
                 //先建立所有相关表的实体
                 CreateAllMainEntityInfo(listEntity);
+                if (IsPreCheckOK(listEntity) == false)
+                {
+                    retDict.Add("result", -1);
+                    return retDict;
+                }
                 //处理所有的数据源
-                CreateAllDataSource();
+                List<ExcelDataSourceInfo> datasourceList = CreateAllDataSource();
+                retDict.Add("datasource", datasourceList);
+                if (IsPreCheckOK(datasourceList) == false)
+                {
+                    retDict.Add("result", -1);
+                    return retDict;
+                }
                 //处理所有的字典
-                CreateAllDictType();
+                List<ExcelDictTypeInfo> listDictType = CreateAllDictType();
+                retDict.Add("dicttype", listDictType);
+                if (IsPreCheckOK(listDictType) == false)
+                {
+                    retDict.Add("result", -1);
+                    return retDict;
+                }
                 CreateAllDict();
                 //处理所有的字段
                 CreateAllFieldInfo(listEntity);
+                if (IsPreCheckOK(listEntity) == false)
+                {
+                    retDict.Add("result", -1);
+                    return retDict;
+                }
                 UpdateReferenceAndTableFieldInfo(listEntity);
                 //创建分类
                 CreateAllCatelog(listEntity);
@@ -77,16 +108,114 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 SetWebListColumnView(listEntity);
                 //处理查重条件
                 SetCheckSameCondition(listEntity);
+                retDict.Add("result", 0);
+                return retDict;
 
             }
             catch (Exception ex)
             {
                 throw (ex);
             }
-            finally
+        }
+        public Dictionary<string,object> ImportEntityFromExcel()
+        {
+            
+            System.IO.Stream r = new System.IO.FileStream(@"d:\配置导入示例.xlsx", System.IO.FileMode.Open);
+            try
             {
+                return ImportEntityFromExcel(r);
+            }
+            catch (Exception ex)
+            {
+                throw (ex);
+            }
+            finally {
                 r.Close();
             }
+            
+        }
+        public string GenerateTotalMessage(Dictionary<string, object> result) {
+            StringBuilder sb = new StringBuilder();
+            List<ExcelEntityInfo> listEntity = (List<ExcelEntityInfo>)result["entities"];
+            foreach (ExcelEntityInfo entityInfo in listEntity) {
+                if (entityInfo.actionResult.ResultCode < 0) {
+                    sb.AppendLine("实体【" + entityInfo.EntityName + "】发生错误:" + entityInfo.actionResult.Message);
+                }
+                foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
+                    if (fieldInfo.actionResult.ResultCode < 0)
+                        sb.AppendLine("实体【" + entityInfo.EntityName + "】的字段【"+fieldInfo.DisplayName+"】发生错误:" + fieldInfo.actionResult.Message);
+                }
+                foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
+                    if (subEntityInfo.actionResult.ResultCode < 0)
+                    {
+                        sb.AppendLine("实体【" + subEntityInfo.EntityName + "】发生错误:" + subEntityInfo.actionResult.Message);
+                    }
+                    foreach (ExcelEntityColumnInfo fieldInfo in subEntityInfo.Fields)
+                    {
+                        if (fieldInfo.actionResult.ResultCode<0 )
+                            sb.AppendLine("实体【" + subEntityInfo.EntityName + "】的字段【" + fieldInfo.DisplayName + "】发生错误:" + fieldInfo.actionResult.Message);
+                    }
+                }
+            }
+            if (result.ContainsKey("dicttype"))
+            {
+
+                List<ExcelDictTypeInfo> dicttypes = (List<ExcelDictTypeInfo>)result["dicttype"];
+                foreach (ExcelDictTypeInfo info in dicttypes)
+                {
+                    if (info.actionResult.ResultCode < 0)
+                    {
+                        sb.AppendLine("字典类型【" + info.DictTypeName + "】发生错误：" + info.actionResult.Message);
+                    }
+                }
+            }
+            if (result.ContainsKey("datasource"))
+            {
+                List<ExcelDataSourceInfo> datasources = (List<ExcelDataSourceInfo>)result["datasource"];
+                foreach (ExcelDataSourceInfo info in datasources)
+                {
+                    if (info.actionResult.ResultCode < 0)
+                    {
+                        sb.AppendLine("字典类型【" + info.DataSourceName + "】发生错误：" + info.actionResult.Message);
+                    }
+                }
+            }
+            return sb.ToString();
+        }
+
+
+        private bool IsPreCheckOK(List<ExcelDictTypeInfo> listDictType)
+        {
+            foreach (ExcelDictTypeInfo dictype in listDictType)
+            {
+                if (dictype.actionResult.ResultCode < 0) return false;
+            }
+            return true;
+        }
+        private bool IsPreCheckOK(List<ExcelDataSourceInfo> listDataSource)
+        {
+            foreach (ExcelDataSourceInfo datasourceInfo in listDataSource)
+            {
+                if (datasourceInfo.actionResult.ResultCode < 0) return false;
+            }
+            return true;
+        }
+        private bool IsPreCheckOK(List<ExcelEntityInfo> listEntity) {
+            foreach (ExcelEntityInfo entityInfo in listEntity) {
+                if (PreCheckEntity(entityInfo) == false) return false; 
+            }
+            return true;
+        }
+        private bool PreCheckEntity(ExcelEntityInfo entityInfo) {
+            if (entityInfo.actionResult.ResultCode < 0) return false;
+            foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
+                if (fieldInfo.actionResult.ResultCode < 0) return false;
+            }
+            if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0)
+            {
+                return IsPreCheckOK(entityInfo.SubEntitys);
+            }
+            return true;
         }
 
         private void SetCheckSameCondition(List<ExcelEntityInfo> listEntry) {
@@ -608,7 +737,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
         }
-        private void CreateAllDictType() {
+        private List<ExcelDictTypeInfo>  CreateAllDictType() {
+            List<ExcelDictTypeInfo> ret = new List<ExcelDictTypeInfo>();
             foreach (string dictypename in DictNeedCreate.Keys) {
                 DictionaryTypeModel model = new DictionaryTypeModel()
                 {
@@ -616,22 +746,51 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     RecStatus = 1,
                     DicRemark = "导入系统自动创建"
                 };
-                this._dataSourceServices.SaveFieldDicType(model, 1);
+                ExcelDictTypeInfo dictTypeInfo = new ExcelDictTypeInfo();
+                dictTypeInfo.DictTypeName = dictypename;
+                ret.Add(dictTypeInfo);
+                OutputResult<object>  r =  this._dataSourceServices.SaveFieldDicType(model, 1);
+                if (r.Status != 0) {
+                    dictTypeInfo.actionResult = new ActionResult()
+                    {
+                        ActionType  = 1,
+                        ResultCode = -2,
+                        Message = "创建字典类型失败"
+                    };
+                    continue;
+                }
 
                 Dictionary<string, object>  tmp = this._dataSourceRepository.GetDictTypeByName(dictypename);
                 if (tmp == null || tmp.Count == 0) {
-                    throw (new Exception("创建字典类型失败"));
+                    dictTypeInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 1,
+                        ResultCode = -2,
+                        Message = "创建字典类型失败"
+                    };
+                    continue;
                 }
                 int dictypeid = int.Parse(tmp["dictypeid"].ToString());
                 DictInDb.Add(dictypename, dictypeid);
+                dictTypeInfo.actionResult = new ActionResult()
+                {
+                    ActionType = 1,
+                    ResultCode =1,
+                    Message = "创建字典成功"
+                };
             }
+            return ret;
         }
 
-        private void CreateAllDataSource() {
+        private List<ExcelDataSourceInfo> CreateAllDataSource() {
+            List<ExcelDataSourceInfo> retList = new List<ExcelDataSourceInfo>();
             foreach (string datasourcename in DataSourceNeedCreate.Keys) {
                 //根据名称创建数据源
                 Guid EntityId = Guid.Empty;
                 string entitytable = "";
+                ExcelDataSourceInfo datasourceInfo = new ExcelDataSourceInfo();
+                retList.Add(datasourceInfo);
+                datasourceInfo.DataSourceName = datasourcename;
                 if (dictEntity.ContainsKey(datasourcename))
                 {
                     ExcelEntityInfo entityInfo = dictEntity[datasourcename];
@@ -641,7 +800,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else {
                     Dictionary<string, object> entityInfo = this._entityProRepository.GetEntityInfoByEntityName(null, datasourcename, 1);
                     if (entityInfo == null) {
-                        throw (new Exception("创建数据源时无法查找实体信息"));
+                        datasourceInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 1,
+                            ResultCode = -3,
+                            Message = "创建数据源时无法查找实体信息"
+                        };
+                        continue;//继续尝试下一个，争取一次获得更多的错误信息
                     }
                     EntityId = Guid.Parse(entityInfo["entityid"].ToString());
                     entitytable = entityInfo["entitytable"].ToString();
@@ -657,9 +822,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 };
                 OperateResult result =  this._dataSourceRepository.InsertSaveDataSource(mapper, 1);
                 if (result.Flag!=1) {
-                    throw (new Exception("创建数据源失败：" + result.Msg));
+                    datasourceInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 1,
+                        ResultCode = -3,
+                        Message = "创建数据源失败：" + result.Msg
+                    };
+                    continue;//继续尝试下一个，争取一次获得更多的错误信息
                 }
                 Guid DataSoruceId = Guid.Parse(result.Id);
+                datasourceInfo.actionResult = new ActionResult()
+                {
+                    ActionType = 1,
+                    ResultCode = 1,
+                    Message = result.Id
+                };
+                datasourceInfo.DataSourceId = result.Id;
                 string RuleSql = string.Format("Select recid as id ,recname as name from {0} where ",entitytable)+" {queryData}";
 
                 InsertDataSourceConfigMapper detailMapper = new InsertDataSourceConfigMapper() {
@@ -673,10 +851,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 result = this._dataSourceRepository.InsertSaveDataSourceDetail(detailMapper, 1);
                 if (result.Flag !=1) {
-                    throw (new Exception("创建数据源失败:" + result.Msg));
+                    datasourceInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 1,
+                        ResultCode = -3,
+                        Message = "更新数据源失败：" + result.Msg
+                    };
+                    continue;//继续尝试下一个，争取一次获得更多的错误信息
                 }
                 DataSourceInDb.Add(datasourcename, this._dataSourceRepository.GetDataSourceByName(null, datasourcename, 1));
             }
+            return retList;
 
         }
         private void CreateAllFieldInfo(List<ExcelEntityInfo> listEntities)  {
@@ -687,17 +872,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         private void CreateOneEntityFieldInfo(ExcelEntityInfo entityInfo) {
             foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
-                
+
                 //检查fieldconfig
+                fieldInfo.actionResult = new ActionResult() { ResultCode = 0 };//重置状态，避免前面错误导致后面无法更新
                 checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
                 if (fieldInfo.FieldTypeName.Equals("系统字段"))
                 {
                     if (fieldInfo.FieldId == null && fieldInfo.FieldId == Guid.Empty) {
-                        throw (new Exception("系统字段必须是存在的字段"));
+                        fieldInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 0,
+                            ResultCode = -3,
+                            Message = "系统字段必须是存在的字段"
+                        };
+                        continue;
                     }
                     fieldInfo.IsUpdate = true;
                 }
-
+                if (fieldInfo.actionResult.ResultCode < 0) {
+                    continue;//本字段已经错了，需要重新处理
+                }
                 //新建字段
                 EntityFieldProModel model = new EntityFieldProModel()
                 {
@@ -713,15 +907,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (fieldInfo.IsUpdate)
                 {
                     this._entityProRepository.UpdateEntityFieldName(null,fieldInfo.FieldId, fieldInfo.DisplayName, 1);
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 1,
+                        ResultCode = 1,
+                        Message = "更新成功 "
+                    };
                 }
                 else {
 
                     OutputResult<object> result = this._entityProServices.InsertEntityField(model, 1);
                     if (result.Status != 0)
                     {
-                        throw (new Exception(result.Message));
+                        fieldInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 2,
+                            ResultCode = -3,
+                            Message = "新增字段失败:"+result.Message
+                        };
                     }
-                    fieldInfo.FieldId = Guid.Parse(result.DataBody.ToString());
+                    else
+                    {
+                        fieldInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 2,
+                            ResultCode = 1,
+                            Message = "新增字段成功 "
+                        };
+                        fieldInfo.FieldId = Guid.Parse(result.DataBody.ToString());
+                    }
                 }
             }
             if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
@@ -761,6 +975,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         else {
                             //不是本次创建的额，实体已经在库中了，而且已经转化为entityid,所以可以直接使用了
+                            entityInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 1,
+                                ResultCode = 1,
+                                Message = "无需更新"
+                            };
                         }
                     }
 
@@ -803,9 +1023,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (result.Status == 0)
                 {
                     entityInfo.EntityId = Guid.Parse(result.DataBody.ToString());
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 2,
+                        ResultCode = 1,
+                        Message = "新增成功，guid:="+entityInfo.EntityId.ToString()
+                    };
                 }
                 else {
-                    throw (new Exception(result.Message));
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 2,
+                        ResultCode = -3,
+                        Message = "新增失败:"+ result.Message
+                    };
                 }
             }
 
@@ -832,13 +1063,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
              */
             if (!(entityInfo.EntityTypeName.StartsWith("独立") || entityInfo.EntityTypeName.StartsWith("简单") || entityInfo.EntityTypeName.StartsWith("动态")))
             {
-                throw (new Exception("检查失败，实体【" + entityInfo.EntityName + "】必须是独立、简单或者动态实体"));
+                entityInfo.actionResult = new ActionResult()
+                {
+                    ActionType = 0,
+                    ResultCode = -2,
+                    Message = "检查失败，实体【" + entityInfo.EntityName + "】必须是独立、简单或者动态实体"
+                };
             }
             if (entityInfo.EntityTypeName.StartsWith("简单") && entityInfo.RelEntityName.Length > 0) {
                 if (dictEntity.ContainsKey(entityInfo.RelEntityName)) {
                     ExcelEntityInfo relEntityInfo = dictEntity[entityInfo.RelEntityName];
                     if (!(relEntityInfo.EntityTypeName.StartsWith("独立") || relEntityInfo.EntityName.StartsWith("简单"))) {
-                        throw (new Exception("简单实体只能关联简单实体或者独立实体"));
+                        entityInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 0,
+                            ResultCode = -2,
+                            Message = "简单实体只能关联简单实体或者独立实体"
+                        };
                     }
                 }
                 else {
@@ -848,32 +1089,63 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         int modeltype = int.Parse(searchEntityInfo["modeltype"].ToString());
                         if (!(modeltype == 0 || modeltype == 2)) {
-                            throw (new Exception("简单实体只能关联简单实体或者独立实体"));
+                            entityInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "简单实体只能关联简单实体或者独立实体"
+                            };
                         }
                         entityInfo.RelEntityId = Guid.Parse(searchEntityInfo["entityid"].ToString());
                     }
                     else {
-                        throw (new Exception("无法找到实体定义" + entityInfo.RelEntityName));
+                        
+                             entityInfo.actionResult = new ActionResult()
+                             {
+                                 ActionType = 0,
+                                 ResultCode = -2,
+                                 Message = "简单实体只能关联简单实体或者独立实体"
+                             };
                     }
                 }
             } else if (entityInfo.EntityTypeName.StartsWith("独立") && entityInfo.RelEntityName.Length > 0) {
-                throw (new Exception("独立实体不能有关联实体"));
+                entityInfo.actionResult = new ActionResult()
+                {
+                    ActionType = 0,
+                    ResultCode = -2,
+                    Message = "独立实体不能有关联实体"
+                };
             } else if (entityInfo.EntityTypeName.StartsWith("动态")) {
                 if (entityInfo.RelEntityName.Length == 0 || entityInfo.RelFieldName.Length == 0) {
-                    throw (new Exception("动态实体必须关联实体"));
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "动态实体必须关联实体"
+                    };
                 }
                 if (dictEntity.ContainsKey(entityInfo.RelEntityName))
                 {
                     ExcelEntityInfo relEntityInfo = dictEntity[entityInfo.RelEntityName];
                     if (!(relEntityInfo.EntityTypeName.StartsWith("独立") || relEntityInfo.EntityName.StartsWith("简单")))
                     {
-                        throw (new Exception("简单实体只能关联简单实体或者独立实体"));
+                        entityInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 0,
+                            ResultCode = -2,
+                            Message = "简单实体只能关联简单实体或者独立实体"
+                        };
                     }
                     //需要检查是否存在字段
                     bool isFoundField = false;
                     foreach (ExcelEntityColumnInfo fieldInfo in relEntityInfo.Fields) {
                         if (!(fieldInfo.DisplayName.Equals(entityInfo.RelFieldName) || fieldInfo.FieldName.Equals(entityInfo.RelFieldName))) {
-                            throw (new Exception("实体定义中，没有找到关联的字段信息"));
+                            entityInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "实体定义中，没有找到关联的字段信息"
+                            };
                         }
                     }
                 }
@@ -886,17 +1158,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         int modeltype = int.Parse(searchEntityInfo["modeltype"].ToString());
                         if (!(modeltype == 0 || modeltype == 2))
                         {
-                            throw (new Exception("简单实体只能关联简单实体或者独立实体"));
+                            entityInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "简单实体只能关联简单实体或者独立实体"
+                            };
                         }
                         entityInfo.RelEntityId = Guid.Parse(searchEntityInfo["entityid"].ToString());
                     }
                     else
                     {
-                        throw (new Exception("无法找到实体定义" + entityInfo.RelEntityName));
+                        entityInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 0,
+                            ResultCode = -2,
+                            Message = "无法找到实体定义" + entityInfo.RelEntityName
+                        };
                     }
                     Dictionary<string, object> searchFieldInfo = this._entityProRepository.GetFieldInfoByFieldName(null, entityInfo.RelFieldName, entityInfo.RelEntityId, 1);
                     if (searchFieldInfo == null) {
-                        throw (new Exception("实体定义中，没有找到关联的字段信息"));
+                        entityInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 0,
+                            ResultCode = -2,
+                            Message = "实体定义中，没有找到关联的字段信息"
+                        };
                     }
                     entityInfo.RelEntityId = Guid.Parse(searchFieldInfo["fieldid"].ToString());
                 }
@@ -915,7 +1202,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 oldEntityInDb = this._entityProRepository.GetEntityInfoByEntityName(null, entityInfo.EntityName, 1);
                 if (oldEntityInDb != null)
                 {
-                    throw (new Exception("实体【" + entityInfo.EntityName + "】已经存在"));
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "实体【" + entityInfo.EntityName + "】已经存在"
+                    };
                 }
             }
             
@@ -923,7 +1215,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
                     if (subEntityInfo.TypeNameDict.Count > 1) {
                         if (subEntityInfo.TypeNameDict.Count != entityInfo.TypeNameDict.Count) {
-                            throw (new Exception("嵌套实体的分类定义必须跟主实体一致"));
+                            subEntityInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "嵌套实体的分类定义必须跟主实体一致"
+                            };
                         }
                     }
                     int typecount = subEntityInfo.TypeNameDict.Count;
@@ -932,7 +1229,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         EntityTypeSettingInfo main = entityInfo.TypeNameDict[i.ToString()];
                         EntityTypeSettingInfo sub = subEntityInfo.TypeNameDict[i.ToString()];
                         if (main.TypeName.Equals(sub.TypeName) == false) {
-                            throw (new Exception("嵌套实体的分类定义必须跟主实体一致"));
+                            subEntityInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "嵌套实体的分类定义必须跟主实体一致"
+                            };
                         }
                     }
 
@@ -948,7 +1250,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         oldEntityInDb = this._entityProRepository.GetEntityInfoByEntityName(null, subEntityInfo.EntityName, 1);
                         if (oldEntityInDb != null)
                         {
-                            throw (new Exception("实体【" + subEntityInfo.EntityName + "】已经存在"));
+                            subEntityInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "实体【" + subEntityInfo.EntityName + "】已经存在"
+                            };
                         }
                     }
                 }
@@ -988,7 +1295,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         fieldInfo.IsUpdate = true;
                     }
                     else {
-                        if (tmpFieldInfo2 != null) throw (new Exception("字段的显示名称或者字段名称重复:"+ fieldInfo.DisplayName+":"+fieldInfo.FieldName));
+                        if (tmpFieldInfo2 != null)
+                        {
+                            fieldInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0 ,
+                                ResultCode = -2,
+                                Message = "字段的显示名称或者字段名称重复:" + fieldInfo.DisplayName + ":" + fieldInfo.FieldName
+                            };
+                            return;
+                        }
                     }
                 }
             }
@@ -1003,7 +1319,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 fieldInfo.ControlType = 5; fieldInfo.FieldType = 2;
                 fieldInfo.FieldConfig = MakeBigTextFieldConfig(fieldInfo.DefaultValue);
             }
-            else if (fieldInfo.FieldTypeName.Equals("字典单选"))
+            else if (fieldInfo.FieldTypeName.Equals("字典单选") || fieldInfo.FieldTypeName.Equals("单选"))
             {
                 fieldInfo.ControlType = 3; fieldInfo.FieldType = 2;
                 int dictType = GetDictTypeId(fieldInfo.DataSourceName);
@@ -1015,7 +1331,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         int defaultid = this._dataSourceRepository.GetDictValueByName(dictType, fieldInfo.DefaultValue);
                         if (defaultid <= 0)
                         {
-                            throw (new Exception("字典值没有定义"));
+                            fieldInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "字典值没有定义" + fieldInfo.DefaultValue
+                            };
+                            return;
                         }
                         fieldInfo.FieldConfig = MakeDictFieldConfig(dictType, defaultid);
                     }
@@ -1044,7 +1366,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     fieldInfo.FieldConfig = MakeDictFieldConfig(dictType, -1);
                 }
             }
-            else if (fieldInfo.FieldTypeName.Equals("小数"))
+            else if (fieldInfo.FieldTypeName.Equals("小数") || fieldInfo.FieldTypeName.Equals("小数(金额)"))
             {
                 fieldInfo.ControlType = 7; fieldInfo.FieldType = 2;
                 if (fieldInfo.DefaultValue.Length > 0)
@@ -1052,7 +1374,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     decimal tmp = 0;
                     if (decimal.TryParse(fieldInfo.DefaultValue, out tmp) == false)
                     {
-                        throw (new Exception("默认值转换失败"));
+                        fieldInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 0,
+                            ResultCode = -2,
+                            Message = "默认值转换失败" + fieldInfo.DefaultValue
+                        };
+                        return;
                     }
                     fieldInfo.FieldConfig = MakeDecimalFieldConfig(true, tmp);
                 }
@@ -1069,7 +1397,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     int tmp = 0;
                     if (int.TryParse(fieldInfo.DefaultValue, out tmp) == false)
                     {
-                        throw (new Exception("默认值转换失败"));
+                        fieldInfo.actionResult = new ActionResult()
+                        {
+                            ActionType = 0,
+                            ResultCode = -2,
+                            Message = "默认值转换失败" + fieldInfo.DefaultValue
+                        };
+                        return;
                     }
                     fieldInfo.FieldConfig = MakeIntFieldConfig(true, tmp);
                 }
@@ -1182,7 +1516,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 fieldInfo.ControlType = 18; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName == null || fieldInfo.DataSourceName.Length == 0)
-                    throw (new Exception("数据源配置错误"+fieldInfo.FieldName));
+                {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "数据源配置错误" + fieldInfo.FieldName
+                    };
+                    return;
+                }
                 Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
                 if (datasourceid != Guid.Empty)
                 {
@@ -1193,20 +1535,44 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 fieldInfo.ControlType = 18; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName == null || fieldInfo.DataSourceName.Length == 0)
-                    throw (new Exception("数据源配置错误"+fieldInfo.FieldName));
+                {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "数据源配置错误" + fieldInfo.FieldName
+                    };
+                    return;
+                }
                 Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
                 if (datasourceid != Guid.Empty)
                 {
                     fieldInfo.FieldConfig = MakeDataSourceFieldConfig(datasourceid.ToString(), true);
                 }
             }
-            else if (fieldInfo.FieldTypeName.Equals("引用对象"))
+            else if (fieldInfo.FieldTypeName.Equals("引用对象") || fieldInfo.FieldTypeName.Equals("引用字段"))
             {
 
                 fieldInfo.ControlType = 31; fieldInfo.FieldType = 2;
-                if (fieldInfo.DataSourceName == null) throw (new Exception("引用对象异常"));
+                if (fieldInfo.DataSourceName == null) {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "引用对象异常"
+                    };
+                    return;
+                }
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
-                if (tmp.Length != 2) throw (new Exception("引用对象异常2"));
+                if (tmp.Length != 2) {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "引用对象异常:" + fieldInfo.DataSourceName
+                    };
+                    return;
+                }
                 fieldInfo.RelField_ControlFieldName = tmp[0];
 
                 fieldInfo.RelField_originFieldName = tmp[1];
@@ -1219,7 +1585,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         if (fi.ControlType != 18)
                         {
-                            throw (new Exception("引用控件的控制控件只能是数据源控件"));
+                            fieldInfo.actionResult = new ActionResult()
+                            {
+                                ActionType = 0,
+                                ResultCode = -2,
+                                Message = "引用控件的控制控件只能是数据源控件"
+                            };
+                            return ;
                         }
                         else if (fi.FieldId != Guid.Empty)
                         {
@@ -1262,16 +1634,40 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 fieldInfo.FieldConfig = MakeReferenceFieldConfig(fieldInfo);
                 #endregion
             }
-            else if (fieldInfo.FieldTypeName.Equals("表格"))
+            else if (fieldInfo.FieldTypeName.Equals("表格")|| fieldInfo.FieldTypeName.Equals("表格字段"))
             {
                 fieldInfo.ControlType = 24; fieldInfo.FieldType = 2;
-                if (fieldInfo.DataSourceName == null) throw (new Exception("表格用对象异常"));
+                if (fieldInfo.DataSourceName == null)   {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "表格用对象异常"
+                    };
+                    return;
+                } 
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
-                if (tmp.Length != 2) throw (new Exception("表格对象异常2"));
+                if (tmp.Length != 2) {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "表格用对象异常："+fieldInfo.DataSourceName
+                    };
+                    return;
+                }
                 fieldInfo.Table_EntityName = tmp[0];
                 fieldInfo.Table_TitleDisplayName = tmp[1];
                 ExcelEntityInfo tableEntityInfo = null;
-                if (entityInfo.SubEntitys == null) throw (new Exception("表格对应的嵌套实体不存在"));
+                if (entityInfo.SubEntitys == null) {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "表格对应的嵌套实体不存在：" + fieldInfo.DataSourceName
+                    };
+                    return;
+                }
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
                 {
                     if (subEntityInfo.EntityName.Equals(fieldInfo.Table_EntityName))
@@ -1280,7 +1676,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     }
                 }
-                if (tableEntityInfo == null) throw (new Exception("表格对应的嵌套实体不存在"));
+                if (tableEntityInfo == null) {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "表格对应的嵌套实体不存在：" + fieldInfo.Table_EntityName
+                    };
+                    return;
+                }
                 if (tableEntityInfo.EntityId != null && tableEntityInfo.EntityId != Guid.Empty)
                 {
                     fieldInfo.Table_EntityId = tableEntityInfo.EntityId.ToString();
@@ -1294,13 +1698,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     }
                 }
-                if (foundField == null) throw (new Exception("表格对应的嵌套实体不存在"));
+                if (foundField == null) {
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "表格对应的嵌套实体的字段不存在：" + fieldInfo.Table_TitleFieldName
+                    };
+                    return;
+                }
                 fieldInfo.Table_TitleFieldName = foundField.FieldName;
                 fieldInfo.FieldConfig = MakeTableFieldConfig(fieldInfo);
             }
             else {
                 if ((fieldInfo.FieldId == null || fieldInfo.FieldId == Guid.Empty) && !fieldInfo.FieldTypeName.Equals("系统字段")) {
-                    throw (new Exception("字段类型错误:"+fieldInfo.FieldTypeName));
+                    fieldInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -2,
+                        Message = "字段类型错误:" + fieldInfo.FieldTypeName
+                    };
+                    return;
                 }
             }
         }
@@ -1531,10 +1949,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             foreach (ExcelEntityInfo entityInfo in listEntity)
             {
                 if (dictEntity.ContainsKey(entityInfo.EntityName)) {
-                    throw (new Exception("存在重复的实体名称:" + entityInfo.EntityName + ",请检查"));
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -1,
+                        Message = "存在重复的实体名称:" + entityInfo.EntityName + ",请检查"
+                    };
                 }
                 if (dictTables.ContainsKey(entityInfo.TableName)) {
-                    throw (new Exception("存在重复的实体表名:" + entityInfo.TableName + ",请检查"));
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -1,
+                        Message = "存在重复的实体表名:" + entityInfo.TableName + ",请检查"
+                    };
                 }
                 dictTables.Add(entityInfo.TableName, entityInfo.TableName);
                 dictEntity.Add(entityInfo.EntityName, entityInfo);
@@ -1572,8 +2000,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 throw (new Exception("无法解析实体信息"));
             }
-            else if (mainEntityInfo.ErrorMsg != null && mainEntityInfo.ErrorMsg.Length > 0) {
-                throw (new Exception(mainEntityInfo.ErrorMsg));
+            else if (mainEntityInfo.actionResult.ResultCode <0 ) {
+                return mainEntityInfo;
             }
             #endregion
             #region 读取并分析列头信息，有可能是两行合并，有可能是三行合并
@@ -1629,9 +2057,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw (new Exception("无法解析实体信息"));
                 }
-                else if (subEntityInfo.ErrorMsg != null && subEntityInfo.ErrorMsg.Length > 0)
+                else if (subEntityInfo.actionResult.ResultCode <0 )
                 {
-                    throw (new Exception(subEntityInfo.ErrorMsg));
+                    continue;//如果发现错了，还是要继续，争取找到更多的错误
                 }
                 mainEntityInfo.SubEntitys.Add(subEntityInfo);
                 #endregion
@@ -1677,7 +2105,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             ExcelEntityInfo entityInfo = new ExcelEntityInfo();
             int CellCount = row.Descendants<Cell>().Count();
             if (CellCount < 4) {
-                entityInfo.ErrorMsg = "实体定义格式异常";
+                entityInfo.actionResult.ActionType = 0;
+                entityInfo.actionResult.ResultCode = -1;
+                entityInfo.actionResult.Message = "实体定义格式异常";
                 return entityInfo;
             }
             Cell cell = row.Descendants<Cell>().ElementAt<Cell>(1);
@@ -1691,18 +2121,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 || entityInfo.EntityTypeName.Equals("嵌套") || entityInfo.EntityTypeName.Equals("嵌套实体")
                 || entityInfo.EntityTypeName.Equals("动态") || entityInfo.EntityTypeName.Equals("动态实体")))
             {
-                entityInfo.ErrorMsg = "实体类型(D列)的值不正确，必须是独立、简单、嵌套、动态这四个值之一";
+                entityInfo.actionResult = new ActionResult()
+                {
+                    ActionType = 0 ,
+                    ResultCode = -1,
+                    Message  = "实体类型(D列)的值不正确，必须是独立、简单、嵌套、动态这四个值之一"
+                };
                 return entityInfo;
             }
             if (entityInfo.EntityName == null || entityInfo.EntityName.Length == 0) {
-
-                entityInfo.ErrorMsg = "实体名称(B列)不能为空";
+                
+                entityInfo.actionResult = new ActionResult()
+                {
+                    ActionType = 0,
+                    ResultCode = -1,
+                    Message = "实体名称(B列)不能为空"
+                };
                 return entityInfo;
             }
             if (entityInfo.TableName == null || entityInfo.TableName.Length == 0)
             {
-
-                entityInfo.ErrorMsg = "数据库表名称(C列)不能为空";
+                entityInfo.actionResult = new ActionResult()
+                {
+                    ActionType = 0,
+                    ResultCode = -1,
+                    Message = "数据库表名称(C列)不能为空"
+                };
                 return entityInfo;
             }
             if (entityInfo.EntityTypeName.Equals("简单") || entityInfo.EntityTypeName.Equals("简单实体"))
@@ -1724,14 +2168,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 //动态实体需要继续读取（关联实体（E列）和是否审批（N列）、关联实体显示字段(F列））
                 if (CellCount < 5)
                 {
-                    entityInfo.ErrorMsg = "动态实体必须定义关联实体(E列)";
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -1,
+                        Message = "动态实体必须定义关联实体(E列)"
+                    };
                     return entityInfo;
                 }
                 cell = row.Descendants<Cell>().ElementAt<Cell>(4);
                 entityInfo.RelEntityName = GetCellValue(cell, workbookPart);
                 if (CellCount < 6)
                 {
-                    entityInfo.ErrorMsg = "动态实体必须定义关联实体显示字段(F列）";
+                    entityInfo.actionResult = new ActionResult()
+                    {
+                        ActionType = 0,
+                        ResultCode = -1,
+                        Message = "动态实体必须定义关联实体显示字段(F列）"
+                    };
                     return entityInfo;
                 }
                 cell = row.Descendants<Cell>().ElementAt<Cell>(5);
@@ -2444,6 +2898,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #endregion
     }
+    public class ActionResult {
+        public int ResultCode { get; set; }
+        public int ActionType { get; set; }
+        public string Message { get; set; }
+    }
     #region 以下是定义相关的中间的信息存储类
     public class ExcelEntityInfo {
         public Guid EntityId { get; set;  }
@@ -2455,13 +2914,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public Guid RelFieldId { get; set; }
         public string RelFieldName { get; set; }
         public string IsLinkToWorkFlow { get; set; }
-
-        public string ErrorMsg { get; set; }
-
+        
         public List<ExcelEntityColumnInfo> Fields { get; set; }
         public List<ExcelEntityInfo> SubEntitys { get; set; }
         public bool IsUpdate { get; set; }
         public Dictionary<string, EntityTypeSettingInfo> TypeNameDict { get; set; }
+        public ActionResult actionResult { get; set;  }
         public ExcelEntityInfo() {
             Fields = new List<ExcelEntityColumnInfo>();
             SubEntitys = new List<ExcelEntityInfo>();
@@ -2474,6 +2932,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             RelEntityName = "";
             RelFieldName = "";
             IsUpdate = false;
+            actionResult = new ActionResult();
 
         }
     }
@@ -2504,10 +2963,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string ErrorMsg { get; set; }
         public bool IsUpdate { get; set; }
         public Dictionary<string, ExcelEntityFieldViewInfo> ViewSet { get; set; }
+        public ActionResult actionResult { get; set; }
         public ExcelEntityColumnInfo() {
             ViewSet = new Dictionary<string, ExcelEntityFieldViewInfo>();
             FieldConfig = new Dictionary<string, object>();
             IsUpdate = false;
+            actionResult = new ActionResult();
         }
     }
     public class ExcelEntityFieldViewInfo {
@@ -2528,8 +2989,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string TypeName { get; set; }
         public bool IsImport { get; set; }
 
+        public ActionResult actionResult { get; set; }
         public EntityTypeSettingInfo() {
             CatelogIds = new List<Guid>();
+            actionResult = new ActionResult();
+        }
+    }
+    public class ExcelDataSourceInfo {
+        public string DataSourceId{ get; set; }
+        public string DataSourceName { get; set; }
+        public ActionResult actionResult { get; set; }
+        public ExcelDataSourceInfo() {
+            actionResult = new ActionResult();
+        }
+    }
+    public class ExcelDictTypeInfo {
+        public int DictType { get; set; }
+        public string DictTypeName { get; set; }
+        public ActionResult actionResult { get; set; }
+        public ExcelDictTypeInfo()
+        {
+
+            actionResult = new ActionResult();
         }
     }
     #endregion

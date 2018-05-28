@@ -243,6 +243,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (string tableFieldName in srcTables)
                 {
                     string srcFieldName = tableFieldName.ToLower();
+                    if (srcFieldName.Equals("")) {
+                        continue;//如果为空，表示映射表头信息，就是表头转表体
+                    }
                     if (srcBillInfo.ContainsKey(srcFieldName) == false)
                     {
                         isNeedCalc = false;
@@ -264,7 +267,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (isNeedCalc == false) continue;
                 //开始处理表格映射
                 string srcTableName = srcTables[0].ToLower();
-                List<IDictionary<string, object>> srcEntryDetail = (List<IDictionary<string, object>>)srcBillInfo[srcTableName];
+                List<IDictionary<string, object>> srcEntryDetail = null;
+                if (srcTableName.ToLower().Equals("")) {
+                    srcEntryDetail = new List<IDictionary<string, object>>();
+                    srcEntryDetail.Add(srcBillInfo);
+                }
+                else
+                {
+                    srcEntryDetail = (List<IDictionary<string, object>>)srcBillInfo[srcTableName];
+                }
                 List<IDictionary<string, object>> dstEntryDetail = new List<IDictionary<string, object>>();
                 string entryCategoryID = transferRuleInfo.DstCategory;//这里要重新映射一下
                 string dstFieldName = dstField.FieldName.ToLower();

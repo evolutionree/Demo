@@ -685,10 +685,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
         public List<IDictionary<string, object>> GetRelTabEntity(RelTabListMapper entity, int userNumber)
         {
-            string sql = "select a.entityid,a.entityname from crm_sys_entity a inner join crm_sys_entity_fields b on a.entityid=b.entityid " +
+            string sql = "select a.entityid,a.entityname ,c.datasrcid from crm_sys_entity a inner join crm_sys_entity_fields b on a.entityid=b.entityid " +
                 "inner join crm_sys_entity_datasource c on c.datasrcid::TEXT = jsonb_extract_path_text(b.fieldconfig, 'dataSource', 'sourceId') " +
-                "inner join crm_sys_entity d on d.entityid = c.entityid where a.recstatus = 1 and b.recstatus=1 and b.controltype = 18  " +
-                "and d.entityid =@entityid group by a.entityid,a.entityname";
+                "inner join crm_sys_entity d on d.entityid = c.entityid  " +
+                "where a.recstatus = 1 and b.recstatus=1 and b.controltype = 18  " +
+                "and (d.entityid =@entityid  or (d.entityid='ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid and 'f9db9d79-e94b-4678-a5cc-aa6e281c1246'::uuid=@entityid)) group by a.entityid,a.entityname ,c.datasrcid ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
             return DataBaseHelper.Query(sql, param);
@@ -696,10 +697,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
         public List<IDictionary<string, object>> GetRelEntityFields(GetEntityFieldsMapper entity, int userNumber)
         {
-            string sql = "SELECT f.fieldid,f.fieldlabel datasrcname,f.entityid relEntityId,h.icons FROM crm_sys_entity_fields AS f " +
-                "inner join crm_sys_entity_datasource e on e.datasrcid::TEXT = jsonb_extract_path_text(f.fieldconfig, 'dataSource', 'sourceId') " +
-                "inner join crm_sys_entity h on e.entityid = h.entityid " +
-                "WHERE f.controltype = 18 AND f.recstatus = 1 and f.entityid = @relentityid and e.entityid =@entityid ";
+            string sql = "SELECT f.fieldid,f.fieldlabel datasrcname,f.entityid relEntityId,h.icons,e.datasrcid  " +
+                " FROM crm_sys_entity_fields AS f " +
+                " inner join crm_sys_entity_datasource e on e.datasrcid::TEXT = jsonb_extract_path_text(f.fieldconfig, 'dataSource', 'sourceId') " +
+                " inner join crm_sys_entity h on e.entityid = h.entityid " +
+                " WHERE f.controltype = 18 AND f.recstatus = 1 and f.entityid = @relentityid and " +
+                "  (e.entityid =@entityid or (e.entityid='ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid and 'f9db9d79-e94b-4678-a5cc-aa6e281c1246'::uuid=@entityid)) ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
             param.Add("relentityid", entity.RelEntityId);

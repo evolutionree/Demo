@@ -281,6 +281,24 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public List<RelConfig> Configs { get; set; }
         public List<RelConfigSet> ConfigSets { get; set; }
     }
+    /// <summary>
+    /// 用于独立实体页签下，新增关联数据时，需要调用相应接口去获取id和name字段信息
+    /// </summary>
+    public class RelTabQueryDataSourceModel {
+        /// <summary>
+        /// 当前实体定义ID
+        /// </summary>
+        public Guid EntityId { get; set; }
+        /// <summary>
+        /// 当前实体数据id
+        /// </summary>
+        public Guid RecId { get; set; }
+        /// <summary>
+        /// 要新增实体的字段的id
+        /// 
+        /// </summary>
+        public Guid FieldId { get; set; }
+    }
     public class UpdateRelTabModel
     {
         public Guid RelId { get; set; }

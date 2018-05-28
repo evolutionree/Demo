@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -361,6 +362,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
 
         }
+        [HttpPost("queryvaluefornewdata")]
+        public OutputResult<object> QueryValueForReltabAddNewData([FromBody] RelTabQueryDataSourceModel paramInfo ) {
+            if (paramInfo == null || paramInfo.EntityId == Guid.Empty || paramInfo.FieldId == Guid.Empty || paramInfo.RecId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            return this._dynamicEntityServices.QueryValueForRelTabAddNew(paramInfo, UserId);
+        }
 
         [HttpPost]
         [Route("editreltab")]
@@ -594,13 +602,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> test() {
             try
             {
-                this._entityExcelImportServices.ImportEntityFromExcel();
 
+                Dictionary<string,object>  listEntity = _entityExcelImportServices.ImportEntityFromExcel();
+                listEntity.Add("allmessage", this._entityExcelImportServices.GenerateTotalMessage(listEntity));
+                return new OutputResult<object>(listEntity);
             }
             catch (Exception ex) {
                 return ResponseError<object>(ex.Message);
             }
-            return new OutputResult<object>("ok");
         }
         [Route("sendtomule")]
 
