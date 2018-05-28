@@ -38,4 +38,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.TransferScheme
         public string RecIds { get; set; }
         public int Status { get; set; }
     }
+
+    public class ListModel
+    {
+        public int RecStatus { get; set; }
+        public string SearchName { get; set; }
+    }
 }

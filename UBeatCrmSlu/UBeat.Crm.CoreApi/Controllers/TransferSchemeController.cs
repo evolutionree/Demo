@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        [HttpPost("gettransferscheme")]
+        [HttpPost("getdetail")]
         public OutputResult<TransferSchemeModel> GetTransferScheme([FromBody]GetTransParam body)
         {
             if (body == null || body.TransSchemeId == Guid.Empty) return ResponseError<TransferSchemeModel>("参数格式有误");
@@ -66,6 +66,13 @@ namespace UBeat.Crm.CoreApi.Controllers
                     return ResponseError<object>("方案转移id格式有误");
             }
             return _transferScheme.SetTransferSchemeStatus(list, body.Status, UserId);
+        }
+
+        [HttpPost("transferschemelist")]
+        public OutputResult<object> TransferSchemeList([FromBody] ListModel body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _transferScheme.TransferSchemeList(body, UserId);
         }
     }
 }

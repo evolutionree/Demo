@@ -100,5 +100,22 @@ WHERE	transschemeid =@transschemeid";
             };
             return ExecuteNonQuery(sql, param, tran) > 0;
         }
+
+        public List<Dictionary<string, object>> TransferSchemeList(int recStatus, string searchName, int userNumber)
+        {
+            string sql = @"select  * from crm_sys_transfer_scheme where recStatus = @recStatus";
+            if (!string.IsNullOrWhiteSpace(searchName))
+            {
+                sql += string.Format(" and transschemename like '%{0}%'", searchName);
+            }
+            sql += " order by reccreated desc ";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("recStatus",recStatus)
+            };
+            return ExecuteQuery(sql, param, null);
+
+        }
+
     }
 }

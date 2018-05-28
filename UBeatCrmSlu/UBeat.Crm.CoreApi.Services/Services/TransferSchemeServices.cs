@@ -65,5 +65,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else
                 return new OutputResult<object>(null, "操作失败", 1);
         }
+
+        public OutputResult<object> TransferSchemeList(ListModel model, int userNumber)
+        {
+            var data = _transferSchemeRepository.TransferSchemeList(model.RecStatus, model.SearchName, userNumber);
+            return new OutputResult<object>(data);
+        }
     }
 }
