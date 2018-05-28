@@ -470,7 +470,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             IDictionary<string, object> result = this._dataSourceRepository.DynamicDataSrcQueryDetail(sourceId, paramInfo.RecId, userId);
 
-            return null;
+            return new OutputResult<object>(result);
         }
 
         public void SavePersonalWebListColumnsSetting(SaveWebListColumnsForPersonalParamInfo paramInfo, int userId)
