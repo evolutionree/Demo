@@ -28,6 +28,7 @@
     "/api/account/authcompany",
     "/api/fileservice",
     "/api/notify/msglist",
-    "/api/excel/tasklist"
+    "/api/excel/tasklist",
+    "/api/notify/writemessageasyn"
   ]
 }

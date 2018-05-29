@@ -89,7 +89,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         //写消息
         [HttpPost]
         [Route("writemessageasyn")]
-        //[AllowAnonymous]
+        [AllowAnonymous]
         public OutputResult<object> WriteMessageAsyn([FromBody]MessageParameter data)
         {
             if (data == null) return ResponseError<object>("参数格式错误");

@@ -43,8 +43,6 @@ $BODY$
   LANGUAGE 'plpgsql' VOLATILE COST 100
 ;
 
-
-
 CREATE OR REPLACE FUNCTION "public"."crm_func_business_ds_detail"("_datasrckey" text, "_recid" text, "_userno" int4)
   RETURNS SETOF "pg_catalog"."refcursor" AS $BODY$
 DECLARE
@@ -85,10 +83,10 @@ BEGIN
 		--raise notice '%',_keyword_where_sql;
 	 IF _ispro=0 THEN
 				_rulesql:=replace(_rulesql,'{needpower}','0');
-			 _rulesql:=replace(_rulesql,'{querydata}','''''');
+			 _rulesql:=replace(_rulesql,'{querydata}',quote_literal(''));
 	     _rulesql:=format('select * from ( %s ) as t  where t.id::text = ''%s''',_rulesql,_recid);
    ELSE
-			 _rulesql:=replace(_rulesql,'{querydata}','''''');
+			 _rulesql:=replace(_rulesql,'{querydata}','');
 			 _rulesql:=format('select * from ( %s ) as t where  t.id::text = ''%s'' ',_rulesql,_recid);
 
 	 END IF;
