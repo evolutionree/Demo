@@ -295,9 +295,9 @@ WHERE (wc.auditstatus=0 OR wc.auditstatus=3 ) AND cr.relrecid =ANY (@recids)
                 DbParameter[] param = new DbParameter[] {
                     new Npgsql.NpgsqlParameter("@custid",custid)
                 };
-                Dictionary<string, object> tmp = ExecuteQuery<Dictionary<string, object>>(strSQL, param, tran).FirstOrDefault();
-                if (tmp != null && tmp.ContainsKey("commonid") && tmp["commonid"] != null) return tmp["commonid"].ToString();
-                return null;
+                object obj  = ExecuteScalar(strSQL, param, tran);
+                if (obj == null) return null;
+                return obj.ToString();
             }
             catch (Exception ex) {
                 return null;

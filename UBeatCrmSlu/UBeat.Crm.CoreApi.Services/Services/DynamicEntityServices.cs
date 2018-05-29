@@ -468,7 +468,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
 
-            IDictionary<string, object> result = this._dataSourceRepository.DynamicDataSrcQueryDetail(sourceId, paramInfo.RecId, userId);
+            IDictionary<string, object> result = this._dataSourceRepository.DynamicDataSrcQueryDetail(sourceId, Guid.Parse(recid), userId);
 
             return new OutputResult<object>(result);
         }
