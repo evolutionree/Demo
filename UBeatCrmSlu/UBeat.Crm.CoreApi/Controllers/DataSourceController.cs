@@ -91,16 +91,43 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("queryfieldopt")]
         public OutputResult<object> SelectFieldDicType()
         {
-
             return _dataSourceServices.SelectFieldDicType(UserId);
         }
+
+        [HttpPost("queryfieldoptdetail")]
+        public OutputResult<object> SelectFieldDicTypeList([FromBody] DictionaryTypeModel body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式有误");
+            return _dataSourceServices.SelectFieldDicTypeDetail(body.DicTypeId, UserId);
+        }
+
+        [HttpPost]
+        public OutputResult<object> SelectFieldConfig([FromBody] DictionaryTypeModel body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式有误");
+            return _dataSourceServices.SelectFieldConfig(body.DicTypeId, UserId);
+        }
+
+        [HttpPost]
+        public OutputResult<object> UpdateFieldDicType([FromBody]UpdateDicTypeParam body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.UpdateFieldDicType(body, UserId);
+        }
+
+        [HttpPost]
+        public OutputResult<object> UpdateFieldConfig([FromBody] UpdateFieldConfigParam body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.UpdateFieldConfig(body, UserId);
+        }
+        
 
         [HttpPost]
         [Route("queryfielddicvalue")]
         public OutputResult<object> SelectFieldDicVaue([FromBody]DictionaryModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
             return _dataSourceServices.SelectFieldDicVaue(entityModel, UserId);
         }
         [HttpPost]
@@ -111,6 +138,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _dataSourceServices.SaveFieldDicType(entityModel, UserId);
         }
+        
         [HttpPost]
         [Route("savefieldoptval")]
         public OutputResult<object> SaveFieldOpt([FromBody]DictionaryModel entityModel = null)

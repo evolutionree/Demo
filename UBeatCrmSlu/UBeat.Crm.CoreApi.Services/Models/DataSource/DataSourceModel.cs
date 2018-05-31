@@ -104,6 +104,21 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string DicTypeName { get; set; }
         public string DicRemark { get; set; }
         public int RecStatus { get; set; }
+        public string FieldConfig { get; set; }
+        public int? RelateDicTypeId { get; set; }
+    }
+
+    public class UpdateDicTypeParam
+    {
+        public string DicTypeId { get; set; }
+
+        public int RelateDicTypeId { get; set; }
+    }
+
+    public class UpdateFieldConfigParam
+    {
+        public string DicTypeId { get; set; }
+        public string FieldConfig { get; set; }
     }
 
     public class DictionaryDisabledModel

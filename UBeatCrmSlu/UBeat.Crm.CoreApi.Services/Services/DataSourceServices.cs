@@ -109,16 +109,65 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(dataSourceRepository.SelectFieldDicType(userNumber));
         }
 
+        public OutputResult<object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
+        {
+            return new OutputResult<object>(dataSourceRepository.SelectFieldDicTypeDetail(dicTypeId, userNumber));
+        }
+
+        public OutputResult<object> SelectFieldConfig(string dicTypeId, int userNumber)
+        {
+            return new OutputResult<object>(dataSourceRepository.SelectFieldConfig(dicTypeId, userNumber));
+        }
+    
         public OutputResult<object> SelectFieldDicVaue(DictionaryModel dic, int userNumber)
         {
-            return new OutputResult<object>(dataSourceRepository.SelectFieldDicVaue(dic.DicTypeId, userNumber));
+            List<Dictionary<string, object>> result = new List<Dictionary<string, object>>();
+            Dictionary<string, object> dictionary = new Dictionary<string, object>();
+            var dicTypeId = dataSourceRepository.HasParentDicType(dic.DicTypeId);
+            var dicData = dataSourceRepository.SelectFieldDicVaue(dic.DicTypeId, userNumber); //当前
+            if (!string.IsNullOrEmpty(dicTypeId))
+            {
+                var parentDic = new Dictionary<string, object>();
+                var parentData = dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(dicTypeId), userNumber); //上级
+                parentDic.Add("Parent", parentData);
+                result.Add(parentDic);
+                foreach (var item in parentData)
+                {
+                    var data = dicData.Where(r => r.RelateDataId == item.DicTypeId).ToList();
+                    dictionary.Add(item.DataVal, data);
+                }
+                result.Add(dictionary);
+                return new OutputResult<object>(result);
+            }
+            return new OutputResult<object>(dicData);
         }
+
         public OutputResult<object> SaveFieldDicType(DictionaryTypeModel option, int userNumber)
         {
             var entity = mapper.Map<DictionaryTypeModel, DictionaryTypeMapper>(option);
-            var res = HandleResult(dataSourceRepository.SaveFieldDicType(entity, userNumber));
-            IncreaseDataVersion(DataVersionType.DicData, null);
-            return res;
+            var falg = dataSourceRepository.SaveFieldDicType(entity, userNumber);
+            if (falg)
+                return new OutputResult<object>(null, "保存成功");
+            else
+                return new OutputResult<object>(null, "保存失败", 1);
+        }
+
+        public OutputResult<object> UpdateFieldDicType(UpdateDicTypeParam param, int userNumber)
+        {
+            var falg = dataSourceRepository.UpdateFieldDicType(param.DicTypeId, param.RelateDicTypeId, userNumber);
+            if (falg)
+                return new OutputResult<object>(null, "更新成功");
+            else
+                return new OutputResult<object>(null, "更新失败", 1);
+        }
+
+        public OutputResult<object> UpdateFieldConfig(UpdateFieldConfigParam data, int userNumber)
+        {
+            var falg = dataSourceRepository.UpdateFieldConfig(data.DicTypeId, data.FieldConfig, userNumber);
+            if (falg)
+                return new OutputResult<object>(null, "更新成功");
+            else
+                return new OutputResult<object>(null, "更新失败", 1);
         }
         public OutputResult<object> SaveFieldOptValue(DictionaryModel option, int userNumber)
         {
