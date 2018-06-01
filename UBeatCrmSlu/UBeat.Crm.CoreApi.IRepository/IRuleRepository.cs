@@ -40,8 +40,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="ruleSet"></param>
         /// <returns></returns>
         OperateResult SaveRuleWithoutRelation(string Id, string rule, string ruleItem, string ruleSet, int userId);
-
-
+        void SaveMenuOrder(Guid menuId, int orderBy, int userId, DbTransaction trans);
     }
 }
 

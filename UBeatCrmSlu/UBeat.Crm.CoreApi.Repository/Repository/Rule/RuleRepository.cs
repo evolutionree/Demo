@@ -231,8 +231,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
             return isAccess == recids.Count;
         }
 
-
-      
-
+        public void SaveMenuOrder(Guid menuId, int orderBy, int userId, DbTransaction trans)
+        {
+            string strSQL = "update crm_sys_entity_menu set recorder=@recorder where menuid=@menuid";
+            DbParameter[] p = new DbParameter[] {
+                new Npgsql.NpgsqlParameter("@recorder",orderBy),
+                new Npgsql.NpgsqlParameter("@menuid",menuId)
+            };
+            ExecuteNonQuery(strSQL, p, trans);
+        }
     }
 }

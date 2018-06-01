@@ -184,5 +184,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
         public string RuleId { get; set; }
     }
 
+    public class EntityMenuOrderByModel {
+        public Guid MenuId { get; set; }
+        public int OrderBy { get; set; }
+    }
+
 
 }

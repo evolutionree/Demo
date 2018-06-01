@@ -62,8 +62,22 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetRule([FromBody]GetRuleInfoModel entityModel)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-           
+
             return _ruleTranslatorServices.GetRule(entityModel, UserId);
+        }
+        [HttpPost("savemenuorderby")]
+        public OutputResult<object> SaveMenuOrderBy([FromBody] List<EntityMenuOrderByModel> paramInfo) {
+            if (paramInfo == null) {
+                return ResponseError<object>("参数异常");
+            }
+            try
+            {
+                this._ruleTranslatorServices.SaveMenuOrder(paramInfo, UserId);
+                return new OutputResult<object>("");
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
         }
 
         //[HttpPost]
