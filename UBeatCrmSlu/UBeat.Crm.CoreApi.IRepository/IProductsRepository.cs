@@ -71,7 +71,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         dynamic GetProductSeriesDetail(DbTransaction trans, Guid productSetId, int userNum);
 
-
+        List<Dictionary<string, object>> getProductAndSet(DbTransaction trans, int userNum);
 
     }
 }

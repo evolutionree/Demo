@@ -11,6 +11,7 @@ using UBeat.Crm.CoreApi.DomainModel.Documents;
 using UBeat.Crm.CoreApi.Services.Models.Products;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Version;
+using Microsoft.AspNetCore.Authorization;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -176,6 +177,10 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _service.GetProducts(body, UserId);
         }
 
-
+        [HttpPost("searchproductformobile")]
+        [AllowAnonymous]
+        public OutputResult<object> SearchProduct([FromBody] ProductSearchModel paramInfo) {
+            return _service.SearchProductAndSeries(paramInfo, UserId);
+        }
     }
 }

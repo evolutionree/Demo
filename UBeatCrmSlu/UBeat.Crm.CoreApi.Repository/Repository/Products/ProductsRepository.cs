@@ -80,7 +80,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                 new NpgsqlParameter("userno", userNumber),
             };
             var resutl = new OperateResult();
-            int res= ExecuteNonQuery(executeSql, param, trans);
+            int res = ExecuteNonQuery(executeSql, param, trans);
             if (res > 0)
                 resutl.Flag = 1;
             return resutl;
@@ -189,7 +189,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 
         }
 
-        
+        public List<Dictionary<string, object>> getProductAndSet(DbTransaction trans, int userNum)
+        {
+            try
+            {
+                string strSQL = @"select * 
+                                from (
 
+                                select productsetid,productsetcode,productsetname,pproductsetid,recorder  ,1 SetOrProduct from crm_sys_products_series  where recstatus =1 
+                                union all 
+                                select recid prouctsetid ,productcode productsetcode,productname productsetname ,productsetid pproductsetid ,recorder  ,2 SetOrProduct 
+                                from crm_sys_product
+                                where recstatus = 1 )
+                                 aa order by aa.SetOrProduct ,aa.productsetname";
+                return ExecuteQuery(strSQL, new DbParameter[] { }, trans);
+            }
+            catch (Exception ex) {
+                return new List<Dictionary<string, object>>();
+            }
+        }
     }
 }

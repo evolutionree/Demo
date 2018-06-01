@@ -96,4 +96,21 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
 
 
     }
+    public class ProductSearchModel {
+        public int IsTopSet { get; set; }
+        public string PSetId { get; set; }
+        public string SearchKey { get; set; }
+        public string IncludeFilter { get; set; }
+        public string[] IncludeFilters { get; set; }
+        public int IncludeSubSets { get; set; }
+        public string[] ExcludeFilters { get; set; }
+        public string ExcludeFilter { get; set; }
+
+        public int PageIndex { get; set; }
+        public int PageCount { get; set; }
+        public ProductSearchModel() {
+            PageIndex = 1;
+            PageCount = 10;
+        }
+    }
 }
