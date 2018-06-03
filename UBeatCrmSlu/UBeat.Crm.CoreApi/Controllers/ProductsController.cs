@@ -180,6 +180,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [HttpPost("searchproductformobile")]
         [AllowAnonymous]
         public OutputResult<object> SearchProduct([FromBody] ProductSearchModel paramInfo) {
+            if (paramInfo.SearchKey != null) paramInfo.SearchKey = paramInfo.SearchKey.ToLower();
             return _service.SearchProductAndSeries(paramInfo, UserId);
         }
     }

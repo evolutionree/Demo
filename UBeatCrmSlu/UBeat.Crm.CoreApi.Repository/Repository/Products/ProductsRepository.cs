@@ -197,10 +197,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                                 from (
 
                                 select productsetid,productsetcode,productsetname,pproductsetid,recorder  ,1 SetOrProduct from crm_sys_products_series  where recstatus =1 
-                                union all 
-                                select recid prouctsetid ,productcode productsetcode,productname productsetname ,productsetid pproductsetid ,recorder  ,2 SetOrProduct 
-                                from crm_sys_product
-                                where recstatus = 1 )
+                                )
                                  aa order by aa.SetOrProduct ,aa.productsetname";
                 return ExecuteQuery(strSQL, new DbParameter[] { }, trans);
             }

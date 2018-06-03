@@ -16,15 +16,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
     {
         private IProductsRepository _repository;
         private DynamicEntityServices _dynamicEntityServices;
+        private IEntityProRepository _entityProRepository;
 
         private readonly Guid productEntityId = new Guid("59cf141c-4d74-44da-bca8-3ccf8582a1f2");//固定值
 
 
 
-        public ProductsServices(IProductsRepository repository, DynamicEntityServices dynamicEntityServices)
+        public ProductsServices(IProductsRepository repository, 
+            DynamicEntityServices dynamicEntityServices,
+            IEntityProRepository entityProRepository)
         {
             _repository = repository;
             _dynamicEntityServices = dynamicEntityServices;
+            _entityProRepository = entityProRepository;
         }
 
 
@@ -271,11 +275,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> SearchProductAndSeries(ProductSearchModel paramInfo, int userNumber)
         {
+            Guid productGuid = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
             #region 处理参数信息
             if (paramInfo.IncludeFilter == null) paramInfo.IncludeFilter = "";
             paramInfo.IncludeFilters = paramInfo.IncludeFilter.Split(",");
             if (paramInfo.ExcludeFilter == null) paramInfo.ExcludeFilter = "";
             paramInfo.ExcludeFilters = paramInfo.ExcludeFilter.Split(",");
+            #endregion
+
+            #region 获取列显示信息
+            List<IDictionary<string, object>> VisibleFieldList = _entityProRepository.FieldMOBVisibleQuery(productGuid.ToString(), userNumber)["FieldVisible"];
             #endregion
             Dictionary<string, object> retDict = new Dictionary<string, object>();
             List<ProductSetsSearchInfo> ret = new List<ProductSetsSearchInfo>();
@@ -284,7 +293,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<ProductSetsSearchInfo> list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ProductSetsSearchInfo>>(Newtonsoft.Json.JsonConvert.SerializeObject(tmplist));
             DynamicEntityListModel dynamicEntity = new DynamicEntityListModel()
             {
-                EntityId = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"),
+                EntityId = productGuid,
                 MenuId = null,
                 ViewType = 4,
                 NeedPower = 0,
@@ -295,6 +304,51 @@ namespace UBeat.Crm.CoreApi.Services.Services
             OutputResult<object>  tmp  = _dynamicEntityServices.DataList2(dynamicEntity, false, 1);
             
             List<Dictionary<string, object>> products = ((Dictionary<string, List<Dictionary<string, object>>>)tmp.DataBody)["PageData"];
+            foreach (Dictionary<string, object> item in products) {
+                ProductSetsSearchInfo product = new ProductSetsSearchInfo();
+                product.Children = new List<ProductSetsSearchInfo>();
+                product.SetOrProduct = 2;
+                if (item.ContainsKey("recid") && item["recid"] != null)
+                {
+                    product.ProductSetId = Guid.Parse(item["recid"].ToString());
+                }
+                else {
+                    product.ProductSetId = Guid.Empty;
+                }
+                if (item.ContainsKey("productcode") && item["productcode"] != null)
+                {
+                    product.ProductSetCode = item["productcode"].ToString();
+                }
+                else {
+                    product.ProductSetCode = "";
+                }
+                if (item.ContainsKey("productname") && item["productname"] != null)
+                {
+                    product.ProductSetName = item["productname"].ToString();
+                }
+                else
+                {
+                    product.ProductSetName = "";
+                }
+                if (item.ContainsKey("productsetid") && item["productsetid"] != null)
+                {
+                    product.PProductSetId = Guid.Parse(item["productsetid"].ToString());
+                }
+                else
+                {
+                    product.PProductSetId = Guid.Empty;
+                }
+                if (item.ContainsKey("recorder") && item["recorder"] != null)
+                {
+                    product.RecOrder = int.Parse(item["recorder"].ToString());
+                }
+                else
+                {
+                    product.RecOrder = 0;
+                }
+                product.ProductDetail = item;
+                list.Add(product);
+            }
             ProductSetPackageInfo ProductSet = ProductSetsUtils.getInstance().generatePackage(list);
             #region
             if (paramInfo.IsTopSet == 1)
@@ -321,12 +375,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             ret.Add(child.CopyToNew());
                         }
                     }
-
-                }
-                else
-                {
-
-
                 }
             }
             else if (paramInfo.SearchKey != null && paramInfo.SearchKey.Length > 0)
@@ -334,7 +382,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo,ProductSet.RootProductSet);
                 if (newRoot != null) {
                     #region 开始处理searchkey过滤
-                    SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), newRoot, ret);
+                    SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), newRoot, ret,VisibleFieldList);
                     #endregion
                 }
             }
@@ -362,7 +410,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             #endregion
             return new OutputResult<object>(retDict);
         }
-        private void SearchProductForSearchKey(char [] searchkey ,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list) {
+        private void SearchProductForSearchKey(char [] searchkey ,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
             int index = 0;
             bool isMatch = true;
             foreach (char ch in searchkey) {
@@ -385,8 +433,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             break;
                         }
                     }
+                }   
+            }
+            if (isMatch == false && item.SetOrProduct == 2 && item.ProductDetail != null ) {
+                foreach (IDictionary<string, object> field in fieldsVisible) {
+                    string fieldname = field["fieldname"].ToString();
+                    if (fieldname.Equals("productname")) continue;
+                    if (item.ProductDetail.ContainsKey(fieldname + "_name")) {
+                        fieldname = fieldname + "_name";
+                    }
+                    if (item.ProductDetail[fieldname] == null) continue;
+                    string fieldValue = item.ProductDetail[fieldname].ToString();
+                    index = 0;
+                    isMatch = true;
+                    foreach (char ch in searchkey)
+                    {
+                        index = item.ProductSetName.IndexOf(ch, index);
+                        if (index < 0)
+                        {
+                            isMatch = false;
+                            break;
+                        }
+                    }
+                    if (isMatch) break;
                 }
-                
             }
             if (isMatch)
             {
@@ -394,7 +464,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (item.Children != null) {
                 foreach (ProductSetsSearchInfo subitem in item.Children) {
-                    SearchProductForSearchKey(searchkey, subitem, list);
+                    SearchProductForSearchKey(searchkey, subitem, list, fieldsVisible);
                 }
             }
         }
@@ -403,11 +473,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public Dictionary<string, ProductSetsSearchInfo> ProductSetDict { get; set; }
         public List<ProductSetsSearchInfo> ListProductSet { get; set; }
         public ProductSetsSearchInfo RootProductSet { get; set; }
+        public List<IDictionary<string, object>> VisibleFieldList { get; set; }
+        public int MaxSetVersion { get; set; }
+        public int MaxProductVersion { get; set; }
+        public int MaxFieldVersion { get; set; }
     }
     public class ProductSetsUtils {
 
         private ProductSetPackageInfo ProductSetCached = new ProductSetPackageInfo();
-        public long MaxRecVersion = 0;
         private static  object lockObj = new object();
         private static ProductSetsUtils instance = null;
         public static ProductSetsUtils getInstance() {
@@ -526,6 +599,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public int SetOrProduct { get; set; }
         public List<ProductSetsSearchInfo> Children { get; set; }
+        public Dictionary<string, object> ProductDetail { get; set; }
         public ProductSetsSearchInfo() {
             Children = new List<ProductSetsSearchInfo>();
         }
@@ -539,6 +613,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             ret.FullPathName = this.FullPathName;
             ret.SetOrProduct = this.SetOrProduct;
             ret.ProductSetName_Pinyin = this.ProductSetName_Pinyin;
+            ret.ProductDetail = ProductDetail;
             return ret;
         }
 
