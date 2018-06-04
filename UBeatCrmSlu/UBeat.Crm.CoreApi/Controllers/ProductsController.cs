@@ -181,7 +181,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         [AllowAnonymous]
         public OutputResult<object> SearchProduct([FromBody] ProductSearchModel paramInfo) {
             if (paramInfo.SearchKey != null) paramInfo.SearchKey = paramInfo.SearchKey.ToLower();
-            return _service.SearchProductAndSeries(paramInfo, UserId);
+            AnalyseHeader header = this.GetAnalyseHeader();
+            
+            return _service.SearchProductAndSeries(paramInfo, header.Device.ToLower() == "web"?true:false,UserId);
         }
     }
 }
