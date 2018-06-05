@@ -137,4 +137,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
             PageCount = 10;
         }
     }
+    public class ProductDetailModel {
+        public string recids { get; set; }
+    }
 }

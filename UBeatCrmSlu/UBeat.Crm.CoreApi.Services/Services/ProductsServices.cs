@@ -200,6 +200,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IncreaseDataVersion(DataVersionType.ProductData, null);
             return res;
         }
+
+        public OutputResult<object> ProductDetail(ProductDetailModel paramInfo, int userId)
+        {
+            try
+            {
+                DynamicEntityDetaillistModel model = new DynamicEntityDetaillistModel();
+                model.EntityId =Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
+                model.NeedPower = 0;
+                model.RecIds = paramInfo.recids;
+                return  this._dynamicEntityServices.DetailList(model, userId);
+            }
+            catch (Exception ex) {
+                throw (ex);
+            }
+        }
+
         /// <summary>
         /// 启用产品
         /// </summary>
@@ -278,8 +294,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Guid productGuid = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
             #region 处理参数信息
             if (paramInfo.IncludeFilter == null) paramInfo.IncludeFilter = "";
-            paramInfo.IncludeFilters = paramInfo.IncludeFilter.Split(",");
             if (paramInfo.ExcludeFilter == null) paramInfo.ExcludeFilter = "";
+            paramInfo.IncludeFilter = paramInfo.IncludeFilter.ToLower();
+            paramInfo.ExcludeFilter = paramInfo.ExcludeFilter.ToLower();
+            paramInfo.IncludeFilters = paramInfo.IncludeFilter.Split(",");
             paramInfo.ExcludeFilters = paramInfo.ExcludeFilter.Split(",");
             #endregion
 
@@ -353,30 +371,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
             #region
             if (paramInfo.IsTopSet == -1 && IsForWeb) {
                 ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, ProductSet.RootProductSet);
-                SearchProductForProductSet(newRoot, ret);
+                if (newRoot != null )
+                     SearchProductForProductSet(newRoot, ret);
 
             }
             else if (paramInfo.IsTopSet == 1)
             {
                 //这种情况非搜索，直接处理获取根节点，并判断根节点是否满足要求，以及获取符合要求的子节点的名称
-                foreach (ProductSetsSearchInfo child in ProductSet.RootProductSet.Children)
+                if (IsForWeb)
                 {
-                   
-                    if (ProductSetsUtils.getInstance().CheckNodeWith(paramInfo, child))
+                    if (paramInfo.SearchKey == null) paramInfo.SearchKey = "";
+                    if (paramInfo.SearchKey != null)
                     {
-                        if (IsForWeb)
+                        ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, ProductSet.RootProductSet);
+                        if (newRoot != null)
                         {
-                            if (child.SetOrProduct == 2)
-                            {
-                                ret.Add(child.CopyToNew());
-                            }
-                        }
-                        else
-                        {
-                            ret.Add(child.CopyToNew());
+                            #region 开始处理searchkey过滤
+                            SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, newRoot, ret, VisibleFieldList);
+                            #endregion
                         }
                     }
                 }
+                else {
+                    foreach (ProductSetsSearchInfo child in ProductSet.RootProductSet.Children)
+                    {
+
+                        if (ProductSetsUtils.getInstance().CheckNodeWith(paramInfo, child))
+                        {
+                                ret.Add(child.CopyToNew());
+                        }
+                    }
+                }
+                
             }
             else if (paramInfo.PSetId != null && paramInfo.PSetId.Length>0)
             {
@@ -386,7 +412,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ProductSetsSearchInfo parentSet = ProductSet.ProductSetDict[paramInfo.PSetId];
                     if (IsForWeb)
                     {
-                        if (paramInfo.SearchKey != null && paramInfo.SearchKey.Length > 0)
+                        if (paramInfo.SearchKey == null) paramInfo.SearchKey = "";
+                        if (paramInfo.SearchKey != null )
                         {
                             ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, parentSet);
                             if (newRoot != null)
@@ -394,17 +421,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 #region 开始处理searchkey过滤
                                 SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, newRoot, ret, VisibleFieldList);
                                 #endregion
-                            }
-                        }
-                        else
-                        {
-                            foreach (ProductSetsSearchInfo child in parentSet.Children)
-                            {
-                                if (ProductSetsUtils.getInstance().CheckNodeWith(paramInfo, child))
-                                {
-                                    if (child.SetOrProduct == 2)
-                                        ret.Add(child.CopyToNew());
-                                }
                             }
                         }
                     }
@@ -431,10 +447,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else {
                 //这里可能要抛出错误
-                list = new List<ProductSetsSearchInfo>();
+                ret = new List<ProductSetsSearchInfo>();
             }
             #endregion
             #region 开始处理分页问题
+            SortList(ret);
             List<ProductSetsSearchInfo> countList = new List<ProductSetsSearchInfo>();
 
             Dictionary<string, object> pageCount = new Dictionary<string, object>();
@@ -460,10 +477,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 pageCount.Add("total", ret.Count);
                 countList.AddRange(ret);
             }
+            CalcNodepath(countList);
             retDict.Add("pagecount", pageCount);
             retDict.Add("pagedata", countList);
             #endregion
             return new OutputResult<object>(retDict);
+        }
+        private void SortList(List<ProductSetsSearchInfo> list)
+        {
+            list.Sort((ProductSetsSearchInfo o1, ProductSetsSearchInfo o2) =>
+            {
+                if (o1.SetOrProduct < o2.SetOrProduct)
+                {
+                    return -11;
+                }
+                else if (o1.SetOrProduct > o2.SetOrProduct)
+                {
+                    return 1;
+                }
+                else {
+                    return o1.ProductSetName.CompareTo(o2.ProductSetName);
+                }
+            });
+        }
+        private void CalcNodepath(List<ProductSetsSearchInfo> list) {
+            foreach (ProductSetsSearchInfo item in list) {
+                char[] chs = item.FullPathName.ToCharArray();
+                int count = 0;
+                foreach (char ch in chs) {
+                    if (ch == '.') count++;
+                 }
+                item.Nodepath = count;
+            }
         }
         private void SearchProductForProductSet(ProductSetsSearchInfo item, List<ProductSetsSearchInfo> list) {
             if (item.SetOrProduct == 1)
@@ -687,6 +732,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string FullPathName { get; set; }
 
         public int SetOrProduct { get; set; }
+        public int Nodepath { get; set; }
         public List<ProductSetsSearchInfo> Children { get; set; }
         public int ChildrenCount { get; set; }
         public Dictionary<string, object> ProductDetail { get; set; }
@@ -791,7 +837,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
 
-            return coverchr;
+            return coverchr.Substring(0,1);
 
         }
     }
