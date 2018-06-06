@@ -2873,6 +2873,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Dictionary<string, string> dicStyle = new Dictionary<string, string>();
             Stylesheet styleSheet = workBookPart.WorkbookStylesPart.Stylesheet;
+            if (styleSheet.NumberingFormats == null) return dicStyle;
             OpenXmlElementList list = styleSheet.NumberingFormats.ChildElements;//获取NumberingFormats样式集合
 
             foreach (var element in list)//格式化节点
