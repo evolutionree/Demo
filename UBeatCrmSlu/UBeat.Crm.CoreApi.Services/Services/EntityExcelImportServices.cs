@@ -12,6 +12,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.Services.Models.DataSource;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -412,6 +413,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
                 {
                     catelogcount = subEntityInfo.TypeNameDict.Count;
+                    dataDict = this._entityProRepository.EntityFieldProQuery(subEntityInfo.EntityId.ToString(), 1);
+                    data = dataDict["EntityFieldPros"];
                     for (int i = 0; i < catelogcount; i++)
                     {
                         foreach (Guid catelogid in subEntityInfo.TypeNameDict[i.ToString()].CatelogIds)
@@ -652,7 +655,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         string[] names = subSetting.TypeName.Split(",，".ToCharArray());
                         if (i == 0)
                         {
-                            subSetting.CatelogIds.Add(entityInfo.EntityId);
+                            subSetting.CatelogIds.Add(subEntityInfo.EntityId);
                             //更新名称
                             EntityTypeModel model = new EntityTypeModel()
                             {
@@ -1449,12 +1452,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else if (fieldInfo.FieldTypeName.Equals("邮箱"))
             {
                 fieldInfo.ControlType = 11; fieldInfo.FieldType = 2;
-                fieldInfo.FieldConfig = MakeCommonTextFieldConfig(@"\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*");
+                fieldInfo.FieldConfig = MakeCommonTextFieldConfig("\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*");
             }
             else if (fieldInfo.FieldTypeName.Equals("电话"))
             {
                 fieldInfo.ControlType = 11; fieldInfo.FieldType = 2;
-                fieldInfo.FieldConfig = MakeCommonTextFieldConfig(@"\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*");
+                fieldInfo.FieldConfig = MakeCommonTextFieldConfig("[0-9]+");
 
             }
             else if (fieldInfo.FieldTypeName.Equals("地址"))
@@ -1479,7 +1482,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else if (fieldInfo.FieldTypeName.Equals("团队组织"))
             {
-                fieldInfo.ControlType = 16; fieldInfo.FieldType = 2;
+                fieldInfo.ControlType = 17; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName != null && fieldInfo.DataSourceName.Equals("多选"))
                 {
                     fieldInfo.FieldConfig = MakeDeptFieldConfig(true);
@@ -1631,7 +1634,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (datasourceid != Guid.Empty)
                         {
                             //找到DATa Source就开始找entityid
-                            Dictionary<string, object> datasourcetmp = this._dataSourceRepository.GetDataSourceInfo(datasourceid, 1);
+                            dynamic datasourcetmp1 = this._dataSourceRepository.GetDataSourceInfo(datasourceid, 1);
+
+                            Dictionary<string, object> datasourcetmp = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(datasourcetmp1));
                             if (datasourcetmp != null && datasourcetmp.ContainsKey("entityid"))
                             {
                                 string tmp_entityid = datasourcetmp["entityid"].ToString();
@@ -1643,10 +1648,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0)
                 {
                     //通过originentityid 和rel_fieldname 获取fieldInfo.relfield_originfieldid 
-                    Dictionary<string, object> tmpFielddict = this._entityProRepository.GetFieldInfoByFieldName(null, fieldInfo.RelField_originFieldName, Guid.Parse(fieldInfo.RelField_OriginEntityId), 1);
+                    Dictionary<string, object> tmpFielddict = _entityProRepository.GetFieldInfoByDisplayName(null, fieldInfo.RelField_originFieldName, Guid.Parse(fieldInfo.RelField_OriginEntityId), 1);
                     if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldid"))
                     {
                         fieldInfo.RelField_originFieldId = tmpFielddict["fieldid"].ToString();
+                    }
+                    if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldname") && tmpFielddict["fieldname"] != null) {
+                        fieldInfo.RelField_originFieldName_real = tmpFielddict["fieldname"].ToString();
                     }
                 }
                 fieldInfo.FieldConfig = MakeReferenceFieldConfig(fieldInfo);
@@ -1747,27 +1755,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
             retDict.Add("titleField", fieldInfo.Table_TitleFieldName);
             return retDict;
         }
-        private Dictionary<string, object> MakeReferenceFieldConfig(ExcelEntityColumnInfo fieldInfo )
+        private Dictionary<string, object> MakeReferenceFieldConfig(ExcelEntityColumnInfo fieldInfo)
         {
             Dictionary<string, object> retDict = MakeCommonTextFieldConfig("");
             if (fieldInfo.RelField_originFieldId != null && fieldInfo.RelField_originFieldId.Length > 0)
             {
 
-                retDict.Add("originEntity", fieldInfo.RelField_originFieldId);
+                retDict.Add("originField", fieldInfo.RelField_originFieldId);
             }
             else {
 
-                retDict.Add("originEntity", Guid.Empty.ToString());
+                retDict.Add("originField", Guid.Empty.ToString());
             }
             if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0)
             {
 
-                retDict.Add("originField", fieldInfo.RelField_OriginEntityId);
+                retDict.Add("originEntity", fieldInfo.RelField_OriginEntityId);
             }
             else
             {
 
-                retDict.Add("originField", Guid.Empty.ToString());
+                retDict.Add("originEntity", Guid.Empty.ToString());
             }
             if (fieldInfo.RelField_ControlFieldId != null && fieldInfo.RelField_ControlFieldId.Length > 0)
             {
@@ -1779,6 +1787,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 retDict.Add("controlField", Guid.Empty.ToString());
             }
+            if (fieldInfo.RelField_originFieldName_real != null && fieldInfo.RelField_originFieldName_real.Length > 0) {
+                retDict.Add("originFieldname", fieldInfo.RelField_originFieldName_real);
+            }
             return retDict;
         }
         private Guid GetDataSourceIdFromFieldDict(Dictionary<string, object> data)
@@ -1786,8 +1797,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (data.ContainsKey("fieldconfig")) {
                 string s_fieldConfig = data["fieldconfig"].ToString();
                 Dictionary<string, object> fieldConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(s_fieldConfig);
-                if (fieldConfig != null && fieldConfig.ContainsKey("datasource")) {
-                    string s_datasource = Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfig["datasource"]);
+                if (fieldConfig != null && fieldConfig.ContainsKey("dataSource")) {
+                    string s_datasource = Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfig["dataSource"]);
                     Dictionary<string,object> datasource = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(s_datasource);
                     if (datasource != null && datasource.ContainsKey("sourceId")) {
                         Guid tmp = Guid.Empty;
@@ -2973,6 +2984,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string Remark { get; set; }
         public string RelField_OriginEntityId { get; set; }
         public string RelField_originFieldName { get; set; }
+        public string RelField_originFieldName_real { get; set; }
         public string RelField_originFieldId { get; set; }
         public string RelField_ControlFieldName { get; set; }
         public string RelField_ControlFieldId { get; set; }
