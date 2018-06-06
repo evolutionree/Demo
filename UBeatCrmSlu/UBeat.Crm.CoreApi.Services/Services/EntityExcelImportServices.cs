@@ -593,6 +593,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     throw (new Exception("新增分类失败:" + result.Msg));
                                 }
                                 typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                                typeDict.Add(names[j], result.Id);
                             }
                             
                         }
@@ -618,6 +619,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     throw (new Exception("新增分类失败:" + result.Msg));
                                 }
                                 typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                                typeDict.Add(names[j], result.Id);
                             }
                         }
                     }
@@ -627,6 +629,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
                 {
                     catelogcount = entityInfo.TypeNameDict.Count;
+                    EntityTypeQueryMapper sub_queryMapper = new EntityTypeQueryMapper()
+                    {
+                        EntityId = subEntityInfo.EntityId.ToString()
+                    };
+                    Dictionary<string, List<IDictionary<string, object>>> sub_tmp = this._entityProRepository.EntityTypeQuery(sub_queryMapper, 1);
+                    Dictionary<string, string> sub_typeDict = new Dictionary<string, string>();
+                    foreach (IDictionary<string, object> item in sub_tmp["EntityTypePros"])
+                    {
+                        sub_typeDict.Add(item["categoryname"].ToString(), item["categoryid"].ToString());
+                    }
                     subEntityInfo.TypeNameDict = new Dictionary<string, EntityTypeSettingInfo>();
                     for (int i = 0; i < catelogcount; i++)
                     {
@@ -654,9 +666,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             this._entityProRepository.MapEntityType(subEntityInfo.EntityId, entityInfo.EntityId);
                             for (int j = 1; j < names.Length; j++)
                             {
-                                if (typeDict.ContainsKey(names[j]))
+                                if (sub_typeDict.ContainsKey(names[j]))
                                 {
-                                    subSetting.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
+                                    subSetting.CatelogIds.Add(Guid.Parse(sub_typeDict[names[j]]));
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                                 else
                                 {
@@ -671,6 +684,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         throw (new Exception("新增分类失败:" + result.Msg));
                                     }
                                     subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                    sub_typeDict.Add(names[j], result.Id);
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                             }
 
@@ -679,9 +694,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             for (int j = 0; j < names.Length; j++)
                             {
-                                if (typeDict.ContainsKey(names[j]))
+                                if (sub_typeDict.ContainsKey(names[j]))
                                 {
-                                    subSetting.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
+                                    subSetting.CatelogIds.Add(Guid.Parse(sub_typeDict[names[j]]));
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                                 else
                                 {
@@ -696,6 +712,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         throw (new Exception("新增分类失败:" + result.Msg));
                                     }
                                     subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                    sub_typeDict.Add(names[j], result.Id);
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                             }
                         }
@@ -1329,7 +1347,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         //检验默认值
                         int defaultid = this._dataSourceRepository.GetDictValueByName(dictType, fieldInfo.DefaultValue);
-                        if (defaultid <= 0)
+                        if (defaultid < 0)
                         {
                             fieldInfo.actionResult = new ActionResult()
                             {
@@ -1922,7 +1940,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (dictTypeInfo == null) {
                 DictNeedCreate.Add(dictTypeName, -1);
             }
-            return -1;
+            DictInDb.Add(dictTypeName, int.Parse(dictTypeInfo["dictypeid"].ToString()));
+            return int.Parse(dictTypeInfo["dictypeid"].ToString());
         }
         private Dictionary<string, object> MakeBigTextFieldConfig(string defaultValue) {
             Dictionary<string, object> ret = new Dictionary<string, object>();
