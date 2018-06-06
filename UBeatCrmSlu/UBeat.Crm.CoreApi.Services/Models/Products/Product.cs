@@ -129,7 +129,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
         /// 内部转换使用，参数无需传入
         /// </summary>
         public string[] ExcludeFilters { get; set; }
-
+        /// <summary>
+        /// 是否只返回产品系列。0=返回产品和产品系列，1=只返回产品系列
+        /// </summary>
+        public int IsProductSetOnly { get; set; }
         public int PageIndex { get; set; }
         public int PageCount { get; set; }
         public ProductSearchModel() {

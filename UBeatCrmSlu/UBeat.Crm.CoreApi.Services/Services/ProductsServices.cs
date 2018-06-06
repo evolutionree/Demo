@@ -9,6 +9,7 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using Microsoft.International.Converters.PinYinConverter;
+using System.Data.Common;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -300,74 +301,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             paramInfo.IncludeFilters = paramInfo.IncludeFilter.Split(",");
             paramInfo.ExcludeFilters = paramInfo.ExcludeFilter.Split(",");
             #endregion
-
-            #region 获取列显示信息
-            List<IDictionary<string, object>> VisibleFieldList = _entityProRepository.FieldMOBVisibleQuery(productGuid.ToString(), userNumber)["FieldVisible"];
-            #endregion
+            
             Dictionary<string, object> retDict = new Dictionary<string, object>();
             List<ProductSetsSearchInfo> ret = new List<ProductSetsSearchInfo>();
-            ///检查并获取最新的产品系列列表
-            List< Dictionary<string,object>> tmplist = this._repository.getProductAndSet(null, userNumber);
-            List<ProductSetsSearchInfo> list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ProductSetsSearchInfo>>(Newtonsoft.Json.JsonConvert.SerializeObject(tmplist));
-            DynamicEntityListModel dynamicEntity = new DynamicEntityListModel()
-            {
-                EntityId = productGuid,
-                MenuId = null,
-                ViewType = 4,
-                NeedPower = 0,
-                PageIndex = 1,
-                PageSize = 1000000,
-                IsAdvanceQuery = 0
-            };
-            OutputResult<object>  tmp  = _dynamicEntityServices.DataList2(dynamicEntity, false, 1);
-            
-            List<Dictionary<string, object>> products = ((Dictionary<string, List<Dictionary<string, object>>>)tmp.DataBody)["PageData"];
-            foreach (Dictionary<string, object> item in products) {
-                ProductSetsSearchInfo product = new ProductSetsSearchInfo();
-                product.Children = new List<ProductSetsSearchInfo>();
-                product.SetOrProduct = 2;
-                if (item.ContainsKey("recid") && item["recid"] != null)
-                {
-                    product.ProductSetId = Guid.Parse(item["recid"].ToString());
-                }
-                else {
-                    product.ProductSetId = Guid.Empty;
-                }
-                if (item.ContainsKey("productcode") && item["productcode"] != null)
-                {
-                    product.ProductSetCode = item["productcode"].ToString();
-                }
-                else {
-                    product.ProductSetCode = "";
-                }
-                if (item.ContainsKey("productname") && item["productname"] != null)
-                {
-                    product.ProductSetName = item["productname"].ToString();
-                }
-                else
-                {
-                    product.ProductSetName = "";
-                }
-                if (item.ContainsKey("productsetid") && item["productsetid"] != null)
-                {
-                    product.PProductSetId = Guid.Parse(item["productsetid"].ToString());
-                }
-                else
-                {
-                    product.PProductSetId = Guid.Empty;
-                }
-                if (item.ContainsKey("recorder") && item["recorder"] != null)
-                {
-                    product.RecOrder = int.Parse(item["recorder"].ToString());
-                }
-                else
-                {
-                    product.RecOrder = 0;
-                }
-                product.ProductDetail = item;
-                list.Add(product);
-            }
-            ProductSetPackageInfo ProductSet = ProductSetsUtils.getInstance().generatePackage(list);
+
+            ProductSetPackageInfo ProductSet = ProductSetsUtils.getInstance().getCurrentPackage(_entityProRepository, _repository, _dynamicEntityServices, userNumber);
             #region
             if (paramInfo.IsTopSet == -1 && IsForWeb) {
                 ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, ProductSet.RootProductSet);
@@ -387,7 +325,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (newRoot != null)
                         {
                             #region 开始处理searchkey过滤
-                            SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, newRoot, ret, VisibleFieldList);
+                            SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, paramInfo.IsProductSetOnly != 0,newRoot, ret, ProductSet.VisibleFieldList);
                             #endregion
                         }
                     }
@@ -398,7 +336,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                         if (ProductSetsUtils.getInstance().CheckNodeWith(paramInfo, child))
                         {
+                            if (paramInfo.IsProductSetOnly != 0)
+                            {
+                                if (child.SetOrProduct == 1)
+                                {
+                                    ret.Add(child.CopyToNew());
+                                }
+                            }
+                            else
+                            {
                                 ret.Add(child.CopyToNew());
+                            }
                         }
                     }
                 }
@@ -419,7 +367,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (newRoot != null)
                             {
                                 #region 开始处理searchkey过滤
-                                SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, newRoot, ret, VisibleFieldList);
+                                SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, paramInfo.IsProductSetOnly != 0, newRoot, ret, ProductSet.VisibleFieldList);
                                 #endregion
                             }
                         }
@@ -429,7 +377,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             if (ProductSetsUtils.getInstance().CheckNodeWith(paramInfo, child))
                             {
-                                ret.Add(child.CopyToNew());
+                                if (paramInfo.IsProductSetOnly != 0)
+                                {
+                                    if (child.SetOrProduct == 1)
+                                    {
+                                        ret.Add(child.CopyToNew());
+                                    }
+                                }
+                                else
+                                {
+                                    ret.Add(child.CopyToNew());
+                                }
                             }
                         }
                     }
@@ -441,7 +399,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo,ProductSet.RootProductSet);
                 if (newRoot != null) {
                     #region 开始处理searchkey过滤
-                    SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb,newRoot, ret,VisibleFieldList);
+                    SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb,paramInfo.IsProductSetOnly !=0 ,newRoot, ret, ProductSet.VisibleFieldList);
                     #endregion
                 }
             }
@@ -521,7 +479,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             item.Children = new List<ProductSetsSearchInfo>();
         }
-        private void SearchProductForSearchKey(char [] searchkey ,bool isForWeb,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
+        private void SearchProductForSearchKey(char [] searchkey ,bool isForWeb,bool isSetOnly,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
             int index = 0;
             bool isMatch = true;
             foreach (char ch in searchkey) {
@@ -580,29 +538,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 else
                 {
-                    list.Add(item.CopyToNew());
+                    if (!isSetOnly || item.SetOrProduct == 1) 
+                        list.Add(item.CopyToNew());
                 }
             }
             if (item.Children != null) {
                 foreach (ProductSetsSearchInfo subitem in item.Children) {
-                    SearchProductForSearchKey(searchkey,isForWeb, subitem, list, fieldsVisible);
+                    SearchProductForSearchKey(searchkey,isForWeb, isSetOnly, subitem, list, fieldsVisible);
                 }
             }
         }
     }
+    /// <summary>
+    /// 记录产品及产品系列的包
+    /// </summary>
     public class ProductSetPackageInfo {
         public Dictionary<string, ProductSetsSearchInfo> ProductSetDict { get; set; }
         public List<ProductSetsSearchInfo> ListProductSet { get; set; }
         public ProductSetsSearchInfo RootProductSet { get; set; }
         public List<IDictionary<string, object>> VisibleFieldList { get; set; }
-        public int MaxSetVersion { get; set; }
-        public int MaxProductVersion { get; set; }
-        public int MaxFieldVersion { get; set; }
+        public long MaxSetVersion { get; set; }
+        public long MaxProductVersion { get; set; }
+        public long MaxFieldVersion { get; set; }
     }
     public class ProductSetsUtils {
 
-        private ProductSetPackageInfo ProductSetCached = new ProductSetPackageInfo();
+        private ProductSetPackageInfo ProductSetCached = null;
         private static  object lockObj = new object();
+        private static object lockWorkObj = new object();
         private static ProductSetsUtils instance = null;
         public static ProductSetsUtils getInstance() {
             lock (lockObj)
@@ -611,13 +574,163 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return instance;
             }
         }
+        public ProductSetPackageInfo getCurrentPackage(IEntityProRepository _entityProRepository,IProductsRepository _repository, DynamicEntityServices _dynamicEntityServices, int userNumber) {
+            lock (lockWorkObj)
+            {
+                bool isNeedUpdateProduct = false;
+                bool isNeedUpdateField = false;
+                if (ProductSetCached == null)
+                {
+                    isNeedUpdateProduct = true;
+                    isNeedUpdateField = true;
+                }
+                else
+                {
+                    long productVersion;
+                    long setVersion;
+                    long fieldVersion;
+                    this.getProductAndSetVersion(_repository, _dynamicEntityServices, userNumber, out productVersion, out setVersion, out fieldVersion);
+                    if (productVersion > ProductSetCached.MaxProductVersion
+                        || setVersion > ProductSetCached.MaxSetVersion)
+                    {
+                        isNeedUpdateProduct = true;
+                    }
+                    if (fieldVersion > ProductSetCached.MaxFieldVersion)
+                    {
+                        isNeedUpdateField = true;
+                    }
+                }
+                if (isNeedUpdateProduct)
+                {
+                    Console.WriteLine("需要获取产品详情");
+                    List<ProductSetsSearchInfo> list = this.getList(_repository, _dynamicEntityServices, userNumber);
+                    ProductSetPackageInfo tmp = this.generatePackage(list);
+                    if (ProductSetCached != null)
+                    {
+                        tmp.MaxFieldVersion = ProductSetCached.MaxFieldVersion;
+                        tmp.VisibleFieldList = ProductSetCached.VisibleFieldList;
+                    }
+                    ProductSetCached = tmp;
+                }
+                if (isNeedUpdateField)
+                {
+                    Guid productGuid = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
+                    List<IDictionary<string, object>> VisibleFieldList = _entityProRepository.FieldMOBVisibleQuery(productGuid.ToString(), userNumber)["FieldVisible"];
+                    ProductSetCached.VisibleFieldList = VisibleFieldList;
+                    long tmpversion = 0;
+                    long maxversion = 0;
+                    foreach (IDictionary<string, object> item in VisibleFieldList) {
+                        if (item.ContainsKey("recversion") && item["recversion"]!=null) {
+                            if (long.TryParse(item["recversion"].ToString(), out tmpversion)) {
+                                if (maxversion < tmpversion) maxversion = tmpversion;
+                            }
+                        }
+                    }
+                    ProductSetCached.MaxFieldVersion = maxversion;
+                }
+                return ProductSetCached;
+            }
+
+        }
+        private void getProductAndSetVersion(IProductsRepository _repository, DynamicEntityServices _dynamicEntityServices, int userNumber,
+                out long ProductVersion,out long SetVersion,out long FieldVersion) {
+            DbTransaction tran = null;
+            _repository.GetProductAndSetVersion(tran,out   ProductVersion, out   SetVersion, out   FieldVersion, userNumber);
+        }
+        public List<ProductSetsSearchInfo> getList(IProductsRepository _repository,DynamicEntityServices _dynamicEntityServices,int userNumber) {
+            ///检查并获取最新的产品系列列表
+            Guid productGuid = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
+            List<Dictionary<string, object>> tmplist = _repository.getProductAndSet(null, userNumber);
+            List<ProductSetsSearchInfo> list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ProductSetsSearchInfo>>(Newtonsoft.Json.JsonConvert.SerializeObject(tmplist));
+            DynamicEntityListModel dynamicEntity = new DynamicEntityListModel()
+            {
+                EntityId = productGuid,
+                MenuId = null,
+                ViewType = 4,
+                NeedPower = 0,
+                PageIndex = 1,
+                PageSize = 1000000,
+                IsAdvanceQuery = 0
+            };
+            OutputResult<object> tmp = _dynamicEntityServices.DataList2(dynamicEntity, false, 1);
+
+            List<Dictionary<string, object>> products = ((Dictionary<string, List<Dictionary<string, object>>>)tmp.DataBody)["PageData"];
+            foreach (Dictionary<string, object> item in products)
+            {
+                ProductSetsSearchInfo product = new ProductSetsSearchInfo();
+                product.Children = new List<ProductSetsSearchInfo>();
+                product.SetOrProduct = 2;
+                if (item.ContainsKey("recid") && item["recid"] != null)
+                {
+                    product.ProductSetId = Guid.Parse(item["recid"].ToString());
+                }
+                else
+                {
+                    product.ProductSetId = Guid.Empty;
+                }
+                if (item.ContainsKey("productcode") && item["productcode"] != null)
+                {
+                    product.ProductSetCode = item["productcode"].ToString();
+                }
+                else
+                {
+                    product.ProductSetCode = "";
+                }
+                if (item.ContainsKey("productname") && item["productname"] != null)
+                {
+                    product.ProductSetName = item["productname"].ToString();
+                }
+                else
+                {
+                    product.ProductSetName = "";
+                }
+                if (item.ContainsKey("productsetid") && item["productsetid"] != null)
+                {
+                    product.PProductSetId = Guid.Parse(item["productsetid"].ToString());
+                }
+                else
+                {
+                    product.PProductSetId = Guid.Empty;
+                }
+                if (item.ContainsKey("recorder") && item["recorder"] != null)
+                {
+                    product.RecOrder = int.Parse(item["recorder"].ToString());
+                }
+                else
+                {
+                    product.RecOrder = 0;
+                }
+                if (item.ContainsKey("recversion") && item["recversion"] != null)
+                {
+                    long tmpversion = 0 ;
+                    long.TryParse(item["recversion"].ToString(), out tmpversion);
+                    product.RecVersion = tmpversion;
+                }
+                else {
+                    product.RecVersion = 0;
+                }
+                product.ProductDetail = item;
+                list.Add(product);
+            }
+            return list;
+        }
         public ProductSetPackageInfo generatePackage(List<ProductSetsSearchInfo> list)
         {
             ProductSetPackageInfo ret = new ProductSetPackageInfo();
             ret.ListProductSet = list;
             ret.ProductSetDict = new Dictionary<string, ProductSetsSearchInfo>();
+            long maxProductVersion = 0;
+            long maxSetVersion = 0;
             foreach (ProductSetsSearchInfo item in list)
             {
+                if (item.SetOrProduct == 2 && maxProductVersion < item.RecVersion) {
+                    maxProductVersion = item.RecVersion;
+                    
+                }else if (item.SetOrProduct == 1 && maxSetVersion < item.RecVersion)
+                {
+                    maxSetVersion = item.RecVersion;
+
+                }
                 ret.ProductSetDict.Add(item.ProductSetId.ToString(), item);
             }
 
@@ -645,6 +758,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 this.GenerateFullName(ret.RootProductSet, "");
                 CalcChildrenCount(ret.RootProductSet);
             }
+            ret.MaxProductVersion = maxProductVersion;
+            ret.MaxSetVersion = maxSetVersion;
             return ret;
         }
         public void CalcChildrenCount(ProductSetsSearchInfo item) {
@@ -731,6 +846,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public int RecOrder { get; set; }
         public string FullPathName { get; set; }
 
+        public long RecVersion { get; set; }
         public int SetOrProduct { get; set; }
         public int Nodepath { get; set; }
         public List<ProductSetsSearchInfo> Children { get; set; }

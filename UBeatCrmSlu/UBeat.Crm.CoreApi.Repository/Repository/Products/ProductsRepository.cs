@@ -196,7 +196,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                 string strSQL = @"select * 
                                 from (
 
-                                select productsetid,productsetcode,productsetname,pproductsetid,recorder  ,1 SetOrProduct from crm_sys_products_series  where recstatus =1 
+                                select productsetid,productsetcode,productsetname,pproductsetid,recorder  ,1 SetOrProduct ,recversion from crm_sys_products_series  where recstatus =1 
                                 )
                                  aa order by aa.SetOrProduct ,aa.productsetname";
                 return ExecuteQuery(strSQL, new DbParameter[] { }, trans);
@@ -204,6 +204,48 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
             catch (Exception ex) {
                 return new List<Dictionary<string, object>>();
             }
+        }
+
+        public void GetProductAndSetVersion(DbTransaction tran, out long productVersion, out long setVersion, out long fieldVersion, int userNumber)
+        {
+            try
+            {
+                productVersion = 0;
+                fieldVersion = 0;
+                setVersion = 0;
+                string strSQL = @"select * 
+                                    from (
+                                    select max(recversion) productversion   from crm_sys_product  where recstatus = 1 ) product,
+                                    (
+                                    select max(recversion) setversion from crm_sys_products_series  where recstatus = 1  
+                                    ) productset,
+                                    (
+                                    select  max(recversion) fieldversion from crm_sys_entity_listview_viewcolumn where viewtype = 1 and entityid ='59cf141c-4d74-44da-bca8-3ccf8582a1f2' 
+                                    ) fields";
+                List<Dictionary<string, object>>  list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
+                if (list != null || list.Count> 0)
+                {
+                    if (list[0]["productversion"] != null)
+                    {
+                        long.TryParse(list[0]["productversion"].ToString(), out productVersion);
+                    }
+                    if (list[0]["setversion"] != null)
+                    {
+                        long.TryParse(list[0]["setversion"].ToString(), out setVersion);
+                    }
+                    if (list[0]["fieldversion"] != null)
+                    {
+                        long.TryParse(list[0]["fieldversion"].ToString(), out fieldVersion);
+                    }
+
+                }
+            }
+            catch (Exception ex) {
+                productVersion = 0;
+                fieldVersion = 0;
+                setVersion = 0;
+            }
+
         }
     }
 }
