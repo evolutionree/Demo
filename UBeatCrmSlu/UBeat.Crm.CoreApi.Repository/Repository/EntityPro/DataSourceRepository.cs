@@ -196,11 +196,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
-            string sql = @"inser into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder) values
-     (@dictypeid, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig, @RelateDicTypeId,@RecOrder)";
+            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder) values
+     (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4)";
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("dictypeid", Guid.NewGuid()),
+                new NpgsqlParameter("dictypeid", entity.DicTypeId),
                 new NpgsqlParameter("dictypename", entity.DicTypeName),
                 new NpgsqlParameter("reccreator",userNumber),
                 new NpgsqlParameter("recupdator", userNumber),
@@ -214,7 +214,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public bool UpdateFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
-            string sql = @"update crm_sys_dictionary_type set recupdator=@recupdator,  dictypename = @dictypename,dicremark = @dicremark,fieldconfig = @fieldconfig::jsonb,RelateDicTypeId = @RelateDicTypeId,RecOrder=@RecOrder
+            string sql = @"update crm_sys_dictionary_type set recupdator=@recupdator,  dictypename = @dictypename,dicremark = @dicremark,fieldconfig = @fieldconfig::jsonb,RelateDicTypeId = @RelateDicTypeId,RecOrder=@RecOrder::int4
 where dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
