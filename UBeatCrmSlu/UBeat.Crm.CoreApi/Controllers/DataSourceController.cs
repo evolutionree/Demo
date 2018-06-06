@@ -87,6 +87,10 @@ namespace UBeat.Crm.CoreApi.Controllers
         #endregion
 
         #region 字段数据源
+        /// <summary>
+        /// 字典类型列表
+        /// </summary>
+        /// <returns></returns>
         [HttpPost]
         [Route("queryfieldopt")]
         public OutputResult<object> SelectFieldDicType()
@@ -94,13 +98,23 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dataSourceServices.SelectFieldDicType(UserId);
         }
 
-        [HttpPost("queryfieldoptdetail")]
-        public OutputResult<object> SelectFieldDicTypeList([FromBody] DictionaryTypeModel body)
+        /// <summary>
+        /// 字典类型详情
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("dictypedetail")]
+        public OutputResult<object> SelectFieldDicTypeDetail([FromBody] DictionaryTypeModel body)
         {
             if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式有误");
             return _dataSourceServices.SelectFieldDicTypeDetail(body.DicTypeId, UserId);
         }
 
+        /// <summary>
+        /// 查询字典配置
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
         [HttpPost]
         public OutputResult<object> SelectFieldConfig([FromBody] DictionaryTypeModel body)
         {
@@ -108,21 +122,24 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dataSourceServices.SelectFieldConfig(body.DicTypeId, UserId);
         }
 
-        [HttpPost]
-        public OutputResult<object> UpdateFieldDicType([FromBody]UpdateDicTypeParam body)
+        /// <summary>
+        /// 字典状态状态启用、禁用
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("updatedictypestatus")]
+        public OutputResult<object> UpdateFieldDicTypeStatus([FromBody]UpdateDicTypeParam body)
         {
-            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");
-            return _dataSourceServices.UpdateFieldDicType(body, UserId);
-        }
-
-        [HttpPost]
-        public OutputResult<object> UpdateFieldConfig([FromBody] UpdateFieldConfigParam body)
-        {
-            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");
-            return _dataSourceServices.UpdateFieldConfig(body, UserId);
+            if (body == null || string.IsNullOrEmpty(body.DicTypeIds)) return ResponseError<object>("参数格式错误");
+            var ids = body.DicTypeIds.Split(',');
+            return _dataSourceServices.UpdateFieldDicTypeStatus(ids, body.RecStatus, UserId);
         }
         
-
+        /// <summary>
+        /// 获取字典值
+        /// </summary>
+        /// <param name="entityModel"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("queryfielddicvalue")]
         public OutputResult<object> SelectFieldDicVaue([FromBody]DictionaryModel entityModel = null)
@@ -130,6 +147,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (entityModel == null) return ResponseError<object>("参数格式错误");
             return _dataSourceServices.SelectFieldDicVaue(entityModel, UserId);
         }
+
+        /// <summary>
+        /// 保存字典类型
+        /// </summary>
+        /// <param name="entityModel"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("savefielddictype")]
         public OutputResult<object> SaveFieldDicType([FromBody]DictionaryTypeModel entityModel = null)
@@ -137,6 +160,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (entityModel == null) return ResponseError<object>("参数格式错误");
 
             return _dataSourceServices.SaveFieldDicType(entityModel, UserId);
+        }
+
+        /// <summary>
+        /// 字典类型拖拽排序
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        public OutputResult<object> UpdateDicTypeOrder([FromBody]List<DictionaryTypeModel> body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.UpdateDicTypeOrder(body, UserId);
         }
         
         [HttpPost]

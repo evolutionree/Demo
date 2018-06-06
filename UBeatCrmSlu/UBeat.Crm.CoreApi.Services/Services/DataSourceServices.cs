@@ -111,7 +111,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
         {
-            return new OutputResult<object>(dataSourceRepository.SelectFieldDicTypeDetail(dicTypeId, userNumber));
+            Dictionary<string, object> result = new Dictionary<string, object>();
+            var typeList = dataSourceRepository.SelectFieldDicType(userNumber, dicTypeId);
+            result.Add("DicTypeList", typeList);
+            var typeDetail = dataSourceRepository.SelectFieldDicTypeDetail(dicTypeId, userNumber);
+            result.Add("DicTypeDetail", typeDetail);
+            return new OutputResult<object>(result);
         }
 
         public OutputResult<object> SelectFieldConfig(string dicTypeId, int userNumber)
@@ -121,54 +126,82 @@ namespace UBeat.Crm.CoreApi.Services.Services
     
         public OutputResult<object> SelectFieldDicVaue(DictionaryModel dic, int userNumber)
         {
-            List<Dictionary<string, object>> result = new List<Dictionary<string, object>>();
+            Dictionary<string, Dictionary<string, object>> result = new Dictionary<string, Dictionary<string, object>>();
             Dictionary<string, object> dictionary = new Dictionary<string, object>();
-            var dicTypeId = dataSourceRepository.HasParentDicType(dic.DicTypeId);
+            var parentDicType = dataSourceRepository.HasParentDicType(dic.DicTypeId); //查找是否有上级及配置
             var dicData = dataSourceRepository.SelectFieldDicVaue(dic.DicTypeId, userNumber); //当前
-            if (!string.IsNullOrEmpty(dicTypeId))
+            bool hasParent = !string.IsNullOrEmpty(parentDicType.RelateDicTypeId);
+            var parentDic = new Dictionary<string, object>();
+            parentDic.Add("Config", parentDicType.FieldConfig);
+            parentDic.Add("hasParent", hasParent);
+            result.Add("DataConfig",parentDic);
+            if (hasParent) //有父级
             {
-                var parentDic = new Dictionary<string, object>();
-                var parentData = dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(dicTypeId), userNumber); //上级
-                parentDic.Add("Parent", parentData);
-                result.Add(parentDic);
+                var parentData = dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(parentDicType.RelateDicTypeId), userNumber); //上级
+
                 foreach (var item in parentData)
                 {
                     var data = dicData.Where(r => r.RelateDataId == item.DicTypeId).ToList();
                     dictionary.Add(item.DataVal, data);
                 }
-                result.Add(dictionary);
-                return new OutputResult<object>(result);
+                result.Add("Data",dictionary);
             }
-            return new OutputResult<object>(dicData);
+            else
+            {
+                Dictionary<string, object> pairs = new Dictionary<string,object>();
+                pairs.Add("data", dicData);
+                result.Add("Data",pairs);
+            }
+            return new OutputResult<object>(result);
         }
 
         public OutputResult<object> SaveFieldDicType(DictionaryTypeModel option, int userNumber)
         {
             var entity = mapper.Map<DictionaryTypeModel, DictionaryTypeMapper>(option);
-            var falg = dataSourceRepository.SaveFieldDicType(entity, userNumber);
+            bool falg = false;
+            if (string.IsNullOrEmpty(entity.DicTypeId))
+            {
+                var dicId = dataSourceRepository.QueryDicId();
+                entity.DicTypeId = dicId;
+                var recOrder = dataSourceRepository.QueryRecOrder();
+                entity.RecOrder = recOrder;
+                if (!dataSourceRepository.HasDicTypeName(entity.DicTypeName))
+                    return new OutputResult<object>(null, "类型名称已存在", 1);
+                falg = dataSourceRepository.AddFieldDicType(entity, userNumber);
+            }
+            else
+            {
+                falg = dataSourceRepository.UpdateFieldDicType(entity, userNumber);
+            }
             if (falg)
                 return new OutputResult<object>(null, "保存成功");
             else
                 return new OutputResult<object>(null, "保存失败", 1);
         }
 
-        public OutputResult<object> UpdateFieldDicType(UpdateDicTypeParam param, int userNumber)
+        public OutputResult<object> UpdateDicTypeOrder(List<DictionaryTypeModel> data, int userNumber)
         {
-            var falg = dataSourceRepository.UpdateFieldDicType(param.DicTypeId, param.RelateDicTypeId, userNumber);
+            var mapList = new List<DictionaryTypeMapper>();
+            foreach (var item in data)
+            {
+                mapList.Add(mapper.Map<DictionaryTypeModel, DictionaryTypeMapper>(item));
+            }
+            var falg = dataSourceRepository.UpdateDicTypeOrder(mapList, userNumber);
             if (falg)
-                return new OutputResult<object>(null, "更新成功");
+                return new OutputResult<object>(null, "修改成功");
             else
-                return new OutputResult<object>(null, "更新失败", 1);
+                return new OutputResult<object>(null, "修改失败", 1);
         }
 
-        public OutputResult<object> UpdateFieldConfig(UpdateFieldConfigParam data, int userNumber)
+        public OutputResult<object> UpdateFieldDicTypeStatus(string[] ids, int status, int userNumber)
         {
-            var falg = dataSourceRepository.UpdateFieldConfig(data.DicTypeId, data.FieldConfig, userNumber);
+            var falg = dataSourceRepository.UpdateFieldDicTypeStatus(ids, status, userNumber);
             if (falg)
                 return new OutputResult<object>(null, "更新成功");
             else
                 return new OutputResult<object>(null, "更新失败", 1);
         }
+        
         public OutputResult<object> SaveFieldOptValue(DictionaryModel option, int userNumber)
         {
             var entity = mapper.Map<DictionaryModel, DictionaryMapper>(option);

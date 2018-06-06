@@ -16,4 +16,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string ExtField4 { get; set; }
         public string ExtField5 { get; set; }
     }
+
+    public class DicTypeDataModel
+    {
+        public string RelateDicTypeId { get; set; }
+        public dynamic FieldConfig { get; set; }
+    }
 }
