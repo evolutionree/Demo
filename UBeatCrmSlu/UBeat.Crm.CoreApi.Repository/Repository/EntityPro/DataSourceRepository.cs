@@ -144,7 +144,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public Dictionary<string, object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
         {
-            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig,a.isconfig from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
+            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig,isconfig from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
