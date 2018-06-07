@@ -134,7 +134,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #region 单选 多选
         public List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "")
         {
-            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder  from crm_sys_dictionary_type as a left join
+            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder,a.recstatus  from crm_sys_dictionary_type as a left join
  crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus ";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
@@ -174,13 +174,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 new NpgsqlParameter("dictypeid",dicTypeId)
             };
             var data = ExecuteQuery(sql, param, null).FirstOrDefault();
-            var dicType = new DicTypeDataModel { FieldConfig = data["fieldconfig"], RelateDicTypeId = Guid.Parse(data["relatedictypeid"].ToString()) };
+            var dicType = new DicTypeDataModel { FieldConfig = data["fieldconfig"], RelateDicTypeId = data["relatedictypeid"] == null ? "" : data["relatedictypeid"].ToString() };
             return dicType;
         }
 
         public List<DictionaryDataModel> SelectFieldDicVaue(int dicTypeId, int userNumber)
         {
-            string sql = @"select dictypeid,dataid,dataval,relatedataid,extfield1,extfield2,extfield3,extfield4,extfield5 from crm_sys_dictionary where dictypeid = @dictypeid";
+            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,extfield1,extfield2,extfield3,extfield4,extfield5 from crm_sys_dictionary where dictypeid = @dictypeid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
@@ -241,7 +241,7 @@ where dictypeid::text = @dictypeid";
         {
             string sql = @"insert into crm_sys_dictionary 
 (dicid,dictypeid,dataid,dataval,recorder,recstatus,reccreated,recupdated,reccreator,recupdator,relatedataid,extfield1,extfield2,extfield3,extfield4,extfield5)
-values (@dicid,@dictypeid,@dataid,@dataval,@recorder,@recstatus,@reccreated,@recupdated,@reccreator,@recupdator,@relatedataid,@extfield1,@extfield2,@extfield3,@extfield4,@extfield5)";
+values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreated,@recupdated,@reccreator,@recupdator,@relatedataid,@extfield1,@extfield2,@extfield3,@extfield4,@extfield5)";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dicid",entity.DicId),
@@ -252,7 +252,7 @@ values (@dicid,@dictypeid,@dataid,@dataval,@recorder,@recstatus,@reccreated,@rec
                 new NpgsqlParameter("recstatus",entity.RecStatus),
                 new NpgsqlParameter("reccreated",entity.RecCreated),
                 new NpgsqlParameter("recupdated",entity.RecUpdated),
-                new NpgsqlParameter("reccreator",entity.RecCreated),
+                new NpgsqlParameter("reccreator",entity.RecCreator),
                 new NpgsqlParameter("recupdator",entity.RecUpdator),
                 new NpgsqlParameter("relatedataid",entity.RelateDataId),
                 new NpgsqlParameter("extfield1",entity.ExtField1),
@@ -266,7 +266,7 @@ values (@dicid,@dictypeid,@dataid,@dataval,@recorder,@recstatus,@reccreated,@rec
 
         public bool UpdateDictionary(SaveDictionaryMapper entity, int userNumber)
         {
-            string sql = @"update crm_sys_dictionary set dictypeid = @dictypeid,dataid = @dataid, dataval = @dataval,recorder = @recorder, recstatus = @recstatus, recupdated = @recupdated,
+            string sql = @"update crm_sys_dictionary set dictypeid = @dictypeid::int4,dataid = @dataid, dataval = @dataval,recorder = @recorder, recstatus = @recstatus, recupdated = @recupdated,
 recupdator = @recupdator, relatedataid = @relatedataid, extfield1 = @extfield1, extfield2 = @extfield2, extfield3 = @extfield3, extfield4 = @extfield4, extfield5 = @extfield5
 where dicid = @dicid";
             var param = new DbParameter[]

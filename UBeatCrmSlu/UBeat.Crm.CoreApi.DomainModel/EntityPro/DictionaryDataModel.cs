@@ -6,10 +6,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 {
     public class DictionaryDataModel
     {
+        public Guid DicId { get; set; }
         public int DicTypeId { get; set; }
         public int DataId { get; set; }
         public string DataVal { get; set; }
-        public int RelateDataId { get; set; }
+        public Guid? RelateDataId { get; set; }
+        public int RecStatus { get; set; }
         public string ExtField1 { get; set; }
         public string ExtField2 { get; set; }
         public string ExtField3 { get; set; }
@@ -19,7 +21,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
     public class DicTypeDataModel
     {
-        public Guid? RelateDicTypeId { get; set; }
+        public string RelateDicTypeId { get; set; }
         public dynamic FieldConfig { get; set; }
     }
 }
