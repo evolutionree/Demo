@@ -1339,6 +1339,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 fieldInfo.ControlType = 5; fieldInfo.FieldType = 2;
                 fieldInfo.FieldConfig = MakeBigTextFieldConfig(fieldInfo.DefaultValue);
+            } else if (fieldInfo.FieldTypeName.Equals("提示文本")){
+                fieldInfo.ControlType = 2; fieldInfo.FieldType = 2;
+                fieldInfo.FieldConfig = MakeTipTextFieldConfig(fieldInfo.DefaultValue);
             }
             else if (fieldInfo.FieldTypeName.Equals("字典单选") || fieldInfo.FieldTypeName.Equals("单选"))
             {
@@ -1575,7 +1578,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
 
                 fieldInfo.ControlType = 31; fieldInfo.FieldType = 2;
-                if (fieldInfo.DataSourceName == null) {
+                if (fieldInfo.DataSourceName == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1585,7 +1589,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return;
                 }
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
-                if (tmp.Length != 2) {
+                if (tmp.Length != 2)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1612,7 +1617,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 ResultCode = -2,
                                 Message = "引用控件的控制控件只能是数据源控件"
                             };
-                            return ;
+                            return;
                         }
                         else if (fi.FieldId != Guid.Empty)
                         {
@@ -1653,17 +1658,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         fieldInfo.RelField_originFieldId = tmpFielddict["fieldid"].ToString();
                     }
-                    if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldname") && tmpFielddict["fieldname"] != null) {
+                    if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldname") && tmpFielddict["fieldname"] != null)
+                    {
                         fieldInfo.RelField_originFieldName_real = tmpFielddict["fieldname"].ToString();
                     }
                 }
                 fieldInfo.FieldConfig = MakeReferenceFieldConfig(fieldInfo);
                 #endregion
             }
-            else if (fieldInfo.FieldTypeName.Equals("表格")|| fieldInfo.FieldTypeName.Equals("表格字段"))
+            else if (fieldInfo.FieldTypeName.Equals("表格") || fieldInfo.FieldTypeName.Equals("表格字段"))
             {
                 fieldInfo.ControlType = 24; fieldInfo.FieldType = 2;
-                if (fieldInfo.DataSourceName == null)   {
+                if (fieldInfo.DataSourceName == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1671,21 +1678,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Message = "表格用对象异常"
                     };
                     return;
-                } 
+                }
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
-                if (tmp.Length != 2) {
+                if (tmp.Length != 2)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
                         ResultCode = -2,
-                        Message = "表格用对象异常："+fieldInfo.DataSourceName
+                        Message = "表格用对象异常：" + fieldInfo.DataSourceName
                     };
                     return;
                 }
                 fieldInfo.Table_EntityName = tmp[0];
                 fieldInfo.Table_TitleDisplayName = tmp[1];
                 ExcelEntityInfo tableEntityInfo = null;
-                if (entityInfo.SubEntitys == null) {
+                if (entityInfo.SubEntitys == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1702,7 +1711,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     }
                 }
-                if (tableEntityInfo == null) {
+                if (tableEntityInfo == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1724,7 +1734,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     }
                 }
-                if (foundField == null) {
+                if (foundField == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1736,8 +1747,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 fieldInfo.Table_TitleFieldName = foundField.FieldName;
                 fieldInfo.FieldConfig = MakeTableFieldConfig(fieldInfo);
             }
-            else {
-                if ((fieldInfo.FieldId == null || fieldInfo.FieldId == Guid.Empty) && !fieldInfo.FieldTypeName.Equals("系统字段")) {
+            else
+            {
+                if ((fieldInfo.FieldId == null || fieldInfo.FieldId == Guid.Empty) && !fieldInfo.FieldTypeName.Equals("系统字段"))
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1935,7 +1948,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             datasource.Add("sourceId", dicTypeId.ToString());
             retDict.Add("dataSource", datasource);
             retDict.Add("regExp", "");
-            if (DefaultValueId >0)
+            if (DefaultValueId >=0)
                 retDict.Add("defaultValue", DefaultValueId.ToString());
             return retDict;
 
@@ -1953,6 +1966,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             DictInDb.Add(dictTypeName, int.Parse(dictTypeInfo["dictypeid"].ToString()));
             return int.Parse(dictTypeInfo["dictypeid"].ToString());
+        }
+        private Dictionary<string, object> MakeTipTextFieldConfig(string tipContent) {
+            Dictionary<string, object> ret = new Dictionary<string, object>();
+            ret.Add("tipContent", tipContent);
+            ret.Add("tipColor", "#000000");
+            ret.Add("regExp", "");
+            return ret;
         }
         private Dictionary<string, object> MakeBigTextFieldConfig(string defaultValue) {
             Dictionary<string, object> ret = new Dictionary<string, object>();
