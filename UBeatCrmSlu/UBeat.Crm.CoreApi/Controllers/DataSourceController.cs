@@ -169,12 +169,13 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
+        [HttpPost("updatedictypeorder")]
         public OutputResult<object> UpdateDicTypeOrder([FromBody]List<DictionaryTypeModel> body)
         {
             if (body == null) return ResponseError<object>("参数格式错误");
             return _dataSourceServices.UpdateDicTypeOrder(body, UserId);
         }
-
+        [HttpPost("savedictionary")]
         public OutputResult<object> SaveDictionary([FromBody]SaveDictionaryModel body)
         {
             if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");

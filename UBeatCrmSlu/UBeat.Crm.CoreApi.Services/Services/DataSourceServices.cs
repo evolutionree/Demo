@@ -108,10 +108,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
             int status;
-            if (entity == null)
+            if (entity == null || string.IsNullOrEmpty(entity.Status))
                 status = 1;
             else
-                status = entity.Status;
+                status = Convert.ToInt32(entity.Status);
             var data = dataSourceRepository.SelectFieldDicType(status, userNumber);
             result.Add("FieldDicType", data);
             return new OutputResult<object>(result);

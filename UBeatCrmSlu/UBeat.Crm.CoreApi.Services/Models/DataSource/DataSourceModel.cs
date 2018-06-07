@@ -115,7 +115,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
 
     public class SrcDicTypeStatusList
     {
-        public int Status { get; set; }
+        public string Status { get; set; }
     }
 
     public class UpdateDicTypeParam
