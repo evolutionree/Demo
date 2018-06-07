@@ -134,7 +134,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #region 单选 多选
         public List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "")
         {
-            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig  from crm_sys_dictionary_type as a left join
+            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder  from crm_sys_dictionary_type as a left join
  crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus ";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
@@ -148,7 +148,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public Dictionary<string, object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
         {
-            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig,isconfig from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
+            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig,isconfig,recorder from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
@@ -174,7 +174,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 new NpgsqlParameter("dictypeid",dicTypeId)
             };
             var data = ExecuteQuery(sql, param, null).FirstOrDefault();
-            var dicType = new DicTypeDataModel { FieldConfig = data["fieldconfig"], RelateDicTypeId = data["relatedictypeid"] == null ? "" : data["relatedictypeid"].ToString() };
+            var dicType = new DicTypeDataModel { FieldConfig = data["fieldconfig"], RelateDicTypeId = Guid.Parse(data["relatedictypeid"].ToString()) };
             return dicType;
         }
 

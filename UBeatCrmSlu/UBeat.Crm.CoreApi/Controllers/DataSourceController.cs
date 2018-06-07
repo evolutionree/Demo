@@ -175,6 +175,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (body == null) return ResponseError<object>("参数格式错误");
             return _dataSourceServices.UpdateDicTypeOrder(body, UserId);
         }
+        /// <summary>
+        /// 保存字典
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
         [HttpPost("savedictionary")]
         public OutputResult<object> SaveDictionary([FromBody]SaveDictionaryModel body)
         {

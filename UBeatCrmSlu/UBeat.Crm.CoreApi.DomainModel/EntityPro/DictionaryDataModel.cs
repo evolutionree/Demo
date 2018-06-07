@@ -19,7 +19,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
     public class DicTypeDataModel
     {
-        public string RelateDicTypeId { get; set; }
+        public Guid? RelateDicTypeId { get; set; }
         public dynamic FieldConfig { get; set; }
     }
 }

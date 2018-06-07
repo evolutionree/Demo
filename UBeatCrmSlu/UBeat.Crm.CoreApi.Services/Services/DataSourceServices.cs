@@ -138,7 +138,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, object> dictionary = new Dictionary<string, object>();
             var parentDicType = dataSourceRepository.HasParentDicType(dic.DicTypeId); //查找是否有上级及配置
             var dicData = dataSourceRepository.SelectFieldDicVaue(dic.DicTypeId, userNumber); //当前
-            bool hasParent = !string.IsNullOrEmpty(parentDicType.RelateDicTypeId);
+            bool hasParent = !(parentDicType.RelateDicTypeId == null || parentDicType.RelateDicTypeId == Guid.Empty);
             var parentDic = new Dictionary<string, object>();
             parentDic.Add("Config", parentDicType.FieldConfig);
             parentDic.Add("hasParent", hasParent);
