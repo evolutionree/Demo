@@ -97,9 +97,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("queryfieldopt")]
         public OutputResult<object> SelectFieldDicType([FromBody]SrcDicTypeStatusList body)
         {
-            //if (body == null || string.IsNullOrEmpty(body.Status))
-            //    body.Status = "1";
-            return _dataSourceServices.SelectFieldDicType(UserId);
+            return _dataSourceServices.SelectFieldDicType(body,UserId);
         }
 
         /// <summary>

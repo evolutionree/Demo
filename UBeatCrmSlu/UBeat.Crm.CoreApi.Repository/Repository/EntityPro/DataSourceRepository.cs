@@ -132,14 +132,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #endregion
 
         #region 单选 多选
-        public List<Dictionary<string, object>> SelectFieldDicType(int userNumber, string dicTypeId = "")
+        public List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "")
         {
             string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig  from crm_sys_dictionary_type as a left join
- crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = 1 ";
+ crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus ";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
             sql += " order by a.recorder";
-            return ExecuteQuery(sql, new DbParameter[] { }, null);
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("recstatus",status)
+            };
+            return ExecuteQuery(sql, param, null);
         }
 
         public Dictionary<string, object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)

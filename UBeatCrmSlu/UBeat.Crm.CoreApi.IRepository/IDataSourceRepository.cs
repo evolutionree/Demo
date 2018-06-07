@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult UpdateSaveDataSourceDetail(UpdateDataSourceConfigMapper dataSource, int userNumber);
 
-        List<Dictionary<string, object>> SelectFieldDicType(int userNumber, string dicTypeId = "");
+        List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "");
         Dictionary<string, object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber);
         Dictionary<string, object> SelectFieldConfig(string dicTypeId, int userNumber);
         DicTypeDataModel HasParentDicType(int dicTypeId);

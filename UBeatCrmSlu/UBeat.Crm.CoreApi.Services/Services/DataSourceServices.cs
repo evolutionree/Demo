@@ -104,10 +104,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return HandleResult(dataSourceRepository.DataSourceDelete(entity, userNumber));
         }
-        public OutputResult<object> SelectFieldDicType(int userNumber)
+        public OutputResult<object> SelectFieldDicType(SrcDicTypeStatusList entity,int userNumber)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
-            var data = dataSourceRepository.SelectFieldDicType(userNumber);
+            int status;
+            if (entity == null)
+                status = 1;
+            else
+                status = entity.Status;
+            var data = dataSourceRepository.SelectFieldDicType(status, userNumber);
             result.Add("FieldDicType", data);
             return new OutputResult<object>(result);
         }
@@ -115,7 +120,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
-            var typeList = dataSourceRepository.SelectFieldDicType(userNumber, dicTypeId);
+            var typeList = dataSourceRepository.SelectFieldDicType(1, userNumber, dicTypeId);
             result.Add("DicTypeList", typeList);
             var typeDetail = dataSourceRepository.SelectFieldDicTypeDetail(dicTypeId, userNumber);
             result.Add("DicTypeDetail", typeDetail);
