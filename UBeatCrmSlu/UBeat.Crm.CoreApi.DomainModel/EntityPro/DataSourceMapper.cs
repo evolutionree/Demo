@@ -176,6 +176,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string DicTypeName { get; set; }
         public string DicRemark { get; set; }
         public string FieldConfig { get; set; }
+        public int RecStatus { get; set; }
         public int? RelateDicTypeId { get; set; }
         public string RecOrder { get; set; }
         /// <summary>

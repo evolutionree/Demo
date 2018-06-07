@@ -196,8 +196,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
-            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder,isconfig) values
-     (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4,@IsConfig)";
+            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder,isconfig,recstatus) values
+     (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4,@IsConfig,@RecStatus)";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid", entity.DicTypeId),
@@ -208,7 +208,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 new NpgsqlParameter("fieldconfig", entity.FieldConfig),
                 new NpgsqlParameter("RelateDicTypeId", entity.RelateDicTypeId),
                 new NpgsqlParameter("RecOrder",entity.RecOrder),
-                new NpgsqlParameter("IsConfig",entity.IsConfig)
+                new NpgsqlParameter("IsConfig",entity.IsConfig),
+                new NpgsqlParameter("RecStatus",entity.RecStatus)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }

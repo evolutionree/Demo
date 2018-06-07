@@ -115,7 +115,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPost("getfieldconfig")]
         public OutputResult<object> SelectFieldConfig([FromBody] DictionaryTypeModel body)
         {
             if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式有误");

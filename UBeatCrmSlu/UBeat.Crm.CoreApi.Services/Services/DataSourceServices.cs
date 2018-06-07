@@ -174,6 +174,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
+                if (entity.DicTypeId == "-1") //全局配置时处理
+                    entity.RecOrder = "0";
                 falg = dataSourceRepository.UpdateFieldDicType(entity, userNumber);
             }
             if (falg)
