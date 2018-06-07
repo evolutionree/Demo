@@ -185,7 +185,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
             };
-            return ExecuteQuery<DictionaryDataModel>(sql, param, null);
+            var data = ExecuteQuery<DictionaryDataModel>(sql, param, null);
+            return data.OrderBy(r => r.RecOrder).ToList();
         }
 
         public bool HasDicTypeName(string name)
