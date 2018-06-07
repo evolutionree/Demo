@@ -180,7 +180,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public List<DictionaryDataModel> SelectFieldDicVaue(int dicTypeId, int userNumber)
         {
-            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,extfield1,extfield2,extfield3,extfield4,extfield5 from crm_sys_dictionary where dictypeid = @dictypeid";
+            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,recorder,extfield1,extfield2,extfield3,extfield4,extfield5 from crm_sys_dictionary where dictypeid = @dictypeid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
