@@ -134,31 +134,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
     
         public OutputResult<object> SelectFieldDicVaue(DictionaryModel dic, int userNumber)
         {
-            Dictionary<string, Dictionary<string, object>> result = new Dictionary<string, Dictionary<string, object>>();
-            Dictionary<string, object> dictionary = new Dictionary<string, object>();
+            Dictionary<string, object> result = new Dictionary<string, object>();
             var parentDicType = dataSourceRepository.HasParentDicType(dic.DicTypeId); //查找是否有上级及配置
+            bool hasParent = !string.IsNullOrEmpty(parentDicType.RelateDicTypeId);
             var dicData = dataSourceRepository.SelectFieldDicVaue(dic.DicTypeId, userNumber); //当前
-            bool hasParent = !(parentDicType.RelateDicTypeId == null || parentDicType.RelateDicTypeId == Guid.Empty);
-            var parentDic = new Dictionary<string, object>();
-            parentDic.Add("Config", parentDicType.FieldConfig);
-            parentDic.Add("hasParent", hasParent);
-            result.Add("DataConfig",parentDic);
+            result.Add("config", parentDicType.FieldConfig);
+            result.Add("data", dicData);
             if (hasParent) //有父级
             {
                 var parentData = dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(parentDicType.RelateDicTypeId), userNumber); //上级
-
-                foreach (var item in parentData)
-                {
-                    var data = dicData.Where(r => r.RelateDataId == item.DicTypeId).ToList();
-                    dictionary.Add(item.DataVal, data);
-                }
-                result.Add("Data",dictionary);
-            }
-            else
-            {
-                Dictionary<string, object> pairs = new Dictionary<string,object>();
-                pairs.Add("data", dicData);
-                result.Add("Data",pairs);
+                result.Add("parentData", parentData);
             }
             return new OutputResult<object>(result);
         }
@@ -197,6 +182,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             entity.RecUpdator = userNumber;
             if (entity.DicId == Guid.Empty) //add
             {
+                entity.DicId = Guid.NewGuid();
                 entity.RecStatus = 1;
                 entity.RecCreator = userNumber;
                 entity.RecCreated = DateTime.Now;
