@@ -135,7 +135,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public List<Dictionary<string, object>> SelectFieldDicType(int userNumber, string dicTypeId = "")
         {
             string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname  from crm_sys_dictionary_type as a left join
- crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.recstatus = 1 ";
+ crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = 1 ";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
             sql += " order by a.recorder";
@@ -196,8 +196,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
-            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder) values
-     (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4)";
+            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder,isconfig) values
+     (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4,@IsConfig)";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid", entity.DicTypeId),
@@ -207,14 +207,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 new NpgsqlParameter("dicremark", entity.DicRemark),
                 new NpgsqlParameter("fieldconfig", entity.FieldConfig),
                 new NpgsqlParameter("RelateDicTypeId", entity.RelateDicTypeId),
-                new NpgsqlParameter("RecOrder",entity.RecOrder)
+                new NpgsqlParameter("RecOrder",entity.RecOrder),
+                new NpgsqlParameter("IsConfig",entity.IsConfig)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
 
         public bool UpdateFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
-            string sql = @"update crm_sys_dictionary_type set recupdator=@recupdator,  dictypename = @dictypename,dicremark = @dicremark,fieldconfig = @fieldconfig::jsonb,RelateDicTypeId = @RelateDicTypeId,RecOrder=@RecOrder::int4
+            string sql = @"update crm_sys_dictionary_type set recupdator = @recupdator,  dictypename = @dictypename,dicremark = @dicremark,fieldconfig = @fieldconfig::jsonb,
+relatedictypeid = @RelateDicTypeId,recorder = @RecOrder::int4, isconfig = @IsConfig
 where dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
@@ -224,7 +226,8 @@ where dictypeid::text = @dictypeid";
                 new NpgsqlParameter("dicremark", entity.DicRemark),
                 new NpgsqlParameter("fieldconfig", entity.FieldConfig),
                 new NpgsqlParameter("RelateDicTypeId", entity.RelateDicTypeId),
-                new NpgsqlParameter("RecOrder",entity.RecOrder)
+                new NpgsqlParameter("RecOrder",entity.RecOrder),
+                new NpgsqlParameter("IsConfig",entity.IsConfig)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }

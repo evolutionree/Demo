@@ -1,1 +1,1 @@
-insert into crm_sys_dictionary_type(dictypeid,dictypename,reccreator,recupdator) values (0,'默认配置',1,1)
+insert into crm_sys_dictionary_type(dictypeid,dictypename,reccreator,recupdator) values (-1,'默认配置',1,1)

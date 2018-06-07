@@ -107,6 +107,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string FieldConfig { get; set; }
         public int? RelateDicTypeId { get; set; }
         public string RecOrder { get; set; }
+        /// <summary>
+        /// 0:使用自定义 1:使用全局
+        /// </summary>
+        public int IsConfig { get; set; } 
     }
 
     public class UpdateDicTypeParam
