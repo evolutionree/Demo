@@ -226,7 +226,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     List<string> ids = new List<string>();
                     foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields)
                     {
-                        if (fieldInfo.FieldId != null && fieldInfo.FieldId != Guid.Empty && fieldInfo.IsWebListField)
+                        if (fieldInfo.FieldId != null && fieldInfo.FieldId != Guid.Empty && fieldInfo.IsCheckSameField)
                         {
                             ids.Add(fieldInfo.FieldId.ToString());
                         }
@@ -358,8 +358,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 item.FieldId = fieldInfo.FieldId.ToString();
                                 item.FieldLabel = fieldInfo.DisplayName;
-                                item.RecStatus = 1;
                                 ExcelEntityFieldViewInfo viewtype = fieldInfo.ViewSet[entityInfo.TypeNameDict[i.ToString()].TypeName];
+                                item.RecStatus = viewtype.IsEnable?1:0;
                                 //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
                                 FieldRulesDetailModel addnew = new FieldRulesDetailModel()
                                 {
@@ -403,6 +403,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                             }
                             item.TypeId = catelogid.ToString();
+                            
                             ll.Add(item);
                         }
                         this._entityProRepository.DeleteEntityFieldRules(catelogid, 1);
@@ -484,8 +485,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 {
                                     item.FieldId = fieldInfo.FieldId.ToString();
                                     item.FieldLabel = fieldInfo.DisplayName;
-                                    item.RecStatus = 1;
-
                                     ExcelEntityFieldViewInfo viewtype = null;
                                     if (fieldInfo.ViewSet.ContainsKey(subEntityInfo.TypeNameDict[i.ToString()].TypeName))
                                     {
@@ -494,6 +493,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     else {
                                         viewtype = fieldInfo.ViewSet.First().Value;
                                     }
+                                    item.RecStatus = viewtype.IsEnable ? 1 : 0;
                                     //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
                                     FieldRulesDetailModel addnew = new FieldRulesDetailModel()
                                     {
