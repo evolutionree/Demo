@@ -30,6 +30,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         bool HasDicTypeName(string name);
         bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber);
         bool UpdateFieldDicType(DictionaryTypeMapper entity, int userNumber);
+        bool AddDictionary(SaveDictionaryMapper entity, int userNumber);
+        bool UpdateDictionary(SaveDictionaryMapper entity, int userNumber);
         bool UpdateDicTypeOrder(List<DictionaryTypeMapper> data, int userNumber);
         bool UpdateFieldDicTypeStatus(string[] ids, int status, int userNumber);
         OperateResult SaveFieldOptValue(DictionaryMapper option, int userNumber);

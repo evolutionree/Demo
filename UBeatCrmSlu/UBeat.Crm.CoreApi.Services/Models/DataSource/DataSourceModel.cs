@@ -113,6 +113,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public int IsConfig { get; set; } 
     }
 
+    public class SrcDicTypeStatusList
+    {
+        public string Status { get; set; }
+    }
+
     public class UpdateDicTypeParam
     {
         public string DicTypeIds { get; set; }
@@ -134,5 +139,25 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string DataId { get; set; }
 
         public string DataValue { get; set; }
+    }
+
+    public class SaveDictionaryModel
+    {
+        public Guid DicId { get; set; }
+        public string DicTypeId { get; set; } 
+        public int DataId { get; set; }
+        public string DataVal { get; set; }
+        public int RecOrder { get; set; }
+        public int RecStatus { get; set; }
+        public DateTime RecCreated { get; set; }
+        public DateTime RecUpdated { get; set; }
+        public int RecCreator { get; set; }
+        public int RecUpdator { get; set; }
+        public int? RelateDataId { get; set; }
+        public string ExtField1 { get; set; }
+        public string ExtField2 { get; set; }
+        public string ExtField3 { get; set; }
+        public string ExtField4 { get; set; }
+        public string ExtField5 { get; set; }
     }
 }

@@ -87,14 +87,18 @@ namespace UBeat.Crm.CoreApi.Controllers
         #endregion
 
         #region 字段数据源
+
+        #region 枚举额外属性
         /// <summary>
         /// 字典类型列表
         /// </summary>
         /// <returns></returns>
         [HttpPost]
         [Route("queryfieldopt")]
-        public OutputResult<object> SelectFieldDicType()
+        public OutputResult<object> SelectFieldDicType([FromBody]SrcDicTypeStatusList body)
         {
+            //if (body == null || string.IsNullOrEmpty(body.Status))
+            //    body.Status = "1";
             return _dataSourceServices.SelectFieldDicType(UserId);
         }
 
@@ -134,7 +138,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var ids = body.DicTypeIds.Split(',');
             return _dataSourceServices.UpdateFieldDicTypeStatus(ids, body.RecStatus, UserId);
         }
-        
+
         /// <summary>
         /// 获取字典值
         /// </summary>
@@ -172,7 +176,15 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (body == null) return ResponseError<object>("参数格式错误");
             return _dataSourceServices.UpdateDicTypeOrder(body, UserId);
         }
-        
+
+        public OutputResult<object> SaveDictionary([FromBody]SaveDictionaryModel body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.SaveDictionary(body, UserId);
+        }
+
+        #endregion
+
         [HttpPost]
         [Route("savefieldoptval")]
         public OutputResult<object> SaveFieldOpt([FromBody]DictionaryModel entityModel = null)

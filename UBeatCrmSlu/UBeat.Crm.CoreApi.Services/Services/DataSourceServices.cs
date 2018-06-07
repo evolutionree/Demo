@@ -184,6 +184,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "保存失败", 1);
         }
 
+        public OutputResult<object> SaveDictionary(SaveDictionaryModel data, int userNumber)
+        {
+            bool falg = false;
+            var entity = mapper.Map<SaveDictionaryModel, SaveDictionaryMapper>(data);
+            entity.RecUpdated = DateTime.Now;
+            entity.RecUpdator = userNumber;
+            if (entity.DicId == Guid.Empty) //add
+            {
+                entity.RecStatus = 1;
+                entity.RecCreator = userNumber;
+                entity.RecCreated = DateTime.Now;
+                falg = dataSourceRepository.AddDictionary(entity, userNumber);
+            }
+            else //edit
+            {
+                falg = dataSourceRepository.UpdateDictionary(entity, userNumber);
+            }
+            if (falg)
+                return new OutputResult<object>(null, "保存成功");
+            else
+                return new OutputResult<object>(null, "保存失败", 1);
+        }
+
         public OutputResult<object> UpdateDicTypeOrder(List<DictionaryTypeModel> data, int userNumber)
         {
             var mapList = new List<DictionaryTypeMapper>();
