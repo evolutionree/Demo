@@ -106,7 +106,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> SelectFieldDicType(int userNumber)
         {
-            return new OutputResult<object>(dataSourceRepository.SelectFieldDicType(userNumber));
+            Dictionary<string, object> result = new Dictionary<string, object>();
+            var data = dataSourceRepository.SelectFieldDicType(userNumber);
+            result.Add("FieldDicType", data);
+            return new OutputResult<object>(result);
         }
 
         public OutputResult<object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
