@@ -134,7 +134,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #region 单选 多选
         public List<Dictionary<string, object>> SelectFieldDicType(int userNumber, string dicTypeId = "")
         {
-            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname  from crm_sys_dictionary_type as a left join
+            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig  from crm_sys_dictionary_type as a left join
  crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = 1 ";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
@@ -144,7 +144,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public Dictionary<string, object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
         {
-            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
+            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig,a.isconfig from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
@@ -229,6 +229,58 @@ where dictypeid::text = @dictypeid";
                 new NpgsqlParameter("RelateDicTypeId", entity.RelateDicTypeId),
                 new NpgsqlParameter("RecOrder",entity.RecOrder),
                 new NpgsqlParameter("IsConfig",entity.IsConfig)
+            };
+            return ExecuteNonQuery(sql, param, null) > 0;
+        }
+
+        public bool AddDictionary(SaveDictionaryMapper entity, int userNumber)
+        {
+            string sql = @"insert into crm_sys_dictionary 
+(dicid,dictypeid,dataid,dataval,recorder,recstatus,reccreated,recupdated,reccreator,recupdator,relatedataid,extfield1,extfield2,extfield3,extfield4,extfield5)
+values (@dicid,@dictypeid,@dataid,@dataval,@recorder,@recstatus,@reccreated,@recupdated,@reccreator,@recupdator,@relatedataid,@extfield1,@extfield2,@extfield3,@extfield4,@extfield5)";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("dicid",entity.DicId),
+                new NpgsqlParameter("dictypeid",entity.DicTypeId),
+                new NpgsqlParameter("dataid",entity.DataId),
+                new NpgsqlParameter("dataval",entity.DataVal),
+                new NpgsqlParameter("recorder",entity.RecOrder),
+                new NpgsqlParameter("recstatus",entity.RecStatus),
+                new NpgsqlParameter("reccreated",entity.RecCreated),
+                new NpgsqlParameter("recupdated",entity.RecUpdated),
+                new NpgsqlParameter("reccreator",entity.RecCreated),
+                new NpgsqlParameter("recupdator",entity.RecUpdator),
+                new NpgsqlParameter("relatedataid",entity.RelateDataId),
+                new NpgsqlParameter("extfield1",entity.ExtField1),
+                new NpgsqlParameter("extfield2",entity.ExtField2),
+                new NpgsqlParameter("extfield3",entity.ExtField3),
+                new NpgsqlParameter("extfield4",entity.ExtField4),
+                new NpgsqlParameter("extfield5",entity.ExtField5)
+            };
+            return ExecuteNonQuery(sql, param, null) > 0;
+        }
+
+        public bool UpdateDictionary(SaveDictionaryMapper entity, int userNumber)
+        {
+            string sql = @"update crm_sys_dictionary set dictypeid = @dictypeid,dataid = @dataid, dataval = @dataval,recorder = @recorder, recstatus = @recstatus, recupdated = @recupdated,
+recupdator = @recupdator, relatedataid = @relatedataid, extfield1 = @extfield1, extfield2 = @extfield2, extfield3 = @extfield3, extfield4 = @extfield4, extfield5 = @extfield5
+where dicid = @dicid";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("dictypeid",entity.DicTypeId),
+                new NpgsqlParameter("dataid",entity.DataId),
+                new NpgsqlParameter("dataval",entity.DataVal),
+                new NpgsqlParameter("recorder",entity.RecOrder),
+                new NpgsqlParameter("recstatus",entity.RecStatus),
+                new NpgsqlParameter("recupdated",entity.RecUpdated),
+                new NpgsqlParameter("recupdator",entity.RecUpdator),
+                new NpgsqlParameter("relatedataid",entity.RelateDataId),
+                new NpgsqlParameter("extfield1",entity.ExtField1),
+                new NpgsqlParameter("extfield2",entity.ExtField2),
+                new NpgsqlParameter("extfield3",entity.ExtField3),
+                new NpgsqlParameter("extfield4",entity.ExtField4),
+                new NpgsqlParameter("extfield5",entity.ExtField5),
+                new NpgsqlParameter("dicid",entity.DicId)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
