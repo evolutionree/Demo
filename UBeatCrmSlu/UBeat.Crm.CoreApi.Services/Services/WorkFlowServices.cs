@@ -2289,122 +2289,102 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return _workFlowRepository.getWorkFlowCaseListByRecId(transaction, recid, userNumber);
         }
 
-        //public OutputResult<object> AddMultipleCase(WorkFlowAddMultipleCaseModel caseModel, int userNumber)
-        //{
-        //    var caseIds = new List<string>();
-        //    WorkFlowAddMultipleCaseMapper caseEntity = new WorkFlowAddMultipleCaseMapper()
-        //    {
-        //        FlowId = caseModel.FlowId,
-        //        EntityId = caseModel.EntityId,
-        //        RecId = caseModel.RecId,
-        //        RelEntityId = caseModel.RelEntityId,
-        //        RelRecId = caseModel.RelRecId,
-        //        CaseData = caseModel.CaseData
-        //    };
-
-        //    if (caseEntity == null || !caseEntity.IsValid())
-        //    {
-        //        return HandleValid(caseEntity);
-        //    }
-
-        //    //添加多个case,返回第一个case的user数据，作为所有case的user数据
-        //    foreach (var id in caseEntity.RecId)
-        //    {
-        //        WorkFlowAddCaseModel caseMapper = new WorkFlowAddCaseModel()
-        //        {
-        //            FlowId = caseEntity.FlowId,
-        //            EntityId = caseEntity.EntityId,
-        //            RecId = id,
-        //            RelEntityId = caseEntity.RelEntityId,
-        //            RelRecId = caseEntity.RelEntityId,
-        //            CaseData = caseEntity.CaseData
-        //        };
-
-        //        var restult = AddCase(caseMapper, userNumber);
-
-        //        //记录caseid 
-        //        if (restult.Status == 0)
-        //        {
-        //            caseIds.Add(restult.DataBody.ToString());
-        //        }
-
-        //    }
-
-        //    if (caseIds.Count > 0)
-        //    {
-
-        //        //获取下一个node
-        //        var nextNodeResult = _workFlowRepository.NextNodeData(Guid.Parse(caseIds.FirstOrDefault()), userNumber);
-
-        //        var node = nextNodeResult["node"];
-        //        var user = nextNodeResult["user"];
-
-        //        var finalResult = new
-        //        {
-        //            node,
-        //            user,
-        //            caseIds
-        //        };
-        //        return new OutputResult<object>(finalResult);
-        //    }
-        //    else
-        //    {
-        //        return new OutputResult<object>()
-        //        {
-        //            Status = 1,//失败
-        //            Message = "选择的数据有问题，请重新选择",
-
-        //        };
-        //    }
-        //}
 
 
+        /// <summary>
+        /// 用于定时事务，计算需要终止的节点
+        /// </summary>
+        /// <param name="userId"></param>
+        public void AutoTerminateWorkflowCases() {
+            try
+            {
+                int userId = 1;
+                DbTransaction tran = null;
+                List<WorkFlowCaseInfo> cases = this._workFlowRepository.GetExpiredWorkflowCaseList(tran,userId);
+                foreach (WorkFlowCaseInfo caseInfo in cases) {
+                    TerminateWorkflowCase(caseInfo.CaseId, userId);
+                }
+            }
+            catch (Exception ex) {
 
-        ///// <summary>
-        ///// 添加多个case item
-        ///// </summary>
-        ///// <param name="caseModel"></param>
-        ///// <param name="userNumber"></param>
-        ///// <returns></returns>
-        //public OutputResult<object> AddMultipleCaseItem(WorkFlowAddMultipleCaseItemModel caseModel, int userNumber)
-        //{
-        //    WorkFlowAddMulpleCaseItemMapper _mapper = new WorkFlowAddMulpleCaseItemMapper()
-        //    {
-        //        CaseId = caseModel.CaseId,
-        //        NodeNum = caseModel.NodeNum,
-        //        HandleUser = caseModel.HandleUser,
-        //        CopyUser = caseModel.CopyUser,
-        //        Remark = caseModel.Remark,
-        //        CaseData = caseModel.CaseData
+            }
 
-        //    };
+        }
+        /// <summary>
+        /// 终止流程
+        /// </summary>
+        /// <param name="caseId"></param>
+        /// <param name="userId"></param>
+        private void TerminateWorkflowCase(Guid caseId, int userId)
+        {
+            bool isOK = false;
+            int stepnum = 0;
+            int nodeNum = 0;
+            using (var conn = GetDbConnect(null))
+            {
+                DbTransaction tran = null;
+                try
+                {
+                    conn.Open();
+                    tran = conn.BeginTransaction();
+                    var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseId);
+                    if (caseInfo == null)
+                        throw new Exception("流程表单数据不存在");
+                    var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
+                    if (workflowInfo == null)
+                        throw new Exception("流程配置不存在");
+                    List<WorkFlowCaseItemInfo> caseitems = _workFlowRepository.GetWorkflowCaseWaitingDealItems(tran, caseId);
+                    if (caseitems == null || caseitems.Count == 0)
+                        throw new Exception("流程节点不存在");
+                    //对所有节点进行更新处理
 
-        //    if (_mapper == null || !_mapper.IsValid())
-        //    {
-        //        return HandleValid(_mapper);
-        //    }
+                    _workFlowRepository.TerminateCase(tran, caseId);
+                    stepnum = caseitems.FirstOrDefault().StepNum;
+                    nodeNum = caseitems.FirstOrDefault().NodeNum;
+                    Guid nodeid = caseitems.FirstOrDefault().NodeId;
+                    int ChoiceStatus = 3;
+                    WorkFlowEventInfo eventInfo = null ;
+                    //如果不是自由流程，或者自由流程的第一个节点，需要验证是否有附加函数
+                    #region 执行节点脚本
+                    if (workflowInfo.FlowType != WorkFlowType.FreeFlow )
+                    {
+                        //判断是否有附加函数_event_func
+                        eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
+                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, ChoiceStatus, userId, tran);
+                    }
+                    #endregion
+                    #region 执行流程结束脚本
+                    var nodelist = _workFlowRepository.GetNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum);
+                    WorkFlowNodeInfo endnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
+                    if (endnode != null)
+                    {
+                        _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, endnode.NodeId, stepnum + 1, userId, tran);
+                        eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, endnode.NodeId, tran);
+                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, ChoiceStatus, userId, tran);
+                    }
+                    #endregion 
+                    tran.Commit();
+                    tran = null;
+                    isOK = true;
+                }
+                catch (Exception ex)
+                {
+                    
+                }
+                finally
+                {
+                    if (tran != null)
+                    {
+                        tran.Rollback();
+                        tran = null;
+                    }
+                }
 
-        //    foreach (var id in _mapper.CaseId)
-        //    {
-        //        WorkFlowAddCaseItemMapper caseItemEntity = new WorkFlowAddCaseItemMapper()
-        //        {
-        //            CaseId = id,
-        //            NodeNum = caseModel.NodeNum,
-        //            HandleUser = caseModel.HandleUser,
-        //            CopyUser = caseModel.CopyUser,
-        //        };
-
-        //        var resultAddCaseItem = _workFlowRepository.AddCaseItem(caseItemEntity, userNumber);
-        //        if (resultAddCaseItem.Flag == 1)
-        //        {
-        //            WriteCaseItemMessage(0, id, caseModel.NodeNum, userNumber);
-        //        }
-        //    }
-
-
-        //    return HandleResult(new OperateResult() { Flag = 1 });
-
-        //}
-
+            }
+            #region 写终止消息
+            if (isOK)
+                WriteCaseAuditMessage(caseId,nodeNum,stepnum, userId);
+            #endregion
+        }
     }
 }
