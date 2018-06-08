@@ -430,5 +430,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         }
+
+        public OutputResult<object> SelectTodayIndex(int userNumber)
+        {
+            var data = _customerRepository.SelectTodayIndex(userNumber);
+            return new OutputResult<object>(data);
+        }
+
+        public OutputResult<object> SelectDaily(int userNumber)
+        {
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                Dictionary<string, object> result = new Dictionary<string, object>();
+                #region 获取当日拜访计划客户
+                var beginDate = DateTime.Now.ToString("yyyy-MM-dd");
+                var endDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
+                var customer = _customerRepository.SelectCustomerOfVisitPlan(beginDate, endDate, userNumber, transaction);
+                #endregion
+                result.Add("VisitSum", customer.Count());
+                result.Add("data", customer);
+                #region 查询客户拜访小结
+                var data = _customerRepository.SelectTodayIndex(userNumber);
+                #endregion
+                result.Add("SaleSum", data["todaysale"]);
+                return new OutputResult<object>(result);
+            }, userNumber, userNumber);
+        }
     }
 }

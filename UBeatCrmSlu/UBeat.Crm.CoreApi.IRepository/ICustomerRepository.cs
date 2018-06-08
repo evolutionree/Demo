@@ -56,5 +56,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         string getCommonIdByCustId(DbTransaction tran, string custid, int userId);
 
+        Dictionary<string, object> SelectTodayIndex(int userNumber);
+
+        List<Dictionary<string, object>> SelectCustomerOfVisitPlan(string beginDate, string endDate, int userNumber, DbTransaction tran);
+
     }
 }
