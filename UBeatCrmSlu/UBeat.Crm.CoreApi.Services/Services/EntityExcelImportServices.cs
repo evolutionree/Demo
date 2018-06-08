@@ -19,6 +19,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
     public class EntityExcelImportServices : EntityBaseServices
     {
         public static string[] DefaultFieldName = new string[] { "recid", "recname", "recmananger", "reccreator", "reccreated", "recupdator", "recupdated", "recstatus", "recversion" };
+
+        public static string[] CellColumnNames = new string[] { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+                                                                     "AA","AB","AC","AD","AE","AF","AG","AH","AI","AJ","AK","AL","AM","AN","AO","AP","AQ","AR","AS","AT","AU","AV","AW","AX","AY","AZ",
+                                                                     "BA","BB","BC","BD","BE","BF","BG","BH","BI","BJ","BK","BL","BM","BN","BO","BP","BQ","BR","BS","BT","BU","BV","BW","BX","BY","BZ"};
         private Dictionary<string, int> DictInDb = new Dictionary<string, int>();
         private Dictionary<string, int> DictNeedCreate = new Dictionary<string, int>();
         private List<Dictionary<string, object>> DictValueNeedCreate = new List<Dictionary<string, object>>();
@@ -2669,25 +2673,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ret;
         }
 
+        private Cell [] RowCells(Row row) {
+            if (row == null) return new Cell[] { };
+            Cell lastCell = row.Descendants<Cell>().Last();
+            string cellRefName = lastCell.CellReference.Value;
+            int maxIndex = CellColumnNames.Count()-1; 
+            for (int i = CellColumnNames.Count() - 1; i >= 0; i--) {
+                if (cellRefName.StartsWith(CellColumnNames[i])) {
+                    maxIndex = i;
+                    break;
+                }
+            }
+            Cell[] cells = new Cell[maxIndex];
+            IEnumerable<Cell> it_cell = row.Descendants<Cell>();
+            int currentCount = 0;
+            for (int i = 0; i < cells.Count(); i++) {
+                lastCell = it_cell.ElementAt(currentCount);
+                if (lastCell.CellReference.Value.StartsWith(CellColumnNames[i]))
+                {
+                    cells[i] = lastCell;
+                    currentCount++;
+                }
+                else {
+                    cells[i] = null;
+                }
+            }
+
+            return cells;
+        }
         public ExcelEntityColumnInfo GetColumnInfo(WorkbookPart workbookPart, Sheet sheet, Row row, Dictionary<string, EntityTypeSettingInfo> TypeNameDict)
         {
             ExcelEntityColumnInfo columnInfo = new ExcelEntityColumnInfo();
             int columnIndex = 0;
+            int columnNameIndex = 0;
             Cell cell = null;
             string cellValue = null;
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            Cell[] allCells = RowCells(row);
+            cell = allCells[columnIndex];
+            if (cell == null) return null;
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             if (cellValue.Length == 0) return null;//代表这一行已经是空行了
             int tmp = 0;
-            if (int.TryParse(cellValue, out tmp) == false) {
+            if (int.TryParse(cellValue, out tmp) == false)
+            {
                 // columnInfo.ErrorMsg = string.Format("{0}\r\n 第{1}行第{2}列应该是数字，实际为{3}", columnInfo.ErrorMsg, row.RowIndex + 1, columnIndex + 1, cellValue);
                 return null;
             }
             columnInfo.Index = tmp;
             columnIndex++;
-
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            
+            
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             if (cellValue.Length == 0) {
@@ -2696,19 +2733,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             columnInfo.DisplayName = cellValue;
             columnIndex++;
 
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             columnInfo.FieldName = cellValue;
             columnIndex++;
 
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             columnInfo.FieldTypeName = cellValue;
             columnIndex++;
 
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             columnInfo.DataSourceName = cellValue;
@@ -2719,47 +2756,47 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 EntityTypeSettingInfo typeSettingInfo = TypeNameDict[i.ToString()];
 
                 ExcelEntityFieldViewInfo viewInfo = new ExcelEntityFieldViewInfo();
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.IsEnable = true; else viewInfo.IsEnable = false;
                 columnIndex++;
 
 
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.AddNew_Display = true; else viewInfo.AddNew_Display = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.AddNew_Must = true; else viewInfo.AddNew_Must = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.AddNew_Readonly = true; else viewInfo.AddNew_Readonly = false;
                 columnIndex++;
 
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.Edit_Display = true; else viewInfo.Edit_Display = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.Edit_Must = true; else viewInfo.Edit_Must = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.Edit_Readonly = true; else viewInfo.Edit_Readonly = false;
                 columnIndex++;
 
 
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.View_Display = true; else viewInfo.View_Display = false;
@@ -2767,13 +2804,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (typeSettingInfo.IsImport)
                 {
 
-                    cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                    cell = allCells[columnIndex];
                     cellValue = GetCellValue(cell, workbookPart);
                     if (cellValue == null) cellValue = "";
                     if (cellValue.Equals("√")) viewInfo.Import_Display = true; else viewInfo.Import_Display = false;
                     columnIndex++;
 
-                    cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                    cell = allCells[columnIndex];
                     cellValue = GetCellValue(cell, workbookPart);
                     if (cellValue == null) cellValue = "";
                     if (cellValue.Equals("√")) viewInfo.Import_Must = true; else viewInfo.Import_Must = false;
@@ -2782,41 +2819,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 columnInfo.ViewSet.Add(typeSettingInfo.TypeName, viewInfo);
             }
 
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) columnInfo.IsWebListField = true; else columnInfo.IsWebListField = false;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 columnInfo.DefaultValue = cellValue;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) columnInfo.IsAdvanceSearch = true; else columnInfo.IsAdvanceSearch = false;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) columnInfo.IsCheckSameField = true; else columnInfo.IsCheckSameField = false;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 columnInfo.Remark = cellValue;
@@ -2827,6 +2864,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public string GetCellValue(Cell cell, WorkbookPart workBookPart)
         {
+            if (cell == null) return null;
             string cellValue = string.Empty;
             if (cell.ChildElements.Count == 0)//Cell节点下没有子节点
             {
