@@ -153,11 +153,17 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public DateTime RecUpdated { get; set; }
         public int RecCreator { get; set; }
         public int RecUpdator { get; set; }
-        public int? RelateDataId { get; set; }
+        public Guid? RelateDataId { get; set; }
         public string ExtField1 { get; set; }
         public string ExtField2 { get; set; }
         public string ExtField3 { get; set; }
         public string ExtField4 { get; set; }
         public string ExtField5 { get; set; }
+    }
+
+    public class OrderByDictionaryModel
+    {
+        public Guid DicId { get; set; }
+        public int RecOrder { get; set; }
     }
 }

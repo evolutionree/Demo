@@ -187,6 +187,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dataSourceServices.SaveDictionary(body, UserId);
         }
 
+        [HttpPost("orderbydictionary")]
+        public OutputResult<object> OrderByDictionary([FromBody]List<OrderByDictionaryModel>  body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.OrderByDictionary(body, UserId);
+        }
+
         #endregion
 
         [HttpPost]

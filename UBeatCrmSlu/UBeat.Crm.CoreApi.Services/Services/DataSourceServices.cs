@@ -198,6 +198,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "保存失败", 1);
         }
 
+        public OutputResult<object> OrderByDictionary(List<OrderByDictionaryModel> entity, int userNumber)
+        {
+            List<OrderByDictionaryMapper> entityList = new List<OrderByDictionaryMapper>();
+            foreach (var item in entity)
+            {
+                entityList.Add(mapper.Map<OrderByDictionaryModel, OrderByDictionaryMapper>(item));
+            }
+            var falg = dataSourceRepository.OrderByDictionary(entityList, userNumber);
+            if (falg)
+                return new OutputResult<object>(null, "更新成功");
+            else
+                return new OutputResult<object>(null, "更新失败", 1);
+        }
+
         public OutputResult<object> UpdateDicTypeOrder(List<DictionaryTypeModel> data, int userNumber)
         {
             var mapList = new List<DictionaryTypeMapper>();

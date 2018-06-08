@@ -180,7 +180,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public List<DictionaryDataModel> SelectFieldDicVaue(int dicTypeId, int userNumber)
         {
-            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,recorder,extfield1,extfield2,extfield3,extfield4,extfield5 from crm_sys_dictionary where dictypeid = @dictypeid";
+            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,recorder,extfield1,extfield2,extfield3,extfield4,extfield5 from crm_sys_dictionary where recstatus = 1 and dictypeid = @dictypeid ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
@@ -295,7 +295,17 @@ where dicid = @dicid";
             string sql = "";
             foreach (var item in data)
             {
-                sql += string.Format("update crm_sys_dictionary_type set recorder = {0} where dictypeid = {1};/n", item.RecOrder, item.DicTypeId);
+                sql += string.Format("update crm_sys_dictionary_type set recorder = {0} where dictypeid = '{1}';\n ", item.RecOrder, item.DicTypeId);
+            }
+            return ExecuteNonQuery(sql, new DbParameter[] { }, null) > 0;
+        }
+
+        public bool OrderByDictionary(List<OrderByDictionaryMapper> entity, int userNumber)
+        {
+            string sql = "";
+            foreach (var item in entity)
+            {
+                sql += string.Format("update crm_sys_dictionary set recorder = {0} where dicid = '{1}';\n ", item.RecOrder, item.DicId);
             }
             return ExecuteNonQuery(sql, new DbParameter[] { }, null) > 0;
         }
