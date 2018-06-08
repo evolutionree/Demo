@@ -182,6 +182,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             entity.RecUpdator = userNumber;
             if (entity.DicId == Guid.Empty) //add
             {
+                if (!dataSourceRepository.HasDicDataVal(entity.DataVal,entity.DicTypeId))
+                    return new OutputResult<object>(null, "字典名称已存在", 1);
                 entity.DicId = Guid.NewGuid();
                 entity.RecStatus = 1;
                 entity.RecCreator = userNumber;

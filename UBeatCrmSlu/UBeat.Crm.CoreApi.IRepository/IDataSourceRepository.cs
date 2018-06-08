@@ -27,7 +27,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<DictionaryDataModel> SelectFieldDicVaue(int dicTypeId, int userNumber);
         string QueryDicId();
         string QueryRecOrder();
-        bool HasDicTypeName(string name);
+        bool HasDicTypeName(string Name);
+        bool HasDicDataVal(string Name, string DicTypeId);
         bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber);
         bool UpdateFieldDicType(DictionaryTypeMapper entity, int userNumber);
         bool AddDictionary(SaveDictionaryMapper entity, int userNumber);

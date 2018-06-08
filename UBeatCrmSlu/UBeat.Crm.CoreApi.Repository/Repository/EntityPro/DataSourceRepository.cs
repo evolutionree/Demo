@@ -189,12 +189,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             return data.OrderBy(r => r.RecOrder).ToList();
         }
 
-        public bool HasDicTypeName(string name)
+        public bool HasDicTypeName(string Name)
         {
             string sql = @"select dictypeid from crm_sys_dictionary_type where dictypename = @dictypename";
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("dictypename",name)
+                new NpgsqlParameter("dictypename",Name)
+            };
+            return ExecuteScalar(sql, param, null) == null;
+        }
+
+        public bool  HasDicDataVal(string Name,string DicTypeId)
+        {
+            string sql = @"select dictypeid from crm_sys_dictionary where dataval = @dataval and dictypeid::text = @dictypeid";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("dataval",Name),
+                new NpgsqlParameter("dictypeid",DicTypeId),
             };
             return ExecuteScalar(sql, param, null) == null;
         }
