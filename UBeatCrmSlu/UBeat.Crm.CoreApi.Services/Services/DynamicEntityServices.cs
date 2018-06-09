@@ -1828,7 +1828,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }, relEntityInfo.EntityTable + "_t");
                         var entityTable = relEntityInfo.EntityTable;
                         fromClause = string.Format(@"{0} left outer join {1} as {1}_t on {1}_t.recid = e.recrelateid ", fromClause, entityTable);
-                        selectClause = string.Format(@"{0},{1}_t.{2} as {3},{4} as {3}_name", selectClause, entityTable, relField.fieldname, EntityInfo["relfieldname"].ToString(), selectField);
+                        selectClause = string.Format(@"{0},{4} as {3}_name", selectClause, entityTable, relField.fieldname, fieldInfo.FieldName, selectField);
                         break;
                 }
             }

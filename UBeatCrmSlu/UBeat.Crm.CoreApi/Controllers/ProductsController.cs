@@ -177,11 +177,20 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _service.GetProducts(body, UserId);
         }
 
+        [HttpPost("productdetail")]
+        public OutputResult<object> ProuctDetails([FromBody]ProductDetailModel paramInfo ) {
+            if (paramInfo == null)
+                return ResponseError<object>("参数异常");
+            return _service.ProductDetail(paramInfo, UserId);
+        }
         [HttpPost("searchproductformobile")]
         [AllowAnonymous]
         public OutputResult<object> SearchProduct([FromBody] ProductSearchModel paramInfo) {
+            if (paramInfo == null) return ResponseError<object>("参数异常");
             if (paramInfo.SearchKey != null) paramInfo.SearchKey = paramInfo.SearchKey.ToLower();
-            return _service.SearchProductAndSeries(paramInfo, UserId);
+            AnalyseHeader header = this.GetAnalyseHeader();
+            
+            return _service.SearchProductAndSeries(paramInfo, header.Device.ToLower() == "web"?true:false,UserId);
         }
     }
 }

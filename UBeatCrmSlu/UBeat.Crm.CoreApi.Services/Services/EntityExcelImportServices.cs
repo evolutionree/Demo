@@ -12,12 +12,17 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.Services.Models.DataSource;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class EntityExcelImportServices : EntityBaseServices
     {
         public static string[] DefaultFieldName = new string[] { "recid", "recname", "recmananger", "reccreator", "reccreated", "recupdator", "recupdated", "recstatus", "recversion" };
+
+        public static string[] CellColumnNames = new string[] { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+                                                                     "AA","AB","AC","AD","AE","AF","AG","AH","AI","AJ","AK","AL","AM","AN","AO","AP","AQ","AR","AS","AT","AU","AV","AW","AX","AY","AZ",
+                                                                     "BA","BB","BC","BD","BE","BF","BG","BH","BI","BJ","BK","BL","BM","BN","BO","BP","BQ","BR","BS","BT","BU","BV","BW","BX","BY","BZ"};
         private Dictionary<string, int> DictInDb = new Dictionary<string, int>();
         private Dictionary<string, int> DictNeedCreate = new Dictionary<string, int>();
         private List<Dictionary<string, object>> DictValueNeedCreate = new List<Dictionary<string, object>>();
@@ -225,7 +230,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     List<string> ids = new List<string>();
                     foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields)
                     {
-                        if (fieldInfo.FieldId != null && fieldInfo.FieldId != Guid.Empty && fieldInfo.IsWebListField)
+                        if (fieldInfo.FieldId != null && fieldInfo.FieldId != Guid.Empty && fieldInfo.IsCheckSameField)
                         {
                             ids.Add(fieldInfo.FieldId.ToString());
                         }
@@ -357,8 +362,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 item.FieldId = fieldInfo.FieldId.ToString();
                                 item.FieldLabel = fieldInfo.DisplayName;
-                                item.RecStatus = 1;
                                 ExcelEntityFieldViewInfo viewtype = fieldInfo.ViewSet[entityInfo.TypeNameDict[i.ToString()].TypeName];
+                                item.RecStatus = viewtype.IsEnable?1:0;
                                 //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
                                 FieldRulesDetailModel addnew = new FieldRulesDetailModel()
                                 {
@@ -402,6 +407,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                             }
                             item.TypeId = catelogid.ToString();
+                            
                             ll.Add(item);
                         }
                         this._entityProRepository.DeleteEntityFieldRules(catelogid, 1);
@@ -412,6 +418,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
                 {
                     catelogcount = subEntityInfo.TypeNameDict.Count;
+                    dataDict = this._entityProRepository.EntityFieldProQuery(subEntityInfo.EntityId.ToString(), 1);
+                    data = dataDict["EntityFieldPros"];
                     for (int i = 0; i < catelogcount; i++)
                     {
                         foreach (Guid catelogid in subEntityInfo.TypeNameDict[i.ToString()].CatelogIds)
@@ -481,8 +489,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 {
                                     item.FieldId = fieldInfo.FieldId.ToString();
                                     item.FieldLabel = fieldInfo.DisplayName;
-                                    item.RecStatus = 1;
-
                                     ExcelEntityFieldViewInfo viewtype = null;
                                     if (fieldInfo.ViewSet.ContainsKey(subEntityInfo.TypeNameDict[i.ToString()].TypeName))
                                     {
@@ -491,6 +497,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     else {
                                         viewtype = fieldInfo.ViewSet.First().Value;
                                     }
+                                    item.RecStatus = viewtype.IsEnable ? 1 : 0;
                                     //操作类型 新增 编辑 详情 列表 导入分别是0 1 2 3 4
                                     FieldRulesDetailModel addnew = new FieldRulesDetailModel()
                                     {
@@ -593,6 +600,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     throw (new Exception("新增分类失败:" + result.Msg));
                                 }
                                 typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                                typeDict.Add(names[j], result.Id);
                             }
                             
                         }
@@ -618,6 +626,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     throw (new Exception("新增分类失败:" + result.Msg));
                                 }
                                 typeInfo.CatelogIds.Add(Guid.Parse(result.Id));
+                                typeDict.Add(names[j], result.Id);
                             }
                         }
                     }
@@ -627,6 +636,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
                 {
                     catelogcount = entityInfo.TypeNameDict.Count;
+                    EntityTypeQueryMapper sub_queryMapper = new EntityTypeQueryMapper()
+                    {
+                        EntityId = subEntityInfo.EntityId.ToString()
+                    };
+                    Dictionary<string, List<IDictionary<string, object>>> sub_tmp = this._entityProRepository.EntityTypeQuery(sub_queryMapper, 1);
+                    Dictionary<string, string> sub_typeDict = new Dictionary<string, string>();
+                    foreach (IDictionary<string, object> item in sub_tmp["EntityTypePros"])
+                    {
+                        sub_typeDict.Add(item["categoryname"].ToString(), item["categoryid"].ToString());
+                    }
                     subEntityInfo.TypeNameDict = new Dictionary<string, EntityTypeSettingInfo>();
                     for (int i = 0; i < catelogcount; i++)
                     {
@@ -640,7 +659,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         string[] names = subSetting.TypeName.Split(",，".ToCharArray());
                         if (i == 0)
                         {
-                            subSetting.CatelogIds.Add(entityInfo.EntityId);
+                            subSetting.CatelogIds.Add(subEntityInfo.EntityId);
                             //更新名称
                             EntityTypeModel model = new EntityTypeModel()
                             {
@@ -654,9 +673,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             this._entityProRepository.MapEntityType(subEntityInfo.EntityId, entityInfo.EntityId);
                             for (int j = 1; j < names.Length; j++)
                             {
-                                if (typeDict.ContainsKey(names[j]))
+                                if (sub_typeDict.ContainsKey(names[j]))
                                 {
-                                    subSetting.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
+                                    subSetting.CatelogIds.Add(Guid.Parse(sub_typeDict[names[j]]));
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                                 else
                                 {
@@ -671,6 +691,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         throw (new Exception("新增分类失败:" + result.Msg));
                                     }
                                     subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                    sub_typeDict.Add(names[j], result.Id);
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                             }
 
@@ -679,9 +701,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             for (int j = 0; j < names.Length; j++)
                             {
-                                if (typeDict.ContainsKey(names[j]))
+                                if (sub_typeDict.ContainsKey(names[j]))
                                 {
-                                    subSetting.CatelogIds.Add(Guid.Parse(typeDict[names[j]]));
+                                    subSetting.CatelogIds.Add(Guid.Parse(sub_typeDict[names[j]]));
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                                 else
                                 {
@@ -696,6 +719,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         throw (new Exception("新增分类失败:" + result.Msg));
                                     }
                                     subSetting.CatelogIds.Add(Guid.Parse(result.Id));
+                                    sub_typeDict.Add(names[j], result.Id);
+                                    this._entityProRepository.MapEntityType(Guid.Parse(sub_typeDict[names[j]]), Guid.Parse(typeDict[names[j]]));
                                 }
                             }
                         }
@@ -1318,6 +1343,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 fieldInfo.ControlType = 5; fieldInfo.FieldType = 2;
                 fieldInfo.FieldConfig = MakeBigTextFieldConfig(fieldInfo.DefaultValue);
+            } else if (fieldInfo.FieldTypeName.Equals("提示文本")){
+                fieldInfo.ControlType = 2; fieldInfo.FieldType = 2;
+                fieldInfo.FieldConfig = MakeTipTextFieldConfig(fieldInfo.DefaultValue);
             }
             else if (fieldInfo.FieldTypeName.Equals("字典单选") || fieldInfo.FieldTypeName.Equals("单选"))
             {
@@ -1329,7 +1357,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         //检验默认值
                         int defaultid = this._dataSourceRepository.GetDictValueByName(dictType, fieldInfo.DefaultValue);
-                        if (defaultid <= 0)
+                        if (defaultid < 0)
                         {
                             fieldInfo.actionResult = new ActionResult()
                             {
@@ -1431,12 +1459,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else if (fieldInfo.FieldTypeName.Equals("邮箱"))
             {
                 fieldInfo.ControlType = 11; fieldInfo.FieldType = 2;
-                fieldInfo.FieldConfig = MakeCommonTextFieldConfig(@"\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*");
+                fieldInfo.FieldConfig = MakeCommonTextFieldConfig("\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*");
             }
             else if (fieldInfo.FieldTypeName.Equals("电话"))
             {
                 fieldInfo.ControlType = 11; fieldInfo.FieldType = 2;
-                fieldInfo.FieldConfig = MakeCommonTextFieldConfig(@"\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*");
+                fieldInfo.FieldConfig = MakeCommonTextFieldConfig("[0-9]+");
 
             }
             else if (fieldInfo.FieldTypeName.Equals("地址"))
@@ -1461,7 +1489,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else if (fieldInfo.FieldTypeName.Equals("团队组织"))
             {
-                fieldInfo.ControlType = 16; fieldInfo.FieldType = 2;
+                fieldInfo.ControlType = 17; fieldInfo.FieldType = 2;
                 if (fieldInfo.DataSourceName != null && fieldInfo.DataSourceName.Equals("多选"))
                 {
                     fieldInfo.FieldConfig = MakeDeptFieldConfig(true);
@@ -1554,7 +1582,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
 
                 fieldInfo.ControlType = 31; fieldInfo.FieldType = 2;
-                if (fieldInfo.DataSourceName == null) {
+                if (fieldInfo.DataSourceName == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1564,7 +1593,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return;
                 }
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
-                if (tmp.Length != 2) {
+                if (tmp.Length != 2)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1591,7 +1621,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 ResultCode = -2,
                                 Message = "引用控件的控制控件只能是数据源控件"
                             };
-                            return ;
+                            return;
                         }
                         else if (fi.FieldId != Guid.Empty)
                         {
@@ -1613,7 +1643,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (datasourceid != Guid.Empty)
                         {
                             //找到DATa Source就开始找entityid
-                            Dictionary<string, object> datasourcetmp = this._dataSourceRepository.GetDataSourceInfo(datasourceid, 1);
+                            dynamic datasourcetmp1 = this._dataSourceRepository.GetDataSourceInfo(datasourceid, 1);
+
+                            Dictionary<string, object> datasourcetmp = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(datasourcetmp1));
                             if (datasourcetmp != null && datasourcetmp.ContainsKey("entityid"))
                             {
                                 string tmp_entityid = datasourcetmp["entityid"].ToString();
@@ -1625,19 +1657,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0)
                 {
                     //通过originentityid 和rel_fieldname 获取fieldInfo.relfield_originfieldid 
-                    Dictionary<string, object> tmpFielddict = this._entityProRepository.GetFieldInfoByFieldName(null, fieldInfo.RelField_originFieldName, Guid.Parse(fieldInfo.RelField_OriginEntityId), 1);
+                    Dictionary<string, object> tmpFielddict = _entityProRepository.GetFieldInfoByDisplayName(null, fieldInfo.RelField_originFieldName, Guid.Parse(fieldInfo.RelField_OriginEntityId), 1);
                     if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldid"))
                     {
                         fieldInfo.RelField_originFieldId = tmpFielddict["fieldid"].ToString();
+                    }
+                    if (tmpFielddict != null && tmpFielddict.ContainsKey("fieldname") && tmpFielddict["fieldname"] != null)
+                    {
+                        fieldInfo.RelField_originFieldName_real = tmpFielddict["fieldname"].ToString();
                     }
                 }
                 fieldInfo.FieldConfig = MakeReferenceFieldConfig(fieldInfo);
                 #endregion
             }
-            else if (fieldInfo.FieldTypeName.Equals("表格")|| fieldInfo.FieldTypeName.Equals("表格字段"))
+            else if (fieldInfo.FieldTypeName.Equals("表格") || fieldInfo.FieldTypeName.Equals("表格字段"))
             {
                 fieldInfo.ControlType = 24; fieldInfo.FieldType = 2;
-                if (fieldInfo.DataSourceName == null)   {
+                if (fieldInfo.DataSourceName == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1645,21 +1682,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Message = "表格用对象异常"
                     };
                     return;
-                } 
+                }
                 string[] tmp = fieldInfo.DataSourceName.Split(',');
-                if (tmp.Length != 2) {
+                if (tmp.Length != 2)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
                         ResultCode = -2,
-                        Message = "表格用对象异常："+fieldInfo.DataSourceName
+                        Message = "表格用对象异常：" + fieldInfo.DataSourceName
                     };
                     return;
                 }
                 fieldInfo.Table_EntityName = tmp[0];
                 fieldInfo.Table_TitleDisplayName = tmp[1];
                 ExcelEntityInfo tableEntityInfo = null;
-                if (entityInfo.SubEntitys == null) {
+                if (entityInfo.SubEntitys == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1676,7 +1715,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     }
                 }
-                if (tableEntityInfo == null) {
+                if (tableEntityInfo == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1698,7 +1738,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     }
                 }
-                if (foundField == null) {
+                if (foundField == null)
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1710,8 +1751,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 fieldInfo.Table_TitleFieldName = foundField.FieldName;
                 fieldInfo.FieldConfig = MakeTableFieldConfig(fieldInfo);
             }
-            else {
-                if ((fieldInfo.FieldId == null || fieldInfo.FieldId == Guid.Empty) && !fieldInfo.FieldTypeName.Equals("系统字段")) {
+            else
+            {
+                if ((fieldInfo.FieldId == null || fieldInfo.FieldId == Guid.Empty) && !fieldInfo.FieldTypeName.Equals("系统字段"))
+                {
                     fieldInfo.actionResult = new ActionResult()
                     {
                         ActionType = 0,
@@ -1729,27 +1772,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
             retDict.Add("titleField", fieldInfo.Table_TitleFieldName);
             return retDict;
         }
-        private Dictionary<string, object> MakeReferenceFieldConfig(ExcelEntityColumnInfo fieldInfo )
+        private Dictionary<string, object> MakeReferenceFieldConfig(ExcelEntityColumnInfo fieldInfo)
         {
             Dictionary<string, object> retDict = MakeCommonTextFieldConfig("");
             if (fieldInfo.RelField_originFieldId != null && fieldInfo.RelField_originFieldId.Length > 0)
             {
 
-                retDict.Add("originEntity", fieldInfo.RelField_originFieldId);
+                retDict.Add("originField", fieldInfo.RelField_originFieldId);
             }
             else {
 
-                retDict.Add("originEntity", Guid.Empty.ToString());
+                retDict.Add("originField", Guid.Empty.ToString());
             }
             if (fieldInfo.RelField_OriginEntityId != null && fieldInfo.RelField_OriginEntityId.Length > 0)
             {
 
-                retDict.Add("originField", fieldInfo.RelField_OriginEntityId);
+                retDict.Add("originEntity", fieldInfo.RelField_OriginEntityId);
             }
             else
             {
 
-                retDict.Add("originField", Guid.Empty.ToString());
+                retDict.Add("originEntity", Guid.Empty.ToString());
             }
             if (fieldInfo.RelField_ControlFieldId != null && fieldInfo.RelField_ControlFieldId.Length > 0)
             {
@@ -1761,6 +1804,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 retDict.Add("controlField", Guid.Empty.ToString());
             }
+            if (fieldInfo.RelField_originFieldName_real != null && fieldInfo.RelField_originFieldName_real.Length > 0) {
+                retDict.Add("originFieldname", fieldInfo.RelField_originFieldName_real);
+            }
             return retDict;
         }
         private Guid GetDataSourceIdFromFieldDict(Dictionary<string, object> data)
@@ -1768,8 +1814,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (data.ContainsKey("fieldconfig")) {
                 string s_fieldConfig = data["fieldconfig"].ToString();
                 Dictionary<string, object> fieldConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(s_fieldConfig);
-                if (fieldConfig != null && fieldConfig.ContainsKey("datasource")) {
-                    string s_datasource = Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfig["datasource"]);
+                if (fieldConfig != null && fieldConfig.ContainsKey("dataSource")) {
+                    string s_datasource = Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfig["dataSource"]);
                     Dictionary<string,object> datasource = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(s_datasource);
                     if (datasource != null && datasource.ContainsKey("sourceId")) {
                         Guid tmp = Guid.Empty;
@@ -1906,7 +1952,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             datasource.Add("sourceId", dicTypeId.ToString());
             retDict.Add("dataSource", datasource);
             retDict.Add("regExp", "");
-            if (DefaultValueId >0)
+            if (DefaultValueId >=0)
                 retDict.Add("defaultValue", DefaultValueId.ToString());
             return retDict;
 
@@ -1922,7 +1968,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (dictTypeInfo == null) {
                 DictNeedCreate.Add(dictTypeName, -1);
             }
-            return -1;
+            DictInDb.Add(dictTypeName, int.Parse(dictTypeInfo["dictypeid"].ToString()));
+            return int.Parse(dictTypeInfo["dictypeid"].ToString());
+        }
+        private Dictionary<string, object> MakeTipTextFieldConfig(string tipContent) {
+            Dictionary<string, object> ret = new Dictionary<string, object>();
+            ret.Add("tipContent", tipContent);
+            ret.Add("tipColor", "#000000");
+            ret.Add("regExp", "");
+            return ret;
         }
         private Dictionary<string, object> MakeBigTextFieldConfig(string defaultValue) {
             Dictionary<string, object> ret = new Dictionary<string, object>();
@@ -2619,25 +2673,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ret;
         }
 
+        private Cell [] RowCells(Row row) {
+            if (row == null) return new Cell[] { };
+            Cell lastCell = row.Descendants<Cell>().Last();
+            string cellRefName = lastCell.CellReference.Value;
+            int maxIndex = CellColumnNames.Count()-1; 
+            for (int i = CellColumnNames.Count() - 1; i >= 0; i--) {
+                if (cellRefName.StartsWith(CellColumnNames[i])) {
+                    maxIndex = i;
+                    break;
+                }
+            }
+            Cell[] cells = new Cell[maxIndex];
+            IEnumerable<Cell> it_cell = row.Descendants<Cell>();
+            int currentCount = 0;
+            for (int i = 0; i < cells.Count(); i++) {
+                lastCell = it_cell.ElementAt(currentCount);
+                if (lastCell.CellReference.Value.StartsWith(CellColumnNames[i]))
+                {
+                    cells[i] = lastCell;
+                    currentCount++;
+                }
+                else {
+                    cells[i] = null;
+                }
+            }
+
+            return cells;
+        }
         public ExcelEntityColumnInfo GetColumnInfo(WorkbookPart workbookPart, Sheet sheet, Row row, Dictionary<string, EntityTypeSettingInfo> TypeNameDict)
         {
             ExcelEntityColumnInfo columnInfo = new ExcelEntityColumnInfo();
             int columnIndex = 0;
+            int columnNameIndex = 0;
             Cell cell = null;
             string cellValue = null;
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            Cell[] allCells = RowCells(row);
+            cell = allCells[columnIndex];
+            if (cell == null) return null;
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             if (cellValue.Length == 0) return null;//代表这一行已经是空行了
             int tmp = 0;
-            if (int.TryParse(cellValue, out tmp) == false) {
+            if (int.TryParse(cellValue, out tmp) == false)
+            {
                 // columnInfo.ErrorMsg = string.Format("{0}\r\n 第{1}行第{2}列应该是数字，实际为{3}", columnInfo.ErrorMsg, row.RowIndex + 1, columnIndex + 1, cellValue);
                 return null;
             }
             columnInfo.Index = tmp;
             columnIndex++;
-
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            
+            
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             if (cellValue.Length == 0) {
@@ -2646,19 +2733,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             columnInfo.DisplayName = cellValue;
             columnIndex++;
 
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             columnInfo.FieldName = cellValue;
             columnIndex++;
 
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             columnInfo.FieldTypeName = cellValue;
             columnIndex++;
 
-            cell = row.Descendants<Cell>().ElementAt(columnIndex);
+            cell = allCells[columnIndex];
             cellValue = GetCellValue(cell, workbookPart);
             if (cellValue == null) cellValue = "";
             columnInfo.DataSourceName = cellValue;
@@ -2669,47 +2756,47 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 EntityTypeSettingInfo typeSettingInfo = TypeNameDict[i.ToString()];
 
                 ExcelEntityFieldViewInfo viewInfo = new ExcelEntityFieldViewInfo();
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.IsEnable = true; else viewInfo.IsEnable = false;
                 columnIndex++;
 
 
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.AddNew_Display = true; else viewInfo.AddNew_Display = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.AddNew_Must = true; else viewInfo.AddNew_Must = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.AddNew_Readonly = true; else viewInfo.AddNew_Readonly = false;
                 columnIndex++;
 
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.Edit_Display = true; else viewInfo.Edit_Display = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.Edit_Must = true; else viewInfo.Edit_Must = false;
                 columnIndex++;
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.Edit_Readonly = true; else viewInfo.Edit_Readonly = false;
                 columnIndex++;
 
 
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) viewInfo.View_Display = true; else viewInfo.View_Display = false;
@@ -2717,13 +2804,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (typeSettingInfo.IsImport)
                 {
 
-                    cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                    cell = allCells[columnIndex];
                     cellValue = GetCellValue(cell, workbookPart);
                     if (cellValue == null) cellValue = "";
                     if (cellValue.Equals("√")) viewInfo.Import_Display = true; else viewInfo.Import_Display = false;
                     columnIndex++;
 
-                    cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                    cell = allCells[columnIndex];
                     cellValue = GetCellValue(cell, workbookPart);
                     if (cellValue == null) cellValue = "";
                     if (cellValue.Equals("√")) viewInfo.Import_Must = true; else viewInfo.Import_Must = false;
@@ -2732,41 +2819,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 columnInfo.ViewSet.Add(typeSettingInfo.TypeName, viewInfo);
             }
 
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) columnInfo.IsWebListField = true; else columnInfo.IsWebListField = false;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 columnInfo.DefaultValue = cellValue;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) columnInfo.IsAdvanceSearch = true; else columnInfo.IsAdvanceSearch = false;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 if (cellValue.Equals("√")) columnInfo.IsCheckSameField = true; else columnInfo.IsCheckSameField = false;
                 columnIndex++;
             }
-            if (row.Descendants<Cell>().Count() > columnIndex)
+            if (allCells.Count() > columnIndex)
             {
-                cell = row.Descendants<Cell>().ElementAt(columnIndex);
+                cell = allCells[columnIndex];
                 cellValue = GetCellValue(cell, workbookPart);
                 if (cellValue == null) cellValue = "";
                 columnInfo.Remark = cellValue;
@@ -2777,6 +2864,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public string GetCellValue(Cell cell, WorkbookPart workBookPart)
         {
+            if (cell == null) return null;
             string cellValue = string.Empty;
             if (cell.ChildElements.Count == 0)//Cell节点下没有子节点
             {
@@ -2873,6 +2961,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Dictionary<string, string> dicStyle = new Dictionary<string, string>();
             Stylesheet styleSheet = workBookPart.WorkbookStylesPart.Stylesheet;
+            if (styleSheet.NumberingFormats == null) return dicStyle;
             OpenXmlElementList list = styleSheet.NumberingFormats.ChildElements;//获取NumberingFormats样式集合
 
             foreach (var element in list)//格式化节点
@@ -2953,6 +3042,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string Remark { get; set; }
         public string RelField_OriginEntityId { get; set; }
         public string RelField_originFieldName { get; set; }
+        public string RelField_originFieldName_real { get; set; }
         public string RelField_originFieldId { get; set; }
         public string RelField_ControlFieldName { get; set; }
         public string RelField_ControlFieldId { get; set; }

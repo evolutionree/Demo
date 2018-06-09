@@ -20,10 +20,22 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult UpdateSaveDataSourceDetail(UpdateDataSourceConfigMapper dataSource, int userNumber);
 
-        Dictionary<string, List<IDictionary<string, object>>> SelectFieldDicType(int userNumber);
-        Dictionary<string, List<IDictionary<string, object>>> SelectFieldDicVaue(int dicTypeId, int userNumber);
-        OperateResult SaveFieldDicType(DictionaryTypeMapper option, int userNumber);
-
+        List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "");
+        Dictionary<string, object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber);
+        Dictionary<string, object> SelectFieldConfig(string dicTypeId, int userNumber);
+        DicTypeDataModel HasParentDicType(int dicTypeId);
+        List<DictionaryDataModel> SelectFieldDicVaue(int dicTypeId, int userNumber);
+        string QueryDicId();
+        string QueryRecOrder();
+        bool HasDicTypeName(string Name);
+        bool HasDicDataVal(string Name, string DicTypeId);
+        bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber);
+        bool UpdateFieldDicType(DictionaryTypeMapper entity, int userNumber);
+        bool AddDictionary(SaveDictionaryMapper entity, int userNumber);
+        bool UpdateDictionary(SaveDictionaryMapper entity, int userNumber);
+        bool UpdateDicTypeOrder(List<DictionaryTypeMapper> data, int userNumber);
+        bool OrderByDictionary(List<OrderByDictionaryMapper> entity, int userNumber);
+        bool UpdateFieldDicTypeStatus(string[] ids, int status, int userNumber);
         OperateResult SaveFieldOptValue(DictionaryMapper option, int userNumber);
         OperateResult DisabledDicType(int dicTypeId, int userNumber);
         OperateResult DeleteFieldOptValue(string dicId, int userNumber);

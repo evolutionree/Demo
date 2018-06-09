@@ -167,6 +167,9 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         void SetWorkFlowCaseItemReaded(DbTransaction trans, Guid caseid, int nodenum, int userNumber, int stepnum = -1);
         string SaveTitleConfig(Guid flowId, string titleConfig, int userId);
+        void TerminateCase(DbTransaction tran, Guid caseId);
+        List<WorkFlowCaseItemInfo> GetWorkflowCaseWaitingDealItems(DbTransaction tran, Guid caseId);
+        List<WorkFlowCaseInfo> GetExpiredWorkflowCaseList(DbTransaction tran, int userId);
     }
 }
 
