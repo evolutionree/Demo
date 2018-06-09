@@ -99,6 +99,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             var isAdvance = dynamicModel.IsAdvanceQuery == 1;
             return _dynamicEntityServices.DataList2(dynamicModel, isAdvance, UserId);
         }
+        [HttpPost("listcount")]
+        public OutputResult<object> ListStatistic([FromBody] DynamicEntityListViewColumnModel paramInfo ) {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            return _dynamicEntityServices.CalcMenuDataCount(paramInfo.EntityId,UserId);
+        }
         /// <summary>
         /// 此接口已废弃
         /// </summary>

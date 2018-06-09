@@ -230,6 +230,57 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+        public OutputResult<object> CalcMenuDataCount(Guid entityId, int userId)
+        {
+            List<EntityMenuInfo> menus = this._entityProRepository.GetEntityMenuInfoList(entityId);
+            Dictionary<string, string> retData = new Dictionary<string, string>();
+            foreach (EntityMenuInfo menu in menus) {
+                if (menu.RecStatus != 1) continue;
+                DynamicEntityListModel dynamicModel = new DynamicEntityListModel()
+                {
+                    EntityId = entityId,
+                    MenuId = menu.MenuId.ToString(),
+                    ViewType = 4,
+                    SearchData = new Dictionary<string, object>(),
+                    ExtraData = new Dictionary<string, object>(),
+                    SearchDataXOR = new Dictionary<string, object>(),
+                    SearchOrder = "",
+                    PageIndex = 1 ,
+                    PageSize = 1,
+                    IsAdvanceQuery = 0,
+                    NeedPower = 1
+
+                };
+                try
+                {
+                    OutputResult<object> tmp = this.DataList2(dynamicModel, false, userId, true);
+                    if (tmp != null && tmp.DataBody != null)
+                    {
+                        Dictionary<string, List<Dictionary<string, object>>> tmpDict = (Dictionary<string, List<Dictionary<string, object>>>)tmp.DataBody;
+                        if (tmpDict != null && tmpDict.ContainsKey("PageCount") && tmpDict["PageCount"] != null)
+                        {
+                            Dictionary<string, object> pageDict = tmpDict["PageCount"].FirstOrDefault();
+                            if (pageDict.ContainsKey("total") && pageDict["total"] != null)
+                            {
+                                long ltmp = 0;
+                                if (long.TryParse(pageDict["total"].ToString(), out ltmp))
+                                {
+                                    retData.Add(menu.MenuId.ToString(), ltmp.ToString());
+                                }
+                            }
+
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    //忽略所有错误
+                }
+
+                
+            }
+            return new OutputResult<object>(retData);
+        }
+
         private void SendMessage(Guid bussinessId, int userNumber, Guid custEntityId, string FuncCode)
         {
             Task.Run(() =>
@@ -1429,7 +1480,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(result);
         }
-        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber)
+        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber,bool CalcCountOnly = false)
         {
             DbTransaction tran = null;
 
@@ -1801,7 +1852,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 selectClause, fromClause, WhereSQL, OrderBySQL, pageParam.PageSize, (pageParam.PageIndex - 1) * pageParam.PageSize);
             string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
             string CountSQL = string.Format(@"select total,(total-1)/{2}+1 as page from (select count(*)  AS total  from {0} where  {1} ) as k", fromClause, WhereSQL, pageParam.PageSize);
-            List<Dictionary<string, object>> datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, tran);
+            List<Dictionary<string, object>> datas = null;
+            if (CalcCountOnly)
+                datas = new List<Dictionary<string, object>>();
+            else
+                datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, tran);
+
             List<Dictionary<string, object>> page = this._dynamicEntityRepository.ExecuteQuery(CountSQL, tran);
             Dictionary<string, List<Dictionary<string, object>>> retData = new Dictionary<string, List<Dictionary<string, object>>>();
 
@@ -2050,7 +2106,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return totalReturn;
         }
 
-        public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber)
+        public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber, bool CalcCountOnly=false)
         {
 
             string SpecFuncName = _dynamicEntityRepository.CheckDataListSpecFunction(dynamicModel.EntityId);
@@ -2248,7 +2304,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 dynamicEntity.SearchOrder = "";
             }
-            return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber);
+            return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber, CalcCountOnly);
         }
 
         public OutputResult<object> Detail(DynamicEntityDetailModel dynamicModel, int userNumber)
