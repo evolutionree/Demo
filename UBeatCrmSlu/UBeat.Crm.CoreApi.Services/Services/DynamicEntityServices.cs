@@ -2045,19 +2045,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.PersonSelectMulti://26人员多选
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.PersonSelectSingle://25人员单选
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.Product://28产品
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_product_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_product_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.ProductSet://29产品系列
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_productserial_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_productserial_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.RecAudits://1007记录状态
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_workflow_auditstatus(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_workflow_auditstatus(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.RecId://1001
                             curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
