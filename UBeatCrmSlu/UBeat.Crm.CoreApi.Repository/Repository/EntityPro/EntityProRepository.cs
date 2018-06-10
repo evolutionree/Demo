@@ -1827,6 +1827,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 return null;
             }
         }
+
+        public void SaveEntityInputMethod(DbTransaction tran, Guid entityId, List<EntityInputModeInfo> inputs, int userId)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_entity set  inputmethod=@inputmethod where entityid=@entityid";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@inputmethod",JsonConvert.SerializeObject(inputs)),
+                    new Npgsql.NpgsqlParameter("@entityid",entityId)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+                throw (ex);
+            }
+        }
         #endregion
 
 

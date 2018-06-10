@@ -29,8 +29,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IVocationRepository _vocationRepository;
         private readonly IDataSourceRepository _dataSourceRepository;
 
-        public EntityProServices(IMapper mapper, IEntityProRepository entityProRepository, 
-            IDynamicEntityRepository dynamicEntityRepository, CacheServices cacheService, 
+        public EntityProServices(IMapper mapper, IEntityProRepository entityProRepository,
+            IDynamicEntityRepository dynamicEntityRepository, CacheServices cacheService,
             IVocationRepository vocationRepository, IDataSourceRepository dataSourceRepository)
         {
             _entityProRepository = entityProRepository;
@@ -52,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> InsertEntityPro(EntityProModel entityModel, int userNumber)
         {
-               var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
+            var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
             OperateResult newEntity = _entityProRepository.InsertEntityPro(entity, userNumber);
             if (newEntity.Flag == 0)
                 return HandleResult(newEntity);
@@ -440,14 +440,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<Dictionary<string, object>> QueryEntityWithDataSource(int userId)
         {
             DbTransaction tran = null;
-            List < Dictionary<string, object> > entitys =  this._entityProRepository.QueryEntityWithDataSource(tran, userId);
+            List<Dictionary<string, object>> entitys = this._entityProRepository.QueryEntityWithDataSource(tran, userId);
             DataSourceListMapper listMapper = new DataSourceListMapper() {
                 PageIndex = 1,
                 PageSize = 10000,
                 DatasourceName = null,
                 RecStatus = 1
             };
-            Dictionary<string,List <IDictionary<string, object> >> datasourcesmap  =   this._dataSourceRepository.SelectDataSource(listMapper, userId);
+            Dictionary<string, List<IDictionary<string, object>>> datasourcesmap = this._dataSourceRepository.SelectDataSource(listMapper, userId);
             List<IDictionary<string, object>> datasources = datasourcesmap["PageData"];
             foreach (Dictionary<string, object> entity in entitys) {
                 string entityid = "";
@@ -468,21 +468,93 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public Dictionary<string, object> getRefFieldsByFieldId(string fieldId, int userId)
         {
-            IDictionary<string, object>  fieldInfo = this._entityProRepository.GetFieldInfo(Guid.Parse(fieldId), userId);
+            IDictionary<string, object> fieldInfo = this._entityProRepository.GetFieldInfo(Guid.Parse(fieldId), userId);
             if (fieldInfo == null) {
                 throw (new Exception("无法获取字段信息"));
             }
-            Dictionary<string, object> ds =  Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo["fieldconfig"].ToString());
+            Dictionary<string, object> ds = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo["fieldconfig"].ToString());
             Dictionary<string, object> dstmp = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(ds["dataSource"]));
             string datasourceid = dstmp["sourceId"].ToString();
-            IDictionary<string, object>  datasourceinfo = this._dataSourceRepository.GetDataSourceInfo(Guid.Parse(datasourceid), userId);
+            IDictionary<string, object> datasourceinfo = this._dataSourceRepository.GetDataSourceInfo(Guid.Parse(datasourceid), userId);
             string entityid = datasourceinfo["entityid"].ToString();
             IDictionary<string, object> entityInfo = this._entityProRepository.GetEntityInfo(Guid.Parse(entityid), userId);
-            List < EntityFieldProMapper >  fields = this._entityProRepository.FieldQuery(entityid, userId);
+            List<EntityFieldProMapper> fields = this._entityProRepository.FieldQuery(entityid, userId);
             Dictionary<string, object> retdict = new Dictionary<string, object>();
             retdict.Add("entity", entityInfo);
             retdict.Add("fields", fields);
             return retdict;
+        }
+
+        /// <summary>
+        /// 获取实体输入方式详情,如果没有就默认初始化为有
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OutputResult<object> GetEntityInputMethod(EntityProInfoModel paramInfo, int userId)
+        {
+            OutputResult<object> tmp = this.EntityProInfoQuery(paramInfo, userId);
+            if (tmp.Status != 0 || tmp.DataBody == null)
+            {
+                throw (new Exception(tmp.Message));
+            }
+            Dictionary<string, List<IDictionary<string, object>>> tmpDict = (Dictionary<string, List<IDictionary<string, object>>>)tmp.DataBody;
+            if (tmpDict == null || tmpDict.ContainsKey("EntityProInfo") == false || tmpDict["EntityProInfo"] == null || tmpDict["EntityProInfo"].Count == 0)
+            {
+                throw (new Exception("实体配置异常"));
+            }
+            IDictionary<string, object> entityDict = tmpDict["EntityProInfo"].First();
+            if (entityDict.ContainsKey("InputMethod") && entityDict["InputMethod"] != null)
+            {
+                List<EntityInputModeInfo> ret = null;
+                if (entityDict["InputMethod"] is string)
+                {
+                    ret = Newtonsoft.Json.JsonConvert.DeserializeObject<List<EntityInputModeInfo>>((string)entityDict["InputMethod"]);
+                }
+                else {
+
+                    ret = Newtonsoft.Json.JsonConvert.DeserializeObject<List<EntityInputModeInfo>>(JsonConvert.SerializeObject(entityDict["InputMethod"]));
+                }
+                bool hasCommon = false;
+                foreach (EntityInputModeInfo item in ret) {
+                    if (item.InputMethod == EntityInputMethod.CommonInput) {
+                        hasCommon = true; break;
+                    }
+                }
+                if (hasCommon == false) {
+                    EntityInputModeInfo item = new EntityInputModeInfo()
+                    {
+                        InputMethod = EntityInputMethod.CommonInput,
+                        Title = "新增"
+                    };
+                    ret.Add(item);
+                }
+                return new OutputResult<object>(ret);
+            }
+            else {
+                List<EntityInputModeInfo> ret = new List<EntityInputModeInfo>();
+                EntityInputModeInfo item = new EntityInputModeInfo()
+                {
+                    InputMethod = EntityInputMethod.CommonInput,
+                    Title = "新增"
+                };
+                ret.Add(item);
+                return new OutputResult<object>(ret);
+            }
+        }
+
+        public OutputResult<object> SaveEntityInputMethod(Guid EntityId, List<EntityInputModeInfo> inputs, int userId) {
+            DbTransaction tran = null;
+            try
+            {
+
+                this._entityProRepository.SaveEntityInputMethod(tran, EntityId, inputs, userId);
+                return new OutputResult<object>("ok");
+            }
+            catch (Exception ex) {
+                return new OutputResult<object>(null, ex.Message, -1);
+            }
+           
         }
 
         public OutputResult<object> SetRepeatList(SetRepeatModel entityModel, int userNumber)
