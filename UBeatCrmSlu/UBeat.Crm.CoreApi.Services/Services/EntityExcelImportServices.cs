@@ -1961,6 +1961,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, object> dictTypeInfo = _dataSourceRepository.GetDictTypeByName(dictTypeName);
             if (dictTypeInfo == null) {
                 paramInfo.DictNeedCreate.Add(dictTypeName, -1);
+                return -1;
             }
             paramInfo.DictInDb.Add(dictTypeName, int.Parse(dictTypeInfo["dictypeid"].ToString()));
             return int.Parse(dictTypeInfo["dictypeid"].ToString());
