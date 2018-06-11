@@ -1834,7 +1834,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             {
                 string strSQL = "update crm_sys_entity set  inputmethod=@inputmethod where entityid=@entityid";
                 DbParameter[] p = new DbParameter[] {
-                    new Npgsql.NpgsqlParameter("@inputmethod",JsonConvert.SerializeObject(inputs)),
+                    new Npgsql.NpgsqlParameter("@inputmethod",JsonConvert.SerializeObject(inputs)){
+                        NpgsqlDbType = NpgsqlDbType.Jsonb
+                    },
                     new Npgsql.NpgsqlParameter("@entityid",entityId)
                 };
                 ExecuteNonQuery(strSQL, p, tran);

@@ -560,5 +560,22 @@ where dicid = @dicid";
                 return data[0];
             return null;
         }
+
+        public int GetNextDataId(DbTransaction tran, string dicTypeId, int userNumber)
+        {
+            try
+            {
+                string strSQL = "select max(dataid) dataid  from crm_sys_dictionary where dictypeid = @dictypeid";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@dictypeid",int.Parse(dicTypeId))
+                };
+                object obj = ExecuteScalar(strSQL, p, tran);
+                if (obj == null) return 1;
+                else return int.Parse(obj.ToString());
+            }
+            catch (Exception ex) {
+                return 1;
+            }
+        }
     }
 }

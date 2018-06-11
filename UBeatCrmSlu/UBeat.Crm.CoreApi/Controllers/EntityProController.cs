@@ -645,6 +645,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         #endregion
 
         #region 实体输入方式
+        [HttpPost("entityinputmethodquery")]
         public OutputResult<object> GetEntityInputMethod([FromBody] EntityProInfoModel paramInfo) {
             if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty.ToString()) {
                 return ResponseError<object>("参数异常");
@@ -657,6 +658,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
 
         }
+        [HttpPost("entityinputmethodsave")]
         public OutputResult<object> SaveEntityInputMethod([FromBody] EntityInputMethodParamInfo paramInfo) {
             if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty)
             {

@@ -13,6 +13,7 @@ using UBeat.Crm.CoreApi.Services.Utility;
 using Newtonsoft.Json.Linq;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
+using System.Data.Common;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -180,11 +181,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var entity = mapper.Map<SaveDictionaryModel, SaveDictionaryMapper>(data);
             entity.RecUpdated = DateTime.Now;
             entity.RecUpdator = userNumber;
+            DbTransaction tran = null;
             if (entity.DicId == Guid.Empty) //add
             {
                 if (!dataSourceRepository.HasDicDataVal(entity.DataVal,entity.DicTypeId))
                     return new OutputResult<object>(null, "字典名称已存在", 1);
                 entity.DicId = Guid.NewGuid();
+                entity.DataId = this.dataSourceRepository.GetNextDataId(tran, data.DicTypeId, userNumber);
                 entity.RecStatus = 1;
                 entity.RecCreator = userNumber;
                 entity.RecCreated = DateTime.Now;
