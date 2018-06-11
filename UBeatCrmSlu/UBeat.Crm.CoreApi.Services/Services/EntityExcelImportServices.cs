@@ -23,13 +23,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public static string[] CellColumnNames = new string[] { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
                                                                      "AA","AB","AC","AD","AE","AF","AG","AH","AI","AJ","AK","AL","AM","AN","AO","AP","AQ","AR","AS","AT","AU","AV","AW","AX","AY","AZ",
                                                                      "BA","BB","BC","BD","BE","BF","BG","BH","BI","BJ","BK","BL","BM","BN","BO","BP","BQ","BR","BS","BT","BU","BV","BW","BX","BY","BZ"};
-        private Dictionary<string, int> DictInDb = new Dictionary<string, int>();
-        private Dictionary<string, int> DictNeedCreate = new Dictionary<string, int>();
-        private List<Dictionary<string, object>> DictValueNeedCreate = new List<Dictionary<string, object>>();
-        private Dictionary<string, Dictionary<string, object>> DataSourceInDb = new Dictionary<string, Dictionary<string, object>>();
-        private Dictionary<string, string> DataSourceNeedCreate = new Dictionary<string, string>();
-        private Dictionary<string, ExcelEntityInfo> dictEntity = null;
-        private Dictionary<string, string> dictTable = null;
+        
         private readonly IEntityProRepository _entityProRepository;
         private readonly IDataSourceRepository _dataSourceRepository;
         private readonly EntityProServices _entityProServices;
@@ -49,8 +43,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region 通过Excel导入实体配置,这里将会是一个大的代码块 
 
         public Dictionary<string, object> ImportEntityFromExcel(System.IO.Stream r ) {
+            ImportGlobalParamInfo GlobalDict = new ImportGlobalParamInfo();
             Dictionary<string, object> retDict = new Dictionary<string, object>();
-            //this._excelServices
             List<ExcelEntityInfo> listEntity = new List<ExcelEntityInfo>();
             retDict.Add("entities", listEntity);
             WorkbookPart workbookPart;
@@ -65,7 +59,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ExcelEntityInfo entityInfo = DealWithOneSheet(workbookPart, sheet);
                     listEntity.Add(entityInfo);
                 }
-                CheckEntityAndField(listEntity);
+                CheckEntityAndField(GlobalDict, listEntity);
                 //这里检查一下是否有问题，如果有问题就不继续了
                 if (IsPreCheckOK(listEntity) == false)
                 {
@@ -74,14 +68,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
 
                 //先建立所有相关表的实体
-                CreateAllMainEntityInfo(listEntity);
+                CreateAllMainEntityInfo(GlobalDict,listEntity);
                 if (IsPreCheckOK(listEntity) == false)
                 {
                     retDict.Add("result", -1);
                     return retDict;
                 }
                 //处理所有的数据源
-                List<ExcelDataSourceInfo> datasourceList = CreateAllDataSource();
+                List<ExcelDataSourceInfo> datasourceList = CreateAllDataSource(GlobalDict);
                 retDict.Add("datasource", datasourceList);
                 if (IsPreCheckOK(datasourceList) == false)
                 {
@@ -89,22 +83,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return retDict;
                 }
                 //处理所有的字典
-                List<ExcelDictTypeInfo> listDictType = CreateAllDictType();
+                List<ExcelDictTypeInfo> listDictType = CreateAllDictType(GlobalDict);
                 retDict.Add("dicttype", listDictType);
                 if (IsPreCheckOK(listDictType) == false)
                 {
                     retDict.Add("result", -1);
                     return retDict;
                 }
-                CreateAllDict();
+                CreateAllDict(GlobalDict);
                 //处理所有的字段
-                CreateAllFieldInfo(listEntity);
+                CreateAllFieldInfo(GlobalDict,listEntity);
                 if (IsPreCheckOK(listEntity) == false)
                 {
                     retDict.Add("result", -1);
                     return retDict;
                 }
-                UpdateReferenceAndTableFieldInfo(listEntity);
+                UpdateReferenceAndTableFieldInfo(GlobalDict, listEntity);
                 //创建分类
                 CreateAllCatelog(listEntity);
                 //处理所有的字段可见规则
@@ -260,7 +254,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
         }
-        private void UpdateReferenceAndTableFieldInfo(List<ExcelEntityInfo> listEntry) {
+        private void UpdateReferenceAndTableFieldInfo(ImportGlobalParamInfo paramInfo, List<ExcelEntityInfo> listEntry) {
             foreach (ExcelEntityInfo entityInfo in listEntry) {
                 foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
                     if (fieldInfo.IsUpdate) continue;
@@ -270,7 +264,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         //表格控件
                         if (fieldInfo.Table_EntityId == null || fieldInfo.Table_EntityId.Length == 0)
                         {
-                            checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                            checkOneField(paramInfo,fieldInfo, entityInfo, paramInfo.dictEntity, paramInfo.dictTable);
                             this._entityProRepository.UpdateEntityFieldConfig(fieldInfo.FieldId, fieldInfo.FieldConfig, 1);
                         }
                     }
@@ -280,7 +274,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (fieldInfo.RelField_ControlFieldId == null || fieldInfo.RelField_ControlFieldId.Length == 0
                             || fieldInfo.RelField_OriginEntityId == null || fieldInfo.RelField_OriginEntityId.Length == 0
                             || fieldInfo.RelField_originFieldId == null || fieldInfo.RelField_originFieldId.Length == 0) {
-                            checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                            checkOneField(paramInfo,fieldInfo, entityInfo, paramInfo.dictEntity, paramInfo.dictTable);
                             this._entityProRepository.UpdateEntityFieldConfig(fieldInfo.FieldId, fieldInfo.FieldConfig, 1);
                         }
                     }
@@ -554,7 +548,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             viewRule.ViewRuleStr = "{\"style\":0,\"isVisible\":" + viewRule.IsVisible + ",\"isReadOnly\":" + viewRule.IsReadOnly + "}";
             viewRule.ValidRuleStr = "{\"isRequired\":" + viewRule.IsRequired + "}";
         }
-        private void CreateAllCatelog(List<ExcelEntityInfo> listEntities) {
+        private void CreateAllCatelog( List<ExcelEntityInfo> listEntities) {
             foreach(ExcelEntityInfo entityInfo in listEntities)
             {
                 //if (entityInfo.EntityTypeName.StartsWith("独立") == false) continue;
@@ -730,8 +724,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 #endregion 
             }
         }
-        private void CreateAllDict() {
-            foreach (Dictionary<string, object> item in DictValueNeedCreate) {
+        private void CreateAllDict(ImportGlobalParamInfo paramInfo) {
+            foreach (Dictionary<string, object> item in paramInfo.DictValueNeedCreate) {
                 int dictypeid = 0;
                 string dictypename = "";
                 string dictname = "";
@@ -744,9 +738,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 dictname = (string)item["dictname"];
                 if (dictypeid <= 0) {
-                    if (DictInDb.ContainsKey(dictypename))
+                    if (paramInfo.DictInDb.ContainsKey(dictypename))
                     {
-                        dictypeid = DictInDb[dictypename];
+                        dictypeid = paramInfo.DictInDb[dictypename];
                     }
                     else {
                         throw (new Exception("配置异常"));
@@ -762,9 +756,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
         }
-        private List<ExcelDictTypeInfo>  CreateAllDictType() {
+        private List<ExcelDictTypeInfo>  CreateAllDictType(ImportGlobalParamInfo paramInfo) {
             List<ExcelDictTypeInfo> ret = new List<ExcelDictTypeInfo>();
-            foreach (string dictypename in DictNeedCreate.Keys) {
+            foreach (string dictypename in paramInfo.DictNeedCreate.Keys) {
                 DictionaryTypeModel model = new DictionaryTypeModel()
                 {
                     DicTypeName = dictypename,
@@ -796,7 +790,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     continue;
                 }
                 int dictypeid = int.Parse(tmp["dictypeid"].ToString());
-                DictInDb.Add(dictypename, dictypeid);
+                paramInfo.DictInDb.Add(dictypename, dictypeid);
                 dictTypeInfo.actionResult = new ActionResult()
                 {
                     ActionType = 1,
@@ -807,18 +801,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ret;
         }
 
-        private List<ExcelDataSourceInfo> CreateAllDataSource() {
+        private List<ExcelDataSourceInfo> CreateAllDataSource(ImportGlobalParamInfo paramInfo) {
             List<ExcelDataSourceInfo> retList = new List<ExcelDataSourceInfo>();
-            foreach (string datasourcename in DataSourceNeedCreate.Keys) {
+            foreach (string datasourcename in paramInfo.DataSourceNeedCreate.Keys) {
                 //根据名称创建数据源
                 Guid EntityId = Guid.Empty;
                 string entitytable = "";
                 ExcelDataSourceInfo datasourceInfo = new ExcelDataSourceInfo();
                 retList.Add(datasourceInfo);
                 datasourceInfo.DataSourceName = datasourcename;
-                if (dictEntity.ContainsKey(datasourcename))
+                if (paramInfo.dictEntity.ContainsKey(datasourcename))
                 {
-                    ExcelEntityInfo entityInfo = dictEntity[datasourcename];
+                    ExcelEntityInfo entityInfo = paramInfo.dictEntity[datasourcename];
                     EntityId = entityInfo.EntityId;
                     entitytable = entityInfo.TableName;
                 }
@@ -884,23 +878,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     };
                     continue;//继续尝试下一个，争取一次获得更多的错误信息
                 }
-                DataSourceInDb.Add(datasourcename, this._dataSourceRepository.GetDataSourceByName(null, datasourcename, 1));
+                paramInfo.DataSourceInDb.Add(datasourcename, this._dataSourceRepository.GetDataSourceByName(null, datasourcename, 1));
             }
             return retList;
 
         }
-        private void CreateAllFieldInfo(List<ExcelEntityInfo> listEntities)  {
+        private void CreateAllFieldInfo(ImportGlobalParamInfo paramInfo, List<ExcelEntityInfo> listEntities)  {
             foreach (ExcelEntityInfo entityInfo in listEntities) {
-                CreateOneEntityFieldInfo(entityInfo);
+                CreateOneEntityFieldInfo(paramInfo,entityInfo);
             }
 
         }
-        private void CreateOneEntityFieldInfo(ExcelEntityInfo entityInfo) {
+        private void CreateOneEntityFieldInfo(ImportGlobalParamInfo paramInfo,  ExcelEntityInfo entityInfo) {
             foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
 
                 //检查fieldconfig
                 fieldInfo.actionResult = new ActionResult() { ResultCode = 0 };//重置状态，避免前面错误导致后面无法更新
-                checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                checkOneField(paramInfo,fieldInfo, entityInfo, paramInfo.dictEntity, paramInfo.dictTable);
                 if (fieldInfo.FieldTypeName.Equals("系统字段"))
                 {
                     if (fieldInfo.FieldId == null && fieldInfo.FieldId == Guid.Empty) {
@@ -966,7 +960,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys)
                 {
-                    CreateOneEntityFieldInfo(subEntityInfo);
+                    CreateOneEntityFieldInfo(paramInfo,subEntityInfo);
                 }
             }
         }
@@ -974,9 +968,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// 仅仅是创建实体的基本信息，包含基本字段
         /// </summary>
         /// <param name="listEntity"></param>
-        private void CreateAllMainEntityInfo(List<ExcelEntityInfo> listEntity) {
+        private void CreateAllMainEntityInfo(ImportGlobalParamInfo paramInfo, List<ExcelEntityInfo> listEntity) {
             Queue<ExcelEntityInfo> queue = new Queue<ExcelEntityInfo>();
-            foreach (ExcelEntityInfo entity in dictEntity.Values) {
+            foreach (ExcelEntityInfo entity in paramInfo.dictEntity.Values) {
                 queue.Enqueue(entity);
             }
             while (queue.Count > 0) {
@@ -985,9 +979,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (entityInfo.EntityId != null && entityInfo.EntityId != Guid.Empty) continue;
                 if (entityInfo.EntityTypeName.StartsWith("简单") || entityInfo.EntityTypeName.StartsWith("嵌套") || entityInfo.EntityTypeName.StartsWith("动态")) {
                     if (entityInfo.RelEntityName != null && entityInfo.RelEntityName.Length > 0) {
-                        if (dictEntity.ContainsKey(entityInfo.RelEntityName))
+                        if (paramInfo.dictEntity.ContainsKey(entityInfo.RelEntityName))
                         {
-                            ExcelEntityInfo relEntityInfo = dictEntity[entityInfo.RelEntityName];
+                            ExcelEntityInfo relEntityInfo = paramInfo.dictEntity[entityInfo.RelEntityName];
                             if (relEntityInfo.EntityId.Equals(Guid.Empty))
                             {
                                 queue.Enqueue(entityInfo);///关联对象尚未生成
@@ -1066,19 +1060,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
         }
-        private void CheckEntityAndField(List<ExcelEntityInfo> listEntity) {
-            dictEntity = new Dictionary<string, ExcelEntityInfo>();
-            dictTable  = new Dictionary<string, string>();
-            CheckSaveEntityNameInMem(ref dictEntity, ref dictTable, listEntity);
-
+        private void CheckEntityAndField(ImportGlobalParamInfo
+             paramInfo, List<ExcelEntityInfo> listEntity) {
+            paramInfo.dictEntity = new Dictionary<string, ExcelEntityInfo>();
+            paramInfo.dictTable  = new Dictionary<string, string>();
+            CheckSaveEntityNameInMem(  paramInfo.dictEntity,  paramInfo.dictTable, listEntity);
             //检查实体有有效性
             foreach (ExcelEntityInfo entityInfo in listEntity) {
-                CheckOneEntityInDb(entityInfo, dictEntity, dictTable);
+                CheckOneEntityInDb(paramInfo,entityInfo, paramInfo.dictEntity, paramInfo.dictTable);
             }
 
         }
 
-        private void CheckOneEntityInDb(ExcelEntityInfo entityInfo, Dictionary<string, ExcelEntityInfo> dictEntity, Dictionary<string, string> dictTable) {
+        private void CheckOneEntityInDb(ImportGlobalParamInfo paramInfo, ExcelEntityInfo entityInfo, Dictionary<string, ExcelEntityInfo> dictEntity, Dictionary<string, string> dictTable) {
             /**
              * 处理主实体信息
              * 1、只能是独立实体、简单实体和动态实体，嵌套实体不能放在主实体上
@@ -1287,19 +1281,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             //检查字段是否合理
             foreach (ExcelEntityColumnInfo fieldInfo in entityInfo.Fields) {
-                checkOneField(fieldInfo, entityInfo, dictEntity, dictTable);
+                checkOneField(paramInfo,fieldInfo, entityInfo, dictEntity, dictTable);
             }
             if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
                 foreach (ExcelEntityInfo subEntityInfo in entityInfo.SubEntitys) {
                     foreach (ExcelEntityColumnInfo fieldInfo in subEntityInfo.Fields)
                     {
-                        checkOneField(fieldInfo, subEntityInfo, dictEntity, dictTable);
+                        checkOneField(paramInfo,fieldInfo, subEntityInfo, dictEntity, dictTable);
                     }
                 }
             }
         }
 
-        private void checkOneField(ExcelEntityColumnInfo fieldInfo, ExcelEntityInfo entityInfo, Dictionary<string, ExcelEntityInfo> dictEntity, Dictionary<string, string> dictTable) {
+        private void checkOneField(ImportGlobalParamInfo paramInfo, ExcelEntityColumnInfo fieldInfo, ExcelEntityInfo entityInfo, Dictionary<string, ExcelEntityInfo> dictEntity, Dictionary<string, string> dictTable) {
             if (fieldInfo.DisplayName.Length == 0 || fieldInfo.FieldName.Length == 0 || fieldInfo.FieldTypeName.Length == 0) throw (new Exception("字段显示名称和数据库名称都不能为空"));
             //bool isInRevert = DefaultFieldName.Contains(fieldInfo.FieldName);
             //if (isInRevert) {
@@ -1350,7 +1344,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else if (fieldInfo.FieldTypeName.Equals("字典单选") || fieldInfo.FieldTypeName.Equals("单选"))
             {
                 fieldInfo.ControlType = 3; fieldInfo.FieldType = 2;
-                int dictType = GetDictTypeId(fieldInfo.DataSourceName);
+                int dictType = GetDictTypeId(paramInfo,fieldInfo.DataSourceName);
                 if (dictType > 0)
                 {
                     if (fieldInfo.DefaultValue != null && fieldInfo.DefaultValue.Length > 0)
@@ -1381,14 +1375,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Dictionary<string, object> tmp = new Dictionary<string, object>();
                         tmp.Add("dictypename", fieldInfo.DataSourceName);
                         tmp.Add("dictname", fieldInfo.DefaultValue);
-                        DictValueNeedCreate.Add(tmp);
+                        paramInfo.DictValueNeedCreate.Add(tmp);
                     }
                 }
             }
             else if (fieldInfo.FieldTypeName.Equals("字典多选"))
             {
                 fieldInfo.ControlType = 4; fieldInfo.FieldType = 2;
-                int dictType = GetDictTypeId(fieldInfo.DataSourceName);
+                int dictType = GetDictTypeId(paramInfo,fieldInfo.DataSourceName);
                 if (dictType > 0)
                 {
                     fieldInfo.FieldConfig = MakeDictFieldConfig(dictType, -1);
@@ -1553,7 +1547,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     };
                     return;
                 }
-                Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
+                Guid datasourceid = GetDataSourceIdFromName(paramInfo,fieldInfo.DataSourceName);
                 if (datasourceid != Guid.Empty)
                 {
                     fieldInfo.FieldConfig = MakeDataSourceFieldConfig(datasourceid.ToString(), false);
@@ -1572,7 +1566,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     };
                     return;
                 }
-                Guid datasourceid = GetDataSourceIdFromName(fieldInfo.DataSourceName);
+                Guid datasourceid = GetDataSourceIdFromName(paramInfo,fieldInfo.DataSourceName);
                 if (datasourceid != Guid.Empty)
                 {
                     fieldInfo.FieldConfig = MakeDataSourceFieldConfig(datasourceid.ToString(), true);
@@ -1826,20 +1820,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return Guid.Empty;
         }
-        private Guid GetDataSourceIdFromName(string datasourceName) {
-            if (DataSourceInDb.ContainsKey(datasourceName))
-                return Guid.Parse(DataSourceInDb[datasourceName]["datasrcid"].ToString());
-            if (DataSourceNeedCreate.ContainsKey(datasourceName))
+        private Guid GetDataSourceIdFromName(ImportGlobalParamInfo paramInfo, string datasourceName) {
+            if (paramInfo.DataSourceInDb.ContainsKey(datasourceName))
+                return Guid.Parse(paramInfo.DataSourceInDb[datasourceName]["datasrcid"].ToString());
+            if (paramInfo.DataSourceNeedCreate.ContainsKey(datasourceName))
                 return Guid.Empty;//不用查数据库
             Dictionary<string, object> dsInfo = this._dataSourceRepository.GetDataSourceByName(null, datasourceName, 1);
             if (dsInfo != null)
             {
-                DataSourceInDb.Add(datasourceName, dsInfo);
+                paramInfo.DataSourceInDb.Add(datasourceName, dsInfo);
                 return Guid.Parse(dsInfo["datasrcid"].ToString());
             }
             else {
-                
-                DataSourceNeedCreate.Add(datasourceName,"");
+
+                paramInfo.DataSourceNeedCreate.Add(datasourceName,"");
                 return Guid.Empty;
             }
 
@@ -1957,18 +1951,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return retDict;
 
         }
-        private int GetDictTypeId(string dictTypeName) {
-            if (DictInDb.ContainsKey(dictTypeName)) {
-                return DictInDb[dictTypeName];
+        private int GetDictTypeId(ImportGlobalParamInfo paramInfo, string dictTypeName) {
+            if (paramInfo.DictInDb.ContainsKey(dictTypeName)) {
+                return paramInfo.DictInDb[dictTypeName];
             }
-            if (DictNeedCreate.ContainsKey(dictTypeName)) {
-                return DictNeedCreate[dictTypeName];
+            if (paramInfo.DictNeedCreate.ContainsKey(dictTypeName)) {
+                return paramInfo.DictNeedCreate[dictTypeName];
             }
             Dictionary<string, object> dictTypeInfo = _dataSourceRepository.GetDictTypeByName(dictTypeName);
             if (dictTypeInfo == null) {
-                DictNeedCreate.Add(dictTypeName, -1);
+                paramInfo.DictNeedCreate.Add(dictTypeName, -1);
             }
-            DictInDb.Add(dictTypeName, int.Parse(dictTypeInfo["dictypeid"].ToString()));
+            paramInfo.DictInDb.Add(dictTypeName, int.Parse(dictTypeInfo["dictypeid"].ToString()));
             return int.Parse(dictTypeInfo["dictypeid"].ToString());
         }
         private Dictionary<string, object> MakeTipTextFieldConfig(string tipContent) {
@@ -1999,7 +1993,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="dictEntity"></param>
         /// <param name="dictTables"></param>
         /// <param name="listEntity"></param>
-        private void CheckSaveEntityNameInMem(ref Dictionary<string, ExcelEntityInfo> dictEntity,ref Dictionary<string,string> dictTables, List<ExcelEntityInfo> listEntity) {
+        private void CheckSaveEntityNameInMem(  Dictionary<string, ExcelEntityInfo> dictEntity,  Dictionary<string,string> dictTables, List<ExcelEntityInfo> listEntity) {
             foreach (ExcelEntityInfo entityInfo in listEntity)
             {
                 if (dictEntity.ContainsKey(entityInfo.EntityName)) {
@@ -2021,7 +2015,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 dictTables.Add(entityInfo.TableName, entityInfo.TableName);
                 dictEntity.Add(entityInfo.EntityName, entityInfo);
                 if (entityInfo.SubEntitys != null && entityInfo.SubEntitys.Count > 0) {
-                    CheckSaveEntityNameInMem(ref dictEntity,ref  dictTables, entityInfo.SubEntitys);
+                    CheckSaveEntityNameInMem(  dictEntity,   dictTables, entityInfo.SubEntitys);
                 }
             }
         }
@@ -2991,6 +2985,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public int ResultCode { get; set; }
         public int ActionType { get; set; }
         public string Message { get; set; }
+    }
+    public class ImportGlobalParamInfo {
+        public Dictionary<string, int> DictInDb { get; set; }
+        public Dictionary<string, int> DictNeedCreate { get; set; }
+        public List<Dictionary<string, object>> DictValueNeedCreate { get; set; }
+        public Dictionary<string, Dictionary<string, object>> DataSourceInDb { get; set; }
+        public Dictionary<string, string> DataSourceNeedCreate { get; set; }
+        public Dictionary<string, ExcelEntityInfo> dictEntity { get; set; }
+        public Dictionary<string, string> dictTable { get; set; }
+        public ImportGlobalParamInfo() {
+            DictInDb = new Dictionary<string, int>();
+            DictNeedCreate = new Dictionary<string, int>();
+            DictValueNeedCreate = new List<Dictionary<string, object>>();
+            DataSourceNeedCreate = new Dictionary<string, string>();
+            DataSourceInDb = new Dictionary<string, Dictionary<string, object>>();
+        }
     }
     #region 以下是定义相关的中间的信息存储类
     public class ExcelEntityInfo {
