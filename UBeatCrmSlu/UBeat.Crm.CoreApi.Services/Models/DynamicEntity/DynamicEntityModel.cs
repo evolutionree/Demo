@@ -135,6 +135,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public int Manager { get; set; }
 
     }
+    public class DynamicEntityTransferUser2UserModel {
+        public int OldUserId { get; set; }
+        public int NewUserId { get; set; }
+
+        public List<DynamicEntityTransferUser2User_EntityFieldsModel> Entities { get; set; }
+    }
+    public class DynamicEntityTransferUser2User_EntityFieldsModel {
+        public Guid EntityId { get; set; }
+        public string FieldIds { get; set; }
+    }
 
     public class DynamicEntityDeleteModel
     {

@@ -307,7 +307,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             ProductSetPackageInfo ProductSet = ProductSetsUtils.getInstance().getCurrentPackage(_entityProRepository, _repository, _dynamicEntityServices, userNumber);
             #region
-            if (paramInfo.IsTopSet == -1 && IsForWeb) {
+                if (paramInfo.IsTopSet == -1 && IsForWeb) {
                 ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, ProductSet.RootProductSet);
                 if (newRoot != null )
                      SearchProductForProductSet(newRoot, ret);
@@ -741,7 +741,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 item.ProductSetName_Pinyin = item.ProductSetName_Pinyin.ToLower();
                     if (item.PProductSetId != null)
                 {
-                    if (item.PProductSetId == Guid.Empty) {
+                    if (item.PProductSetId == Guid.Empty && ret.RootProductSet == null && item.SetOrProduct == 1) {
                         ret.RootProductSet = item;
                     }
                     string tid = item.PProductSetId.ToString();

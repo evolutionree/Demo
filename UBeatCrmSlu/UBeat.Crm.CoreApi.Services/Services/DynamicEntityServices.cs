@@ -230,6 +230,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+
         public OutputResult<object> CalcMenuDataCount(Guid entityId, int userId)
         {
             List<EntityMenuInfo> menus = this._entityProRepository.GetEntityMenuInfoList(entityId);
@@ -2740,6 +2741,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return _dynamicEntityRepository.GetEntityFields(entityId, userNumber);
         }
 
+        public OutputResult<object> TransferUser2User(DynamicEntityTransferUser2UserModel paramInfo, int userId)
+        {
+            foreach (DynamicEntityTransferUser2User_EntityFieldsModel item in paramInfo.Entities) {
+                DynamicEntityListModel model = new DynamicEntityListModel()
+                {
+                    EntityId = item.EntityId,
+                    MenuId = null,
+                    ViewType = 3,
+                    PageIndex = 1,
+                    PageSize = 10000//每次处理1万条
+                };
+                OutputResult<object> tmpResult =  this.DataList2(model, false, userId);
+                if (tmpResult == null || tmpResult.DataBody == null ) continue;
+                List<IDictionary<string, object>> datas = ((Dictionary<string, List<IDictionary<string, object>>>)tmpResult.DataBody)["PageData"];
+
+
+            }
+            
+            throw new NotImplementedException();
+        }
         public OutputResult<object> Transfer(DynamicEntityTransferModel dynamicModel, int userNumber)
         {
             var dynamicEntity = _mapper.Map<DynamicEntityTransferModel, DynamicEntityTransferMapper>(dynamicModel);

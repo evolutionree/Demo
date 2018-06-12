@@ -174,6 +174,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             WriteOperateLog("提交转移负责人数据", dynamicModel);
             return _dynamicEntityServices.Transfer(dynamicModel, UserId);
         }
+        /// <summary>
+        /// 用于一键转移所有的数据
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <returns></returns>
+        [HttpPost("transfer_v2_user2user")]
+        public OutputResult<object> Tansfer_V2_User2User([FromBody] DynamicEntityTransferUser2UserModel paramInfo = null) {
+            if (paramInfo == null ) return ResponseError<object>("参数格式错误");
+
+            return _dynamicEntityServices.TransferUser2User(paramInfo,UserId);
+        }
 
         [HttpPost]
         [Route("delete")]
