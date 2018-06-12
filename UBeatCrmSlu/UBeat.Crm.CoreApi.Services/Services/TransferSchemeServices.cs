@@ -27,14 +27,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             var model = new TransferSchemeModel
             {
-                TransSchemeId = data.TransSchemeId,
-                TransSchemeName = data.TransSchemeName,
-                TargetTransferId = data.TargetTransferId,
-                AssociationTransfer = data.AssociationTransfer,
+                RecId = data.TransSchemeId,
+                RecName = data.TransSchemeName,
+                EntityId = data.TargetTransferId,
+                Association = data.AssociationTransfer,
                 RecCreator = userNumber,
                 RecStatus = 1,
                 RecCreated = DateTime.Now,
-                Remark = data.Remark
+                Remark = data.Remark,
+                FieldId = data.FieldId
             };
 
             if (isAdd)

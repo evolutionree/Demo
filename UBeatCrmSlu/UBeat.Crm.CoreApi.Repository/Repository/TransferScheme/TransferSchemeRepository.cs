@@ -20,17 +20,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.TransferScheme
         /// <returns></returns>
         public bool AddTransferScheme(TransferSchemeModel data, DbTransaction tran)
         {
-            string sql = @"insert into crm_sys_transfer_scheme values(@transschemeid,@transschemename,@targettransferid,@associationtransfer,@remark,@reccreator,@reccreated,@recstatus) ";
+            string sql = @"insert into crm_sys_transfer_scheme values(@recid,@recname,@entityid,@association::jsonb,@remark,@reccreator,@reccreated,@recstatus,@fieldid) ";
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("transschemeid",data.TransSchemeId),
-                new NpgsqlParameter("transschemename",data.TransSchemeName),
-                new NpgsqlParameter("targettransferid",data.TargetTransferId),
-                new NpgsqlParameter("associationtransfer",data.AssociationTransfer),
+                new NpgsqlParameter("recid",data.RecId),
+                new NpgsqlParameter("recname",data.RecName),
+                new NpgsqlParameter("entityid",data.EntityId),
+                new NpgsqlParameter("association",data.Association),
                 new NpgsqlParameter("remark",data.Remark),
                 new NpgsqlParameter("reccreator",data.RecCreator),
                 new NpgsqlParameter("reccreated",data.RecCreated),
-                new NpgsqlParameter("recstatus",data.RecStatus)
+                new NpgsqlParameter("recstatus",data.RecStatus),
+                new NpgsqlParameter("fieldid",data.FieldId)
             };
             return ExecuteNonQuery(sql, param, tran) > 0;
         }
@@ -44,25 +45,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.TransferScheme
         {
             #region sql
             string sql = @"UPDATE crm_sys_transfer_scheme
-SET transschemename =@transschemename, 
-targettransferid =@targettransferid,
-associationtransfer =@associationtransfer, 
+SET recname =@transschemename, 
+entityid =@targettransferid,
+association =@associationtransfer::jsonb, 
 remark =@remark,
- reccreator =@reccreator, 
+reccreator =@reccreator, 
 reccreated =@reccreated, 
-recstatus =@recstatus
-WHERE	transschemeid =@transschemeid";
+recstatus =@recstatus,
+fieldid=@fieldid
+WHERE	recid =@transschemeid";
             #endregion
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("transschemeid",data.TransSchemeId),
-                new NpgsqlParameter("transschemename",data.TransSchemeName),
-                new NpgsqlParameter("targettransferid",data.TargetTransferId),
-                new NpgsqlParameter("associationtransfer",data.AssociationTransfer),
+                new NpgsqlParameter("transschemeid",data.RecId),
+                new NpgsqlParameter("transschemename",data.RecName),
+                new NpgsqlParameter("targettransferid",data.EntityId),
+                new NpgsqlParameter("associationtransfer",data.Association),
                 new NpgsqlParameter("remark",data.Remark),
                 new NpgsqlParameter("reccreator",data.RecCreator),
                 new NpgsqlParameter("reccreated",data.RecCreated),
-                new NpgsqlParameter("recstatus",data.RecStatus)
+                new NpgsqlParameter("recstatus",data.RecStatus),
+                new NpgsqlParameter("fieldid",data.FieldId)
             };
             return ExecuteNonQuery(sql, param, tran) > 0;
         }
@@ -75,7 +78,7 @@ WHERE	transschemeid =@transschemeid";
         /// <returns></returns>
         public TransferSchemeModel GetTransferScheme(Guid TransSchemeId, DbTransaction tran, int userNumber)
         {
-            string sql = @"select *  from crm_sys_transfer_scheme where transschemeid = @transschemeid";
+            string sql = @"select *  from crm_sys_transfer_scheme where recid = @transschemeid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("transschemeid",TransSchemeId)
@@ -92,7 +95,7 @@ WHERE	transschemeid =@transschemeid";
         /// <returns></returns>
         public bool SetTransferSchemeStatus(List<Guid> list, int status, DbTransaction tran, int userNumber)
         {
-            string sql = @"update crm_sys_transfer_scheme set recstatus =@recstatus where transschemeid =ANY(@ids)";
+            string sql = @"update crm_sys_transfer_scheme set recstatus =@recstatus where recid =ANY(@ids)";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("recstatus",status),
@@ -103,8 +106,8 @@ WHERE	transschemeid =@transschemeid";
 
         public List<Dictionary<string, object>> TransferSchemeList(int recStatus, string searchName, int userNumber)
         {
-            string sql = @"select a.transschemeid,a.transschemename,a.targettransferid,b.entityname,a.associationtransfer,a.remark,a.recstatus
-  from crm_sys_transfer_scheme as a INNER JOIN  crm_sys_entity as b on a.targettransferid = b.entityid where a.recStatus = @recStatus";
+            string sql = @"select a.recid,a.recname,a.entityid,b.entityname,a.association,a.remark,a.recstatus
+  from crm_sys_transfer_scheme as a INNER JOIN  crm_sys_entity as b on a.entityid = b.entityid where a.recStatus = @recStatus";
             if (!string.IsNullOrWhiteSpace(searchName))
             {
                 sql += string.Format(" and transschemename like '%{0}%'", searchName);

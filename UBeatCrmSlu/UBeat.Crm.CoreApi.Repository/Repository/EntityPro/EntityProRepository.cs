@@ -1614,7 +1614,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 (select ec.categoryid from crm_sys_entity_category as ec where entityid = @entityid)";
             string insertSql = string.Format(@"INSERT INTO crm_sys_entity_func_event(funceventid,typeid,operatetype,funcname)
                                    SELECT uuid_generate_v4(),typeid,operatetype,funcname
-                                   FROM json_populate_recordset(null::crm_sys_entity_func_event,@condition)");
+                                   FROM json_populate_recordset(null::crm_sys_entity_func_event,@condition) where funcname <> ''");
             #endregion
             #region 删除
             var param = new DbParameter[]
@@ -1635,7 +1635,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             #region sql
             string delSQL = @"Delete from crm_sys_actionext_config where entityid = @entityid";
             string insertSql = string.Format(@"INSERT INTO crm_sys_actionext_config(recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid)
-                                   SELECT uuid_generate_v4(),routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid
+                                   SELECT uuid_generate_v4(),routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,1 recstatus,entityid
                                    FROM json_populate_recordset(null::crm_sys_actionext_config,@condition)");
             #endregion
             #region 删除
