@@ -1404,6 +1404,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         funcEvents.AddRange(data.funcEvent[item]);
                     }
+                    funcEvents = funcEvents.Where(r => !string.IsNullOrEmpty(r.FuncName)).ToList();
                     acConfigs = data.acConfig.Where(r => r.ImplementType != -1).ToList();
                     _entityProRepository.UpdateFuncEvent(tran, data.entityId, funcEvents, userNumber);
                     _entityProRepository.UpdateActionExt(tran, data.entityId, acConfigs, userNumber);
