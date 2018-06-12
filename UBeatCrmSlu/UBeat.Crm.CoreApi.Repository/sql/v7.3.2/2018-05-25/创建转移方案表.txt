@@ -1,11 +1,14 @@
-CREATE table crm_sys_transfer_scheme
-(
-	transschemeid uuid primary key,
-	transschemename VARCHAR(100),
-	targettransferid uuid ,
-	AssociationTransfer text,
-	Remark text,
-	RecCreator int,
-	RecCreated Date,
-	RecStatus int
+CREATE TABLE "public"."crm_sys_transfer_scheme" (
+"recid" uuid NOT NULL,
+"recname" varchar(100) COLLATE "default",
+"entityid" uuid,
+"remark" text COLLATE "default",
+"reccreator" int4,
+"reccreated" timestamp(0),
+"recstatus" int4,
+"association" jsonb,
+"fieldid" uuid,
+CONSTRAINT "crm_sys_transfer_scheme_pkey" PRIMARY KEY ("recid")
 )
+WITH (OIDS=FALSE)
+;

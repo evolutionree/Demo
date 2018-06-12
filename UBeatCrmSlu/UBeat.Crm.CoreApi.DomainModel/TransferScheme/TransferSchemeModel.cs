@@ -9,19 +9,19 @@ namespace UBeat.Crm.CoreApi.DomainModel.TransferScheme
         /// <summary>
         /// 转移方案ID
         /// </summary>
-        public Guid TransSchemeId { get; set; }
+        public Guid RecId { get; set; }
         /// <summary>
         /// 转移方案名称
         /// </summary>
-        public string TransSchemeName { get; set; }
+        public string RecName { get; set; }
         /// <summary>
         /// 目标对象ID
         /// </summary>
-        public Guid TargetTransferId { get; set; }
+        public Guid EntityId { get; set; }
         /// <summary>
         /// 关联转移对象json
         /// </summary>
-        public string AssociationTransfer { get; set; }
+        public dynamic Association { get; set; }
         /// <summary>
         /// 备注
         /// </summary>
@@ -38,6 +38,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.TransferScheme
         /// 状态
         /// </summary>
         public int RecStatus { get; set; }
+
+        public Guid? FieldId { get; set; }
 
     }
 }
