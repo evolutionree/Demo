@@ -919,6 +919,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
 
         }
+        public OutputResult<object> GetRelConfigEntity(RelTabListModel dynamicModel, int userNumber)
+        {
+            var dynamicEntity = _mapper.Map<RelTabListModel, RelTabListMapper>(dynamicModel);
+
+            if (dynamicEntity == null || !dynamicEntity.IsValid())
+            {
+                return HandleValid(dynamicEntity);
+            }
+            var result = _dynamicEntityRepository.GetRelConfigEntity(dynamicEntity, userNumber);
+            return new OutputResult<object>(result);
+
+        }
 
         public OutputResult<object> GetRelEntityFields(GetEntityFieldsModel entity, int userNumber)
         {
