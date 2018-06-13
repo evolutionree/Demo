@@ -61,6 +61,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Dictionary<string,object>  RelInfo { get; set; }
         public Dictionary<string, string> ColumnFilter { get; set; }
         /// <summary>
+        ///  精确查询的条件，不受帅选项控制
+        /// </summary>
+        public Dictionary<string, object> ExactFieldOrFilter { get; set; }
+        /// <summary>
         /// 专用于获取嵌套表格列表时，通过对应的主实体id列表获取其所有的嵌套表格的记录
         /// 
         /// </summary>
@@ -138,6 +142,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
     public class DynamicEntityTransferUser2UserModel {
         public int OldUserId { get; set; }
         public int NewUserId { get; set; }
+
+        public int IgnoreMsg { get; set; }
 
         public List<DynamicEntityTransferUser2User_EntityFieldsModel> Entities { get; set; }
     }
