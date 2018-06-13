@@ -308,6 +308,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("getrelconfigentity")]
+        public OutputResult<object> GetRelConfigEntity([FromBody] RelTabListModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.GetRelConfigEntity(dynamicModel, UserId);
+        }
+
+        [HttpPost]
         [Route("getrelentityfields")]
         public OutputResult<object> GetRelEntityFields([FromBody] GetEntityFieldsModel dynamicModel = null)
         {
