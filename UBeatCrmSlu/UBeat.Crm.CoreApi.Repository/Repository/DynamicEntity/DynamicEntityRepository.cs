@@ -689,7 +689,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 "inner join crm_sys_entity_datasource c on c.datasrcid::TEXT = jsonb_extract_path_text(b.fieldconfig, 'dataSource', 'sourceId') " +
                 "inner join crm_sys_entity d on d.entityid = c.entityid  " +
                 "where a.recstatus = 1 and b.recstatus=1 and b.controltype = 18  " +
-                "and (d.entityid =@entityid  or (d.entityid='ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid and entityid='f9db9d79-e94b-4678-a5cc-aa6e281c1246'::uuid)) and a.entityid != @entityid  group by a.entityid,a.entityname ";
+                "and (d.entityid =@entityid  or (d.entityid='ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid and d.entityid='f9db9d79-e94b-4678-a5cc-aa6e281c1246'::uuid)) and a.entityid != @entityid  group by a.entityid,a.entityname ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
             return DataBaseHelper.Query(sql, param);
