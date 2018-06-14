@@ -2945,6 +2945,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 cellValue = "N/A";
             }
+            if (cellValue != null) cellValue = cellValue.Trim();
             return cellValue;
         }
         /// <summary>
