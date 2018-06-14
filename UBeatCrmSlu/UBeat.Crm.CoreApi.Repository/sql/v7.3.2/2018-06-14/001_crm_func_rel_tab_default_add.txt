@@ -1,0 +1,86 @@
+CREATE OR REPLACE FUNCTION "public"."crm_func_rel_tab_default_add"("_entityid" uuid, "_userno" int4)
+  RETURNS SETOF "public"."crm_general_handle_result" AS $BODY$
+DECLARE
+ 
+  _relid uuid:=null;
+	_icon  uuid:=null;
+  _orderby int4;
+  _funcid uuid;
+  _relname TEXT;
+  _r record;
+  _initrec record;
+
+  --标准返回参数
+  _codeid TEXT;
+  _codeflag INT:=0;
+  _codemsg TEXT;
+  _codestack TEXT;
+  _codestatus TEXT;
+
+BEGIN
+
+   BEGIN
+
+ 
+				 --数据逻辑
+
+				 IF  NOT EXISTS (SELECT 1 FROM crm_sys_entity WHERE entityid=_entityid AND recstatus=1 LIMIT 1)  THEN  
+								Raise EXCEPTION '该实体不存在';
+				 END IF;
+        IF EXISTS(SELECT 1 FROM crm_sys_entity_rel_tab WHERE relname=_relname and  entityid=_entityid AND recstatus=1 LIMIT 1 ) THEN
+             Raise EXCEPTION '该页签名称已存在';
+        END IF;
+
+				
+
+			  FOR _initrec IN select x1.* from (select * from crm_sys_entity_default_tab a where  (a.entityid is null or a.entityid =_entityid ) and a.recstatus = 1 ) x1 
+					left join (select * from crm_sys_entity_rel_tab  t where t.entityid=_entityid) x2   on  x1.entitytaburl=x2.entitytaburl and x1.tabtype=x2.tabtype
+					where x2.relid is null LOOP
+            SELECT COALESCE(MAX(recorder),0)+1 into _orderby from crm_sys_entity_rel_tab  where entityid=_entityid and recstatus=1;
+						INSERT INTO "public"."crm_sys_entity_rel_tab" (
+						"entityid", 
+						"relentityid", 
+						"relname", 
+            "entitytaburl",
+						"icon",
+						"recorder", 
+						"reccreator", 
+						"recupdator","fieldid","tabtype","web","mob","ismanytomany") 
+						VALUES(
+						_entityid,
+						null,
+						_initrec.relname,
+						_initrec.entitytaburl,
+						_initrec.icon,
+						_orderby,
+						_userno,
+						_userno,null,_initrec.tabtype,1,1,0
+						)  returning relid into _relid;
+					 FOR _r IN SELECT funcid,devicetype FROM crm_sys_function WHERE rectype=4 AND entityid=_entityid AND recstatus=1 LOOP
+							 SELECT id::uuid,flag,msg,stacks,codes INTO _codeid,_codeflag,_codemsg,_codestack,_codestatus FROM 
+							 crm_func_function_insert(-1,'api/dynamicentity/reltablist',_r.funcid,_initrec.relname,'RelTabList',_entityid,_r.devicetype,0,_relid::TEXT,_userno);
+							 IF _codeflag=0 THEN
+									Raise EXCEPTION '%','初始化职能树异常';
+							 END IF;
+					 END LOOP; 
+        END LOOP;
+
+		_codeid:= _relid::TEXT;
+		_codeflag:= 1;
+		_codemsg:= '新增页签配置成功';
+ 
+	 EXCEPTION WHEN OTHERS THEN
+						 GET STACKED DIAGNOSTICS _codestack = PG_EXCEPTION_CONTEXT;
+						 _codemsg:=SQLERRM;
+						 _codestatus:=SQLSTATE;
+		END;
+   
+   		--RETURN RESULT
+	  RETURN QUERY EXECUTE format('SELECT $1,$2,$3,$4,$5')
+	  USING  _codeid,_codeflag,_codemsg,_codestack,_codestatus;
+
+END
+$BODY$
+  LANGUAGE 'plpgsql' VOLATILE COST 100
+ ROWS 1000
+;

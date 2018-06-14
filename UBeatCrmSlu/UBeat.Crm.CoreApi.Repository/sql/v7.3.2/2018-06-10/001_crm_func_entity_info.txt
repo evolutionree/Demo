@@ -28,7 +28,7 @@ BEGIN
                           entityname,
                           modeltype,
                           icons,
-                          relentityid,newload,editload,checkload,inputmethodzhih from crm_sys_entity
+                          relentityid,newload,editload,checkload,inputmethod from crm_sys_entity
                           where recstatus=1'||_sql_where;
 
     RAISE NOTICE '%',_execute_sql;
