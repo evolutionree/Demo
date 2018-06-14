@@ -17,6 +17,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         bool SetTransferSchemeStatus(List<Guid> list, int status, DbTransaction tran, int userNumber);
 
         List<Dictionary<string, object>> TransferSchemeList(int recStatus, string searchName, int userNumber);
+        List<Dictionary<string, object>> ListSchemeByEntity(DbTransaction tran, Guid EntityId, int userNumber);
 
     }
 }

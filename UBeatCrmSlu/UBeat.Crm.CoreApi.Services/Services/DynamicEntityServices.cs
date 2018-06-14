@@ -232,6 +232,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+        
 
         public OutputResult<object> CalcMenuDataCount(Guid entityId, int userId)
         {
@@ -2771,7 +2772,163 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return _dynamicEntityRepository.GetEntityFields(entityId, userNumber);
         }
+        public OutputResult<object> TransferPro(EntityTransferParamInfo paramInfo, int userId)
+        {
+            if (paramInfo.RecIds != null)
+            {
+                //如果是
+                if (paramInfo.SchemeId != null && paramInfo.SchemeId != Guid.Empty)
+                {
+                    return TransferPro_RecIds_Scheme(paramInfo, userId);
+                }
+                else
+                {
+                    return TransferPro_RecIds_Common(paramInfo, userId);
+                }
+            }
+            else if (paramInfo.DataFilter != null)
+            {
+                if (paramInfo.SchemeId != null && paramInfo.SchemeId != Guid.Empty)
+                {
+                    return TransferPro_Filter_Scheme(paramInfo, userId);
+                }
+                else
+                {
+                    return TransferPro_Filter_Common(paramInfo, userId);
+                }
+            }
+            else {
+                throw (new Exception("参数异常"));
+            }
+        }
+        private OutputResult<object> TransferPro_RecIds_Scheme(EntityTransferParamInfo paramInfo, int userId) {
+            return new OutputResult<object>(null,"暂时不支持方案转移",-1);
+            //string[] ids = paramInfo.RecIds.Split(',');
+            //foreach (string id in ids) {
+                
+            //}
+            //return null;
+        }
+        private OutputResult<object> TransferPro_RecIds_Common(EntityTransferParamInfo paramInfo, int userId) {
+            string[] ids = paramInfo.RecIds.Split(',');
+            string entityTableName = "";
+            string entityName = "";
+            string newUserName = "";
+            Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
+            entityName = EntityInfo["entityname"].ToString();
+            entityTableName = EntityInfo["entitytable"].ToString();
+            Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId,userId)));
+            string FieldName = fieldInfo["fieldname"].ToString();
+            string FieldName_Display = fieldInfo["displayname"].ToString();
+            if (fieldInfo == null) throw (new Exception("字段定义有误"));
+            UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
+            if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
+            newUserName = newUserInfo.UserName;
+            List<TransferTempInfo> retList = new List<TransferTempInfo>();
+            foreach (string id in ids) {
+                DynamicEntityDetailtMapper p = new DynamicEntityDetailtMapper() {
+                    EntityId = paramInfo.EntityId,
+                    RecId = Guid.Parse(id),
+                    NeedPower = 0
+                };
+                IDictionary<string, object> detail = this._dynamicEntityRepository.Detail(p, userId, null);
+                bool needChanged = false;
+                if (detail.ContainsKey(FieldName) == false || detail[FieldName] == null)
+                {
+                    needChanged = true;
+                }
+                else {
+                    if (detail[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false) {
+                        needChanged = true;
+                    }
+                }
+                if (needChanged) {
+                    TransferTempInfo msg = new TransferTempInfo()
+                    {
+                        Message = "",
+                        DetailInfo = detail,
+                        FieldNames = new List<string>() { FieldName },
+                        NewUserId = paramInfo.NewUserId,
+                        NewUserName = newUserName,
+                        TableName = entityTableName,
+                        EntityName = entityName,
+                        EntityId = paramInfo.EntityId,
+                        TypeId = detail.ContainsKey("rectype") && detail["rectype"] != null ? Guid.Parse(detail["rectype"].ToString()) : paramInfo.EntityId,
+                        RecId = Guid.Parse(detail["recid"].ToString()),
+                        FieldDisplayNames =FieldName_Display,
+                        RecName = detail["recname"] == null ? "" : detail["recname"].ToString(),
+                    };
+                    retList.Add(msg);
+                }
 
+            }
+            TransferData(retList, userId);
+            return new OutputResult<object>(retList);
+        }
+        private OutputResult<object> TransferPro_Filter_Scheme(EntityTransferParamInfo paramInfo, int userId)
+        {
+            return new OutputResult<object>(null, "暂时不支持方案转移", -1);
+        }
+        private OutputResult<object> TransferPro_Filter_Common(EntityTransferParamInfo paramInfo, int userId)
+        {
+            string entityTableName = "";
+            string entityName = "";
+            string newUserName = "";
+            Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
+            entityName = EntityInfo["entityname"].ToString();
+            entityTableName = EntityInfo["entitytable"].ToString();
+            Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId, userId)));
+            string FieldName = fieldInfo["fieldname"].ToString();
+            string FieldName_Display = fieldInfo["displayname"].ToString();
+            if (fieldInfo == null) throw (new Exception("字段定义有误"));
+            UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
+            if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
+            newUserName = newUserInfo.UserName;
+            List<TransferTempInfo> retList = new List<TransferTempInfo>();
+            paramInfo.DataFilter.PageIndex = 1;
+            paramInfo.DataFilter.PageSize = 100000;
+            OutputResult<object> tmpResult = this.DataList2(paramInfo.DataFilter, false, userId);
+            if (tmpResult == null || tmpResult.DataBody == null) return new OutputResult<object>(retList);
+            List<Dictionary<string, object>> datas = ((Dictionary<string, List<Dictionary<string, object>>>)tmpResult.DataBody)["PageData"];
+            List<TransferTempInfo> thisDealed = new List<TransferTempInfo>();
+            foreach (IDictionary<string, object> rowData in datas)
+            {
+                bool needChanged = false;
+                if (rowData.ContainsKey(FieldName) == false || rowData[FieldName] == null)
+                {
+                    needChanged = true;
+                }
+                else
+                {
+                    if (rowData[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false)
+                    {
+                        needChanged = true;
+                    }
+                }
+                if (needChanged)
+                {
+                    TransferTempInfo msg = new TransferTempInfo()
+                    {
+                        Message = "",
+                        DetailInfo = rowData,
+                        FieldNames = new List<string>() { FieldName },
+                        NewUserId = paramInfo.NewUserId,
+                        NewUserName = newUserName,
+                        TableName = entityTableName,
+                        EntityName = entityName,
+                        EntityId = paramInfo.EntityId,
+                        TypeId = rowData.ContainsKey("rectype") && rowData["rectype"] != null ? Guid.Parse(rowData["rectype"].ToString()) : paramInfo.EntityId,
+                        RecId = Guid.Parse(rowData["recid"].ToString()),
+                        FieldDisplayNames = FieldName_Display,
+                        RecName = rowData["recname"] == null ? "" : rowData["recname"].ToString(),
+                    };
+                    retList.Add(msg);
+                }
+               
+            }
+            TransferData(retList, userId);
+            return new OutputResult<object>(retList);
+        }
         public OutputResult<object> TransferUser2User(DynamicEntityTransferUser2UserModel paramInfo, int userId)
         {
 
@@ -2821,7 +2978,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 OutputResult<object> tmpResult = this.DataList2(model, false, userId);
                 if (tmpResult == null || tmpResult.DataBody == null) continue;
-                List<IDictionary<string, object>> datas = ((Dictionary<string, List<IDictionary<string, object>>>)tmpResult.DataBody)["PageData"];
+                List<Dictionary<string, object>> datas = ((Dictionary<string, List<Dictionary<string, object>>>)tmpResult.DataBody)["PageData"];
                 List<TransferTempInfo> thisDealed = new List<TransferTempInfo>();
                 foreach (IDictionary<string, object> rowData in datas)
                 {
@@ -2845,38 +3002,55 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             DetailInfo = rowData,
                             FieldNames = fieldNames,
                             NewUserId = paramInfo.NewUserId,
+                            NewUserName = NewUserName,
                             TableName = entityTableName,
+                            EntityName = entityName,
                             EntityId = item.EntityId,
+                            TypeId = rowData.ContainsKey("rectype") && rowData["rectype"]!= null ? Guid.Parse(rowData["rectype"].ToString()): item.EntityId,
                             RecId = Guid.Parse(rowData["recid"].ToString()),
-                            FieldDisplayNames = string.Join('、',displayNames.ToArray())
+                            FieldDisplayNames = string.Join('、',displayNames.ToArray()),
+                            RecName = rowData["recname"] == null ? "": rowData["recname"].ToString(),
                         };
                         thisDealed.Add(msg);
                     }
                 }
                 #region 更新并发送消息
-                foreach (TransferTempInfo updateitem in thisDealed) {
-                    string recName = updateitem.DetailInfo["recname"]== null?"":updateitem.DetailInfo["recname"].ToString();
-                    string msgContent = string.Format("{0} {1} 的 {2} 已经变更为 {3}。" ,entityName,recName, updateitem.FieldDisplayNames, NewUserName);
+                TransferData(thisDealed, userId);
+                AllDetailDatas.AddRange(thisDealed);
+                #endregion
+            }
+            return new OutputResult<object>(AllDetailDatas);
+        }
+        private void TransferData(List<TransferTempInfo> thisDealed,int userId) {
+            foreach (TransferTempInfo updateitem in thisDealed)
+            {
+                DbTransaction tran = null;
+                bool updateSuccess = _dynamicRepository.TransferEntityData(tran, updateitem.TableName, updateitem.FieldNames, updateitem.NewUserId, updateitem.RecId, userId);
+                if (updateSuccess)
+                {
+                    string msgContent = string.Format("{0} {1} 的 {2} 已经变更为 {3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.NewUserName);
                     DynamicInsertInfo dynamicInfo = new DynamicInsertInfo()
                     {
-                        DynamicType = DynamicType.Entity,
+                        DynamicType = DynamicType.System,
                         EntityId = updateitem.EntityId,
                         TypeId = updateitem.TypeId,
                         BusinessId = updateitem.RecId,
                         RelEntityId = Guid.Empty,
                         RelBusinessId = Guid.Empty,
                         Content = msgContent,
-                        TemplateData = null ,
+                        TemplateData = "{}",
                     };
                     MsgParamInfo tempData = null;
-                    bool  msgSuccess = _dynamicRepository.InsertDynamic(null, dynamicInfo, userId, out tempData);
+                    bool msgSuccess = _dynamicRepository.InsertDynamic(null, dynamicInfo, userId, out tempData);
+                    updateitem.IsSuccess = true;
                 }
-                #endregion 
+                else
+                {
+                    updateitem.IsSuccess = false;
+                }
 
-
+                updateitem.DetailInfo = null;
             }
-            
-            throw new NotImplementedException();
         }
         public OutputResult<object> Transfer(DynamicEntityTransferModel dynamicModel, int userNumber)
         {
@@ -3776,14 +3950,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public Guid TypeId { get; set; }
         public Guid RecId { get; set; }
         public string TableName { get; set; }
+        public string EntityName { get; set; }
         public string Message { get; set; }
         public int NewUserId { get; set; }
-        public List<string > FieldNames { get; set; }
+        public List<string> FieldNames { get; set; }
         public bool IsSuccess { get; set; }
         public string ErrorMessage { get; set; }
         public string NewUserName { get; set; }
 
         public string FieldDisplayNames { get; set; }
+        public string RecName { get; set; }
+
         
     }
 } 

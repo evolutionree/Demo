@@ -724,5 +724,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
             return result > 0;
         }
 
+        public bool TransferEntityData(DbTransaction tran, string tableName, List<string> fieldNames, int newUserId, Guid RecId,int userId)
+        {
+            try
+            {
+                string setClau = "";
+                foreach (string fieldname in fieldNames) {
+                    setClau = "," + fieldname+  "= " + newUserId.ToString();
+                }
+                setClau = setClau.Substring(1);
+                string strSQL = "update " + tableName + " set " + setClau + "  where recid = @recid";
+                ExecuteNonQuery(strSQL, new DbParameter[] { new NpgsqlParameter("@recid", RecId) }, tran);
+                return true;
+            }
+            catch (Exception ex) {
+                return false;
+            }
+        }
     }
 }

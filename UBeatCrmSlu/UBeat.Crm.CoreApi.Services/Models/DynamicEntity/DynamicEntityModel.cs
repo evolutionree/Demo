@@ -448,6 +448,19 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     }
 
+    /// <summary>
+    /// 新版本的实体数据转移接口
+    /// </summary>
+    public class EntityTransferParamInfo {
+        public DynamicEntityListModel DataFilter { get; set; }
+        //优先recids
+        public string RecIds { get; set; }
+        public Guid  SchemeId{get;set;}
+        public Guid FieldId { get; set; }
+        public Guid EntityId { get; set; }
+        public int NewUserId { get; set; }
+    }
+
 
 
 }

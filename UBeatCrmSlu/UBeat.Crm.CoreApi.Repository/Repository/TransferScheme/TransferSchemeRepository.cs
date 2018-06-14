@@ -121,5 +121,17 @@ WHERE	recid =@transschemeid";
 
         }
 
+        public List<Dictionary<string, object>> ListSchemeByEntity(DbTransaction tran, Guid EntityId, int userNumber)
+        {
+            string sql = @"select a.recid,a.recname,a.entityid,b.entityname,a.association,a.remark,a.recstatus,a.fieldid
+  from crm_sys_transfer_scheme as a INNER JOIN  crm_sys_entity as b on a.entityid = b.entityid where a.entityid = @entityid";
+            
+            sql += " order by a.reccreated desc ";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("entityid",EntityId)
+            };
+            return ExecuteQuery(sql, param, tran);
+        }
     }
 }

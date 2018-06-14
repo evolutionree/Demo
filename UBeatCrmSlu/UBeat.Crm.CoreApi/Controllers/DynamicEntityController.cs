@@ -185,6 +185,13 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _dynamicEntityServices.TransferUser2User(paramInfo,UserId);
         }
+        [HttpPost("transfer_pro")]
+        public OutputResult<object> Transfer_Pro([FromBody] EntityTransferParamInfo paramInfo = null)
+        {
+            if (paramInfo == null) return ResponseError<object>("参数格式错误");
+
+            return _dynamicEntityServices.TransferPro(paramInfo, UserId);
+        }
 
         [HttpPost]
         [Route("delete")]
