@@ -878,8 +878,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 return new decimal(0);
             }
             string expressionSqlStr = string.Format(@"select {0} as result from {1}  where  {2}", selectClause, parentTableInfo["entitytable"], whereClause);
-            var ret = ExecuteQuery(expressionSqlStr, null).FirstOrDefault();
-            return (decimal)ret["result"];
+            var ret = ExecuteQuery(expressionSqlStr, null);
+            if(ret.Count==0)
+                return 0;
+            else
+                return (decimal)ret.FirstOrDefault()["result"];
         }
 
         public OperateResult SaveRelConfigSet(List<RelConfigSet> configSets, Guid RelId, int userNumber)
