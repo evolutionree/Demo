@@ -1862,7 +1862,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
             {
-                WhereSQL = " 1=1    " + dynamicEntity.SearchQuery;
+                WhereSQL = " recstatus = 1   " + dynamicEntity.SearchQuery;
             }
             string innerSQL = string.Format(@"select {0} from {1}  where  {2} order by {3} limit {4} offset {5}",
                 selectClause, fromClause, WhereSQL, OrderBySQL, pageParam.PageSize, (pageParam.PageIndex - 1) * pageParam.PageSize);
@@ -2863,7 +2863,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             }
             TransferData(retList, userId);
-            return new OutputResult<object>(retList);
+            int success = 0;
+            int error = 0;
+            foreach (TransferTempInfo item in retList) {
+                if (item.IsSuccess) success++;
+                else error++;
+            }
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            retDict.Add("success", success);
+            retDict.Add("error", error);
+            retDict.Add("detail", retList);
+            return new OutputResult<object>(retDict);
         }
         private OutputResult<object> TransferPro_Filter_Scheme(EntityTransferParamInfo paramInfo, int userId)
         {
@@ -2927,7 +2937,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                
             }
             TransferData(retList, userId);
-            return new OutputResult<object>(retList);
+            int success = 0;
+            int error = 0;
+            foreach (TransferTempInfo item in retList)
+            {
+                if (item.IsSuccess) success++;
+                else error++;
+            }
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            retDict.Add("success", success);
+            retDict.Add("error", error);
+            retDict.Add("detail", retList);
+            return new OutputResult<object>(retDict);
         }
         public OutputResult<object> TransferUser2User(DynamicEntityTransferUser2UserModel paramInfo, int userId)
         {
@@ -3019,7 +3040,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 AllDetailDatas.AddRange(thisDealed);
                 #endregion
             }
-            return new OutputResult<object>(AllDetailDatas);
+            int success = 0;
+            int error = 0;
+            foreach (TransferTempInfo item in AllDetailDatas)
+            {
+                if (item.IsSuccess) success++;
+                else error++;
+            }
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            retDict.Add("success", success);
+            retDict.Add("error", error);
+            retDict.Add("detail", AllDetailDatas);
+            return new OutputResult<object>(retDict);
         }
         private void TransferData(List<TransferTempInfo> thisDealed,int userId) {
             foreach (TransferTempInfo updateitem in thisDealed)
