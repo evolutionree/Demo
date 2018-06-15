@@ -7,6 +7,7 @@ using UBeat.Crm.CoreApi.Services.Models.TransferScheme;
 using UBeat.Crm.CoreApi.DomainModel.TransferScheme;
 using System.Data.Common;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -88,10 +89,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 List<IDictionary<string, object>> allFields = alllFieldsResult["EntityFieldPros"];
                 foreach (IDictionary<string, object> f in allFields) {
                     int controltype = int.Parse(f["controltype"].ToString());
-                    if (controltype == (int)DynamicProtocolControlType.RecManager || controltype == (int)DynamicProtocolControlType.PersonSelectSingle) {
+                    if (controltype == (int)DynamicProtocolControlType.RecManager) {
                         SearchEntitySchemeResultInfo item = new SearchEntitySchemeResultInfo()
                         {
-                            FieldName = f["fieldname"].ToString(),
+                            FieldName = f["displayname"].ToString(),
+                            FieldId = Guid.Parse(f["fieldid"].ToString())
+                        };
+                        FieldsResult.Add(item);
+                    } else if (   controltype == (int)DynamicProtocolControlType.PersonSelectSingle) {
+                        Dictionary<string, string> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string,string>>(f["fieldconfig"].ToString());
+                        if (fieldConfig.ContainsKey("multiple") && fieldConfig["multiple"] != null) {
+                            if (fieldConfig["multiple"].ToString().Equals("1")) {
+                                continue;
+                            }
+                        }
+                        SearchEntitySchemeResultInfo item = new SearchEntitySchemeResultInfo()
+                        {
+                            FieldName = f["displayname"].ToString(),
                             FieldId = Guid.Parse(f["fieldid"].ToString())
                         };
                         FieldsResult.Add(item);
