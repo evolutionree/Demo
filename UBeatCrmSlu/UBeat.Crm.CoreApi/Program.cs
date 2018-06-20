@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using NLog;
 using Quartz;
 using Quartz.Impl;
+using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Utility;
 
 namespace UBeat.Crm.CoreApi
@@ -63,12 +64,6 @@ namespace UBeat.Crm.CoreApi
                     }
                 }
             }
-            if (isStart != 1)
-            {
-                Logger logger = LogManager.GetLogger("UBeat.Qrtz");
-                logger.Warn("!!!!!未配置后台事务启动，后台事务将不在本服务器内运行!!!!!!");
-                return;
-            }
             var properties = new NameValueCollection
             {
             };
@@ -76,7 +71,22 @@ namespace UBeat.Crm.CoreApi
             var schedulerFactory = new StdSchedulerFactory(properties);
             _scheduler = schedulerFactory.GetScheduler().Result;
             _scheduler.Start().Wait();
-
+            var heartBeatJob = JobBuilder.Create<HeartBeatWithRedisJob>()
+                .WithIdentity("heartBeatJob")
+                .Build();
+            var heartBeatCron = TriggerBuilder.Create()
+                .WithIdentity("heartBeatCron")
+                .StartNow()
+                .WithCronSchedule("0/30 * * * * ?")
+                .Build();
+            _scheduler.ScheduleJob(heartBeatJob, heartBeatCron);
+            if (isStart != 1)
+            {
+                Logger logger = LogManager.GetLogger("UBeat.Qrtz");
+                logger.Warn("!!!!!未配置后台事务启动，后台事务将不在本服务器内运行!!!!!!");
+                return;
+            }
+            
             var mainScheduleJob = JobBuilder.Create<MainSchedulerJobImp>()
                 .WithIdentity("MainScheduleJob")
                 .Build();
@@ -85,9 +95,9 @@ namespace UBeat.Crm.CoreApi
                 .StartNow()
                 .WithCronSchedule("* * * * * ?")
                 .Build();
+            _scheduler.ScheduleJob(mainScheduleJob, mainScheduleTrigger);
             //每秒调用一次
 
-            _scheduler.ScheduleJob(mainScheduleJob, mainScheduleTrigger).Wait();
 
         }
     }

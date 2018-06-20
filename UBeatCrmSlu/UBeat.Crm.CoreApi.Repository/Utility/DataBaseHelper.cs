@@ -34,6 +34,15 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
             return new NpgsqlConnection(connectStr);
         }
 
+        public static string getDbName() {
+            if (_connectString == null)
+            {
+                IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+                _connectString = config.GetConnectionString("DefaultDB");
+            }
+            NpgsqlConnection conn  = new   NpgsqlConnection(_connectString); ;
+            return conn.Database;
+        }
         public static int ExecuteNonQuery(string commandText, object parameters = null,
             CommandType commandType = CommandType.Text, string connectString = null)
         {

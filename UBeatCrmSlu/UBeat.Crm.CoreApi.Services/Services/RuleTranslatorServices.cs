@@ -86,6 +86,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     RuleSet = group.Key.RuleSet
                 }
             }).ToList();
+            List<RuleInfoModel> tmp = (List<RuleInfoModel>)obj;
+            foreach (RuleInfoModel i in tmp) {
+                List<RuleItemInfoModel> tmpList = i.RuleItems.ToList();
+                tmpList.Sort((x, y) => x.ItemName.CompareTo(y.ItemName));
+                i.RuleItems = tmpList;
+            }
             return new OutputResult<object>(obj);
         }
 

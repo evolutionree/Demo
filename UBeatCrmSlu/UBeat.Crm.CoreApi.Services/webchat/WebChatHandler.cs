@@ -21,6 +21,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
 
         private AccountServices _accountService = null;
         private ChatServices _chatService = null;
+
         private int UserId = 0;
         public WebChatHandler(RequestDelegate next)
         {
@@ -30,6 +31,12 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         {
 
             if (!context.WebSockets.IsWebSocketRequest)
+            {
+                await _next.Invoke(context);
+                return;
+            }
+            if (context.Request.Path.HasValue == false ||
+                context.Request.Path.Value.StartsWith("/ws/wechat") == false)
             {
                 await _next.Invoke(context);
                 return;
@@ -109,25 +116,25 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                         Login(msg, currentSocket);
                         break;
                     case WebChatCommandType.WebChatLogout:
-                        ReceiveMsg(msg, currentSocket);
                         break;
                     case WebChatCommandType.WebChatListMsg:
                         break;
                     case WebChatCommandType.WebChatSendMsg:
+                        ReceiveMsg(msg, currentSocket);
                         break;
                 }
-                responseMsg = new WebChatResponseMsg()
-                {
-                    ResultCode = -1,
-                    ErrorMsg = "请登录"
-                };
-                pkg = new WebResponsePackage()
-                {
-                    WebSock = currentSocket,
-                    CmdMsg = responseMsg,
-                    MessageType = WebChatMsgType.Command//命令回复数据
-                };
-                WebChatResponseHandler.getInstance().Enqueue(pkg);
+                //responseMsg = new WebChatResponseMsg()
+                //{
+                //    ResultCode = -1,
+                //    ErrorMsg = "请登录"
+                //};
+                //pkg = new WebResponsePackage()
+                //{
+                //    WebSock = currentSocket,
+                //    CmdMsg = responseMsg,
+                //    MessageType = WebChatMsgType.Command//命令回复数据
+                //};
+                //WebChatResponseHandler.getInstance().Enqueue(pkg);
 
             }
             try
@@ -186,7 +193,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                     WebChatResponseHandler.getInstance().Enqueue(pkg);
                     return;
                 }
-                if (_accountService.CheckAuthorizedCodeValid(userid, authcode))
+                if (true || _accountService.CheckAuthorizedCodeValid(userid, authcode))
                 {
                     WebSockChatSocketManager.getInstance().MapSocketToUser(websock, userid);
                     UserId = userid;
@@ -247,9 +254,19 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             WebResponsePackage pkg = null;
             try
             {
-                SendChatModel model = Newtonsoft.Json.JsonConvert.DeserializeObject<SendChatModel>(JsonConvert.SerializeObject(cmd.Data));
-                if (model != null)
+                InnerMsgDataInfo msgdata = Newtonsoft.Json.JsonConvert.DeserializeObject<InnerMsgDataInfo>(JsonConvert.SerializeObject(cmd.Data));
+                if (msgdata != null)
                 {
+
+                    SendChatModel model = new SendChatModel()
+                    {
+                        GroupId = msgdata.gid,
+                        FriendId = msgdata.rec,
+                        ContentType=msgdata.ct,
+                        ChatContent = (msgdata.ct != 1? msgdata.fid.ToString():msgdata.cont),
+                        ChatType = msgdata.ctype
+
+                    };
                     _chatService.SendChat(model, UserId);
                 }
                 else {
@@ -311,6 +328,18 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 }
             }
         }
+
     }
+    class InnerMsgDataInfo
+    {
+        public string mid { get; set; }
+        public int ctype { get; set; }
+        public Guid gid { get; set; }
+        public int ct { get; set; }
+        public Guid fid { get; set; }
+        public string cont { get; set; }
+        public int rec{ get; set; }
+    }
+
     
 }
