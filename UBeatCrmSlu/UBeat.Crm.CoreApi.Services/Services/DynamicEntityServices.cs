@@ -3863,7 +3863,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
 
         }
-        
+
+        public OutputResult<object> TemporarySave(TemporarySaveModel model, int userNumber)
+        {
+            DbTransaction tran = null;
+            var falg = false;
+            var eneity = _mapper.Map<TemporarySaveModel, TemporarySaveMapper>(model);
+            if (_dynamicEntityRepository.ExistsData(model.TypeId, userNumber, tran))
+                falg = _dynamicEntityRepository.AddTemporaryData(eneity, userNumber, tran);
+            else
+                falg = _dynamicEntityRepository.UpdateTemporaryData(eneity, userNumber, tran);
+            if (falg)
+                return new OutputResult<object>(null, "保存成功");
+            else
+                return new OutputResult<object>(null, "保存失败", 1);
+        }
+
+        public OutputResult<object> SelectTemporaryDetails(string cacheId, int userNumber)
+        {
+            DbTransaction tran = null;
+            var result = _dynamicEntityRepository.SelectTemporaryDetails(cacheId, userNumber, tran);
+            return new OutputResult<object>(result);
+        }
 
 
         #region 用于安居宝测试表单传输

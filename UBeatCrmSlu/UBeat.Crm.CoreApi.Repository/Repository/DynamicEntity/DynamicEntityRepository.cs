@@ -1593,5 +1593,52 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 return false;
             }
         }
+
+        public bool ExistsData(Guid typeId, int userNumber, DbTransaction tran)
+        {
+            string sql = @"select * from crm_sys_temporary_entity where typeid= @typeid";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("typeid",typeId)
+            };
+            return this.ExecuteQuery(sql, param, tran) == null;
+        }
+
+        public bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
+        {
+            string sql = @"insert into crm_sys_temporary_entity value (@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid)";
+            var p = new DbParameter[]
+            {
+                 new NpgsqlParameter("recmanager",userNumber),
+                 new NpgsqlParameter("createdtime",DateTime.Now),
+                 new NpgsqlParameter("datajson",data.DataJson),
+                 new NpgsqlParameter("fieldjson",data.FieldJson),
+                 new NpgsqlParameter("typeid",data.TypeId)
+            };
+            return this.ExecuteNonQuery(sql, p, tran) > 0;
+        }
+
+        public bool UpdateTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
+        {
+            string sql = @"update crm_sys_temporary_entity recmanager=@recmanager,datajson=@datajson::jsonb,fieldjson=@fieldjson::jsonb where cacheid=@cacheid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("recmanager",userNumber),
+                new NpgsqlParameter("datajson",data.DataJson),
+                new NpgsqlParameter("fieldjson",data.FieldJson),
+                new NpgsqlParameter ("cacheid",data.CacheId)
+            };
+            return this.ExecuteNonQuery(sql, p, tran) > 0;
+        }
+
+        public Dictionary<string,object> SelectTemporaryDetails(string cacheId, int userNumber, DbTransaction tran)
+        {
+            string sql = @"select * from crm_sys_temporary_entity where cacheid::text = @cacheId";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("cacheId",cacheId)
+            };
+            return this.ExecuteQuery(sql, p, tran).FirstOrDefault();
+        }
     }
 }

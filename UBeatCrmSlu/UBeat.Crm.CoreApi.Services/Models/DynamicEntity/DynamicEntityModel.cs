@@ -58,7 +58,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 包含两个字段
         /// RelFieldName 和RelRecId
         /// </summary>
-        public Dictionary<string,object>  RelInfo { get; set; }
+        public Dictionary<string, object> RelInfo { get; set; }
         public Dictionary<string, string> ColumnFilter { get; set; }
         /// <summary>
         ///  精确查询的条件，不受帅选项控制
@@ -171,7 +171,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Guid RelId { get; set; }
         //暂时没有用
         public Guid RecId { get; set; }
-  
+
         public Guid RelRecId { set; get; }
 
     }
@@ -280,7 +280,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
     }
     public class SaveRelConfigModel
     {
-        public Guid RelId{ get; set; }
+        public Guid RelId { get; set; }
         public List<RelConfig> Configs { get; set; }
         public List<RelConfigSet> ConfigSets { get; set; }
     }
@@ -347,7 +347,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Guid RecId { get; set; }
         public string IdStr { get; set; }
 
- 
+
     }
 
 
@@ -374,7 +374,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// <summary>
         /// 执行自定义函数的记录ids
         /// </summary>
-        public string []RecIds { get; set; }
+        public string[] RecIds { get; set; }
         /// <summary>
         /// 属于哪个实体的函数
         /// </summary>
@@ -433,7 +433,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
     public class MarkCompleteModel
     {
         public Guid RecId { get; set; }
-       
+
     }
     /// <summary>
     /// 用于获取个人实体WEB列定义的详情的参数
@@ -455,12 +455,24 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public DynamicEntityListModel DataFilter { get; set; }
         //优先recids
         public string RecIds { get; set; }
-        public Guid  SchemeId{get;set;}
+        public Guid SchemeId { get; set; }
         public Guid FieldId { get; set; }
         public Guid EntityId { get; set; }
         public int NewUserId { get; set; }
     }
 
+    public class TemporarySaveModel
+    {
+        public string RecManager { get; set; }
+        public DateTime CreatedTime { get; set; }
+        public string DataJson { get; set; }
+        public string FieldJson { get; set; }
+        public Guid TypeId { get; set; }
+        public Guid CacheId { get; set; }
+    }
 
-
+    public class TemporaryDetailMode
+    {
+       public string CacheId { get; set; }
+    }
 }

@@ -90,4 +90,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
             }
         }
     }
+
+    public class TemporarySaveMapper
+    {
+        public string RecManager { get; set; }
+        public DateTime CreatedTime { get; set; }
+        public string DataJson { get; set; }
+        public string FieldJson { get; set; }
+        public Guid TypeId { get; set; }
+        public Guid CacheId { get; set; }
+    }
 }

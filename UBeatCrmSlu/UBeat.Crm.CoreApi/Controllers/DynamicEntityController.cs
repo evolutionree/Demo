@@ -34,6 +34,24 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("temporarysave")]
+        public OutputResult<Object> TemporarySave([FromBody] TemporarySaveModel body)
+        {
+            if (body == null) return  ResponseError<object>("参数格式错误");
+            if (body.TypeId == Guid.Empty || body.CacheId == Guid.Empty)
+                return ResponseError<object>("Guid不能为空");
+            return _dynamicEntityServices.TemporarySave(body, UserId);
+        }
+
+        [HttpPost]
+        [Route("gettemporarylist")]
+        public OutputResult<object> SelectTemporaryDetails([FromForm] TemporaryDetailMode body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.CacheId)) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.SelectTemporaryDetails(body.CacheId, UserId);
+        }
+
+        [HttpPost]
         [Route("addlist")]
         public OutputResult<object> AddList([FromBody] DynamicEntityAddListModel dynamicModel = null)
         {
