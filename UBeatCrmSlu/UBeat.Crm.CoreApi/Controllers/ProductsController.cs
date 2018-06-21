@@ -178,6 +178,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost("productdetail")]
+        [AllowAnonymous]
         public OutputResult<object> ProuctDetails([FromBody]ProductDetailModel paramInfo ) {
             if (paramInfo == null)
                 return ResponseError<object>("参数异常");

@@ -142,5 +142,6 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
     }
     public class ProductDetailModel {
         public string recids { get; set; }
+        public int ProductOrSet { get; set; }
     }
 }

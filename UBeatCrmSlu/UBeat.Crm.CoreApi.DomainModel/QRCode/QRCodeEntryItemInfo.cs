@@ -11,28 +11,30 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
         public string CheckDetail { get; set; }
         public int RecOrder { get; set; }
         public int RecStatus { get; set; }
-        public QRCodeDealTypeEnum DealType { get; set; }
+        public QRCodeCheckTypeEnum DealType { get; set; }
         public string DealDetail { get; set; }
         public string Remark { get; set; }
 
 
 
     }
-    public enum QRCodeCheckTypeEnum {
+    public enum QRCodeCheckTypeEnum :Int32
+{
         StringSearch = 1 ,
         RegexSearch = 2,
-        JSPlugInSearch = 3
+        JSPlugInSearch = 3,
+        EntitySearch =4,
+        SQLScript =5,
+        SQLFunction = 6,
+        InnerService =7
     }
-    public enum QRCodeActionTypeEnum {
+    public enum QRCodeActionTypeEnum : Int32
+    {
         NoAction = 0,
         SimpleMsg = 1,
         ShowEntityUI = 2,
         ShowCommonUI= 3,
         ShowH5Page = 4
     }
-    public enum QRCodeDealTypeEnum {
-        CallService = 1 ,
-        CallDbFunction = 2,
-        JSService = 3
-    }
+   
 }

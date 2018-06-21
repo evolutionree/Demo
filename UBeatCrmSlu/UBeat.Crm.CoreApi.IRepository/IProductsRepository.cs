@@ -46,6 +46,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
 
 
+
        
         /// <summary>
         /// 删除产品
@@ -70,6 +71,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="userNum"></param>
         /// <returns></returns>
         dynamic GetProductSeriesDetail(DbTransaction trans, Guid productSetId, int userNum);
+        dynamic GetProductSeriesDetail(DbTransaction trans, List<Guid> productSetId, int userNum);
 
         List<Dictionary<string, object>> getProductAndSet(DbTransaction trans, int userNum);
         void GetProductAndSetVersion(DbTransaction tran, out long productVersion, out long setVersion, out long fieldVersion, int userNumber);

@@ -5,14 +5,17 @@ using UBeat.Crm.CoreApi.Services.Services;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
-    public  class UKJSEngineUtils
+    public class UKJSEngineUtils
     {
         private JavaScriptUtilsServices _javaScriptServices;
         private JavaScriptEngineSwitcher.Jint.JintJsEngine engine = null;
         public UKJSEngineUtils(JavaScriptUtilsServices javaScriptServices) {
             _javaScriptServices = javaScriptServices;
-            engine = new JavaScriptEngineSwitcher.Jint.JintJsEngine();
-            engine.SetVariableValue("ukservices", javaScriptServices);
+            engine = new JavaScriptEngineSwitcher.Jint.JintJsEngine(new JavaScriptEngineSwitcher.Jint.JintSettings() {
+
+                StrictMode = true
+            });
+            engine.EmbedHostObject("ukservices", javaScriptServices);
         }
         public object Evaluate(string code) {
             return engine.Evaluate(code);
@@ -23,6 +26,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         public void Execute(string code) {
             engine.Execute(code);
         }
+
+        public void SetHostedObject(string name ,object obj ) {
+            engine.EmbedHostObject(name, obj);
+        }
+        
 
     }
 }
