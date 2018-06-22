@@ -1575,5 +1575,61 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 throw (ex);
             }
         }
+
+        public void TerminateCase(DbTransaction tran, Guid caseId)
+        {
+            try
+            {
+                string strSQL = @"UPDATE crm_sys_workflow_case 
+                        SET auditstatus = 2,
+                            recupdated = now()
+                        WHERE caseid = @caseid; ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@caseid",caseId)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+                strSQL = @"UPDATE crm_sys_workflow_case_item 
+			                SET choicestatus = 3,
+			                    casestatus=2,
+		                            suggest='超时自动中止',
+			                    recupdated=now()
+			                WHERE caseid =@caseid  and (choicestatus=6 or choicestatus = 4)";
+                ExecuteNonQuery(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+            }
+        }
+
+        public List<WorkFlowCaseItemInfo> GetWorkflowCaseWaitingDealItems(DbTransaction tran, Guid caseId)
+        {
+            try
+            {
+                string strSQL = @"select * from  crm_sys_workflow_case_item 
+                            where caseid = @caseid and choicestatus = 6";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@caseid",caseId)
+                };
+                return ExecuteQuery<WorkFlowCaseItemInfo>(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+            }
+            return new List<WorkFlowCaseItemInfo>();
+        }
+
+        public List<WorkFlowCaseInfo> GetExpiredWorkflowCaseList(DbTransaction tran, int userId)
+        {
+            try
+            {
+                string strSQL = @"SELECT wc.*
+		FROM crm_sys_workflow AS w
+		INNER JOIN crm_sys_workflow_case AS wc ON w.flowid=wc.flowid AND wc.vernum=w.vernum AND (wc.auditstatus=0 OR wc.auditstatus=3)
+		INNER JOIN crm_sys_workflow_case_item AS wci ON wci.caseid=wc.caseid AND (wci.casestatus=0 OR wci.casestatus=1)
+		WHERE w.expireday>0 AND w.recstatus=1 AND (date_part('day',now()- wci.reccreated)>=w.expireday)";
+                return ExecuteQuery<WorkFlowCaseInfo>(strSQL, new DbParameter[] { }, tran);
+            }
+            catch (Exception x) {
+            }
+            return new List<WorkFlowCaseInfo>();
+        }
     }
 }

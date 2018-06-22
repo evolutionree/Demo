@@ -87,22 +87,74 @@ namespace UBeat.Crm.CoreApi.Controllers
         #endregion
 
         #region 字段数据源
+
+        #region 枚举额外属性
+        /// <summary>
+        /// 字典类型列表
+        /// </summary>
+        /// <returns></returns>
         [HttpPost]
         [Route("queryfieldopt")]
-        public OutputResult<object> SelectFieldDicType()
+        public OutputResult<object> SelectFieldDicType([FromBody]SrcDicTypeStatusList body)
         {
-
-            return _dataSourceServices.SelectFieldDicType(UserId);
+            return _dataSourceServices.SelectFieldDicType(body,UserId);
         }
 
+        /// <summary>
+        /// 字典类型详情
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("dictypedetail")]
+        public OutputResult<object> SelectFieldDicTypeDetail([FromBody] DictionaryTypeModel body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式有误");
+            return _dataSourceServices.SelectFieldDicTypeDetail(body.DicTypeId, UserId);
+        }
+
+        /// <summary>
+        /// 查询字典配置
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("getfieldconfig")]
+        public OutputResult<object> SelectFieldConfig([FromBody] DictionaryTypeModel body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式有误");
+            return _dataSourceServices.SelectFieldConfig(body.DicTypeId, UserId);
+        }
+
+        /// <summary>
+        /// 字典状态状态启用、禁用
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("updatedictypestatus")]
+        public OutputResult<object> UpdateFieldDicTypeStatus([FromBody]UpdateDicTypeParam body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeIds)) return ResponseError<object>("参数格式错误");
+            var ids = body.DicTypeIds.Split(',');
+            return _dataSourceServices.UpdateFieldDicTypeStatus(ids, body.RecStatus, UserId);
+        }
+
+        /// <summary>
+        /// 获取字典值
+        /// </summary>
+        /// <param name="entityModel"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("queryfielddicvalue")]
         public OutputResult<object> SelectFieldDicVaue([FromBody]DictionaryModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
             return _dataSourceServices.SelectFieldDicVaue(entityModel, UserId);
         }
+
+        /// <summary>
+        /// 保存字典类型
+        /// </summary>
+        /// <param name="entityModel"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("savefielddictype")]
         public OutputResult<object> SaveFieldDicType([FromBody]DictionaryTypeModel entityModel = null)
@@ -111,6 +163,39 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _dataSourceServices.SaveFieldDicType(entityModel, UserId);
         }
+
+        /// <summary>
+        /// 字典类型拖拽排序
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("updatedictypeorder")]
+        public OutputResult<object> UpdateDicTypeOrder([FromBody]List<DictionaryTypeModel> body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.UpdateDicTypeOrder(body, UserId);
+        }
+        /// <summary>
+        /// 保存字典
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("savedictionary")]
+        public OutputResult<object> SaveDictionary([FromBody]SaveDictionaryModel body)
+        {
+            if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.SaveDictionary(body, UserId);
+        }
+
+        [HttpPost("orderbydictionary")]
+        public OutputResult<object> OrderByDictionary([FromBody]List<OrderByDictionaryModel>  body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _dataSourceServices.OrderByDictionary(body, UserId);
+        }
+
+        #endregion
+
         [HttpPost]
         [Route("savefieldoptval")]
         public OutputResult<object> SaveFieldOpt([FromBody]DictionaryModel entityModel = null)

@@ -11,7 +11,9 @@ using System.Text;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
+using UBeat.Crm.CoreApi.DomainModel.Dynamics;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel.Message;
 using UBeat.Crm.CoreApi.DomainModel.Version;
@@ -228,6 +230,59 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("获取实体Id失败");
             }
 
+        }
+
+        
+
+        public OutputResult<object> CalcMenuDataCount(Guid entityId, int userId)
+        {
+            List<EntityMenuInfo> menus = this._entityProRepository.GetEntityMenuInfoList(entityId);
+            Dictionary<string, string> retData = new Dictionary<string, string>();
+            foreach (EntityMenuInfo menu in menus) {
+                if (menu.RecStatus != 1) continue;
+                DynamicEntityListModel dynamicModel = new DynamicEntityListModel()
+                {
+                    EntityId = entityId,
+                    MenuId = menu.MenuId.ToString(),
+                    ViewType = 4,
+                    SearchData = new Dictionary<string, object>(),
+                    ExtraData = new Dictionary<string, object>(),
+                    SearchDataXOR = new Dictionary<string, object>(),
+                    SearchOrder = "",
+                    PageIndex = 1 ,
+                    PageSize = 1,
+                    IsAdvanceQuery = 0,
+                    NeedPower = 1
+
+                };
+                try
+                {
+                    OutputResult<object> tmp = this.DataList2(dynamicModel, false, userId, true);
+                    if (tmp != null && tmp.DataBody != null)
+                    {
+                        Dictionary<string, List<Dictionary<string, object>>> tmpDict = (Dictionary<string, List<Dictionary<string, object>>>)tmp.DataBody;
+                        if (tmpDict != null && tmpDict.ContainsKey("PageCount") && tmpDict["PageCount"] != null)
+                        {
+                            Dictionary<string, object> pageDict = tmpDict["PageCount"].FirstOrDefault();
+                            if (pageDict.ContainsKey("total") && pageDict["total"] != null)
+                            {
+                                long ltmp = 0;
+                                if (long.TryParse(pageDict["total"].ToString(), out ltmp))
+                                {
+                                    retData.Add(menu.MenuId.ToString(), ltmp.ToString());
+                                }
+                            }
+
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    //忽略所有错误
+                }
+
+                
+            }
+            return new OutputResult<object>(retData);
         }
 
         private void SendMessage(Guid bussinessId, int userNumber, Guid custEntityId, string FuncCode)
@@ -867,6 +922,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
 
         }
+        public OutputResult<object> GetRelConfigEntity(RelTabListModel dynamicModel, int userNumber)
+        {
+            var dynamicEntity = _mapper.Map<RelTabListModel, RelTabListMapper>(dynamicModel);
+
+            if (dynamicEntity == null || !dynamicEntity.IsValid())
+            {
+                return HandleValid(dynamicEntity);
+            }
+            var result = _dynamicEntityRepository.GetRelConfigEntity(dynamicEntity, userNumber);
+            return new OutputResult<object>(result);
+
+        }
 
         public OutputResult<object> GetRelEntityFields(GetEntityFieldsModel entity, int userNumber)
         {
@@ -1429,7 +1496,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(result);
         }
-        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber)
+        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber,bool CalcCountOnly = false)
         {
             DbTransaction tran = null;
 
@@ -1777,7 +1844,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }, relEntityInfo.EntityTable + "_t");
                         var entityTable = relEntityInfo.EntityTable;
                         fromClause = string.Format(@"{0} left outer join {1} as {1}_t on {1}_t.recid = e.recrelateid ", fromClause, entityTable);
-                        selectClause = string.Format(@"{0},{1}_t.{2} as {3},{4} as {3}_name", selectClause, entityTable, relField.fieldname, EntityInfo["relfieldname"].ToString(), selectField);
+                        selectClause = string.Format(@"{0},{4} as {3}_name", selectClause, entityTable, relField.fieldname, fieldInfo.FieldName, selectField);
                         break;
                 }
             }
@@ -1795,13 +1862,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
             {
-                WhereSQL = " 1=1    " + dynamicEntity.SearchQuery;
+                WhereSQL = " e.recstatus = 1   " + dynamicEntity.SearchQuery;
             }
             string innerSQL = string.Format(@"select {0} from {1}  where  {2} order by {3} limit {4} offset {5}",
                 selectClause, fromClause, WhereSQL, OrderBySQL, pageParam.PageSize, (pageParam.PageIndex - 1) * pageParam.PageSize);
             string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
             string CountSQL = string.Format(@"select total,(total-1)/{2}+1 as page from (select count(*)  AS total  from {0} where  {1} ) as k", fromClause, WhereSQL, pageParam.PageSize);
-            List<Dictionary<string, object>> datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, tran);
+            List<Dictionary<string, object>> datas = null;
+            if (CalcCountOnly)
+                datas = new List<Dictionary<string, object>>();
+            else
+                datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, tran);
+
             List<Dictionary<string, object>> page = this._dynamicEntityRepository.ExecuteQuery(CountSQL, tran);
             Dictionary<string, List<Dictionary<string, object>>> retData = new Dictionary<string, List<Dictionary<string, object>>>();
 
@@ -1989,19 +2061,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.PersonSelectMulti://26人员多选
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.PersonSelectSingle://25人员单选
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.Product://28产品
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_product_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_product_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.ProductSet://29产品系列
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_productserial_multi(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_productserial_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.RecAudits://1007记录状态
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_workflow_auditstatus(outersql.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_workflow_auditstatus(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.RecId://1001
                             curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
@@ -2050,7 +2122,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return totalReturn;
         }
 
-        public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber)
+        public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber, bool CalcCountOnly=false)
         {
 
             string SpecFuncName = _dynamicEntityRepository.CheckDataListSpecFunction(dynamicModel.EntityId);
@@ -2242,13 +2314,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 sqlMainId = sqlMainId + "(" + sids + ") ";
                 dynamicEntity.SearchQuery = dynamicEntity.SearchQuery + sqlMainId;
             }
-                #endregion
-                //处理排序语句
-                if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
+            #endregion
+            #region 处理精确帅选项
+            if (dynamicModel.ExactFieldOrFilter != null) {
+                string tmp = " and (1<>1  ";
+                foreach(string item  in dynamicModel.ExactFieldOrFilter.Keys) {
+                    if (SpecFuncName != null)
+                    {
+                        tmp = tmp + string.Format("or t.{0} = '{1}' ", item, dynamicModel.ExactFieldOrFilter[item]);
+                    }
+                    else
+                    {
+                        tmp = tmp + string.Format("or e.{0} = '{1}' ", item, dynamicModel.ExactFieldOrFilter[item]);
+                    }
+                }
+                tmp = tmp + ")";
+                dynamicEntity.SearchQuery = dynamicEntity.SearchQuery + tmp;
+            }
+            #endregion 
+            //处理排序语句
+            if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
             {
                 dynamicEntity.SearchOrder = "";
             }
-            return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber);
+            return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber, CalcCountOnly);
         }
 
         public OutputResult<object> Detail(DynamicEntityDetailModel dynamicModel, int userNumber)
@@ -2683,7 +2772,318 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return _dynamicEntityRepository.GetEntityFields(entityId, userNumber);
         }
+        public OutputResult<object> TransferPro(EntityTransferParamInfo paramInfo, int userId)
+        {
+            if (paramInfo.RecIds != null)
+            {
+                //如果是
+                if (paramInfo.SchemeId != null && paramInfo.SchemeId != Guid.Empty)
+                {
+                    return TransferPro_RecIds_Scheme(paramInfo, userId);
+                }
+                else
+                {
+                    return TransferPro_RecIds_Common(paramInfo, userId);
+                }
+            }
+            else if (paramInfo.DataFilter != null)
+            {
+                if (paramInfo.SchemeId != null && paramInfo.SchemeId != Guid.Empty)
+                {
+                    return TransferPro_Filter_Scheme(paramInfo, userId);
+                }
+                else
+                {
+                    return TransferPro_Filter_Common(paramInfo, userId);
+                }
+            }
+            else {
+                throw (new Exception("参数异常"));
+            }
+        }
+        private OutputResult<object> TransferPro_RecIds_Scheme(EntityTransferParamInfo paramInfo, int userId) {
+            return new OutputResult<object>(null,"暂时不支持方案转移",-1);
+            //string[] ids = paramInfo.RecIds.Split(',');
+            //foreach (string id in ids) {
+                
+            //}
+            //return null;
+        }
+        private OutputResult<object> TransferPro_RecIds_Common(EntityTransferParamInfo paramInfo, int userId) {
+            string[] ids = paramInfo.RecIds.Split(',');
+            string entityTableName = "";
+            string entityName = "";
+            string newUserName = "";
+            Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
+            entityName = EntityInfo["entityname"].ToString();
+            entityTableName = EntityInfo["entitytable"].ToString();
+            Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId,userId)));
+            string FieldName = fieldInfo["fieldname"].ToString();
+            string FieldName_Display = fieldInfo["displayname"].ToString();
+            if (fieldInfo == null) throw (new Exception("字段定义有误"));
+            UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
+            if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
+            newUserName = newUserInfo.UserName;
+            List<TransferTempInfo> retList = new List<TransferTempInfo>();
+            foreach (string id in ids) {
+                DynamicEntityDetailtMapper p = new DynamicEntityDetailtMapper() {
+                    EntityId = paramInfo.EntityId,
+                    RecId = Guid.Parse(id),
+                    NeedPower = 0
+                };
+                IDictionary<string, object> detail = this._dynamicEntityRepository.Detail(p, userId, null);
+                bool needChanged = false;
+                if (detail.ContainsKey(FieldName) == false || detail[FieldName] == null)
+                {
+                    needChanged = true;
+                }
+                else {
+                    if (detail[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false) {
+                        needChanged = true;
+                    }
+                }
+                if (needChanged) {
+                    TransferTempInfo msg = new TransferTempInfo()
+                    {
+                        Message = "",
+                        DetailInfo = detail,
+                        FieldNames = new List<string>() { FieldName },
+                        NewUserId = paramInfo.NewUserId,
+                        NewUserName = newUserName,
+                        TableName = entityTableName,
+                        EntityName = entityName,
+                        EntityId = paramInfo.EntityId,
+                        TypeId = detail.ContainsKey("rectype") && detail["rectype"] != null ? Guid.Parse(detail["rectype"].ToString()) : paramInfo.EntityId,
+                        RecId = Guid.Parse(detail["recid"].ToString()),
+                        FieldDisplayNames =FieldName_Display,
+                        RecName = detail["recname"] == null ? "" : detail["recname"].ToString(),
+                    };
+                    retList.Add(msg);
+                }
 
+            }
+            TransferData(retList, userId);
+            int success = 0;
+            int error = 0;
+            foreach (TransferTempInfo item in retList) {
+                if (item.IsSuccess) success++;
+                else error++;
+            }
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            retDict.Add("success", success);
+            retDict.Add("error", error);
+            retDict.Add("detail", retList);
+            return new OutputResult<object>(retDict);
+        }
+        private OutputResult<object> TransferPro_Filter_Scheme(EntityTransferParamInfo paramInfo, int userId)
+        {
+            return new OutputResult<object>(null, "暂时不支持方案转移", -1);
+        }
+        private OutputResult<object> TransferPro_Filter_Common(EntityTransferParamInfo paramInfo, int userId)
+        {
+            string entityTableName = "";
+            string entityName = "";
+            string newUserName = "";
+            Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
+            entityName = EntityInfo["entityname"].ToString();
+            entityTableName = EntityInfo["entitytable"].ToString();
+            Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId, userId)));
+            string FieldName = fieldInfo["fieldname"].ToString();
+            string FieldName_Display = fieldInfo["displayname"].ToString();
+            if (fieldInfo == null) throw (new Exception("字段定义有误"));
+            UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
+            if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
+            newUserName = newUserInfo.UserName;
+            List<TransferTempInfo> retList = new List<TransferTempInfo>();
+            paramInfo.DataFilter.PageIndex = 1;
+            paramInfo.DataFilter.PageSize = 100000;
+            OutputResult<object> tmpResult = this.DataList2(paramInfo.DataFilter, false, userId);
+            if (tmpResult == null || tmpResult.DataBody == null) return new OutputResult<object>(retList);
+            List<Dictionary<string, object>> datas = ((Dictionary<string, List<Dictionary<string, object>>>)tmpResult.DataBody)["PageData"];
+            List<TransferTempInfo> thisDealed = new List<TransferTempInfo>();
+            foreach (IDictionary<string, object> rowData in datas)
+            {
+                bool needChanged = false;
+                if (rowData.ContainsKey(FieldName) == false || rowData[FieldName] == null)
+                {
+                    needChanged = true;
+                }
+                else
+                {
+                    if (rowData[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false)
+                    {
+                        needChanged = true;
+                    }
+                }
+                if (needChanged)
+                {
+                    TransferTempInfo msg = new TransferTempInfo()
+                    {
+                        Message = "",
+                        DetailInfo = rowData,
+                        FieldNames = new List<string>() { FieldName },
+                        NewUserId = paramInfo.NewUserId,
+                        NewUserName = newUserName,
+                        TableName = entityTableName,
+                        EntityName = entityName,
+                        EntityId = paramInfo.EntityId,
+                        TypeId = rowData.ContainsKey("rectype") && rowData["rectype"] != null ? Guid.Parse(rowData["rectype"].ToString()) : paramInfo.EntityId,
+                        RecId = Guid.Parse(rowData["recid"].ToString()),
+                        FieldDisplayNames = FieldName_Display,
+                        RecName = rowData["recname"] == null ? "" : rowData["recname"].ToString(),
+                    };
+                    retList.Add(msg);
+                }
+               
+            }
+            TransferData(retList, userId);
+            int success = 0;
+            int error = 0;
+            foreach (TransferTempInfo item in retList)
+            {
+                if (item.IsSuccess) success++;
+                else error++;
+            }
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            retDict.Add("success", success);
+            retDict.Add("error", error);
+            retDict.Add("detail", retList);
+            return new OutputResult<object>(retDict);
+        }
+        public OutputResult<object> TransferUser2User(DynamicEntityTransferUser2UserModel paramInfo, int userId)
+        {
+
+            List<TransferTempInfo> AllDetailDatas = new List<TransferTempInfo>();
+            string NewUserName = "";
+            UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
+            if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
+            NewUserName = newUserInfo.UserName;
+            foreach (DynamicEntityTransferUser2User_EntityFieldsModel item in paramInfo.Entities)
+            {
+                string entityTableName = "";
+                string entityName = "";
+                Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(item.EntityId, userId);
+                entityName = EntityInfo["entityname"].ToString();
+                entityTableName = EntityInfo["entitytable"].ToString() ;
+                DynamicEntityListModel model = new DynamicEntityListModel()
+                {
+                    EntityId = item.EntityId,
+                    MenuId = null,
+                    ViewType = 3,
+                    PageIndex = 1,
+                    PageSize = 10000//每次处理1万条
+                };
+                string[] fieldids = item.FieldIds.Split(',');
+                List<DynamicEntityFieldSearch> searchFields = new List<DynamicEntityFieldSearch>();
+                List<DynamicEntityFieldSearch> allEntityFields = this.GetEntityFields(item.EntityId, userId);
+                foreach (DynamicEntityFieldSearch field in allEntityFields)
+                {
+                    bool isInFound = false;
+                    foreach (string fieldid in fieldids)
+                    {
+                        if (field.FieldId.ToString().Equals(fieldid))
+                        {
+                            isInFound = true;
+                            break;
+                        }
+                    }
+                    if (isInFound)
+                    {
+                        searchFields.Add(field);
+                    }
+                }
+                model.ExactFieldOrFilter = new Dictionary<string, object>();
+                foreach (DynamicEntityFieldSearch field in searchFields)
+                {
+                    model.ExactFieldOrFilter.Add(field.FieldName, paramInfo.OldUserId);
+                }
+                OutputResult<object> tmpResult = this.DataList2(model, false, userId);
+                if (tmpResult == null || tmpResult.DataBody == null) continue;
+                List<Dictionary<string, object>> datas = ((Dictionary<string, List<Dictionary<string, object>>>)tmpResult.DataBody)["PageData"];
+                List<TransferTempInfo> thisDealed = new List<TransferTempInfo>();
+                foreach (IDictionary<string, object> rowData in datas)
+                {
+                    List<string> fieldNames = new List<string>();
+                    List<string> displayNames = new List<string>();
+                    foreach (DynamicEntityFieldSearch field in searchFields)
+                    {
+                        if (rowData.ContainsKey(field.FieldName) && rowData[field.FieldName] != null
+                            && rowData[field.FieldName].ToString().Equals(paramInfo.OldUserId.ToString()))
+                        {
+                            //需要修改此字段
+                            fieldNames.Add(field.FieldName);
+                            displayNames.Add(field.DisplayName);
+                        }
+                    }
+                    if (fieldNames.Count > 0)
+                    {
+                        TransferTempInfo msg = new TransferTempInfo()
+                        {
+                            Message = "",
+                            DetailInfo = rowData,
+                            FieldNames = fieldNames,
+                            NewUserId = paramInfo.NewUserId,
+                            NewUserName = NewUserName,
+                            TableName = entityTableName,
+                            EntityName = entityName,
+                            EntityId = item.EntityId,
+                            TypeId = rowData.ContainsKey("rectype") && rowData["rectype"]!= null ? Guid.Parse(rowData["rectype"].ToString()): item.EntityId,
+                            RecId = Guid.Parse(rowData["recid"].ToString()),
+                            FieldDisplayNames = string.Join('、',displayNames.ToArray()),
+                            RecName = rowData["recname"] == null ? "": rowData["recname"].ToString(),
+                        };
+                        thisDealed.Add(msg);
+                    }
+                }
+                #region 更新并发送消息
+                TransferData(thisDealed, userId);
+                AllDetailDatas.AddRange(thisDealed);
+                #endregion
+            }
+            int success = 0;
+            int error = 0;
+            foreach (TransferTempInfo item in AllDetailDatas)
+            {
+                if (item.IsSuccess) success++;
+                else error++;
+            }
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            retDict.Add("success", success);
+            retDict.Add("error", error);
+            retDict.Add("detail", AllDetailDatas);
+            return new OutputResult<object>(retDict);
+        }
+        private void TransferData(List<TransferTempInfo> thisDealed,int userId) {
+            foreach (TransferTempInfo updateitem in thisDealed)
+            {
+                DbTransaction tran = null;
+                bool updateSuccess = _dynamicRepository.TransferEntityData(tran, updateitem.TableName, updateitem.FieldNames, updateitem.NewUserId, updateitem.RecId, userId);
+                if (updateSuccess)
+                {
+                    string msgContent = string.Format("{0} {1} 的 {2} 已经变更为 {3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.NewUserName);
+                    DynamicInsertInfo dynamicInfo = new DynamicInsertInfo()
+                    {
+                        DynamicType = DynamicType.System,
+                        EntityId = updateitem.EntityId,
+                        TypeId = updateitem.TypeId,
+                        BusinessId = updateitem.RecId,
+                        RelEntityId = Guid.Empty,
+                        RelBusinessId = Guid.Empty,
+                        Content = msgContent,
+                        TemplateData = "{}",
+                    };
+                    MsgParamInfo tempData = null;
+                    bool msgSuccess = _dynamicRepository.InsertDynamic(null, dynamicInfo, userId, out tempData);
+                    updateitem.IsSuccess = true;
+                }
+                else
+                {
+                    updateitem.IsSuccess = false;
+                }
+
+                updateitem.DetailInfo = null;
+            }
+        }
         public OutputResult<object> Transfer(DynamicEntityTransferModel dynamicModel, int userNumber)
         {
             var dynamicEntity = _mapper.Map<DynamicEntityTransferModel, DynamicEntityTransferMapper>(dynamicModel);
@@ -3575,5 +3975,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
     {
         public Guid[] RecIds { get; set; }
 
+    }
+    public class TransferTempInfo {
+        public IDictionary<string, object> DetailInfo { get; set; }
+        public Guid EntityId { get; set; }
+        public Guid TypeId { get; set; }
+        public Guid RecId { get; set; }
+        public string TableName { get; set; }
+        public string EntityName { get; set; }
+        public string Message { get; set; }
+        public int NewUserId { get; set; }
+        public List<string> FieldNames { get; set; }
+        public bool IsSuccess { get; set; }
+        public string ErrorMessage { get; set; }
+        public string NewUserName { get; set; }
+
+        public string FieldDisplayNames { get; set; }
+        public string RecName { get; set; }
+
+        
     }
 } 

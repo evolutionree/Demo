@@ -643,5 +643,30 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
         }
         #endregion
+
+        #region 实体输入方式
+        [HttpPost("entityinputmethodquery")]
+        public OutputResult<object> GetEntityInputMethod([FromBody] EntityProInfoModel paramInfo) {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty.ToString()) {
+                return ResponseError<object>("参数异常");
+            }
+            try
+            {
+                return this._entityProService.GetEntityInputMethod(paramInfo, UserId);
+            } catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+
+        }
+        [HttpPost("entityinputmethodsave")]
+        public OutputResult<object> SaveEntityInputMethod([FromBody] EntityInputMethodParamInfo paramInfo) {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty)
+            {
+                return ResponseError<object>("参数异常");
+            }
+            if (paramInfo.InputMethods == null) paramInfo.InputMethods = new List<DomainModel.EntityPro.EntityInputModeInfo>();
+            return this._entityProService.SaveEntityInputMethod(paramInfo.EntityId, paramInfo.InputMethods,UserId);
+        }
+        #endregion 
     }
 }

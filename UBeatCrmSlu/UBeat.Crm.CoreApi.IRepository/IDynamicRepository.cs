@@ -92,7 +92,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
 
         bool MergeDynamic(DbTransaction tran, Guid entityid, Guid businessid, List<Guid> beMergeBusinessids, int usernumber);
-
+        bool TransferEntityData(DbTransaction tran, string tableName, List<string> fieldNames, int newUserId,Guid recId, int userId);
     }
 }
 

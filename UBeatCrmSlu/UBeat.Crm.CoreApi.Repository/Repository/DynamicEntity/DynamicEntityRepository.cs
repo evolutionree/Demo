@@ -689,7 +689,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 "inner join crm_sys_entity_datasource c on c.datasrcid::TEXT = jsonb_extract_path_text(b.fieldconfig, 'dataSource', 'sourceId') " +
                 "inner join crm_sys_entity d on d.entityid = c.entityid  " +
                 "where a.recstatus = 1 and b.recstatus=1 and b.controltype = 18  " +
-                "and (d.entityid =@entityid  or (d.entityid='ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid and 'f9db9d79-e94b-4678-a5cc-aa6e281c1246'::uuid=@entityid)) and a.entityid != @entityid  group by a.entityid,a.entityname ";
+                "and (d.entityid =@entityid  or (d.entityid='ac051b46-7a20-4848-9072-3b108f1de9b0'::uuid and d.entityid='f9db9d79-e94b-4678-a5cc-aa6e281c1246'::uuid)) and a.entityid != @entityid  group by a.entityid,a.entityname ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
             return DataBaseHelper.Query(sql, param);
@@ -752,7 +752,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             string sql = @"INSERT into crm_sys_entity_rel_config(type,relid,relentityid,fieldid,calcutetype,entityid,index,func)  
                         values (@type,@relid,@relentityid,@fieldid,@calcutetype,@entityid,@index,@func)";
             Boolean isSuf = true;
-            foreach (var item in configs) {
+            foreach (var item in configs)
+            {
                 var param = new DbParameter[]
                 {
                         new NpgsqlParameter("type",item.Type),
@@ -776,7 +777,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                     Msg = "新增配置成功"
                 };
             }
-            else {
+            else
+            {
                 return new OperateResult()
                 {
                     Flag = 0,
@@ -785,6 +787,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
         }
 
+
+        public List<IDictionary<string, object>> GetRelConfigEntity(RelTabListMapper entity, int userNumber)
+        {
+            string sql = @"select distinct a.entityid,a.entityname from crm_sys_entity a inner join crm_sys_entity_fields b on a.entityid=b.entityid 
+                inner join crm_sys_entity_datasource c on c.datasrcid::TEXT = jsonb_extract_path_text(b.fieldconfig, 'dataSource', 'sourceId')
+                inner join crm_sys_entity d on d.entityid = c.entityid  
+                where a.recstatus = 1 and b.recstatus=1 and b.controltype = 18  
+                and d.entityid =@entityid  and a.entityid != @entityid  group by a.entityid,a.entityname 
+                UNION all
+                select  b.entityid,b.entityname from crm_sys_entity b where b.recstatus=1 and b.entityid =@entityid ";
+            var param = new DynamicParameters();
+            param.Add("entityid", entity.EntityId);
+            return DataBaseHelper.Query(sql, param);
+        }
         public RelConfigInfo GetRelConfig(Guid RelId, int userNumber)
         {
             string getConfigSql = "select * from crm_sys_entity_rel_config a where a.relid=@relid";
@@ -820,25 +836,47 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
         public decimal queryDataForDataSource_CalcuteType(RelConfig config, Guid parentRecId, int userNumber)
         {
-            string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
+
+            Dictionary<string, object> parentTableInfo = null;
+
+            Dictionary<string, object> childTableInfo = null;
+            string whereClause = "";
+            string selectClause = "";
+            if (config.EntityId == config.RelentityId)
+            {
+                string selfEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity c
+                                         inner join crm_sys_entity_fields b on  b.entityid=c.entityid
+                                          where c.entityid=@entityid and b.fieldid=@fieldid ";
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("entityid",config.EntityId),
+                    new NpgsqlParameter("fieldid",config.FieldId)
+                };
+                parentTableInfo = ExecuteQuery(selfEntitySql, param).FirstOrDefault();
+                childTableInfo = new Dictionary<string, object>();
+                childTableInfo["fieldname"] = parentTableInfo["fieldname"];
+                //实体本身统计取值
+                whereClause = string.Format(@" recid::text='{0}' ", parentRecId);
+            }
+            else
+            {
+                string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
                                          inner JOIN crm_sys_entity c on c.entityid=a.relentityid
                                          inner join crm_sys_entity_fields b on  b.fieldid=a.fieldid
                                           where c.entityid=@entityid ";
-            var param = new DbParameter[]
-            {
-              new NpgsqlParameter("entityid",config.RelentityId)
-            };
-            var parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
-
-            string childfieldSql = @"select a.fieldname  from crm_sys_entity_fields a where  a.fieldid=@fieldid";
-            var param1 = new DbParameter[]
-            {
-              new NpgsqlParameter("fieldid",config.FieldId)
-            };
-            var childTableInfo = ExecuteQuery(childfieldSql, param1).FirstOrDefault();
-            string whereClause = "";
-            string selectClause = "";
-            whereClause = string.Format(@"jsonb_extract_path_text({0},'id')='{1}' ", parentTableInfo["fieldname"], parentRecId);
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("entityid",config.RelentityId)
+                };
+                parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
+                string childfieldSql = @"select a.fieldname  from crm_sys_entity_fields a where  a.fieldid=@fieldid";
+                var param1 = new DbParameter[]
+                {
+                     new NpgsqlParameter("fieldid",config.FieldId)
+                };
+                childTableInfo = ExecuteQuery(childfieldSql, param1).FirstOrDefault();
+                whereClause = string.Format(@"jsonb_extract_path_text({0},'id')='{1}' ", parentTableInfo["fieldname"], parentRecId);
+            }
             //0直接取值1求和2求平均3计数
             if (config.CalcuteType == 0)
             {
@@ -856,16 +894,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             {
                 selectClause = string.Format(@"COALESCE(SUM({0}),0):: DECIMAL ", childTableInfo["fieldname"]);
             }
-            else if (config.CalcuteType == 2) {
+            else if (config.CalcuteType == 2)
+            {
                 selectClause = string.Format(@"COALESCE(avg({0}),0):: DECIMAL ", childTableInfo["fieldname"]);
-            } else if (config.CalcuteType == 3) {
+            }
+            else if (config.CalcuteType == 3)
+            {
                 selectClause = string.Format(@"count({0})::decimal ", childTableInfo["fieldname"]);
-            } else {
+            }
+            else
+            {
                 return new decimal(0);
             }
             string expressionSqlStr = string.Format(@"select {0} as result from {1}  where  {2}", selectClause, parentTableInfo["entitytable"], whereClause);
-            var ret = ExecuteQuery(expressionSqlStr, null).FirstOrDefault();
-            return (decimal)ret["result"];
+            var ret = ExecuteQuery(expressionSqlStr, null);
+            if (ret.Count == 0)
+                return 0;
+            else
+                return (decimal)ret.FirstOrDefault()["result"];
         }
 
         public OperateResult SaveRelConfigSet(List<RelConfigSet> configSets, Guid RelId, int userNumber)
@@ -1457,7 +1503,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 };
                 this.ExecuteNonQuery(strSQL, param, tran);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
         }
 
@@ -1473,7 +1520,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 };
                 this.ExecuteNonQuery(strSQL, param, tran);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
         }
         /// <summary>
@@ -1499,7 +1547,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                         WHERE fie.entityid = @entityid
                         ORDER BY fie.recorder ";
             #endregion
-            var data = ExecuteQuery(sql, new DbParameter[] { new Npgsql.NpgsqlParameter("@entityid",entity.EntityId)}, tran);
+            var data = ExecuteQuery(sql, new DbParameter[] { new Npgsql.NpgsqlParameter("@entityid", entity.EntityId) }, tran);
             var checkData = data.Where(r => r["entityid"] != null && (Guid)r["entityid"] == entity.EntityId).ToList();
             var notCheckData = data.Where(r => r["entityid"] == null).ToList();
             entityConditionData.Add("fieldvisible", checkData);

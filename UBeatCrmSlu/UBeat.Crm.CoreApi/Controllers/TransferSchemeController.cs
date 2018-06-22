@@ -79,6 +79,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (body == null) return ResponseError<object>("参数格式错误");
             return _transferScheme.TransferSchemeList(body, UserId);
         }
+        [HttpPost("listschemebyentity")]
+        public OutputResult<object> ListTransferSchemesByEntity([FromBody] SearchEntitySchemeParamInfo paramInfo) {
+            if (paramInfo == null) return ResponseError<object>("参数异常");
+            return _transferScheme.ListTransferSchemesByEntity(paramInfo.EntityId, UserId);
+        }
 
     }
 }

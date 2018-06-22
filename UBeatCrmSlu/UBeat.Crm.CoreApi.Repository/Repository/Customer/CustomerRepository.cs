@@ -303,5 +303,34 @@ WHERE (wc.auditstatus=0 OR wc.auditstatus=3 ) AND cr.relrecid =ANY (@recids)
                 return null;
             }
         }
+
+        public Dictionary<string, object> SelectTodayIndex(int userNumber)
+        {
+            string sql = @"select remaintasknum + 5 as index,todaysale from crm_plu_salework  where reccreator = @reccreator  ORDER BY reccreated DESC LIMIT 1";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("reccreator",userNumber)
+            };
+            return ExecuteQuery(sql, param, null).FirstOrDefault();
+        }
+
+
+        public List<Dictionary<string, object>> SelectCustomerOfVisitPlan(string beginDate, string endDate, int userNumber, DbTransaction tran)
+        {
+            string sql = @"select  vp.custname, cs.xhhhqf ->>'address' as address,cs.target,cs.reccreated  from (
+select  custname ->> 'id' as custid , custname ->> 'name' as custname 
+from crm_sys_visit_plan 
+where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::timestamp and recupdated < @endDate::timestamp 
+) as vp INNER JOIN crm_sys_customer_summary as cs on vp.custid::uuid = cs.recrelateid";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("reccreator",userNumber),
+                new NpgsqlParameter("beginDate",beginDate),
+                new NpgsqlParameter("endDate",endDate)
+            };
+            return ExecuteQuery(sql, param, tran);
+        }
+
+
     }
 }

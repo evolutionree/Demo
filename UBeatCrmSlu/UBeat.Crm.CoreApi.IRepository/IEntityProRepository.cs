@@ -189,6 +189,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         void DeleteEntityFieldRules(Guid catelogid, int userId);
         void MapEntityType(Guid subTypeId, Guid mainTypeId);
         void UpdateEntityFieldName(DbTransaction tran,Guid fieldId, string fieldName, int userId);
+        void SaveEntityInputMethod(DbTransaction tran, Guid entityId, List<EntityInputModeInfo> inputs, int userId);
         #endregion
     }
 }

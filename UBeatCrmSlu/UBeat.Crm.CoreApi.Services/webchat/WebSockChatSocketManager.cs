@@ -26,7 +26,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 if (userId <= 0) return null;
                 if (UserSockets.ContainsKey(userId))
                     return UserSockets[userId];
-                return null;
+                return new List<WebSocket>() ;
             }
         }
         /// <summary>

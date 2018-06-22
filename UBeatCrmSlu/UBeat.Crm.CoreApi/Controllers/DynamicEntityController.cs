@@ -99,6 +99,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             var isAdvance = dynamicModel.IsAdvanceQuery == 1;
             return _dynamicEntityServices.DataList2(dynamicModel, isAdvance, UserId);
         }
+        [HttpPost("listcount")]
+        public OutputResult<object> ListStatistic([FromBody] DynamicEntityListViewColumnModel paramInfo ) {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            return _dynamicEntityServices.CalcMenuDataCount(paramInfo.EntityId,UserId);
+        }
         /// <summary>
         /// 此接口已废弃
         /// </summary>
@@ -166,6 +173,24 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             WriteOperateLog("提交转移负责人数据", dynamicModel);
             return _dynamicEntityServices.Transfer(dynamicModel, UserId);
+        }
+        /// <summary>
+        /// 用于一键转移所有的数据
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <returns></returns>
+        [HttpPost("transfer_v2_user2user")]
+        public OutputResult<object> Tansfer_V2_User2User([FromBody] DynamicEntityTransferUser2UserModel paramInfo = null) {
+            if (paramInfo == null ) return ResponseError<object>("参数格式错误");
+
+            return _dynamicEntityServices.TransferUser2User(paramInfo,UserId);
+        }
+        [HttpPost("transfer_pro")]
+        public OutputResult<object> Transfer_Pro([FromBody] EntityTransferParamInfo paramInfo = null)
+        {
+            if (paramInfo == null) return ResponseError<object>("参数格式错误");
+
+            return _dynamicEntityServices.TransferPro(paramInfo, UserId);
         }
 
         [HttpPost]
@@ -287,6 +312,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             return _dynamicEntityServices.GetRelTabEntity(dynamicModel, UserId);
+        }
+
+        [HttpPost]
+        [Route("getrelconfigentity")]
+        public OutputResult<object> GetRelConfigEntity([FromBody] RelTabListModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.GetRelConfigEntity(dynamicModel, UserId);
         }
 
         [HttpPost]

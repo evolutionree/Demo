@@ -96,4 +96,52 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
 
 
     }
+    public class ProductSearchModel {
+        /// <summary>
+        /// 是否直接返回顶级数据
+        /// </summary>
+        public int IsTopSet { get; set; }
+        /// <summary>
+        /// 父产品系列id
+        /// </summary>
+        public string PSetId { get; set; }
+        /// <summary>
+        /// 查询关键字（一旦使用查询关键字，则说明上面两个参数没有意义了）
+        /// </summary>
+        public string SearchKey { get; set; }
+        /// <summary>
+        /// “包含”的js过滤字符串
+        /// </summary>
+        public string IncludeFilter { get; set; }
+        /// <summary>
+        /// 内部转换使用，参数无需传入
+        /// </summary>
+        public string[] IncludeFilters { get; set; }
+        /// <summary>
+        /// js过滤参数，在产品控件中无效
+        /// </summary>
+        public int IncludeSubSets { get; set; }
+        /// <summary>
+        /// JS参数，排除字符串
+        /// </summary>
+        public string ExcludeFilter { get; set; }
+        /// <summary>
+        /// 内部转换使用，参数无需传入
+        /// </summary>
+        public string[] ExcludeFilters { get; set; }
+        /// <summary>
+        /// 是否只返回产品系列。0=返回产品和产品系列，1=只返回产品系列
+        /// </summary>
+        public int IsProductSetOnly { get; set; }
+        public int PageIndex { get; set; }
+        public int PageCount { get; set; }
+        public ProductSearchModel() {
+            PageIndex = 1;
+            PageCount = 10;
+        }
+    }
+    public class ProductDetailModel {
+        public string recids { get; set; }
+        public int ProductOrSet { get; set; }
+    }
 }

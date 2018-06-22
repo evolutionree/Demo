@@ -56,6 +56,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public int PublishStatus { set; get; }
 
         /// <summary>
+        /// 录入方式,目前支持普通录入和Ocr录入
+        /// </summary>
+        public EntityInputModeInfo InputMethod { get; set; }
+
+        /// <summary>
         /// 字段数据
         /// </summary>
         public List<EntityFieldInfo> Fields { set; get; } = new List<EntityFieldInfo>();

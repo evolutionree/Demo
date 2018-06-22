@@ -43,5 +43,18 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (custModel == null) return ResponseError<object>("参数格式错误");
             return _customerServices.MergeCustomer(custModel, LoginUser);
         }
+
+        #region 客户拜访
+        [HttpPost("selecttodayindex")]
+        public OutputResult<object> SelectTodayIndex()
+        {
+            return _customerServices.SelectTodayIndex(UserId);
+        }
+        [HttpPost("selectdaily")]
+        public OutputResult<object> SelectDaily()
+        {
+            return _customerServices.SelectDaily(UserId);
+        }
+        #endregion
     }
 }

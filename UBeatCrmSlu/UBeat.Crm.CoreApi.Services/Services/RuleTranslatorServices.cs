@@ -5,6 +5,7 @@ using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using UBeat.Crm.CoreApi.Core.Utility;
@@ -85,7 +86,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     RuleSet = group.Key.RuleSet
                 }
             }).ToList();
+            List<RuleInfoModel> tmp = (List<RuleInfoModel>)obj;
+            foreach (RuleInfoModel i in tmp) {
+                List<RuleItemInfoModel> tmpList = i.RuleItems.ToList();
+                tmpList.Sort((x, y) => x.ItemName.CompareTo(y.ItemName));
+                i.RuleItems = tmpList;
+            }
             return new OutputResult<object>(obj);
+        }
+
+        public void SaveMenuOrder(List<EntityMenuOrderByModel> paramInfo, int userId)
+        {
+            try
+            {
+                DbTransaction trans = null;
+                foreach (EntityMenuOrderByModel item in paramInfo) {
+                    this._ruleRepository.SaveMenuOrder(item.MenuId,item.OrderBy, userId, trans);
+                }
+                
+
+            }
+            catch (Exception ex) {
+                throw (ex);
+            }
         }
 
         public OutputResult<object> EntityRuleMenuQuery(string entityId, int userNumber)

@@ -21,11 +21,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.TransferScheme
         /// <summary>
         /// 关联转移对象json
         /// </summary>
-        public string AssociationTransfer{ get; set; }
+        public dynamic AssociationTransfer{ get; set; }
         /// <summary>
         /// 备注
         /// </summary>
         public string Remark { get; set; }
+        public Guid? FieldId { get; set; }
 
     }
     public class GetTransParam
@@ -43,5 +44,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.TransferScheme
     {
         public int RecStatus { get; set; }
         public string SearchName { get; set; }
+    }
+    public class SearchEntitySchemeParamInfo {
+        public Guid EntityId { get; set; }
+    }
+    public class SearchEntitySchemeResultInfo {
+        public string SchemeName { get; set; }
+        public Guid SchemeId { get; set; }
+        public string FieldName { get; set; }
+        public Guid FieldId { get; set; }
     }
 }

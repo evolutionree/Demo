@@ -651,10 +651,50 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 }
                 else
                 {
-                    var sql = @"
+                    string sql = "";
+                    DynamicParameters param = null;
+                    foreach (var tmp in rule.Rules)
+                    {
+                        if (String.IsNullOrWhiteSpace(tmp.FieldRulesId))
+                        {
+                            //if (tmp.IsVisible == 0) continue; 此处不能跳过，必须插入，不然新增实体数据时，有些默认字段会被过滤
+                              sql = @"
+                SELECT * FROM crm_func_fieldrules_add(@typeid,@fieldid,@operatetype,@isrequire,@isvisible,@isreadonly, @viewrules, @validrules, @userno)
+            ";
+                              param = new DynamicParameters();
+                            param.Add("typeid", rule.TypeId);
+                            param.Add("fieldid", rule.FieldId);
+                            param.Add("operatetype", tmp.OperateType);
+                            param.Add("isvisible", tmp.IsVisible);
+                            param.Add("isrequire", tmp.IsRequired);
+                            param.Add("isreadonly", tmp.IsReadOnly);
+                            param.Add("viewrules", tmp.ViewRuleStr);
+                            param.Add("validrules", tmp.ValidRuleStr);
+                            param.Add("userno", tmp.UserId);
+                            result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+                            if (result.Flag == 0) return result;
+                        }
+                        else
+                        {
+                              sql = @"
+                SELECT * FROM crm_func_fieldrules_edit(@fieldrulesid,@isrequire,@isvisible,@isreadonly, @viewrules, @validrules, @userno)
+            ";
+                              param = new DynamicParameters();
+                            param.Add("fieldrulesid", tmp.FieldRulesId);
+                            param.Add("isvisible", tmp.IsVisible);
+                            param.Add("isrequire", tmp.IsRequired);
+                            param.Add("isreadonly", tmp.IsReadOnly);
+                            param.Add("viewrules", tmp.ViewRuleStr);
+                            param.Add("validrules", tmp.ValidRuleStr);
+                            param.Add("userno", tmp.UserId);
+                            result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+                            if (result.Flag == 0) return result;
+                        }
+                    }
+                    sql = @"
                 SELECT * FROM crm_func_fieldrules_disabled(@fieldid,@typeid, @status, @userno)
             ";
-                    var param = new DynamicParameters();
+                      param = new DynamicParameters();
                     param.Add("@fieldid", rule.FieldId);
                     param.Add("@typeid", rule.TypeId);
                     param.Add("@status", rule.RecStatus);
@@ -1614,7 +1654,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 (select ec.categoryid from crm_sys_entity_category as ec where entityid = @entityid)";
             string insertSql = string.Format(@"INSERT INTO crm_sys_entity_func_event(funceventid,typeid,operatetype,funcname)
                                    SELECT uuid_generate_v4(),typeid,operatetype,funcname
-                                   FROM json_populate_recordset(null::crm_sys_entity_func_event,@condition)");
+                                   FROM json_populate_recordset(null::crm_sys_entity_func_event,@condition) where funcname <> ''");
             #endregion
             #region 删除
             var param = new DbParameter[]
@@ -1635,7 +1675,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             #region sql
             string delSQL = @"Delete from crm_sys_actionext_config where entityid = @entityid";
             string insertSql = string.Format(@"INSERT INTO crm_sys_actionext_config(recid,routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid)
-                                   SELECT uuid_generate_v4(),routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,recstatus,entityid
+                                   SELECT uuid_generate_v4(),routepath,implementtype,assemblyname,classtypename,funcname,operatetype,resulttype,1 recstatus,entityid
                                    FROM json_populate_recordset(null::crm_sys_actionext_config,@condition)");
             #endregion
             #region 删除
@@ -1825,6 +1865,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             catch (Exception ex)
             {
                 return null;
+            }
+        }
+
+        public void SaveEntityInputMethod(DbTransaction tran, Guid entityId, List<EntityInputModeInfo> inputs, int userId)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_entity set  inputmethod=@inputmethod where entityid=@entityid";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@inputmethod",JsonConvert.SerializeObject(inputs)){
+                        NpgsqlDbType = NpgsqlDbType.Jsonb
+                    },
+                    new Npgsql.NpgsqlParameter("@entityid",entityId)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+                throw (ex);
             }
         }
         #endregion

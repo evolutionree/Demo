@@ -61,6 +61,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Dictionary<string,object>  RelInfo { get; set; }
         public Dictionary<string, string> ColumnFilter { get; set; }
         /// <summary>
+        ///  精确查询的条件，不受帅选项控制
+        /// </summary>
+        public Dictionary<string, object> ExactFieldOrFilter { get; set; }
+        /// <summary>
         /// 专用于获取嵌套表格列表时，通过对应的主实体id列表获取其所有的嵌套表格的记录
         /// 
         /// </summary>
@@ -134,6 +138,18 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public string RecId { get; set; }
         public int Manager { get; set; }
 
+    }
+    public class DynamicEntityTransferUser2UserModel {
+        public int OldUserId { get; set; }
+        public int NewUserId { get; set; }
+
+        public int IgnoreMsg { get; set; }
+
+        public List<DynamicEntityTransferUser2User_EntityFieldsModel> Entities { get; set; }
+    }
+    public class DynamicEntityTransferUser2User_EntityFieldsModel {
+        public Guid EntityId { get; set; }
+        public string FieldIds { get; set; }
     }
 
     public class DynamicEntityDeleteModel
@@ -430,6 +446,19 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public int UserId { get; set; }
         public WebListPersonalViewSettingInfo ViewConfig { get; set; }
 
+    }
+
+    /// <summary>
+    /// 新版本的实体数据转移接口
+    /// </summary>
+    public class EntityTransferParamInfo {
+        public DynamicEntityListModel DataFilter { get; set; }
+        //优先recids
+        public string RecIds { get; set; }
+        public Guid  SchemeId{get;set;}
+        public Guid FieldId { get; set; }
+        public Guid EntityId { get; set; }
+        public int NewUserId { get; set; }
     }
 
 

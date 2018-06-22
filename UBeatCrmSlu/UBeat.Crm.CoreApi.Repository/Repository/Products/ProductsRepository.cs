@@ -80,7 +80,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                 new NpgsqlParameter("userno", userNumber),
             };
             var resutl = new OperateResult();
-            int res= ExecuteNonQuery(executeSql, param, trans);
+            int res = ExecuteNonQuery(executeSql, param, trans);
             if (res > 0)
                 resutl.Flag = 1;
             return resutl;
@@ -122,7 +122,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 	                    crm_sys_products_series AS C
                     WHERE
 	                    C .recstatus = 1
-	                    AND c.productsetid = '620a733c-14fe-4a62-8aa2-f22f8b2b9a83'", productSetId);
+	                    AND c.productsetid = '{0}'", productSetId);
             return ExecuteQuery(sql, new DbParameter[] { }, trans);
         }
 
@@ -189,7 +189,84 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 
         }
 
-        
+        public List<Dictionary<string, object>> getProductAndSet(DbTransaction trans, int userNum)
+        {
+            try
+            {
+                string strSQL = @"select * 
+                                from (
 
+                                select productsetid,productsetcode,productsetname,pproductsetid,recorder  ,1 SetOrProduct ,recversion from crm_sys_products_series  where recstatus =1 
+                                )
+                                 aa order by aa.SetOrProduct ,aa.productsetname";
+                return ExecuteQuery(strSQL, new DbParameter[] { }, trans);
+            }
+            catch (Exception ex) {
+                return new List<Dictionary<string, object>>();
+            }
+        }
+
+        public void GetProductAndSetVersion(DbTransaction tran, out long productVersion, out long setVersion, out long fieldVersion, int userNumber)
+        {
+            try
+            {
+                productVersion = 0;
+                fieldVersion = 0;
+                setVersion = 0;
+                string strSQL = @"select * 
+                                    from (
+                                    select max(recversion) productversion   from crm_sys_product  where recstatus = 1 ) product,
+                                    (
+                                    select max(recversion) setversion from crm_sys_products_series  where recstatus = 1  
+                                    ) productset,
+                                    (
+                                    select  max(recversion) fieldversion from crm_sys_entity_listview_viewcolumn where viewtype = 1 and entityid ='59cf141c-4d74-44da-bca8-3ccf8582a1f2' 
+                                    ) fields";
+                List<Dictionary<string, object>>  list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
+                if (list != null || list.Count> 0)
+                {
+                    if (list[0]["productversion"] != null)
+                    {
+                        long.TryParse(list[0]["productversion"].ToString(), out productVersion);
+                    }
+                    if (list[0]["setversion"] != null)
+                    {
+                        long.TryParse(list[0]["setversion"].ToString(), out setVersion);
+                    }
+                    if (list[0]["fieldversion"] != null)
+                    {
+                        long.TryParse(list[0]["fieldversion"].ToString(), out fieldVersion);
+                    }
+
+                }
+            }
+            catch (Exception ex) {
+                productVersion = 0;
+                fieldVersion = 0;
+                setVersion = 0;
+            }
+
+        }
+
+        public dynamic GetProductSeriesDetail(DbTransaction trans, List<Guid> productSetId, int userNum)
+        {
+            
+            string tmp = string.Join("','", productSetId);
+            tmp = "'" + tmp + "'";
+            var sql = string.Format(@"SELECT
+	                    C .productsetid,
+	                    C .pproductsetid,
+	                    C .productsetname,
+	                    C .productsetcode,
+	                    C .recorder,
+	                    C .reccreator,
+	                    C .reccreated
+                    FROM
+	                    crm_sys_products_series AS C
+                    WHERE
+	                    C .recstatus = 1
+	                    AND c.productsetid in ({0})",tmp);
+            return ExecuteQuery(sql, new DbParameter[] {}, trans);
+        }
     }
 }

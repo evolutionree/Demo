@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 
 namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 {
@@ -369,5 +370,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public string CheckLoad { get; set; }
 
 
+    }
+    public class   EntityInputMethodParamInfo{
+        public Guid EntityId { get; set; }
+        public List<EntityInputModeInfo> InputMethods { get; set; }
     }
 }
