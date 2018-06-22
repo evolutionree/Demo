@@ -107,7 +107,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 Directory.CreateDirectory(tmppath);
             }
-            string fileFullPath = Path.Combine(tmppath, tmpFile + ".xlsx");
+            string fileFullPath = Path.Combine(tmppath, tmpFile + ".pdf");
+            if (System.IO.File.Exists(fileFullPath)) {
+                return PhysicalFile(fileFullPath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName ?? string.Format("{0:yyyyMMddHHmmssffff}.pdf", DateTime.Now));
+            }
+            fileFullPath = Path.Combine(tmppath, tmpFile + ".xlsx");
             return PhysicalFile(fileFullPath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
         }
 
