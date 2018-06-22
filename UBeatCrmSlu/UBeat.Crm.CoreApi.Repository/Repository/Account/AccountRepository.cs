@@ -579,6 +579,50 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
                 
             }
         }
+
+        public AccountUserInfo GetAllAccountUserInfo(int userNumber)
+        {
+            var sql = @"
+              SELECT a.accesstype,ur.accountid,a.accountname,ur.userid,u.username,u.namepinyin AS UserNamePinyin,ur.deptid AS DepartmentId,d.deptcode AS DepartmentCode,d.deptname AS DepartmentName,d.pdeptid AS PDepartmentId 
+                FROM crm_sys_account_userinfo_relate AS ur
+                LEFT JOIN crm_sys_department AS d ON ur.deptid=d.deptid
+                LEFT JOIN crm_sys_userinfo AS u ON u.userid=ur.userid
+                LEFT JOIN crm_sys_account AS a ON a.accountid=ur.accountid
+                WHERE   ur.userid = @userid";
+
+            var param = new DbParameter[]
+                    {
+                        new NpgsqlParameter("userid", userNumber),
+                    };
+
+            var result = DBHelper.ExecuteQuery<AccountUserInfo>("", sql, param);
+            return result == null ? null : result.FirstOrDefault();
+        }
+        public AccountUserInfo GetAllAccountUserInfoByAccountId(int accountId)
+        {
+            var sql = @"
+              SELECT a.accesstype,ur.accountid,a.accountname,ur.userid,u.username,u.namepinyin AS UserNamePinyin,ur.deptid AS DepartmentId,d.deptcode AS DepartmentCode,d.deptname AS DepartmentName,d.pdeptid AS PDepartmentId 
+                FROM crm_sys_account_userinfo_relate AS ur
+                LEFT JOIN crm_sys_department AS d ON ur.deptid=d.deptid and ur.recstatus=1
+                LEFT JOIN crm_sys_userinfo AS u ON u.userid=ur.userid
+                LEFT JOIN crm_sys_account AS a ON a.accountid=ur.accountid
+                WHERE   a.accountid = @accountid";
+
+            var param = new DbParameter[]
+                    {
+                        new NpgsqlParameter("accountid", accountId),
+                    };
+
+            var result = DBHelper.ExecuteQuery<AccountUserInfo>("", sql, param);
+            return result == null ? null : result.FirstOrDefault();
+        }
+
+        public int GetLicenseUserCount()
+        {
+            var sql = @"select count(1) nums from crm_sys_account  where recstatus = 1 and accesstype <>'99' ";
+            var count = DataBaseHelper.QuerySingle<int>(sql);
+            return count;
+        }
         #endregion
     }
 }

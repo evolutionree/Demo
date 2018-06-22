@@ -123,7 +123,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 catch (Exception ex)
                 {
                     tran.Rollback();
-                    Logger.Error(ex, "数据库执行出错");
+                    //Logger.Error(ex, "数据库执行出错");
                     return ShowError<object>(ex.Message);
                 }
                 finally

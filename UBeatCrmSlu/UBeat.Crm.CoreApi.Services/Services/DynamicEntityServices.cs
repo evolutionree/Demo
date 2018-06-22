@@ -1503,7 +1503,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             #region 检查并处理有特殊列表函数的情况
             string SpecFuncName = _dynamicEntityRepository.CheckDataListSpecFunction(dynamicEntity.EntityId);
-            if (SpecFuncName != null)
+            if (!string.IsNullOrEmpty(SpecFuncName))
             {
                 var innerResult = _dynamicEntityRepository.DataListUseFunc(SpecFuncName, pageParam, dynamicEntity.ExtraData, dynamicEntity, userNumber);
                 return new OutputResult<object>(innerResult);

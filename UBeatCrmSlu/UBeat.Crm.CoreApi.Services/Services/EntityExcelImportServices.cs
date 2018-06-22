@@ -335,7 +335,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     OperateType = 2,
                                     IsReadOnly = 0,
                                     IsRequired = 0,
-                                    IsVisible = 1
+                                    IsVisible =0
                                 };
                                 CalcFieldViewRule(view);
                                 item.Rules.Add(view);
@@ -362,9 +362,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 FieldRulesDetailModel addnew = new FieldRulesDetailModel()
                                 {
                                     OperateType = 0,
-                                    IsReadOnly = viewtype.AddNew_Readonly ? 1 : 0,
-                                    IsRequired = viewtype.AddNew_Must ? 1 : 0,
-                                    IsVisible = viewtype.AddNew_Display ? 1 : 0,
+                                    IsReadOnly = viewtype.IsEnable&&viewtype.AddNew_Readonly ? 1 : 0,
+                                    IsRequired = viewtype.IsEnable && viewtype.AddNew_Must ? 1 : 0,
+                                    IsVisible = viewtype.IsEnable && viewtype.AddNew_Display ? 1 : 0,
 
                                 };
                                 CalcFieldViewRule(addnew);
@@ -372,9 +372,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 FieldRulesDetailModel edit = new FieldRulesDetailModel()
                                 {
                                     OperateType =1,
-                                    IsReadOnly = viewtype.Edit_Readonly ? 1 : 0,
-                                    IsRequired = viewtype.Edit_Must ? 1 : 0,
-                                    IsVisible = viewtype.Edit_Display ? 1 : 0
+                                    IsReadOnly = viewtype.IsEnable && viewtype.Edit_Readonly ? 1 : 0,
+                                    IsRequired = viewtype.IsEnable && viewtype.Edit_Must ? 1 : 0,
+                                    IsVisible = viewtype.IsEnable && viewtype.Edit_Display ? 1 : 0
                                 };
                                 CalcFieldViewRule(edit);
                                 item.Rules.Add(edit);
@@ -383,7 +383,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     OperateType =2,
                                     IsReadOnly = 0,
                                     IsRequired = 0,
-                                    IsVisible = viewtype.View_Display ? 1 : 0
+                                    IsVisible = viewtype.IsEnable && viewtype.View_Display ? 1 : 0
                                 };
                                 CalcFieldViewRule(view);
                                 item.Rules.Add(view);
@@ -393,8 +393,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     {
                                         OperateType = 4,
                                         IsReadOnly = 0,
-                                        IsRequired = viewtype.Import_Must ? 1 : 0,
-                                        IsVisible = viewtype.Import_Display ? 1 : 0
+                                        IsRequired = viewtype.IsEnable && viewtype.Import_Must ? 1 : 0,
+                                        IsVisible = viewtype.IsEnable && viewtype.Import_Display ? 1 : 0
                                     };
                                     CalcFieldViewRule(import);
                                     item.Rules.Add(import);

@@ -122,7 +122,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 	                    crm_sys_products_series AS C
                     WHERE
 	                    C .recstatus = 1
-	                    AND c.productsetid = '620a733c-14fe-4a62-8aa2-f22f8b2b9a83'", productSetId);
+	                    AND c.productsetid = '{0}'", productSetId);
             return ExecuteQuery(sql, new DbParameter[] { }, trans);
         }
 
@@ -246,6 +246,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                 setVersion = 0;
             }
 
+        }
+
+        public dynamic GetProductSeriesDetail(DbTransaction trans, List<Guid> productSetId, int userNum)
+        {
+            
+            string tmp = string.Join("','", productSetId);
+            tmp = "'" + tmp + "'";
+            var sql = string.Format(@"SELECT
+	                    C .productsetid,
+	                    C .pproductsetid,
+	                    C .productsetname,
+	                    C .productsetcode,
+	                    C .recorder,
+	                    C .reccreator,
+	                    C .reccreated
+                    FROM
+	                    crm_sys_products_series AS C
+                    WHERE
+	                    C .recstatus = 1
+	                    AND c.productsetid in ({0})",tmp);
+            return ExecuteQuery(sql, new DbParameter[] {}, trans);
         }
     }
 }

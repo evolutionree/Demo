@@ -79,5 +79,6 @@ namespace UBeat.Crm.CoreApi.IRepository
         //获取历史密码数据
         List<HistoryPwd> GetHistoryPwd(int count ,int userId);
         void SetPasswordInvalid(List<int> userList, int userId, DbTransaction tran);
+        int GetLicenseUserCount();
     }
 }

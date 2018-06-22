@@ -23,6 +23,7 @@ using Newtonsoft.Json.Linq;
 using Irony.Parsing;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony;
+using System.Diagnostics;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -149,6 +150,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("未上传输出模板文件，请先上传输出模板文件");
 
             var fileData = _fileServices.GetFileData(null, templateInfo.FileId.ToString());
+            if (fileData == null)
+            {
+                throw new Exception("模板数据异常，请重新上传模板");
+            }
             Stream fileStream = new MemoryStream(fileData);
             var excelData = ExcelHelper.ReadExcel(fileStream);
             if (excelData == null || excelData.Sheets == null || excelData.Sheets.Count == 0)
@@ -190,7 +195,48 @@ namespace UBeat.Crm.CoreApi.Services.Services
             FileStream fs = new FileStream(fileFullPath, FileMode.Create);
             fs.Write(bytes, 0, bytes.Length);
             fs.Dispose();
-            return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName) });
+            #region 这里要处理是否生成pdf
+            var config = new ConfigurationBuilder()
+              .SetBasePath(Directory.GetCurrentDirectory())
+              .AddJsonFile("appsettings.json")
+              .Build();
+            int isgenpdf = 0;
+            string Pdfpath = "";
+            IEnumerator<IConfigurationSection> it = config.GetSection("pdfgenerator").GetChildren().GetEnumerator();
+            while (it.MoveNext()) {
+                IConfigurationSection item = it.Current;
+                if (item.Key.Equals("isgenpdf") && item.Value != null)
+                {
+                    int tmp = 0;
+                    if (Int32.TryParse(item.Value, out tmp))
+                    {
+                        isgenpdf = tmp;
+                    }
+                }
+                else if (item.Key.Equals("jarfilepath") && item.Value != null) {
+                    Pdfpath = item.Value;
+                }
+            }
+            if (isgenpdf == 1 && Pdfpath != null && Pdfpath.Length > 0) {
+                string pdfFilePath = Path.Combine(tmppath, fileID + ".pdf");
+                string executePDF = "  -jar " + Pdfpath + " " + fileFullPath + " " + pdfFilePath;
+                Process process = new Process();
+                process.StartInfo.FileName = "java";
+                process.StartInfo.Arguments = executePDF ;
+                Console.WriteLine(executePDF);
+                process.StartInfo.CreateNoWindow = true; // 获取或设置指示是否在新窗口中启动该进程的值（不想弹出powershell窗口看执行过程的话，就=true）
+                process.StartInfo.ErrorDialog = false; // 该值指示不能启动进程时是否向用户显示错误对话框
+                process.StartInfo.UseShellExecute = false;
+                process.Start();
+                process.WaitForExit();
+                process.Close();
+                return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.pdf", templateInfo.TemplateName) });
+            }
+            else{
+
+                return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName) });
+            }
+            #endregion 
         } 
         #endregion
 
@@ -818,6 +864,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         //循环表格控件的数据集合，每行为一组，对templateRows进行解析
                         foreach (var itemDic in entityfieldvalue)
                         {
+                            if (itemDic == null) continue;//兼容部分数据异常
                             foreach (var rowItem in templateRows)
                             {
                                 var rowItemTemp = rowItem.Clone();

@@ -651,10 +651,50 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 }
                 else
                 {
-                    var sql = @"
+                    string sql = "";
+                    DynamicParameters param = null;
+                    foreach (var tmp in rule.Rules)
+                    {
+                        if (String.IsNullOrWhiteSpace(tmp.FieldRulesId))
+                        {
+                            //if (tmp.IsVisible == 0) continue; 此处不能跳过，必须插入，不然新增实体数据时，有些默认字段会被过滤
+                              sql = @"
+                SELECT * FROM crm_func_fieldrules_add(@typeid,@fieldid,@operatetype,@isrequire,@isvisible,@isreadonly, @viewrules, @validrules, @userno)
+            ";
+                              param = new DynamicParameters();
+                            param.Add("typeid", rule.TypeId);
+                            param.Add("fieldid", rule.FieldId);
+                            param.Add("operatetype", tmp.OperateType);
+                            param.Add("isvisible", tmp.IsVisible);
+                            param.Add("isrequire", tmp.IsRequired);
+                            param.Add("isreadonly", tmp.IsReadOnly);
+                            param.Add("viewrules", tmp.ViewRuleStr);
+                            param.Add("validrules", tmp.ValidRuleStr);
+                            param.Add("userno", tmp.UserId);
+                            result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+                            if (result.Flag == 0) return result;
+                        }
+                        else
+                        {
+                              sql = @"
+                SELECT * FROM crm_func_fieldrules_edit(@fieldrulesid,@isrequire,@isvisible,@isreadonly, @viewrules, @validrules, @userno)
+            ";
+                              param = new DynamicParameters();
+                            param.Add("fieldrulesid", tmp.FieldRulesId);
+                            param.Add("isvisible", tmp.IsVisible);
+                            param.Add("isrequire", tmp.IsRequired);
+                            param.Add("isreadonly", tmp.IsReadOnly);
+                            param.Add("viewrules", tmp.ViewRuleStr);
+                            param.Add("validrules", tmp.ValidRuleStr);
+                            param.Add("userno", tmp.UserId);
+                            result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+                            if (result.Flag == 0) return result;
+                        }
+                    }
+                    sql = @"
                 SELECT * FROM crm_func_fieldrules_disabled(@fieldid,@typeid, @status, @userno)
             ";
-                    var param = new DynamicParameters();
+                      param = new DynamicParameters();
                     param.Add("@fieldid", rule.FieldId);
                     param.Add("@typeid", rule.TypeId);
                     param.Add("@status", rule.RecStatus);

@@ -206,11 +206,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             try
             {
-                DynamicEntityDetaillistModel model = new DynamicEntityDetaillistModel();
-                model.EntityId =Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
-                model.NeedPower = 0;
-                model.RecIds = paramInfo.recids;
-                return  this._dynamicEntityServices.DetailList(model, userId);
+                if (paramInfo.ProductOrSet == 1)
+                {
+                    List<Guid> setids = new List<Guid>();
+                    string[] sids = paramInfo.recids.Split(',');
+                    foreach (string id in sids) {
+                        setids.Add(Guid.Parse(id));
+                    }
+                    return new OutputResult<object>(this._repository.GetProductSeriesDetail(null, setids, userId));
+                }
+                else {
+
+                    DynamicEntityDetaillistModel model = new DynamicEntityDetaillistModel();
+                    model.EntityId = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
+                    model.NeedPower = 0;
+                    model.RecIds = paramInfo.recids;
+                    return this._dynamicEntityServices.DetailList(model, userId);
+                }
             }
             catch (Exception ex) {
                 throw (ex);
