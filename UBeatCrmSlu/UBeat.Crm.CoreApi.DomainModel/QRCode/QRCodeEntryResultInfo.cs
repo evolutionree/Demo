@@ -11,7 +11,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
         public static QRCodeEntryResultInfo NoActionResultInfo = new QRCodeEntryResultInfo() {
             ActionType = QRCodeActionTypeEnum.NoAction
         };
-        [JsonConverter(typeof(StringEnumConverter))]
         public QRCodeActionTypeEnum ActionType { get; set; }
         public string QRCode { get; set; }
         public int CodeType { get; set; }
