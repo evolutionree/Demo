@@ -104,6 +104,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public string FieldName { get; set; }
         public string RecRelateId { get; set; }
         public string RelateEntityId { get; set; }
-        public string RekateTypeId { get; set; }
+        public string RelateTypeId { get; set; }
     }
 }

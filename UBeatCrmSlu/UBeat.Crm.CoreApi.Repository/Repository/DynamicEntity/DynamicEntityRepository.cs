@@ -1607,7 +1607,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
         {
             string sql = @"insert into crm_sys_temporary_entity values 
-(@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@rekatetypeid)";
+(@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@relatetypeid)";
             var p = new DbParameter[]
             {
                 new NpgsqlParameter("recmanager",userNumber),
@@ -1621,7 +1621,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 new NpgsqlParameter("fieldname",data.FieldName),
                 new NpgsqlParameter("recrelateid",data.RecRelateId),
                 new NpgsqlParameter("relateentityid",data.RelateEntityId),
-                new NpgsqlParameter("rekatetypeid",data.RekateTypeId)
+                new NpgsqlParameter("relatetypeid",data.RelateTypeId)
             };
             return this.ExecuteNonQuery(sql, p, tran) > 0;
         }
@@ -1630,7 +1630,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         {
             string sql = @"update crm_sys_temporary_entity 
 set recmanager=@recmanager,datajson=@datajson::jsonb,fieldjson=@fieldjson::jsonb,inputjson=@inputjson::jsonb,typeid=@typeid::uuid,
-title=@title,fieldname=@fieldname,recrelateid=@recrelateid,relateentityid=@relateentityid,rekatetypeid=@rekatetypeid
+title=@title,fieldname=@fieldname,recrelateid=@recrelateid,relateentityid=@relateentityid,relatetypeid=@relatetypeid
 where cacheid = @cacheid";
             var p = new DbParameter[]
             {
@@ -1644,9 +1644,19 @@ where cacheid = @cacheid";
                 new NpgsqlParameter("fieldname",data.FieldName),
                 new NpgsqlParameter("recrelateid",data.RecRelateId),
                 new NpgsqlParameter("relateentityid",data.RelateEntityId),
-                new NpgsqlParameter("rekatetypeid",data.RekateTypeId)
+                new NpgsqlParameter("relatetypeid",data.RelateTypeId)
             };
             return this.ExecuteNonQuery(sql, p, tran) > 0;
+        }
+
+        public void DeleteTemporary(Guid CacheId, int userNumber, DbTransaction tran)
+        {
+            string sql = @"delete from crm_sys_temporary_entity where cacheid=@cacheid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("cacheid",CacheId)
+            };
+            this.ExecuteNonQuery(sql, p, tran);
         }
 
         public List<Dictionary<string,object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran)

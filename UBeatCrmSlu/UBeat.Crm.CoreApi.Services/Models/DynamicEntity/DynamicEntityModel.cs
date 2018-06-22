@@ -14,7 +14,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Guid? FlowId { get; set; }
         public Guid? RelEntityId { get; set; }
         public Guid? RelRecId { get; set; }
-
+        public Guid CacheId { get; set; }
     }
 
 
@@ -474,7 +474,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public string FieldName { get; set; }
         public string RecRelateId { get; set; }
         public string RelateEntityId { get; set; }
-        public string RekateTypeId { get; set; }
+        public string RelateTypeId { get; set; }
     }
 
     public class TemporaryDetailMode
