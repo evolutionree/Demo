@@ -842,7 +842,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format(" {0}_t.dataval ilike '%{1}%'", columnKey, dataStr);//多选会有问题的
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
                                 }
                                 break;
                             }

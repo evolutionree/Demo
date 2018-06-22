@@ -213,13 +213,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> RegistUser(AccountRegistModel registModel, int userNumber)
         {
-            int count = _accountRepository.GetUserCount();
+            int count = _accountRepository.GetLicenseUserCount();
             OperateResult result = new OperateResult();
-            if (count >= Convert.ToInt32(LicenseInstance.Instance.LimitPersonNum))
+            if (registModel.AccessType != "99" )//如果是99，表示限制登录，不会考虑许可问题 
             {
-                result.Msg = "注册用户人数已经超过项目许可注册人数,请联系生产商";
-                return HandleResult(result);
+                if (count >= Convert.ToInt32(LicenseInstance.Instance.LimitPersonNum))
+                {
+                    result.Msg = "注册用户人数已经超过项目许可注册人数,请联系生产商";
+                    return HandleResult(result);
+                }
             }
+            
 
             var registEntity = _mapper.Map<AccountRegistModel, AccountUserRegistMapper>(registModel);
             if (registEntity == null || !registEntity.IsValid())
@@ -267,6 +271,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var resulttemp = ExcuteAction((transaction, arg, userData) =>
              {
                  var result = _accountRepository.EditUser(editEntity, userNumber);
+                 
+                 if(editEntity.AccessType != "99")//如果是变成不可登录，则不检查
+                 {
+                     int count = _accountRepository.GetLicenseUserCount();//更新完后检查
+                     if (count >= Convert.ToInt32(LicenseInstance.Instance.LimitPersonNum))
+                     {
+                         throw (new Exception("注册用户人数已经超过项目许可注册人数,请联系生产商"));
+                     }
+                 }
+                 
                  return HandleResult(result);
              }, editModel, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
@@ -413,6 +427,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var res = ExcuteAction((transaction, arg, userData) =>
              {
                  var result = _accountRepository.UpdateAccountStatus(entity, userNumber);
+                 if (entity.Status == 1) {//启用状态就检查，如果是停用，可以不检查
+                     int count = _accountRepository.GetLicenseUserCount();//更新完后检查
+                     if (count >= Convert.ToInt32(LicenseInstance.Instance.LimitPersonNum))
+                     {
+                         throw (new Exception("注册用户人数已经超过项目许可注册人数,请联系生产商"));
+                     }
+                 }
+                
                  return HandleResult(result);
              }, entity, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
@@ -529,7 +551,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             dic.Add("company", LicenseInstance.Instance.Company);
             dic.Add("endtime", LicenseInstance.Instance.EndTime);
             dic.Add("totaluser", LicenseInstance.Instance.LimitPersonNum);
-            var userCount = _accountRepository.GetUserCount();
+            var userCount = _accountRepository.GetLicenseUserCount();
             dic.Add("usercount", userCount);
             dic.Add("allowregcount", LicenseInstance.Instance.LimitPersonNum - userCount);
             return new OutputResult<object>(dic);
