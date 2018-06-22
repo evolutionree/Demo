@@ -20,9 +20,13 @@ namespace UBeat.Crm.CoreApi.Services.webchat
     }
     public class WebChatResponseMsg
     {
+        public WebChatMsgType MessageType { get; set;  }
         public int ResultCode { get; set; }
         public string ErrorMsg { get; set; }
         public object Data { get; set; }
+        public WebChatResponseMsg() {
+            MessageType = WebChatMsgType.Command;
+        }
     }
     public class WebResponsePackage
     {
@@ -34,10 +38,15 @@ namespace UBeat.Crm.CoreApi.Services.webchat
 
     }
     public class WebChatMsgInfo {
+
+        public WebChatMsgType MessageType { get; set; }//1=命令返回结果，2=消息数据
         public string Title { get; set; }
         public string Message { get; set; }
         public Dictionary<string, object> CustomContent { get; set; }
         public int ReceiverId { get; set; }
+        public WebChatMsgInfo() {
+            MessageType = WebChatMsgType.ChatMessage;
+        }
     }
     public enum WebChatMsgType {
         Command = 1,

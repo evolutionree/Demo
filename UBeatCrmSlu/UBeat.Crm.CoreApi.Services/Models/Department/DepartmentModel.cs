@@ -19,4 +19,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Department
         public Guid PDeptId { get; set; }
         public int OgLevel { get; set; }
     }
+    public class DepartmentListSubDeptParamInfo {
+        public Guid DeptId { get; set; }
+    }
 }

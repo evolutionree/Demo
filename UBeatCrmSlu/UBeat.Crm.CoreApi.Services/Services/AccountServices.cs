@@ -313,7 +313,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.PwdUser(pwdEntity, userNumber);
-                this.ForceLogoutButThis(userNumber, authorizedCode,null,ForceUserLogoutTypeEnum.All, userNumber);//注销本人但不是本次登陆的
+                if (result != null && result.Flag == 1)
+                {//只有成功才注销设备
+                    this.ForceLogoutButThis(userNumber, authorizedCode, null, ForceUserLogoutTypeEnum.All, userNumber);//注销本人但不是本次登陆的
+                }
                 return HandleResult(result);
             }, pwdModel, userNumber);
 
@@ -343,7 +346,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ExcuteAction((transaction, arg, userData) =>
             {
                 var result = _accountRepository.ReConvertPwd(arg, userNumber);
-                this.ForceLogoutButThis(int.Parse(entity.UserId), authorizedCode,null,ForceUserLogoutTypeEnum.All, userNumber);//重置密码，注销所有设备，但不包括本身
+                if (result != null && result.Flag == 1) {
+                    this.ForceLogoutButThis(int.Parse(entity.UserId), authorizedCode, null, ForceUserLogoutTypeEnum.All, userNumber);//重置密码，注销所有设备，但不包括本身
+                }
                 return HandleResult(result);
             }, entity, userNumber);
 

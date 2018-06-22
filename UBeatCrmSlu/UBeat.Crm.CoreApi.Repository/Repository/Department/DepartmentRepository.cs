@@ -110,6 +110,43 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
             }
         }
 
+        public List<Dictionary<string, object>> ListSubDepts(DbTransaction tran, Guid deptId, int userId)
+        {
+            try
+            {
+                string strSQL = "select *  from crm_sys_department  where pdeptid =@pdeptid and recstatus = 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@pdeptid",deptId)
+                };
+                return ExecuteQuery(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+                return new List<Dictionary<string, object>>();
+            }
+        }
 
+        public List<Dictionary<string, object>> ListSubUsers(DbTransaction tran, Guid deptId, int userId)
+        {
+            try
+            {
+                string strSQL = @"select a.* 
+                            from crm_sys_userinfo a
+                             inner join (
+		                            select *
+		                            from crm_sys_account_userinfo_relate 
+		                            where recstatus = 1
+                            ) b on a.userid = b.userid 
+                            where b.deptid = @pdeptid
+                            and a.recstatus  =1  ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@pdeptid",deptId)
+                };
+                return ExecuteQuery(strSQL, p, tran);
+            }
+            catch (Exception ex)
+            {
+                return new List<Dictionary<string, object>>();
+            }
+        }
     }
 }
