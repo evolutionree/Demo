@@ -68,6 +68,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             OutputResult<object> addRes = null;
             var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
+                if (_dynamicEntityRepository.ExistsData(dynamicModel.CacheId, userNumber, transaction))
+                    _dynamicEntityRepository.DeleteTemporary(dynamicModel.CacheId, userNumber, transaction);
                 WorkFlowAddCaseModel workFlowAddCaseModel = null;
                 return addRes = AddEntityData(transaction, userData, entityInfo, arg, header, userNumber, out workFlowAddCaseModel);
 
@@ -3863,8 +3865,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
 
         }
-        
 
+        public OutputResult<object> TemporarySave(TemporarySaveModel model, int userNumber)
+        {
+            DbTransaction tran = null;
+            var falg = false;
+            var eneity = _mapper.Map<TemporarySaveModel, TemporarySaveMapper>(model);
+            if (_dynamicEntityRepository.ExistsData(model.CacheId, userNumber, tran))
+                falg = _dynamicEntityRepository.AddTemporaryData(eneity, userNumber, tran);
+            else
+                falg = _dynamicEntityRepository.UpdateTemporaryData(eneity, userNumber, tran);
+            if (falg)
+                return new OutputResult<object>(null, "保存成功");
+            else
+                return new OutputResult<object>(null, "保存失败", 1);
+        }
+
+        public OutputResult<object> SelectTemporaryDetails(Guid cacheId, int userNumber)
+        {
+            DbTransaction tran = null;
+            var result = _dynamicEntityRepository.SelectTemporaryDetails(cacheId, userNumber, tran);
+            return new OutputResult<object>(result);
+        }
+
+        public OutputResult<object> DeleteTemporaryList(List<Guid> cacheIds, int userNumber)
+        {
+            DbTransaction tran = null;
+            bool falg = false;
+            falg = _dynamicEntityRepository.DeleteTemporaryList(cacheIds, userNumber, tran);
+            if (falg)
+                return new OutputResult<object>(null, "删除成功");
+            else
+                return new OutputResult<object>(null, "删除失败", 1);
+        }
 
         #region 用于安居宝测试表单传输
         public OutputResult<object> SendToMule(MuleSendParamInfo paramInfo, int userId)

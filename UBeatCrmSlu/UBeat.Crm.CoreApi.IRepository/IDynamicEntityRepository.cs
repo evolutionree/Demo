@@ -119,5 +119,12 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, object> QueryEntityCondition(DynamicEntityCondition entity, DbTransaction tran);
         //修改查重
         bool UpdateEntityCondition(List<DynamicEntityCondition> entityList, int userNumber, DbTransaction tran);
+
+        bool ExistsData(Guid CacheId, int userNumber, DbTransaction tran);
+        bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran);
+        bool UpdateTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran);
+        void DeleteTemporary(Guid CacheId, int userNumber, DbTransaction tran);
+        List<Dictionary<string,object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran);
+        bool DeleteTemporaryList(List<Guid> cacheIds,int userNumber,DbTransaction tran);
     }
 }

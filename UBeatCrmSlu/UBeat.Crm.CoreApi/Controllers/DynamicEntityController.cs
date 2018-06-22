@@ -34,6 +34,47 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("temporarysave")]
+        public OutputResult<Object> TemporarySave([FromBody] TemporarySaveModel body)
+        {
+            if (body == null) return  ResponseError<object>("参数格式错误");
+            if (body.TypeId == Guid.Empty || body.CacheId == Guid.Empty)
+                return ResponseError<object>("Guid不能为空");
+            return _dynamicEntityServices.TemporarySave(body, UserId);
+        }
+
+        [HttpPost]
+        [Route("gettemporarylist")]
+        public OutputResult<object> SelectTemporaryDetails([FromBody] TemporaryDetailMode body)
+        {
+            Guid g = Guid.Empty;
+            if (body != null && !string.IsNullOrEmpty(body.CacheId))
+            {
+                if (!Guid.TryParse(body.CacheId, out g))
+                    return ResponseError<object>("cacheid格式有误（guid）");
+            }
+            return _dynamicEntityServices.SelectTemporaryDetails(g, UserId);
+        }
+
+        [HttpPost]
+        [Route("deletetemporarylist")]
+        public OutputResult<object> DeleteTemporaryList([FromBody] DelTempListModel body)
+        {
+            if (body == null || body.CacheIds == null) return ResponseError<object>("参数格式错误");
+            var ids = body.CacheIds.Split(',');
+            List<Guid> CacheIds = new List<Guid>();
+            Guid g = Guid.Empty;
+            foreach (var id in ids)
+            {
+                if (Guid.TryParse(id, out g))
+                    CacheIds.Add(g);
+                else
+                    return ResponseError<object>("Guid格式错误");
+            }
+           return _dynamicEntityServices.DeleteTemporaryList(CacheIds, UserId);
+        }
+
+        [HttpPost]
         [Route("addlist")]
         public OutputResult<object> AddList([FromBody] DynamicEntityAddListModel dynamicModel = null)
         {

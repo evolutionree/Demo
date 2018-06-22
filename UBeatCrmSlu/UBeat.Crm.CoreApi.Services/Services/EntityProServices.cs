@@ -21,7 +21,7 @@ using System.Data.Common;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
-    public class EntityProServices : BaseServices
+    public class EntityProServices : BasicBaseServices
     {
         private readonly IEntityProRepository _entityProRepository;
         private readonly IDynamicEntityRepository _dynamicEntityRepository;

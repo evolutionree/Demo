@@ -1593,5 +1593,102 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 return false;
             }
         }
+
+        public bool ExistsData(Guid CacheId, int userNumber, DbTransaction tran)
+        {
+            string sql = @"select * from crm_sys_temporary_entity where cacheid= @cacheid";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("cacheid",CacheId)
+            };
+            return this.ExecuteQuery(sql, param, tran).Count() == 0;
+        }
+
+        public bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
+        {
+            string sql = @"insert into crm_sys_temporary_entity values 
+(@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@relatetypeid)";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("recmanager",userNumber),
+                new NpgsqlParameter("createdtime",DateTime.Now),
+                new NpgsqlParameter("datajson",data.DataJson),
+                new NpgsqlParameter("fieldjson",data.FieldJson),
+                new NpgsqlParameter("typeid",data.TypeId),
+                new NpgsqlParameter("cacheid",data.CacheId),
+                new NpgsqlParameter("inputjson",data.InputJson),
+                new NpgsqlParameter("title",data.Title),
+                new NpgsqlParameter("fieldname",data.FieldName),
+                new NpgsqlParameter("recrelateid",data.RecRelateId),
+                new NpgsqlParameter("relateentityid",data.RelateEntityId),
+                new NpgsqlParameter("relatetypeid",data.RelateTypeId)
+            };
+            return this.ExecuteNonQuery(sql, p, tran) > 0;
+        }
+
+        public bool UpdateTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
+        {
+            string sql = @"update crm_sys_temporary_entity 
+set recmanager=@recmanager,datajson=@datajson::jsonb,fieldjson=@fieldjson::jsonb,inputjson=@inputjson::jsonb,typeid=@typeid::uuid,
+title=@title,fieldname=@fieldname,recrelateid=@recrelateid,relateentityid=@relateentityid,relatetypeid=@relatetypeid
+where cacheid = @cacheid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("recmanager",userNumber),
+                new NpgsqlParameter("datajson",data.DataJson),
+                new NpgsqlParameter("fieldjson",data.FieldJson),
+                new NpgsqlParameter("cacheid",data.CacheId),
+                new NpgsqlParameter("inputjson",data.InputJson),
+                new NpgsqlParameter("typeid",data.TypeId),
+                new NpgsqlParameter("title",data.Title),
+                new NpgsqlParameter("fieldname",data.FieldName),
+                new NpgsqlParameter("recrelateid",data.RecRelateId),
+                new NpgsqlParameter("relateentityid",data.RelateEntityId),
+                new NpgsqlParameter("relatetypeid",data.RelateTypeId)
+            };
+            return this.ExecuteNonQuery(sql, p, tran) > 0;
+        }
+
+        public void DeleteTemporary(Guid CacheId, int userNumber, DbTransaction tran)
+        {
+            string sql = @"delete from crm_sys_temporary_entity where cacheid= @cacheid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("cacheid",CacheId)
+            };
+            this.ExecuteNonQuery(sql, p, tran);
+        }
+
+        public List<Dictionary<string, object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran)
+        {
+
+            string sql = @"select e.entityname,te.* from crm_sys_temporary_entity as te 
+                                left JOIN crm_sys_entity as e
+                                on te.typeid=e.entityid  ";
+            DbParameter[] p;
+            if (cacheId != Guid.Empty)
+            {
+                sql += "where te.cacheid = @cacheId";
+                p = new DbParameter[]
+                {
+                    new NpgsqlParameter("cacheId",cacheId)
+                };
+            }
+            else
+            {
+                p = new DbParameter[] { };
+            }
+            return this.ExecuteQuery(sql, p, tran);
+        }
+
+        public bool DeleteTemporaryList(List<Guid> cacheIds, int userNumber, DbTransaction tran)
+        {
+            string sql = @"delete from crm_sys_temporary_entity where cacheid= ANY(@cacheids)";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("cacheids",cacheIds.ToArray())
+            };
+            return ExecuteNonQuery(sql, p, tran) > 0;
+        }
     }
 }
