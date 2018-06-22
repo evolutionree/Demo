@@ -1651,7 +1651,7 @@ where cacheid = @cacheid";
 
         public void DeleteTemporary(Guid CacheId, int userNumber, DbTransaction tran)
         {
-            string sql = @"delete from crm_sys_temporary_entity where cacheid=@cacheid";
+            string sql = @"delete from crm_sys_temporary_entity where cacheid= @cacheid";
             var p = new DbParameter[]
             {
                 new NpgsqlParameter("cacheid",CacheId)
@@ -1659,7 +1659,7 @@ where cacheid = @cacheid";
             this.ExecuteNonQuery(sql, p, tran);
         }
 
-        public List<Dictionary<string,object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran)
+        public List<Dictionary<string, object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran)
         {
 
             string sql = @"select e.entityname,te.* from crm_sys_temporary_entity as te 
@@ -1679,6 +1679,16 @@ where cacheid = @cacheid";
                 p = new DbParameter[] { };
             }
             return this.ExecuteQuery(sql, p, tran);
+        }
+
+        public bool DeleteTemporaryList(List<Guid> cacheIds, int userNumber, DbTransaction tran)
+        {
+            string sql = @"delete from crm_sys_temporary_entity where cacheid= ANY(@cacheids)";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("cacheids",cacheIds.ToArray())
+            };
+            return ExecuteNonQuery(sql, p, tran) > 0;
         }
     }
 }

@@ -481,4 +481,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
     {
        public string CacheId { get; set; }
     }
+    public class DelTempListModel
+    {
+        public string CacheIds { get; set; }
+    }
 }

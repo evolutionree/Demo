@@ -57,6 +57,24 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost]
+        [Route("deletetemporarylist")]
+        public OutputResult<object> DeleteTemporaryList([FromBody] DelTempListModel body)
+        {
+            if (body == null || body.CacheIds == null) return ResponseError<object>("参数格式错误");
+            var ids = body.CacheIds.Split(',');
+            List<Guid> CacheIds = new List<Guid>();
+            Guid g = Guid.Empty;
+            foreach (var id in ids)
+            {
+                if (Guid.TryParse(id, out g))
+                    CacheIds.Add(g);
+                else
+                    return ResponseError<object>("Guid格式错误");
+            }
+           return _dynamicEntityServices.DeleteTemporaryList(CacheIds, UserId);
+        }
+
+        [HttpPost]
         [Route("addlist")]
         public OutputResult<object> AddList([FromBody] DynamicEntityAddListModel dynamicModel = null)
         {

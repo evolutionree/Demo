@@ -3888,6 +3888,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+        public OutputResult<object> DeleteTemporaryList(List<Guid> cacheIds, int userNumber)
+        {
+            DbTransaction tran = null;
+            bool falg = false;
+            falg = _dynamicEntityRepository.DeleteTemporaryList(cacheIds, userNumber, tran);
+            if (falg)
+                return new OutputResult<object>(null, "删除成功");
+            else
+                return new OutputResult<object>(null, "删除失败", 1);
+        }
 
         #region 用于安居宝测试表单传输
         public OutputResult<object> SendToMule(MuleSendParamInfo paramInfo, int userId)
