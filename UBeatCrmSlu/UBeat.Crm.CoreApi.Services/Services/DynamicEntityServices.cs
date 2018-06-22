@@ -3869,7 +3869,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbTransaction tran = null;
             var falg = false;
             var eneity = _mapper.Map<TemporarySaveModel, TemporarySaveMapper>(model);
-            if (_dynamicEntityRepository.ExistsData(model.TypeId, userNumber, tran))
+            if (_dynamicEntityRepository.ExistsData(model.CacheId, userNumber, tran))
                 falg = _dynamicEntityRepository.AddTemporaryData(eneity, userNumber, tran);
             else
                 falg = _dynamicEntityRepository.UpdateTemporaryData(eneity, userNumber, tran);
@@ -3879,7 +3879,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "保存失败", 1);
         }
 
-        public OutputResult<object> SelectTemporaryDetails(string cacheId, int userNumber)
+        public OutputResult<object> SelectTemporaryDetails(Guid cacheId, int userNumber)
         {
             DbTransaction tran = null;
             var result = _dynamicEntityRepository.SelectTemporaryDetails(cacheId, userNumber, tran);

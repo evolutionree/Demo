@@ -463,12 +463,18 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     public class TemporarySaveModel
     {
-        public string RecManager { get; set; }
+        public int RecManager { get; set; }
         public DateTime CreatedTime { get; set; }
         public string DataJson { get; set; }
         public string FieldJson { get; set; }
         public Guid TypeId { get; set; }
         public Guid CacheId { get; set; }
+        public string InputJson { get; set; }
+        public string Title { get; set; }
+        public string FieldName { get; set; }
+        public string RecRelateId { get; set; }
+        public string RelateEntityId { get; set; }
+        public string RekateTypeId { get; set; }
     }
 
     public class TemporaryDetailMode

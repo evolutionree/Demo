@@ -45,10 +45,15 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         [HttpPost]
         [Route("gettemporarylist")]
-        public OutputResult<object> SelectTemporaryDetails([FromForm] TemporaryDetailMode body)
+        public OutputResult<object> SelectTemporaryDetails([FromBody] TemporaryDetailMode body)
         {
-            if (body == null || string.IsNullOrEmpty(body.CacheId)) return ResponseError<object>("参数格式错误");
-            return _dynamicEntityServices.SelectTemporaryDetails(body.CacheId, UserId);
+            Guid g = Guid.Empty;
+            if (body != null && !string.IsNullOrEmpty(body.CacheId))
+            {
+                if (!Guid.TryParse(body.CacheId, out g))
+                    return ResponseError<object>("cacheid格式有误（guid）");
+            }
+            return _dynamicEntityServices.SelectTemporaryDetails(g, UserId);
         }
 
         [HttpPost]
