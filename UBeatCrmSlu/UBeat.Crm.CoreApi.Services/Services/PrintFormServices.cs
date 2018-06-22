@@ -149,6 +149,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("未上传输出模板文件，请先上传输出模板文件");
 
             var fileData = _fileServices.GetFileData(null, templateInfo.FileId.ToString());
+            if (fileData == null)
+            {
+                throw new Exception("模板数据异常，请重新上传模板");
+            }
             Stream fileStream = new MemoryStream(fileData);
             var excelData = ExcelHelper.ReadExcel(fileStream);
             if (excelData == null || excelData.Sheets == null || excelData.Sheets.Count == 0)
