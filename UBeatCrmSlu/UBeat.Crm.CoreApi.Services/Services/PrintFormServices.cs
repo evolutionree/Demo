@@ -822,6 +822,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         //循环表格控件的数据集合，每行为一组，对templateRows进行解析
                         foreach (var itemDic in entityfieldvalue)
                         {
+                            if (itemDic == null) continue;//兼容部分数据异常
                             foreach (var rowItem in templateRows)
                             {
                                 var rowItemTemp = rowItem.Clone();
