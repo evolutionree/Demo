@@ -98,11 +98,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         FieldsResult.Add(item);
                     } else if (   controltype == (int)DynamicProtocolControlType.PersonSelectSingle) {
                         Dictionary<string, string> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string,string>>(f["fieldconfig"].ToString());
-                        if (fieldConfig.ContainsKey("multiple") && fieldConfig["multiple"] != null) {
-                            if (fieldConfig["multiple"].ToString().Equals("1")) {
-                                continue;
-                            }
-                        }
+                        //if (fieldConfig.ContainsKey("multiple") && fieldConfig["multiple"] != null) {//现在改为多选也生效
+                        //    if (fieldConfig["multiple"].ToString().Equals("1")) {
+                        //        continue;
+                        //    }
+                        //}
                         SearchEntitySchemeResultInfo item = new SearchEntitySchemeResultInfo()
                         {
                             FieldName = f["displayname"].ToString(),
