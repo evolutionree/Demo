@@ -240,10 +240,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             PwdPolicy pwdPolicy = GetPwdPolicy(userNumber);
             if (pwdPolicy != null && pwdPolicy.IsUserPolicy == 1 ) {
                 //启用密码策略
-                string passresult =  CheckPasswordValidForPolicy(0, registEntity.AccountPwd,_accountRepository.EncryPwd( registEntity.AccountPwd,userNumber), userNumber);
-                if (passresult != null && passresult.Length > 0) {
-                    throw (new Exception("密码不符合密码策略要求:" + passresult));
-                }
                 if (pwdPolicy.IsFirstUpdatePwd == 1) {
                     registEntity.NextMustChangePwd = 1;
                 }
