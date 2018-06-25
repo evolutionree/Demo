@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using UBeat.Crm.CoreApi.DomainModel.Department;
 using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.IRepository;
@@ -56,6 +57,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }, deptEntity, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
             return res;
+        }
+
+        public OutputResult<object> ListSubDeptsAndUsers(Guid deptId, int userId)
+        {
+            DbTransaction tran = null;
+            try
+            {
+                List<Dictionary<string,object>> subDepts = this._departmentRepository.ListSubDepts(tran, deptId, userId);
+                List<Dictionary<string, object>> subUsers = this._departmentRepository.ListSubUsers(tran, deptId, userId);
+                List<Dictionary<string, object>> wantDepts = new List<Dictionary<string, object>>();
+                Dictionary<string, object> retDict = new Dictionary<string, object>();
+                retDict.Add("subdepts", subDepts);
+                retDict.Add("subusers", subUsers);
+                retDict.Add("wantdepts", wantDepts);
+                return new OutputResult<object>(retDict);
+            } catch (Exception ex) {
+                return new OutputResult<object>(null, ex.Message, -1);
+            }
         }
     }
 }

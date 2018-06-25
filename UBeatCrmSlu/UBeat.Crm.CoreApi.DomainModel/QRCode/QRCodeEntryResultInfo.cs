@@ -25,6 +25,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
 
     }
     public class QRCodeSimpleMsg_FieldInfo {
+        public string FieldName { get; set; }
         public string Title { get; set; }
         public string Value { get; set; }
         public int IsNeedEdit { get; set; }
@@ -64,9 +65,16 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
 
     }
     public class QRCodeSimpleMsgButtonInfo {
+        public QRCodeButtonStyleEnum ButtonStyle { get; set; }
         public string Title { get; set; }
         public QRCodeSimpleMsgButtonActionEnum ActionType { get; set; }
         public string ServiceUrl { get; set; }
+    }
+    public enum QRCodeButtonStyleEnum : Int32 {
+        Info_Button = 1,
+        Warning_Button = 2,
+        Error_Button=3,
+        Success_Button=4
     }
     public enum QRCodeSimpleMsgButtonActionEnum : Int32
     {

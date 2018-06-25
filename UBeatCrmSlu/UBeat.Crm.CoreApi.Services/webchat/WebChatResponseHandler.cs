@@ -77,12 +77,14 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 foreach (WebSocket socket in sockets)
                 {
                     if (pkg.MessageType == WebChatMsgType.ChatMessage) {
+                        pkg.ChatMsg.MessageType = WebChatMsgType.ChatMessage;
                         Task task = SendStringAsync(socket, pkg.ChatMsg);
                         if (task != null)
                             ts.Add(task);
                     }
                     else
                     {
+                        pkg.CmdMsg.MessageType = WebChatMsgType.Command;
                         Task task = SendStringAsync(socket, pkg.CmdMsg);
                         if (task != null)
                             ts.Add(task);
@@ -134,7 +136,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                     {
                         Title = title,
                         Message = message,
-                        CustomContent = customContent
+                        CustomContent = customContent,
+                        ReceiverId = int.Parse(account)
                     };
                     Enqueue(msg);
 

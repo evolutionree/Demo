@@ -37,5 +37,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             WriteOperateLog("编辑团队部门", deptModel);
             return _departmentServices.DeptEdit(deptModel, UserId);
         }
+        [HttpPost("listsub")]
+        public OutputResult<object> ListSubDeptsAndUsers([FromBody]DepartmentListSubDeptParamInfo paramInfo  ) {
+            if (paramInfo == null || paramInfo.DeptId == null || paramInfo.DeptId == Guid.Empty) {
+                return ResponseError<object>("参数异常");
+            }
+            return _departmentServices.ListSubDeptsAndUsers(paramInfo.DeptId, UserId);
+
+        }
     }
 }
