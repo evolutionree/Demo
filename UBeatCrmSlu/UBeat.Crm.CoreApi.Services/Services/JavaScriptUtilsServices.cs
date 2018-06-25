@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Text;
+using UBeat.Crm.CoreApi.IRepository;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -10,7 +12,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
     /// </summary>
     public class JavaScriptUtilsServices:EntityBaseServices
     {
-        public JavaScriptUtilsServices()  {
+        private readonly IQRCodeRepository _qRCodeRepository;
+        public JavaScriptUtilsServices(IQRCodeRepository qRCodeRepository)  {
+            _qRCodeRepository = qRCodeRepository;
+        }
+        public List<Dictionary<string, object>> DbExecute(string strSQL) {
+            try
+            {
+                return _qRCodeRepository.ExecuteSQL(strSQL, 1);
+            }
+            catch (Exception ex) {
+                return new List<Dictionary<string, object>>();
+            }
+
+        }
+        public void Log(string message) {
+            Console.WriteLine(message);
+        }
+        public void LogObject(object obj) {
+            Console.WriteLine(obj);
         }
     }
 }

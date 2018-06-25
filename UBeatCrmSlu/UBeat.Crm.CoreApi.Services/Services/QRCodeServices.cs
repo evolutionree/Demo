@@ -17,13 +17,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _javaScriptUtilsServices = javaScriptUtilsServices;
             _iQRCodeRepository = iQRCodeRepository;
         }
+        private string getTestCheckScript() {
+            string strScript = @"var sql = 'select * from crm_plu_waterbill  where billnumber =\''+JsParam.QRCode  +'\'';
+                                    var result = ukservices.DbExecute(sql);
+                                    if (result.Count >0 )return true;
+                                    else return false;";
+            return strScript;
+        }
         public OutputResult<object> CheckQrCode(string code, int codetype, int userid) {
             List<QRCodeEntryItemInfo> checkList = new List<QRCodeEntryItemInfo>();
             QRCodeEntryItemInfo ite1m = new QRCodeEntryItemInfo() {
                 CheckType = QRCodeCheckTypeEnum.JSPlugInSearch,
                 CheckParam = new QRCodeCheckMatchParamInfo() {
                     UScriptParam = new QRCodeUScriptCheckMatchParamInfo() {
-                        UScript = "if (JsParam.QRCode == 'abc') return true; else return false ;"
+                        UScript = getTestCheckScript()// "if (JsParam.QRCode == 'abc') return true; else return false ;"
                     }
                 },
                 DealType = QRCodeCheckTypeEnum.JSPlugInSearch
@@ -254,15 +261,53 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
         private QRCodeEntryResultInfo testJsReturn(QRCodeEntryItemInfo item, string code, int type, int userid) {
-            string jscode = @"
-                        var returnObj = {};
-                        returnObj.ActionType = '1';
+            string jscode = @"var returnObj = {};
+                        var sql = 'select * from crm_plu_waterbill  where billnumber =\''+JsParam.QRCode  +'\'';
+                        var result = ukservices.DbExecute(sql);
+                        if (result.Count ==0 ){
+                            //处理未找到数据的情况
+                            returnObj.ActionType = '1';
+                            returnObj.IsSuccess = '0';
+                            returnObj.ButtonCount = '1';
+                            returnObj.DetailsInfo = [];
+                            var fieldItem = {};
+                            fieldItem.Title='扫描结果';
+                            fieldItem.FieldName='fieldresult';
+                            fieldItem.Value='未找到水票';
+                            fieldItem.IsNeedEdit = '0';
+                            fieldItem.FieldType='1';
+                            returnObj.DetailsInfo.push(fieldItem);
+                            returnObj.Button1 = {Title:'知道了',ActionType:'1'};
+                        }else if (result.Count == 1 ){
+                            //只有一条的情况
+                            if (result[0].billstatus  ==2 )
+                            {
+                                returnObj={'ActionType':'1','IsSuccess':'1','ButtonCount':'2','DetailsInfo':[]};
+                                var fieldItem = {Title:'水票编码',FieldName:'billnumber',Value:result[0].billnumber,
+                                                 IsNeedEdit:'0',FieldType:'1' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                fieldItem = {Title:'水票类型',FieldName:'billdetail',Value:result[0].billdetail,
+                                                 IsNeedEdit:'0',FieldType:'1' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                fieldItem = {Title:'客户名称',FieldName:'customername',Value:result[0].customer && result[0].customer.name,
+                                                 IsNeedEdit:'0',FieldType:'1' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                returnObj.Button1 = {Title:'取消',ActionType:'1'};
+                                returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/testapi'};
+                                return returnObj;
+                            }else{
+
+                            }
+                            
+                        }else{
+                            //先返回错误数据
+                        }
+                        /*returnObj.ActionType = '1';
                         returnObj.IsSuccess = '1';
                         returnObj.ButtonCount = '2';
                         returnObj.Button1 = {};
                         returnObj.Button2 = {};
                         returnObj.DetailsInfo = [];
-                        //开始处理字段信息
                         var fieldItem = {};
                         fieldItem.Title='扫描结果';
                         fieldItem.FieldName='field1';
@@ -280,7 +325,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         returnObj.DetailsInfo.push(fieldItem);
                         returnObj.Button1 = {Title:'取消',ActionType:'1'};
                         returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/testapi'};
-                        return returnObj;
+                        return returnObj;*/
                     ";
             UKJSEngineUtils utils = new UKJSEngineUtils(this._javaScriptUtilsServices);
             Dictionary<string, object> param = new Dictionary<string, object>();

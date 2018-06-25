@@ -115,6 +115,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         bool SetStatus(DbTransaction tran, List<Guid> recIds, int status, int userid);
 
         bool OrderRules(DbTransaction tran, List<Guid> recids, int userid);
+        List<Dictionary<string, object>> ExecuteSQL(string strSQL,int userId);
 
     }
 }

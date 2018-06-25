@@ -8,7 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.BaseSys;
+using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Utility;
@@ -17,6 +19,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
 {
     public  class WebChatResponseHandler
     {
+
+        private Dictionary<int, UserInfo> UserList = new Dictionary<int, UserInfo>();
         private static object lockInstance = new object();
         private Queue<WebResponsePackage> queue = new Queue<WebResponsePackage>();
         private static WebChatResponseHandler instance = null;
@@ -27,9 +31,11 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         private CacheServices cacheServices;
         private Dictionary<string, int> ServerLastMsgId = new Dictionary<string, int>();
         private int CurrentMsgId = 1;
+        private IAccountRepository _accountRepository;
 
         private WebChatResponseHandler() {
             cacheServices = ServiceLocator.Current.GetInstance<CacheServices>();
+            _accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
             StartTask();
 
         }
@@ -121,6 +127,15 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 this._wh.Set();
             }
         }
+        private UserInfo GetUserDetail(int uid) {
+            if (UserList == null) UserList = new Dictionary<int, UserInfo>();
+            if (UserList.ContainsKey(uid)) {
+                return UserList[uid];
+            }
+            UserInfo userInfo =  _accountRepository.GetUserInfoById(uid);
+            UserList.Add(uid, userInfo);
+            return userInfo;
+        }
         public void addMessages(string accountList,string title,string message, Dictionary<string, object> customContent)
         {
             if (accountList == null) return;
@@ -141,6 +156,14 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                     };
                     Enqueue(msg);
 
+                    #region 获取客户详情
+                    if (customContent.ContainsKey("s") && customContent["s"] != null ) {
+                        int u = 0;
+                        if (int.TryParse(customContent["s"].ToString(), out u)) {
+                            customContent.Add("ud", GetUserDetail(u));
+                        }
+                    }
+                    #endregion
                     int msgid = CurrentMsgId;
                     CurrentMsgId++;
                     cacheServices.Repository.Add("chatmsgid_" + ServerFingerPrintUtils.getInstance().CurrentFingerPrint.ServerId + "_" + msgid.ToString(), msg, new TimeSpan(0, 5, 0));

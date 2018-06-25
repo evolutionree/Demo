@@ -58,6 +58,17 @@ values(@recid,@recname,@remark,@recorder,1,@userid,now(),@userid,now())";
             }
         }
 
+        public List<Dictionary<string, object>> ExecuteSQL(string strSQL, int userId)
+        {
+            try
+            {
+                return ExecuteQuery(strSQL, new DbParameter[] { }, null);
+            }
+            catch (Exception ex) {
+                throw (ex);
+            }
+        }
+
         public Dictionary<string, object> GetDealParamInfo(DbTransaction tran, Guid recId, int userid)
         {
 
