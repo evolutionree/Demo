@@ -187,10 +187,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (!dataSourceRepository.HasDicDataVal(entity.DataVal,entity.DicTypeId))
                     return new OutputResult<object>(null, "字典名称已存在", 1);
                 entity.DicId = Guid.NewGuid();
-                entity.DataId = this.dataSourceRepository.GetNextDataId(tran, data.DicTypeId, userNumber);
+                entity.DataId = this.dataSourceRepository.GetNextDataId(tran, data.DicTypeId, userNumber)+1;
                 entity.RecStatus = 1;
                 entity.RecCreator = userNumber;
                 entity.RecCreated = DateTime.Now;
+                entity.RecOrder = entity.DataId;
                 falg = dataSourceRepository.AddDictionary(entity, userNumber);
             }
             else //edit
