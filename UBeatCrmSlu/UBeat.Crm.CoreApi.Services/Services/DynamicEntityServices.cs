@@ -1725,6 +1725,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         selectClause = string.Format(@"{0},{1}_t.categoryname as {1}_name", selectClause, fieldInfo.FieldName);
                         break;
                     case EntityFieldControlType.SelectMulti://4本地字典多选
+                        selectClause = string.Format(@"{0},crm_func_entity_protocol_format_dictionary({2},e.{1}) {1}_name", selectClause, fieldInfo.FieldName,fieldNameDictType[fieldInfo.FieldName]);
                         break;
                     case EntityFieldControlType.SelectSingle://3本地字典单选
                         fromClause = string.Format(@"{0} left outer join crm_sys_dictionary  as {1}_t on e.{1} = {1}_t.dataid and {1}_t.dictypeid={2} ", fromClause, fieldInfo.FieldName, fieldNameDictType[fieldInfo.FieldName]);
@@ -2249,7 +2250,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var searchFields =  GetEntityFields(dynamicEntity.EntityId, userNumber);
                 foreach (DynamicEntityFieldSearch field in searchFields) {
                     if (field.ControlType == (int)DynamicProtocolControlType.SelectSingle
-                        || field.ControlType == (int)DynamicProtocolControlType.SelectMulti)
+                        /*|| field.ControlType == (int)DynamicProtocolControlType.SelectMulti //暂时把多选也设置为模糊*/)
                     {
                         field.IsLike = 0;
                     }
