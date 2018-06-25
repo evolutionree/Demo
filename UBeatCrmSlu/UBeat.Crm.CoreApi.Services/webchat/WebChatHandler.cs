@@ -267,6 +267,8 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                         ChatType = msgdata.ctype
 
                     };
+                    #region 获取客户详情
+                    #endregion 
                     _chatService.SendChat(model, UserId);
                 }
                 else {
@@ -339,6 +341,12 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         public Guid fid { get; set; }
         public string cont { get; set; }
         public int rec{ get; set; }
+        //发送人的detail信息
+        public Dictionary<string, object> ud { get; set; }
+        /// <summary>
+        /// 群组的detail信息
+        /// </summary>
+        public Dictionary<string, object> gd { get; set; }
     }
 
     
