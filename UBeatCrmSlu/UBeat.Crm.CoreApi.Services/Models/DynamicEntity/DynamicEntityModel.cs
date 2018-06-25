@@ -459,6 +459,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Guid FieldId { get; set; }
         public Guid EntityId { get; set; }
         public int NewUserId { get; set; }
+        public int OldUserId { get; set; }
     }
 
     public class TemporarySaveModel

@@ -265,13 +265,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         //开始处理字段信息
                         var fieldItem = {};
                         fieldItem.Title='扫描结果';
-                        fieldItem.FieldName='field1'；
+                        fieldItem.FieldName='field1';
                         fieldItem.Value=JsParam.Code;
                         fieldItem.IsNeedEdit = '0';
                         fieldItem.FieldType='1';
                         returnObj.DetailsInfo.push(fieldItem);
                         fieldItem = {};
-                        fieldItem.FieldName='field2'；
+                        fieldItem.FieldName='field2';
                         fieldItem.Title='操作结果';
                         fieldItem.Value='';
                         fieldItem.IsNeedEdit = '1';
