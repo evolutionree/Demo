@@ -275,6 +275,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             fieldItem.FieldName='fieldresult';
                             fieldItem.Value='未找到水票';
                             fieldItem.IsNeedEdit = '0';
+                            fieldItem.IsDisplay = '0';
                             fieldItem.FieldType='1';
                             returnObj.DetailsInfo.push(fieldItem);
                             returnObj.Button1 = {Title:'知道了',ActionType:'1'};
@@ -284,48 +285,78 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 returnObj={'ActionType':'1','IsSuccess':'1','ButtonCount':'2','DetailsInfo':[]};
                                 var fieldItem = {Title:'水票编码',FieldName:'billnumber',Value:result[0].billnumber,
-                                                 IsNeedEdit:'0',FieldType:'1' };
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1' };
                                 returnObj.DetailsInfo.push(fieldItem);
                                 fieldItem = {Title:'水票类型',FieldName:'billdetail',Value:result[0].billdetail,
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                fieldItem = {Title:'客户名称',FieldName:'customername',Value:result[0].customer && result[0].customer.name,
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                fieldItem = {Title:'recid',FieldName:'recid',Value:result[0].recid ,
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'0' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                var fieldItem = {Title:'entityid',FieldName:'entityid',Value:'a4b2cbbe-6338-4d31-a9a3-28cdc8faa092',
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'0' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                returnObj.Button1 = {Title:'取消',ActionType:'1'};
+                                returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/DynamicEntity/ukextengine/crm_func_testwaterbill'};
+                                return returnObj;
+                            }else{
+                                returnObj={'ActionType':'1','IsSuccess':'1','ButtonCount':'1','DetailsInfo':[]};
+                                var fieldItem = {Title:'水票编码',FieldName:'billnumber',Value:result[0].billnumber,
                                                  IsNeedEdit:'0',FieldType:'1' };
                                 returnObj.DetailsInfo.push(fieldItem);
                                 fieldItem = {Title:'客户名称',FieldName:'customername',Value:result[0].customer && result[0].customer.name,
                                                  IsNeedEdit:'0',FieldType:'1' };
                                 returnObj.DetailsInfo.push(fieldItem);
-                                returnObj.Button1 = {Title:'取消',ActionType:'1'};
-                                returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/testapi'};
-                                return returnObj;
-                            }else{
-
+                                var billstatus = '';
+                                if (result[0].billstatus  == 1) billstatus='未发行';
+                                else if(result[0].billstatus  == 3) billstatus ='已使用';
+                                else if (result[0].billstatus  == 4) billstatus ='已作废';
+                                fieldItem = {Title:'水票状态',FieldName:'billstatus',Value:billstatus,
+                                                 IsNeedEdit:'0',FieldType:'1' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                returnObj.Button1 = {Title:'知道了',ActionType:'1'};
                             }
                             
                         }else{
                             //先返回错误数据
+                            var tmplist = [];
+                            for( var i=0;i<result.Count;i++){
+                                var item = result[i];
+                                if (item.billstatus == 2){
+                                    tmplist.push(item);
+                                }
+                            }
+                            if (tmplist.length == 0 ){
+                                returnObj={'ActionType':'1','IsSuccess':'1','ButtonCount':'1','DetailsInfo':[]};
+                                var fieldItem = {Title:'消息',FieldName:'msg',Value:'无可用水票',
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                returnObj.Button1 = {Title:'知道了',ActionType:'1'};
+                            }else{
+                                returnObj={'ActionType':'1','IsSuccess':'1','ButtonCount':'2','DetailsInfo':[]};
+                                var fieldItem = {Title:'水票编码',FieldName:'billnumber',Value:result[0].billnumber,
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1'  };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                var fieldItem = {Title:'entityid',FieldName:'entityid',Value:'a4b2cbbe-6338-4d31-a9a3-28cdc8faa092',
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'0' };
+                                returnObj.DetailsInfo.push(fieldItem);
+                                var fieldItem = {Title:'水票型号',FieldName:'recid',Value:'',
+                                                 IsNeedEdit:'0',FieldType:'3' };
+                                fieldItem.SelectionList = [];
+                                for(var i = 0;i<tmplist.length;i++){
+                                     var item = tmplist[i];
+                                     var tmpItem = {FieldKey:item.recid,FieldValue:item.billdetail};
+                                     fieldItem.SelectionList.push(tmpItem);
+                                }
+                                returnObj.DetailsInfo.push(fieldItem);
+                                returnObj.Button1 = {Title:'取消',ActionType:'1'};
+                                returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/DynamicEntity/ukextengine/crm_func_testwaterbill'};
+                            }
                         }
-                        /*returnObj.ActionType = '1';
-                        returnObj.IsSuccess = '1';
-                        returnObj.ButtonCount = '2';
-                        returnObj.Button1 = {};
-                        returnObj.Button2 = {};
-                        returnObj.DetailsInfo = [];
-                        var fieldItem = {};
-                        fieldItem.Title='扫描结果';
-                        fieldItem.FieldName='field1';
-                        fieldItem.Value=JsParam.Code;
-                        fieldItem.IsNeedEdit = '0';
-                        fieldItem.FieldType='1';
-                        returnObj.DetailsInfo.push(fieldItem);
-                        fieldItem = {};
-                        fieldItem.FieldName='field2';
-                        fieldItem.Title='操作结果';
-                        fieldItem.Value='';
-                        fieldItem.IsNeedEdit = '1';
-                        fieldItem.FieldType='3';
-                        fieldItem.SelectionList = {'1':'第一选项','2':'第二选项'};
-                        returnObj.DetailsInfo.push(fieldItem);
-                        returnObj.Button1 = {Title:'取消',ActionType:'1'};
-                        returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/testapi'};
-                        return returnObj;*/
+                        return returnObj;
                     ";
             UKJSEngineUtils utils = new UKJSEngineUtils(this._javaScriptUtilsServices);
             Dictionary<string, object> param = new Dictionary<string, object>();

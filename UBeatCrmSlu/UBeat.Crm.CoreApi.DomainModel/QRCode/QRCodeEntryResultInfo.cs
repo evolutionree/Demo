@@ -29,8 +29,13 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
         public string Title { get; set; }
         public string Value { get; set; }
         public int IsNeedEdit { get; set; }
+        public int IsDisplay { get; set; }
         public QRCodeSimpleFieldTypeEnum FieldType { get; set; }
-        public Dictionary<string, string> SelectionList { get; set; }
+        public List<QRCodeSimpleMsg_SelectItemInfo> SelectionList { get; set; }
+    }
+    public class QRCodeSimpleMsg_SelectItemInfo {
+        public string FieldKey { get; set; }
+        public string FieldValue { get; set; }
     }
     public enum QRCodeSimpleFieldTypeEnum: Int32
     {
