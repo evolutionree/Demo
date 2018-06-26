@@ -378,7 +378,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// <summary>
         /// 属于哪个实体的函数
         /// </summary>
-        public Guid EntityId { get; set; }
+        public Guid? EntityId { get; set; }
         /// <summary>
         /// 额外的参数
         /// </summary>
@@ -460,6 +460,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public Guid EntityId { get; set; }
         public int NewUserId { get; set; }
         public int OldUserId { get; set; }
+        public int InsertIfNo { get; set; }
     }
 
     public class TemporarySaveModel
