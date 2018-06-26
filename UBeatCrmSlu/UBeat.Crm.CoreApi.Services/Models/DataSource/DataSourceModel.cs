@@ -107,6 +107,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string FieldConfig { get; set; }
         public int? RelateDicTypeId { get; set; }
         public string RecOrder { get; set; }
+        public string DicTypeLanguage { get; set; }
         /// <summary>
         /// 0:使用自定义 1:使用全局
         /// </summary>
@@ -159,6 +160,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string ExtField3 { get; set; }
         public string ExtField4 { get; set; }
         public string ExtField5 { get; set; }
+        public string DataLanguage { get; set; }
     }
 
     public class OrderByDictionaryModel

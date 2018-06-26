@@ -277,6 +277,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public string SrcSql { get; set; }
 
         public string SrcTitle { get; set; }
+        public string RelTabLanguage { get; set; }
     }
     public class SaveRelConfigModel
     {
@@ -331,6 +332,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public int IsManyToMany { get; set; }
         public string SrcSql { get; set; }
         public string SrcTitle { get; set; }
+        public string RelTabLanguage { get; set; }
     }
     public class DisabledRelTabModel
     {

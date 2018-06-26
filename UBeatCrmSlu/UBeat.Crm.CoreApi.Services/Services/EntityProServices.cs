@@ -1201,7 +1201,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         SelectType = dynamicModel.SelectType,
                         extraData = dynamicModel.extradata,
                         WebFuncId = webFuncid,
-                        MobileFuncId = mobileFuncid
+                        MobileFuncId = mobileFuncid,
+                        FuncBtnLanguage = dynamicModel.FuncBtnLanguage,
+                        TitleLanguage= dynamicModel.TitleLanguage
                     };
                     info.FuncBtns.Add(model);
                     if (_entityProRepository.SaveFunctionJson(dynamicModel.EntityId, info, userNumber, tran))
@@ -1260,6 +1262,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     model.SelectType = dynamicModel.SelectType;
                     model.WebFuncId = webFuncid;
                     model.MobileFuncId = mobileFuncid;
+                    model.FuncBtnLanguage = dynamicModel.FuncBtnLanguage;
+                    model.TitleLanguage = dynamicModel.TitleLanguage;
                     if (_entityProRepository.SaveFunctionJson(dynamicModel.EntityId, info, userNumber, tran))
                     {
                         tran.Commit();

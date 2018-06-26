@@ -424,6 +424,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public string SrcSql { get; set; }
 
         public string SrcTitle { get; set; }
+        public string RelTabLanguage { get; set; }
         protected override IValidator GetValidator()
         {
             return new AddRelTabMapperValidator();
@@ -451,6 +452,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public int IsManyToMany { get; set; }
         public string SrcSql { get; set; }
         public string SrcTitle { get; set; }
+        public string RelTabLanguage { get; set; }
         protected override IValidator GetValidator()
         {
             return new UpdateRelTabMapperValidator();

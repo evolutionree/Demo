@@ -17,7 +17,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
         public OperateResult DeptAdd(DbTransaction tran, DepartmentAddMapper deptEntity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_department_add(@topdeptId,@deptName, @oglevel, @userNo)
+                SELECT * FROM crm_func_department_add(@topdeptId,@deptName, @oglevel, @userNo,@deptlanguage)
             ";
 
             var param = new DbParameter[]
@@ -25,7 +25,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                 new NpgsqlParameter("topdeptId",deptEntity.PDeptId),
                 new NpgsqlParameter("deptName",deptEntity.DeptName),
                 new NpgsqlParameter("oglevel",deptEntity.OgLevel),
-                 new NpgsqlParameter("userNo", userNumber)
+                new NpgsqlParameter("userNo", userNumber),
+                new NpgsqlParameter("deptlanguage",deptEntity.DeptLanguage)
             };
             var result = DBHelper.ExecuteQuery<OperateResult>(tran, sql, param);
 
@@ -54,6 +55,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         new NpgsqlParameter("deptname", deptEntity.DeptName),
                         new NpgsqlParameter("recupdated", DateTime.Now),
                         new NpgsqlParameter("recupdator", userNumber),
+                        new NpgsqlParameter("deptlanguage",deptEntity.DeptLanguage)
                     };
 
                     var check_sql = @"SELECT 1 FROM crm_sys_department where deptid<>@deptid AND pdeptid=@pdeptid AND deptname=@deptname LIMIT 1";
@@ -85,7 +87,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         }
                     }
 
-                    var sql = @" UPDATE crm_sys_department SET deptname = @deptname,pdeptid = @pdeptid,recupdated=@recupdated, recupdator=@recupdator WHERE deptid = @deptid;";
+                    var sql = @" UPDATE crm_sys_department SET deptname = @deptname,pdeptid = @pdeptid,recupdated=@recupdated, recupdator=@recupdator ,deptlanguage=@deptlanguage::jsonb WHERE deptid = @deptid;";
 
                     var result = ExecuteNonQuery(sql, param, tran);
                     if (result > 0)

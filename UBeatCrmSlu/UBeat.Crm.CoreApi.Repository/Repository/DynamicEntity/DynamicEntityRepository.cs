@@ -724,7 +724,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public OperateResult AddRelTab(AddRelTabMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_rel_tab_add(@entityid,@relentityid, @fieldid,@relname, @icon,@ismanytomany,@srcsql,@srctitle,@userno)
+                SELECT * FROM crm_func_rel_tab_add(@entityid,@relentityid, @fieldid,@relname, @icon,@ismanytomany,@srcsql,@srctitle,@userno,@reltablanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
@@ -736,6 +736,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             param.Add("srcsql", entity.SrcSql);
             param.Add("srctitle", entity.SrcTitle);
             param.Add("userno", userNumber);
+            param.Add("reltablanguage", entity.RelTabLanguage);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -965,7 +966,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public OperateResult UpdateRelTab(UpdateRelTabMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_rel_tab_update(@relid,@relentityid, @fieldid,@relname, @icon,@ismanytomany,@srcsql,@srctitle,@userno)
+                SELECT * FROM crm_func_rel_tab_update(@relid,@relentityid, @fieldid,@relname, @icon,@ismanytomany,@srcsql,@srctitle,@userno,@reltablanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("relid", entity.RelId);
@@ -977,6 +978,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             param.Add("srcsql", entity.SrcSql);
             param.Add("srctitle", entity.SrcTitle);
             param.Add("userno", userNumber);
+            param.Add("reltablanguage", entity.RelTabLanguage);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }

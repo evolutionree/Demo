@@ -224,6 +224,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public string Remark { get; set; }
         public Guid EntityId { get; set; }
         public int SkipFlag { get; set; }
+        public string FlowLanguage { get; set; }
         protected override IValidator GetValidator()
         {
             return new WorkFlowAddMapperValidator();
@@ -254,6 +255,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public int ExpireDay { get; set; }
         public string Remark { get; set; }
         public int SkipFlag { get; set; }
+        public string FlowLanguage { get; set; }
         protected override IValidator GetValidator()
         {
             return new WorkFlowUpdateMapperValidator();
