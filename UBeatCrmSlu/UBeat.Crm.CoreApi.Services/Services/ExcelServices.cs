@@ -228,13 +228,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var count = 100;
                     //计算线程个数
                     var numThreads = (int)Math.Ceiling((double)m.DataRows.Count / count);
-                    //限制最多使用20线程
+                    
+                    //限制最多使用10线程
                     if (numThreads > 10)
                     {
                         numThreads = 10;
                         //此时重新计算每个线程的最大条数
                         count = m.DataRows.Count / numThreads;
                     }
+                    if ("account_userinfo_import".Equals(taskData.FormDataKey)) {
+                        //对于人员导入，如果采用多线程，则会导致部门自动生成重复，需要避免人员多线程导入
+                        numThreads = 1;
+                        count = m.DataRows.Count / numThreads;
+                    }
+
                     var finished = new CountdownEvent(1);
                     for (int i = 0; i < numThreads; i++)
                     {
