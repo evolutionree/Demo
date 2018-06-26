@@ -51,7 +51,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         /// <summary>
         /// 返回多记录表
         /// </summary>
-        MultiCursor=2
+        MultiCursor=2,
+        SingleRow = 3,
     }
 
 }

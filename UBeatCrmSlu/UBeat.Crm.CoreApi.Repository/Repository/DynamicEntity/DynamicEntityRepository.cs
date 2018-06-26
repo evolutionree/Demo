@@ -1456,6 +1456,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             {
                 return ExecuteQueryRefCursor(strSQL, param, tran);
             }
+            else if (funcInfo.ReturnType == EntityExtFunctionReturnType.SingleRow) {
+                return ExecuteQuery(strSQL, param, tran).FirstOrDefault();
+            }
             else
             {
                 throw (new Exception("函数定义异常"));
