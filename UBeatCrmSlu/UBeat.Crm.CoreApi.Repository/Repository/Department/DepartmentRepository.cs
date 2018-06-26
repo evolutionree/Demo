@@ -131,17 +131,32 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
         {
             try
             {
-                string strSQL = @"select a.* 
-                            from crm_sys_userinfo a
-                             inner join (
-		                            select *
-		                            from crm_sys_account_userinfo_relate 
-		                            where recstatus = 1
-                            ) b on a.userid = b.userid 
-                            where b.deptid = @pdeptid
-                            and a.recstatus  =1  ";
+                string strSQL = @"SELECT
+	                                A .*,c.deptid,c.deptname,case when d.userid is null then false else true end ""flag""
+                                FROM
+                                    crm_sys_userinfo A
+                                INNER JOIN(
+                                    SELECT
+                                        *
+                                    FROM
+                                        crm_sys_account_userinfo_relate
+                                    WHERE
+                                        recstatus = 1
+                                ) b ON A.userid = b.userid
+                                inner join(
+                                select* from crm_sys_department
+                                )c on c.deptid = b.deptid
+                                left outer join(
+                                    select distinct userid
+                                        from crm_sys_flaglinkman
+                                        where recmanager = @recmanager
+                                ) d on d.userid = a.userid
+                                WHERE
+                                    b.deptid = @pdeptid
+                                AND A .recstatus = 1  ";
                 DbParameter[] p = new DbParameter[] {
-                    new Npgsql.NpgsqlParameter("@pdeptid",deptId)
+                    new Npgsql.NpgsqlParameter("@pdeptid",deptId),
+                    new Npgsql.NpgsqlParameter("@recmanager",userId)
                 };
                 return ExecuteQuery(strSQL, p, tran);
             }

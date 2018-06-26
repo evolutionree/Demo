@@ -522,6 +522,16 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (paramInfo == null) return ResponseError<object>("参数格式错误");
             if (functionname == null || functionname.Length == 0) return ResponseError<object>("参数格式错误");
+            if (paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) {
+                if (paramInfo.OtherParams == null || paramInfo.OtherParams.ContainsKey("entityid") == false || paramInfo.OtherParams["entityid"] == null) {
+                    return ResponseError<object>("参数异常");
+                }
+                Guid tmp = Guid.Empty;
+                if (Guid.TryParse(paramInfo.OtherParams["entityid"].ToString(), out tmp) == false) {
+                    return ResponseError<object>("参数异常");
+                }
+                paramInfo.EntityId = tmp;
+            }
             OutputResult<object> ret = _dynamicEntityServices.ExecuteExtFunction(functionname, paramInfo, UserId);
             return ret;
         }

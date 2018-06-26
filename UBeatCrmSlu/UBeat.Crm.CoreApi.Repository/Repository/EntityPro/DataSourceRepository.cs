@@ -574,11 +574,11 @@ where dicid = @dicid";
                     new Npgsql.NpgsqlParameter("@dictypeid",int.Parse(dicTypeId))
                 };
                 object obj = ExecuteScalar(strSQL, p, tran);
-                if (obj == null) return 1;
+                if (obj == null) return 0;
                 else return int.Parse(obj.ToString());
             }
             catch (Exception ex) {
-                return 1;
+                return 0;
             }
         }
     }

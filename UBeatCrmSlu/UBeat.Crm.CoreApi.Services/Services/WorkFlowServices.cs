@@ -33,10 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
         private readonly DynamicEntityServices _dynamicEntityServices;
-
-
-
-
+        private NLog.ILogger _logger = NLog.LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.WorkFlowServices");
         public WorkFlowServices(IMapper mapper, IWorkFlowRepository workFlowRepository, IRuleRepository ruleRepository, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository, DynamicEntityServices dynamicEntityServices)
         {
             _workFlowRepository = workFlowRepository;
@@ -687,10 +684,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     Task.Run(() =>
                     {
-                        while (!canWriteCaseMessage)
-                        {
-                            System.Threading.Thread.Sleep(100);
+                        for (int i = 0; i < 20; i++) {
+                            if (canWriteCaseMessage) break;
+                            try
+                            {
+                                System.Threading.Thread.Sleep(100);
+                            }
+                            catch (Exception ex) {
+                            }
                         }
+                       
                         var entityInfo = _entityProRepository.GetEntityInfo(caseEntity.EntityId);
                         var detailMapper = new DynamicEntityDetailtMapper()
                         {
@@ -784,14 +787,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// </summary>
         private void WriteAddCaseMessage(SimpleEntityInfo entityInfo, Guid bussinessId, Guid relbussinessId, Guid flowId, Guid caseId, int userNumber, IDictionary<string, object> olddetail)
         {
-           
+
             //获取casedetail
-            var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, caseId);
-            if (caseInfo == null)
+            WorkFlowCaseInfo caseInfo = null;
+            for (int i = 0; i <20; i++) {
+                caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, caseId);
+                if (caseInfo != null) break;
+                try
+                {
+                    System.Threading.Thread.Sleep(200);
+                }
+                catch (Exception ex) {
+                }
+            }
+            if (caseInfo == null) {
+                _logger.Error("写工作流动态及消息时发生异常：无法获取工作流节点的信息");
                 return;
-            var workflowInfo = _workFlowRepository.GetWorkFlowInfo(null, caseInfo.FlowId);
+            }
+            WorkFlowInfo workflowInfo = null;
+            for(int i = 0; i < 20; i++)
+            {
+                workflowInfo = _workFlowRepository.GetWorkFlowInfo(null, caseInfo.FlowId);
+                if (workflowInfo != null) break;
+                try
+                {
+                    System.Threading.Thread.Sleep(200);
+                }
+                catch (Exception ex)
+                {
+                }
+            }
             if (workflowInfo == null)
+            {
+                _logger.Error("写工作流动态及消息时发生异常：无法获取工作流的信息");
                 return;
+            }
             if (workflowInfo.SkipFlag == 1)
             {
 

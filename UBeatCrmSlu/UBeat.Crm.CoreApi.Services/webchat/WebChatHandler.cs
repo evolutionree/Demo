@@ -244,6 +244,12 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             }
         }
 
+
+        private Dictionary<string,object> GetUserDetail(int userId)
+        {
+            return null;
+
+        }
         /// <summary>
         /// 发送消息功能
         /// </summary>
@@ -339,6 +345,12 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         public Guid fid { get; set; }
         public string cont { get; set; }
         public int rec{ get; set; }
+        //发送人的detail信息
+        public Dictionary<string, object> ud { get; set; }
+        /// <summary>
+        /// 群组的detail信息
+        /// </summary>
+        public Dictionary<string, object> gd { get; set; }
     }
 
     
