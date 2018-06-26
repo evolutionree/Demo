@@ -2,6 +2,7 @@
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Text;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
@@ -138,6 +139,74 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 result.Id = string.Format("{0}|{1}|{2}", msgData.GroupId, pinyin, msgid);
             }
             return HandleResult(result);
+        }
+
+        public List<IDictionary<string, object>> GetRecentChatList(int userId)
+        {
+            DbTransaction tran = null;
+            List<IDictionary<string, object>> chatList = this._repository.GetRecentChatList(tran,userId);
+            List<Guid> groupchatids = new List<Guid>();
+            List<int> singlechatids = new List<int>();
+            foreach (IDictionary<string, object> item in chatList) {
+                string chatid = item["chatid"].ToString();
+                int id = 0;
+                if (int.TryParse(chatid, out id))
+                {
+                    singlechatids.Add(id);
+                }
+                else {
+                    Guid tmp = Guid.Empty;
+                    if (Guid.TryParse(chatid, out tmp)) {
+                        groupchatids.Add(tmp);
+                    }
+                }
+            }
+            if (groupchatids.Count > 0) {
+                List<IDictionary<string, object>> groupmsgs = this._repository.GetRecentMsgByGroupChatIds(tran, groupchatids, userId);
+                foreach (IDictionary<string, object> item in chatList) {
+                    string chatid = item["chatid"].ToString();
+                    List<IDictionary<string, object>> msgs = new List<IDictionary<string, object>>();
+                    foreach (IDictionary<string, object> msgitem in groupmsgs) {
+                        string groupid = msgitem["groupid"].ToString();
+                        if (chatid.Equals(groupid)) {
+                            msgs.Add(msgitem);
+                        }
+                    }
+                    if (item.ContainsKey("msglist")) {
+                        ((List<IDictionary<string, object>>)item["msglist"]).AddRange(msgs);
+                    }
+                    else
+                    {
+                        item.Add("msglist", msgs);
+                    }
+                }
+            }
+            if (singlechatids.Count > 0) {
+                List<IDictionary<string, object>> groupmsgs = this._repository.GetRecentMsgByPersonalChatIds(tran, singlechatids, userId);
+                foreach (IDictionary<string, object> item in chatList)
+                {
+                    string chatid = item["chatid"].ToString();
+                    List<IDictionary<string, object>> msgs = new List<IDictionary<string, object>>();
+                    foreach (IDictionary<string, object> msgitem in groupmsgs)
+                    {
+                        string relateuser = msgitem["relateuser"].ToString();
+                        if (chatid.Equals(relateuser))
+                        {
+                            msgs.Add(msgitem);
+                        }
+                        
+                    }
+                    if (item.ContainsKey("msglist"))
+                    {
+                        ((List<IDictionary<string, object>>)item["msglist"]).AddRange(msgs);
+                    }
+                    else
+                    {
+                        item.Add("msglist", msgs);
+                    }
+                }
+            }
+            return chatList;
         }
         #endregion
 

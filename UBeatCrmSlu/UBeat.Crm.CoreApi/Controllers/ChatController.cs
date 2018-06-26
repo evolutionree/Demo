@@ -100,5 +100,10 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return _service.ReadedCallback(bodyData,UserId);
         }
+        [HttpPost("recentchat")]
+        public OutputResult<object> RecentChatList() {
+            List<IDictionary<string, object>> ret = this._service.GetRecentChatList(UserId);
+            return new OutputResult<object>(ret);
+        }
     }
 }

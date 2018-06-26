@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Chat;
@@ -171,6 +172,124 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Chat
                 userno = userId
             };
             return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);
+        }
+
+        public List<IDictionary<string, object>> GetRecentChatList(DbTransaction tran, int userId)
+        {
+            try {
+                string strSQL = @"select * 
+from 
+	(
+		select msg.groupid::text  chatid ,chatgroup.chatgroupname   chatname ,0 chattype , '' chaticon ,max(msg.reccreated) recentlydate
+		from crm_sys_chat_message  msg
+				inner join crm_sys_chat_group chatgroup on msg.groupid = chatgroup.chatgroupid 
+		where  msg.chattype = 1 
+				and msg.groupid in(
+								select  chatgroupid  
+								from crm_sys_chat_group_members 
+								where memberid = @userid
+							)
+		group by  msg.groupid,chatgroup.chatgroupname
+	union all
+		select chat.chatid::text  ,userinfo.username chatname ,1 chattype,userinfo.usericon chaticon ,max(recentlydate) recentlydate 
+		from (
+			select chatdetail.chatid,max(chatdetail.recentlydate) recentlydate
+			from (
+					select receivers chatid ,max(reccreated) recentlydate
+					from crm_sys_chat_message 
+					where reccreator = @userid and chattype = 0 
+					group by receivers
+				union all 
+					select reccreator  chatid ,max(reccreated) recentlydate
+					from crm_sys_chat_message
+					where receivers = @userid and chattype = 0 
+					group by reccreator
+				) chatdetail 
+				group by chatdetail.chatid 
+			) chat 
+				inner join crm_sys_userinfo userinfo on chat.chatid = userinfo.userid 
+		group by chat.chatid ,userinfo.username,userinfo.usericon 
+	) total 
+order by total.recentlydate desc  
+limit 50";
+                //DbParameter[] p = new DbParameter[] {
+                //    new Npgsql.NpgsqlParameter("@userid",userId)
+                //};
+                var p = new
+                {
+                    userid = userId
+                };
+                return DataBaseHelper.Query(strSQL, p);
+            }
+            catch(Exception ex) {
+                return new List<IDictionary<string, object>>();
+            }
+        }
+
+        public List<IDictionary<string, object>> GetRecentMsgByGroupChatIds(DbTransaction tran, List<Guid> groupchatids, int userId)
+        {
+            try
+            {
+                string strSQL = @"select s.*  
+from ( 
+    select *, row_number() over (partition by groupid order by reccreated desc ) as group_idx  
+    from crm_sys_chat_message
+		where groupid =any(@groupids)
+) s
+where s.group_idx <=2
+order by s.groupid ,s.reccreated desc ";
+                //DbParameter[] p = new DbParameter[] {
+                //    new Npgsql.NpgsqlParameter("@groupids",groupchatids.ToArray())
+                //};
+                var p = new
+                {
+                    groupids = groupchatids.ToArray()
+                };
+                return DataBaseHelper.Query(strSQL, p);
+            }
+            catch (Exception ex)
+            {
+                return new List<IDictionary<string, object>>();
+            }
+        }
+
+        public List<IDictionary<string, object>> GetRecentMsgByPersonalChatIds(DbTransaction tran, List<int> singlechatids, int userId)
+        {
+            try
+            {
+                string strSQL = @"select * FROM(
+select *, row_number() over (partition by a.relateuser order by a.reccreated desc ) as group_idx  
+from (
+select receivers relateuser ,*
+from crm_sys_chat_message
+where reccreator = @userid
+		and receivers =any(@relateusers)
+	and chattype =0
+union all 
+select reccreator relateuser , *
+from crm_sys_chat_message
+where receivers = @userid
+	and reccreator =any(@relateusers)
+	and chattype =0
+) a
+)s
+where s.group_idx <=2
+order by s.group_idx,s.reccreated desc ";
+                //DbParameter[] p = new DbParameter[] {
+                //    new Npgsql.NpgsqlParameter("@relateusers",singlechatids.ToArray()),
+                //    new Npgsql.NpgsqlParameter("@userid",userId)
+                //};
+                var p = new
+                {
+                    relateusers = singlechatids.ToArray(),
+                    userid = userId
+                };
+                return DataBaseHelper.Query(strSQL, p);
+            }
+            catch (Exception ex)
+            {
+                return new List<IDictionary<string, object>>();
+            }
         }
     }
 }
