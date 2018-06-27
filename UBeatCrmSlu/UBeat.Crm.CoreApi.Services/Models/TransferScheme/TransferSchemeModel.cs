@@ -53,5 +53,6 @@ namespace UBeat.Crm.CoreApi.Services.Models.TransferScheme
         public Guid SchemeId { get; set; }
         public string FieldName { get; set; }
         public Guid FieldId { get; set; }
+        public int IsMultiField { get; set; }
     }
 }

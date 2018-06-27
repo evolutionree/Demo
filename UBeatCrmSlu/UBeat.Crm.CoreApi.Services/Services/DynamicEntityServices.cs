@@ -597,10 +597,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             #endregion
             #region  暂不检查数据权限
             #endregion 
-            Dictionary<string, object> entityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
+            Dictionary<string, object> entityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId??Guid.Empty, userId);
             if (entityInfo == null || entityInfo.Count == 0) throw (new Exception("实体信息异常"));
             //
-            EntityExtFunctionInfo extFuncInfo = this._dynamicEntityRepository.getExtFunctionByFunctionName(paramInfo.EntityId, functionname);
+            EntityExtFunctionInfo extFuncInfo = this._dynamicEntityRepository.getExtFunctionByFunctionName(paramInfo.EntityId ?? Guid.Empty, functionname);
             if (extFuncInfo == null) throw (new Exception("实体函数异常"));
             if (extFuncInfo.RecStatus != 1)
             {
@@ -2817,18 +2817,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string entityTableName = "";
             string entityName = "";
             string newUserName = "";
+            string oldUserName = "";
             Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
             entityName = EntityInfo["entityname"].ToString();
             entityTableName = EntityInfo["entitytable"].ToString();
             Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId,userId)));
             string FieldName = fieldInfo["fieldname"].ToString();
+            bool isMultiPerson = false;
+            #region 检查是否多选用户
+            int controltype = int.Parse(fieldInfo["controltype"].ToString());
+            Dictionary<string, string> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string, string>>(fieldInfo["fieldconfig"].ToString());
+            if (fieldConfig.ContainsKey("multiple") && fieldConfig["multiple"] != null)
+            {
+                if (fieldConfig["multiple"].ToString().Equals("1"))
+                {
+                    isMultiPerson = true;
+                }
+            }
+            #endregion 
             string FieldName_Display = fieldInfo["displayname"].ToString();
             if (fieldInfo == null) throw (new Exception("字段定义有误"));
             UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
             if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
             newUserName = newUserInfo.UserName;
+            if (paramInfo.OldUserId > 0) {
+                UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(paramInfo.OldUserId);
+                if (oldUserInfo != null) {
+                    oldUserName = oldUserInfo.UserName;
+                }
+            }
             List<TransferTempInfo> retList = new List<TransferTempInfo>();
             foreach (string id in ids) {
+                string newUserIds = "";
                 DynamicEntityDetailtMapper p = new DynamicEntityDetailtMapper() {
                     EntityId = paramInfo.EntityId,
                     RecId = Guid.Parse(id),
@@ -2841,9 +2861,72 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     needChanged = true;
                 }
                 else {
-                    if (detail[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false) {
-                        needChanged = true;
+                    if (isMultiPerson)//多选的选人控件
+                    {
+                        if (paramInfo.OldUserId > 0)
+                        {
+                            //需要检查人员匹配才增加
+                            bool isNeed = false;
+                            string[] oldPersons = detail[FieldName].ToString().Split(',');
+                            foreach (string person in oldPersons)
+                            {
+                                if (person == paramInfo.OldUserId.ToString())
+                                {
+                                    isNeed = true;
+                                    break;
+                                }
+                            }
+                            if (isNeed)
+                            {
+                                foreach (string person in oldPersons)
+                                {
+                                    if (person == paramInfo.NewUserId.ToString())
+                                    {
+                                        isNeed = false;
+                                        break;
+                                    }
+                                }
+                                if (isNeed) needChanged = true;
+                            }
+                            if (needChanged)
+                            {
+                                newUserIds = paramInfo.NewUserId.ToString();
+                                foreach (string person in oldPersons)
+                                {
+                                    if (person != paramInfo.OldUserId.ToString())
+                                        newUserIds = newUserIds + "," + person;
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            //只要不存在，则新增此人
+                            bool isNeed = true; 
+                            string []oldPersons = detail[FieldName].ToString().Split(',');
+                            foreach (string person in oldPersons) {
+                                if (person == paramInfo.NewUserId.ToString()) {
+                                    isNeed = false;
+                                    break;
+                                }
+                            }
+                            if (isNeed) needChanged = true;
+                            if (needChanged) {
+                                newUserIds = paramInfo.NewUserId.ToString();
+                                foreach (string person in oldPersons) {
+                                    newUserIds = newUserIds + "," + person;
+                                }
+                            }
+                        }
                     }
+                    else {
+                        if (detail[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false)
+                        {
+                            needChanged = true;
+                        }
+                    }
+                    
+                    
                 }
                 if (needChanged) {
                     TransferTempInfo msg = new TransferTempInfo()
@@ -2853,8 +2936,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         FieldNames = new List<string>() { FieldName },
                         NewUserId = paramInfo.NewUserId,
                         NewUserName = newUserName,
+                        NewUserIds = newUserIds,
+                        OldUserId = paramInfo.OldUserId,
+                        OldUserName = oldUserName,
+                        IsMultiPersonField = isMultiPerson,
                         TableName = entityTableName,
                         EntityName = entityName,
+                        
                         EntityId = paramInfo.EntityId,
                         TypeId = detail.ContainsKey("rectype") && detail["rectype"] != null ? Guid.Parse(detail["rectype"].ToString()) : paramInfo.EntityId,
                         RecId = Guid.Parse(detail["recid"].ToString()),
@@ -2887,16 +2975,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string entityTableName = "";
             string entityName = "";
             string newUserName = "";
+            string oldUserName = "";
             Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
             entityName = EntityInfo["entityname"].ToString();
             entityTableName = EntityInfo["entitytable"].ToString();
             Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId, userId)));
             string FieldName = fieldInfo["fieldname"].ToString();
             string FieldName_Display = fieldInfo["displayname"].ToString();
+            bool isMultiPerson = false;
             if (fieldInfo == null) throw (new Exception("字段定义有误"));
             UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
             if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
             newUserName = newUserInfo.UserName;
+            if (paramInfo.OldUserId > 0)
+            {
+                UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(paramInfo.OldUserId);
+                if (oldUserInfo != null)
+                {
+                    oldUserName = oldUserInfo.UserName;
+                }
+            }
             List<TransferTempInfo> retList = new List<TransferTempInfo>();
             paramInfo.DataFilter.PageIndex = 1;
             paramInfo.DataFilter.PageSize = 100000;
@@ -2906,6 +3004,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<TransferTempInfo> thisDealed = new List<TransferTempInfo>();
             foreach (IDictionary<string, object> rowData in datas)
             {
+                string newUserIds = "";
                 bool needChanged = false;
                 if (rowData.ContainsKey(FieldName) == false || rowData[FieldName] == null)
                 {
@@ -2913,10 +3012,76 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 else
                 {
-                    if (rowData[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false)
+                    if (isMultiPerson)//多选的选人控件
                     {
-                        needChanged = true;
+                        if (paramInfo.OldUserId > 0)
+                        {
+                            //需要检查人员匹配才增加
+                            bool isNeed = false;
+                            string[] oldPersons = rowData[FieldName].ToString().Split(',');
+                            foreach (string person in oldPersons)
+                            {
+                                if (person == paramInfo.OldUserId.ToString())
+                                {
+                                    isNeed = true;
+                                    break;
+                                }
+                            }
+                            if (isNeed)
+                            {
+                                foreach (string person in oldPersons)
+                                {
+                                    if (person == paramInfo.NewUserId.ToString())
+                                    {
+                                        isNeed = false;
+                                        break;
+                                    }
+                                }
+                                if (isNeed) needChanged = true;
+                            }
+                            if (needChanged)
+                            {
+                                newUserIds = paramInfo.NewUserId.ToString();
+                                foreach (string person in oldPersons)
+                                {
+                                    if (person != paramInfo.OldUserId.ToString())
+                                        newUserIds = newUserIds + "," + person;
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            //只要不存在，则新增此人
+                            bool isNeed = true;
+                            string[] oldPersons = rowData[FieldName].ToString().Split(',');
+                            foreach (string person in oldPersons)
+                            {
+                                if (person == paramInfo.NewUserId.ToString())
+                                {
+                                    isNeed = false;
+                                    break;
+                                }
+                            }
+                            if (isNeed) needChanged = true;
+                            if (needChanged)
+                            {
+                                newUserIds = paramInfo.NewUserId.ToString();
+                                foreach (string person in oldPersons)
+                                {
+                                    newUserIds = newUserIds + "," + person;
+                                }
+                            }
+                        }
                     }
+                    else
+                    {
+                        if (rowData[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false)
+                        {
+                            needChanged = true;
+                        }
+                    }
+
                 }
                 if (needChanged)
                 {
@@ -2927,6 +3092,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         FieldNames = new List<string>() { FieldName },
                         NewUserId = paramInfo.NewUserId,
                         NewUserName = newUserName,
+                        NewUserIds = newUserIds,
+                        OldUserId = paramInfo.OldUserId,
+                        OldUserName = oldUserName,
+                        IsMultiPersonField = isMultiPerson,
                         TableName = entityTableName,
                         EntityName = entityName,
                         EntityId = paramInfo.EntityId,
@@ -3060,10 +3229,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
             foreach (TransferTempInfo updateitem in thisDealed)
             {
                 DbTransaction tran = null;
-                bool updateSuccess = _dynamicRepository.TransferEntityData(tran, updateitem.TableName, updateitem.FieldNames, updateitem.NewUserId, updateitem.RecId, userId);
+                bool updateSuccess = false;
+                if (updateitem.IsMultiPersonField) {
+                    updateSuccess = _dynamicRepository.TransferEntityData(tran, updateitem.TableName, updateitem.FieldNames, updateitem.NewUserIds, updateitem.RecId, userId);
+
+                }
+                else
+                {
+                    updateSuccess = _dynamicRepository.TransferEntityData(tran, updateitem.TableName, updateitem.FieldNames, updateitem.NewUserId, updateitem.RecId, userId);
+
+                }
                 if (updateSuccess)
                 {
-                    string msgContent = string.Format("{0} {1} 的 {2} 已经变更为 {3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.NewUserName);
+                    string msgContent = "";
+                    if (updateitem.IsMultiPersonField) {
+                        if (updateitem.OldUserId > 0)
+                        {
+                            msgContent = string.Format("{0} {1} 的 {2} 已经移除{3}、加入了{4}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.OldUserName, updateitem.NewUserName);
+                        }
+                        else {
+                            msgContent = string.Format("{0} {1} 的 {2} 已经加入了{3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames,  updateitem.NewUserName);
+                        }
+                    }
+                    else
+                    {
+                        msgContent = string.Format("{0} {1} 的 {2} 已经变更为 {3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.NewUserName);
+                    }
+                     
                     DynamicInsertInfo dynamicInfo = new DynamicInsertInfo()
                     {
                         DynamicType = DynamicType.System,
@@ -4023,9 +4215,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public bool IsSuccess { get; set; }
         public string ErrorMessage { get; set; }
         public string NewUserName { get; set; }
+        public string NewUserIds { get; set; }
 
         public string FieldDisplayNames { get; set; }
         public string RecName { get; set; }
+        public bool IsMultiPersonField { get; set; }
+        public int OldUserId { get; set; }
+        public string OldUserName { get; set; }
 
         
     }

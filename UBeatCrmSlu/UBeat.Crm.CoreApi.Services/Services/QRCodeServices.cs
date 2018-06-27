@@ -275,10 +275,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             fieldItem.FieldName='fieldresult';
                             fieldItem.Value='未找到水票';
                             fieldItem.IsNeedEdit = '0';
-                            fieldItem.IsDisplay = '0';
+                            fieldItem.IsDisplay = '1';
                             fieldItem.FieldType='1';
                             returnObj.DetailsInfo.push(fieldItem);
-                            returnObj.Button1 = {Title:'知道了',ActionType:'1'};
+                            returnObj.Button1 = {Title:'知道了',ActionType:'2'};
                         }else if (result.Count == 1 ){
                             //只有一条的情况
                             if (result[0].billstatus  ==2 )
@@ -299,25 +299,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 var fieldItem = {Title:'entityid',FieldName:'entityid',Value:'a4b2cbbe-6338-4d31-a9a3-28cdc8faa092',
                                                  IsNeedEdit:'0',FieldType:'1',IsDisplay:'0' };
                                 returnObj.DetailsInfo.push(fieldItem);
-                                returnObj.Button1 = {Title:'取消',ActionType:'1'};
+                                returnObj.Button1 = {Title:'取消',ActionType:'2'};
                                 returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/DynamicEntity/ukextengine/crm_func_testwaterbill'};
                                 return returnObj;
                             }else{
                                 returnObj={'ActionType':'1','IsSuccess':'1','ButtonCount':'1','DetailsInfo':[]};
                                 var fieldItem = {Title:'水票编码',FieldName:'billnumber',Value:result[0].billnumber,
-                                                 IsNeedEdit:'0',FieldType:'1' };
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1'  };
                                 returnObj.DetailsInfo.push(fieldItem);
                                 fieldItem = {Title:'客户名称',FieldName:'customername',Value:result[0].customer && result[0].customer.name,
-                                                 IsNeedEdit:'0',FieldType:'1' };
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1'  };
                                 returnObj.DetailsInfo.push(fieldItem);
                                 var billstatus = '';
                                 if (result[0].billstatus  == 1) billstatus='未发行';
                                 else if(result[0].billstatus  == 3) billstatus ='已使用';
                                 else if (result[0].billstatus  == 4) billstatus ='已作废';
                                 fieldItem = {Title:'水票状态',FieldName:'billstatus',Value:billstatus,
-                                                 IsNeedEdit:'0',FieldType:'1' };
+                                                 IsNeedEdit:'0',FieldType:'1',IsDisplay:'1'  };
                                 returnObj.DetailsInfo.push(fieldItem);
-                                returnObj.Button1 = {Title:'知道了',ActionType:'1'};
+                                returnObj.Button1 = {Title:'知道了',ActionType:'2'};
                             }
                             
                         }else{
@@ -344,7 +344,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                  IsNeedEdit:'0',FieldType:'1',IsDisplay:'0' };
                                 returnObj.DetailsInfo.push(fieldItem);
                                 var fieldItem = {Title:'水票型号',FieldName:'recid',Value:'',
-                                                 IsNeedEdit:'0',FieldType:'3' };
+                                                 IsNeedEdit:'0',FieldType:'3',IsDisplay:'1' };
                                 fieldItem.SelectionList = [];
                                 for(var i = 0;i<tmplist.length;i++){
                                      var item = tmplist[i];
@@ -352,7 +352,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                      fieldItem.SelectionList.push(tmpItem);
                                 }
                                 returnObj.DetailsInfo.push(fieldItem);
-                                returnObj.Button1 = {Title:'取消',ActionType:'1'};
+                                returnObj.Button1 = {Title:'取消',ActionType:'2'};
                                 returnObj.Button2 = {Title:'确认',ActionType:'3',ServiceUrl:'api/DynamicEntity/ukextengine/crm_func_testwaterbill'};
                             }
                         }
