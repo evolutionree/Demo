@@ -53,7 +53,6 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 return ResponseError<object>(ex.Message);
             }
-            return null;
         }
         [HttpPost("delete")]
         public OutputResult<object> Delete([FromBody] QRCodeDeleteModel paramInfo)  {

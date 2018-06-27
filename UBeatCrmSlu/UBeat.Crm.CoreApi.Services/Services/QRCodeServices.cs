@@ -33,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         UScript = getTestCheckScript()// "if (JsParam.QRCode == 'abc') return true; else return false ;"
                     }
                 },
-                DealType = QRCodeCheckTypeEnum.JSPlugInSearch
+                DealType = QRCodeCheckTypeEnum.EntitySearch
             };
             checkList.Add(ite1m);
             QRCodeEntryItemInfo matchedItem = null;
@@ -254,11 +254,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else if (item.DealType == QRCodeCheckTypeEnum.JSPlugInSearch)
             {
-                return testJsReturn(item,code,type,userid);
+                return testJsReturn(item, code, type, userid);
             }
-            else {
+            else if (item.DealType == QRCodeCheckTypeEnum.EntitySearch) {
+                return testEntitySearchReturn(item, code, type, userid);
+            }
+            else
+            {
                 return QRCodeEntryResultInfo.NoActionResultInfo;
             }
+        }
+        private QRCodeEntryResultInfo testEntitySearchReturn(QRCodeEntryItemInfo item, string code, int type, int userid) {
+            QRCodeShowEntityUIResultInfo retInfo = new QRCodeShowEntityUIResultInfo();
+            retInfo.ActionType = QRCodeActionTypeEnum.ShowEntityUI;
+            retInfo.CodeType = type;
+            retInfo.QRCode = code;
+            retInfo.ViewType = QRCodeShowEntityUIViewType.View;
+            retInfo.EntityId = Guid.Parse("a4b2cbbe-6338-4d31-a9a3-28cdc8faa092");
+            retInfo.TypeId = Guid.Parse("a4b2cbbe-6338-4d31-a9a3-28cdc8faa092");
+            retInfo.RecId = Guid.Parse("88169a0c-9203-48ef-a7bb-876bda168b96");
+            return retInfo;
+
         }
         private QRCodeEntryResultInfo testJsReturn(QRCodeEntryItemInfo item, string code, int type, int userid) {
             string jscode = @"var returnObj = {};
