@@ -54,7 +54,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="checkParam"></param>
         /// <param name="userid"></param>
         /// <returns></returns>
-        bool UpdateMatchParamInfo(DbTransaction tran, Guid recId, QRCodeCheckTypeEnum checkType, QRCodeCheckMatchParamInfo checkParam, int userid);
+        bool UpdateMatchParamInfo(DbTransaction tran, Guid recId, QRCodeCheckTypeEnum checkType, QRCodeCheckMatchParamInfo checkParam, string checkRemark,int userid);
 
         /// <summary>
         /// 获取处理规则
@@ -74,7 +74,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="dealParmInfo"></param>
         /// <param name="userid"></param>
         /// <returns></returns>
-        bool UpdateDealParamInfo(DbTransaction tran, Guid recid, QRCodeCheckTypeEnum dealType, QRCodeDealParamInfo dealParmInfo, int userid);
+        bool UpdateDealParamInfo(DbTransaction tran, Guid recid, QRCodeCheckTypeEnum dealType, QRCodeDealParamInfo dealParmInfo,string dealRemark, int userid);
 
 
         /// <summary>

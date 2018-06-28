@@ -262,15 +262,16 @@ values(@recid,@recname,@remark,@recorder,1,@userid,now(),@userid,now())";
             }
         }
 
-        public bool UpdateDealParamInfo(DbTransaction tran, Guid recid, QRCodeCheckTypeEnum dealType, QRCodeDealParamInfo dealParmInfo, int userid)
+        public bool UpdateDealParamInfo(DbTransaction tran, Guid recid, QRCodeCheckTypeEnum dealType, QRCodeDealParamInfo dealParmInfo, string dealRemark,int userid)
         {
             try
             {
-                string strSQL = "update crm_sys_qrcode_rules set dealtype=@dealtype,dealparam = @dealparam where recid = @recid ";
+                string strSQL = "update crm_sys_qrcode_rules set dealtype=@dealtype,dealparam = @dealparam,dealremark = @dealremark where recid = @recid ";
                 DbParameter[] p = new DbParameter[] {
                     new Npgsql.NpgsqlParameter("@recid",recid),
                     new Npgsql.NpgsqlParameter("@dealparam",JsonConvert.SerializeObject(dealParmInfo)){ NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Json},
-                    new Npgsql.NpgsqlParameter("@dealtype",(int)dealType)
+                    new Npgsql.NpgsqlParameter("@dealtype",(int)dealType),
+                    new Npgsql.NpgsqlParameter("@dealremark",dealRemark)
                 };
                 ExecuteNonQuery(strSQL, p, tran);
                 return true;
@@ -281,15 +282,16 @@ values(@recid,@recname,@remark,@recorder,1,@userid,now(),@userid,now())";
             }
         }
 
-        public bool UpdateMatchParamInfo(DbTransaction tran, Guid recId, QRCodeCheckTypeEnum checkType, QRCodeCheckMatchParamInfo checkParam, int userid)
+        public bool UpdateMatchParamInfo(DbTransaction tran, Guid recId, QRCodeCheckTypeEnum checkType, QRCodeCheckMatchParamInfo checkParam,string checkRemark, int userid)
         {
             try
             {
-                string strSQL = "update crm_sys_qrcode_rules set checktype=@checktype,checkparam = @checkparam where recid = @recid ";
+                string strSQL = "update crm_sys_qrcode_rules set checktype=@checktype,checkparam = @checkparam ,checkremark  = @checkremark where recid = @recid ";
                 DbParameter[] p = new DbParameter[] {
                     new Npgsql.NpgsqlParameter("@recid",recId),
                     new Npgsql.NpgsqlParameter("@checkparam",JsonConvert.SerializeObject(checkParam)){ NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Json},
-                    new Npgsql.NpgsqlParameter("@checktype",(int)checkType)
+                    new Npgsql.NpgsqlParameter("@checktype",(int)checkType),
+                    new Npgsql.NpgsqlParameter("@checkremark",checkRemark)
                 };
                 ExecuteNonQuery(strSQL, p, tran);
                 return true;

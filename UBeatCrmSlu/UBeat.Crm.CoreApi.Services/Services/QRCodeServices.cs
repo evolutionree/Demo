@@ -101,9 +101,49 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public List<QRCodeEntryItemInfo> List(bool isShowDisabled, int userId)
         {
-            return  this._iQRCodeRepository.ListRules(null, isShowDisabled, userId);
-        }
+            List < QRCodeEntryItemInfo > retList=   this._iQRCodeRepository.ListRules(null, isShowDisabled, userId);
+            if (retList != null) {
+                foreach (QRCodeEntryItemInfo item in retList) {
+                    item.CheckType_Name = GetCheckTypeName(item.CheckType);
+                    item.DealType_Name = GetDealTypeName(item.DealType);
+                }
 
+            }
+            return retList;
+        }
+        private string GetDealTypeName(QRCodeCheckTypeEnum dealtype) {
+            switch (dealtype)
+            {
+                case QRCodeCheckTypeEnum.EntitySearch:
+                    return "实体查询处理";
+                case QRCodeCheckTypeEnum.InnerService:
+                    return "内部服务处理";
+                case QRCodeCheckTypeEnum.JSPlugInSearch:
+                    return "U脚本处理";
+                default:
+                    return "未定义匹配模式";
+            }
+        }
+        private string GetCheckTypeName(QRCodeCheckTypeEnum checktype) {
+            switch (checktype) {
+                case QRCodeCheckTypeEnum.EntitySearch:
+                    return "实体匹配";
+                case QRCodeCheckTypeEnum.InnerService:
+                    return "内部服务";
+                case QRCodeCheckTypeEnum.JSPlugInSearch:
+                    return "U脚本";
+                case QRCodeCheckTypeEnum.RegexSearch:
+                    return "正则表达式匹配";
+                case QRCodeCheckTypeEnum.SQLFunction:
+                    return "SQL函数匹配";
+                case QRCodeCheckTypeEnum.SQLScript:
+                    return "SQL脚本匹配";
+                case QRCodeCheckTypeEnum.StringSearch:
+                    return "字符串匹配";
+                default:
+                    return "未定义匹配模式";
+            }
+        }
         /// <summary>
         /// 新增一个规则，且此规则放在所有规则最后
         /// 通过排序，可以调整顺序，禁用后的规则不排序
@@ -163,6 +203,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
             retDict.Add("checkparam", param);
+            retDict.Add("checkremark", item.CheckRemark);
             return retDict;     
         }
 
@@ -171,7 +212,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, object> retDict = new Dictionary<string, object>();
             QRCodeEntryItemInfo item = this._iQRCodeRepository.GetFullInfo(null, recId, userId);
             if (item == null) throw (new Exception("没有找到记录"));
-            retDict.Add("detailtype", item.DealType);
+            retDict.Add("dealtype", item.DealType);
             QRCodeDealParamInfo param = item.DealParam;
             if (param != null)
             {
@@ -201,6 +242,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
             retDict.Add("dealparam", param);
+            retDict.Add("dealremark", item.DealRemark);
             return retDict;
         }
 
@@ -238,18 +280,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             this._iQRCodeRepository.OrderRules(null, orderids, userId);
         }
 
-        public bool UpdateDealParam( Guid recId, QRCodeCheckTypeEnum dealType, QRCodeDealParamInfo dealParam, int userId)
+        public bool UpdateDealParam( Guid recId, QRCodeCheckTypeEnum dealType, QRCodeDealParamInfo dealParam,string dealRemark, int userId)
         {
             QRCodeEntryItemInfo item = this._iQRCodeRepository.GetFullInfo(null, recId, userId);
             if (item == null) throw (new Exception("未找到需要更新的记录"));
-            return this._iQRCodeRepository.UpdateDealParamInfo(null, recId, dealType, dealParam, userId);
+            return this._iQRCodeRepository.UpdateDealParamInfo(null, recId, dealType, dealParam, dealRemark,userId);
         }
 
-        public bool UpdateCheckParam(Guid recId, QRCodeCheckTypeEnum checkType, QRCodeCheckMatchParamInfo checkParam, int userId)
+        public bool UpdateCheckParam(Guid recId, QRCodeCheckTypeEnum checkType, QRCodeCheckMatchParamInfo checkParam, string checkRemark,int userId)
         {
             QRCodeEntryItemInfo item = this._iQRCodeRepository.GetFullInfo(null, recId, userId);
             if (item == null) throw (new Exception("未找到需要更新的记录"));
-            return this._iQRCodeRepository.UpdateMatchParamInfo(null, recId, checkType, checkParam, userId);
+            return this._iQRCodeRepository.UpdateMatchParamInfo(null, recId, checkType, checkParam,checkRemark, userId);
         }
 
         #region 检查项目的所有逻辑
@@ -714,10 +756,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public Guid RecId { get; set; }
         public QRCodeCheckTypeEnum CheckType { get; set; }
         public QRCodeCheckMatchParamInfo CheckParam { get; set; }
+        public string CheckRemark { get; set; }
     }
     public class QRCodeUpdateDealParamModel {
         public Guid RecId { get; set; }
         public QRCodeCheckTypeEnum DealType { get; set; }
         public QRCodeDealParamInfo DealParam { get; set; }
+        public string DealRemark { get; set; }
     }
 }
