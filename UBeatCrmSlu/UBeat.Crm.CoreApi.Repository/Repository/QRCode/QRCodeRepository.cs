@@ -68,6 +68,16 @@ values(@recid,@recname,@remark,@recorder,1,@userid,now(),@userid,now())";
                 throw (ex);
             }
         }
+        public List<Dictionary<string, object>> ExecuteSQL(string strSQL, DbParameter[] p ,int userId) {
+            try
+            {
+                return ExecuteQuery(strSQL, p, null);
+            }
+            catch (Exception ex)
+            {
+                throw (ex);
+            }
+        }
 
         public Dictionary<string, object> GetDealParamInfo(DbTransaction tran, Guid recId, int userid)
         {
@@ -254,7 +264,21 @@ values(@recid,@recname,@remark,@recorder,1,@userid,now(),@userid,now())";
 
         public bool UpdateDealParamInfo(DbTransaction tran, Guid recid, QRCodeCheckTypeEnum dealType, QRCodeDealParamInfo dealParmInfo, int userid)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string strSQL = "update crm_sys_qrcode_rules set dealtype=@dealtype,dealparam = @dealparam where recid = @recid ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@recid",recid),
+                    new Npgsql.NpgsqlParameter("@dealparam",JsonConvert.SerializeObject(dealParmInfo)){ NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Json},
+                    new Npgsql.NpgsqlParameter("@dealtype",(int)dealType)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw (ex);
+            }
         }
 
         public bool UpdateMatchParamInfo(DbTransaction tran, Guid recId, QRCodeCheckTypeEnum checkType, QRCodeCheckMatchParamInfo checkParam, int userid)
