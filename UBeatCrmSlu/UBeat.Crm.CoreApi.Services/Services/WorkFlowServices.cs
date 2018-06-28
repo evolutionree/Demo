@@ -790,7 +790,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             //获取casedetail
             WorkFlowCaseInfo caseInfo = null;
-            for (int i = 0; i <20; i++) {
+            for (int i = 0; i <10; i++) {
                 caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, caseId);
                 if (caseInfo != null) break;
                 try
@@ -1755,9 +1755,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Task.Run(() =>
             {
-                while(!canWriteCaseMessage)
-                {
-                    System.Threading.Thread.Sleep(100);
+                for (int i = 0; i < 10; i++) {
+                    if (canWriteCaseMessage) break;
+                    try
+                    {
+                        System.Threading.Thread.Sleep(100);
+                    }
+                    catch (Exception ex) {
+                    }
                 }
                 using (var conn = GetDbConnect())
                 {
@@ -1771,25 +1776,52 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         bool isAddNextStep = false;//审批是否通过，并进入下一步审批人
 
                         //获取casedetail
-                        var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseId);
+                        WorkFlowCaseInfo caseInfo = null;
+                        for(int i=0;i<10;i++)
+                        {
+                            caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseId);
+                            if (caseInfo != null) break;
+                            try
+                            {
+                                System.Threading.Thread.Sleep(100);
+                            }
+                            catch (Exception ex)
+                            {
+                            }
+                        }
                         if (caseInfo == null)
+                        {
+                            _logger.Error("写工作流消息:无法获取流程实例信息");
                             return;
+                        }
                         var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
                         if (workflowInfo == null)
+                        {
+                            _logger.Error("写工作流消息:无法获取流程定义信息");
                             return;
+                        }
 
                         var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, nodeNum, stepNum);
                         if (caseitems == null || caseitems.Count == 0)
+                        {
+                            _logger.Error("写工作流消息:无法获取流程实例节点信息");
                             return;
+                        }
                         caseitems = caseitems.OrderByDescending(m => m.StepNum).ToList();
 
                         var myAuditCaseItem = caseitems.FirstOrDefault(m => m.HandleUser == userNumber);
                         if (myAuditCaseItem == null)
+                        {
+                            _logger.Error("写工作流消息:无法获取流程实例节点信息-我的信息");
                             return;
+                        }
 
                         var entityInfotemp = _entityProRepository.GetEntityInfo(caseInfo.EntityId);
                         if (entityInfotemp == null)
+                        {
+                            _logger.Error("写工作流消息:无法获取流程关联的业务对象信息");
                             return;
+                        }
                         var msg = new MessageParameter();
                         allApprovalSuggest = myAuditCaseItem.Suggest;
                         string funcode = null;
@@ -1805,7 +1837,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
                             if (flowNodeInfo == null)
                             {
-                                Logger.Error("流程节点不存在");
+                                _logger.Error("写工作流消息:流程节点不存在");
                                 return;
                             }
                             if (flowNodeInfo.NodeType != NodeType.Joint)//普通审批
@@ -1823,7 +1855,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         if (string.IsNullOrEmpty(funcode))//没有有效的消息模板funcode
                         {
-                            Logger.Error("没有有效的消息模板funcode");
+                            _logger.Error("写工作流消息:没有有效的消息模板funcode");
                             return;
                         }
                         msg.FuncCode = funcode;
