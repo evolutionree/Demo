@@ -53,7 +53,6 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 return ResponseError<object>(ex.Message);
             }
-            return null;
         }
         [HttpPost("delete")]
         public OutputResult<object> Delete([FromBody] QRCodeDeleteModel paramInfo)  {
@@ -134,8 +133,10 @@ namespace UBeat.Crm.CoreApi.Controllers
             return null;
         }
         [HttpPost("getdealparam")]
-        public OutputResult<object> GetDealParam() {
-            return null;
+        public OutputResult<object> GetDealParam([FromBody] QRCodeDetailModel paramInfo)
+        {
+            if (paramInfo == null || paramInfo.RecId == null || paramInfo.RecId == Guid.Empty) return ResponseError<object>("参数异常");
+            return new OutputResult<object>(this._qRCodeServices.getDealParam(paramInfo.RecId, UserId));
         }
 
         [HttpPost("updatedealparam")]
@@ -154,13 +155,21 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
+        [HttpPost("saverule")]
+        public OutputResult<object> SaveRule() {
+            return null;
+        }
+        [HttpPost("getrule")]
+        public OutputResult<object> GetRule() {
+            return null;
+        }
 
         [HttpPost("fulltest")]
         public OutputResult<object> FullTestRules() {
             return null;
         }
         [HttpPost("testmatch")]
-        public OutputResult<object> TestMatchRule() {
+        public OutputResult<object> TestMatchRule([FromBody] QRCodeUpdateMatchRuleModel paramInfo) {
             return null;
         }
         [HttpPost("testdeal")]

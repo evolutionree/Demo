@@ -1,10 +1,17 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel.QRCode;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Utility;
+using System.Text.RegularExpressions;
+using UBeat.Crm.CoreApi.Core.Utility;
+using System.Reflection;
+using System.Data.Common;
+using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -12,18 +19,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
     {
         private readonly JavaScriptUtilsServices _javaScriptUtilsServices;
         private readonly IQRCodeRepository _iQRCodeRepository;
+        private readonly IEntityProRepository _entityProRepository;
+        private static NLog.ILogger _logger = NLog.LogManager.GetLogger(typeof(QRCodeServices).FullName);
+        private readonly DynamicEntityServices _dynamicEntityServices;
         public QRCodeServices(JavaScriptUtilsServices javaScriptUtilsServices,
-            IQRCodeRepository iQRCodeRepository) {
+            IQRCodeRepository iQRCodeRepository,
+            IEntityProRepository entityProRepository, DynamicEntityServices dynamicEntityServices
+            ) {
             _javaScriptUtilsServices = javaScriptUtilsServices;
             _iQRCodeRepository = iQRCodeRepository;
+            _entityProRepository = entityProRepository;
+            _dynamicEntityServices = dynamicEntityServices;
         }
-        private string getTestCheckScript() {
-            string strScript = @"var sql = 'select * from crm_plu_waterbill  where billnumber =\''+JsParam.QRCode  +'\'';
-                                    var result = ukservices.DbExecute(sql);
-                                    if (result.Count >0 )return true;
-                                    else return false;";
-            return strScript;
-        }
+        
         public OutputResult<object> CheckQrCode(string code, int codetype, int userid) {
             List<QRCodeEntryItemInfo> checkList = new List<QRCodeEntryItemInfo>();
             QRCodeEntryItemInfo ite1m = new QRCodeEntryItemInfo() {
@@ -33,7 +41,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         UScript = getTestCheckScript()// "if (JsParam.QRCode == 'abc') return true; else return false ;"
                     }
                 },
-                DealType = QRCodeCheckTypeEnum.JSPlugInSearch
+                DealType = QRCodeCheckTypeEnum.EntitySearch
             };
             checkList.Add(ite1m);
             QRCodeEntryItemInfo matchedItem = null;
@@ -136,18 +144,64 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (item.CheckType == QRCodeCheckTypeEnum.EntitySearch && param.EntityMatchParam != null ) {
                     if (param.EntityMatchParam.EntityId != null && param.EntityMatchParam.EntityId != Guid.Empty) {
                         //需要更新EntityName
+                        SimpleEntityInfo entityInfo = _entityProRepository.GetEntityInfo(param.EntityMatchParam.EntityId);
+                        if (entityInfo != null) {
+                            param.EntityMatchParam.EntityName = entityInfo.EntityName;
+                        }
                     }
                     if (param.EntityMatchParam.FieldId != null && param.EntityMatchParam.FieldId != Guid.Empty) {
                         //更新fieldname信息
-                    }
-                    if (param.EntityMatchParam.RuleId != null && param.EntityMatchParam.RuleId != Guid.Empty) {
-                        //更新规则
+                        dynamic obj =  _entityProRepository.GetFieldInfo(param.EntityMatchParam.FieldId,userId);
+                        if (obj != null) {
+                            Dictionary<string, object> fieldInfo = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(obj));
+                            if (fieldInfo != null && fieldInfo.ContainsKey("displayname")&& fieldInfo["displayname"] != null) {
+                                param.EntityMatchParam.FieldDisplayName = fieldInfo["displayname"].ToString();
+                            }
+                        }
                     }
 
                 }
             }
             retDict.Add("checkparam", param);
             return retDict;     
+        }
+
+        public Dictionary<string, object> getDealParam(Guid recId, int userId)
+        {
+            Dictionary<string, object> retDict = new Dictionary<string, object>();
+            QRCodeEntryItemInfo item = this._iQRCodeRepository.GetFullInfo(null, recId, userId);
+            if (item == null) throw (new Exception("没有找到记录"));
+            retDict.Add("detailtype", item.DealType);
+            QRCodeDealParamInfo param = item.DealParam;
+            if (param != null)
+            {
+                if (item.DealType == QRCodeCheckTypeEnum.EntitySearch) {
+                    if (param.EntityParam.EntityId != null && param.EntityParam.EntityId != Guid.Empty)
+                    {
+                        //需要更新EntityName
+                        SimpleEntityInfo entityInfo = _entityProRepository.GetEntityInfo(param.EntityParam.EntityId);
+                        if (entityInfo != null)
+                        {
+                            param.EntityParam.EntityName = entityInfo.EntityName;
+                        }
+                    }
+                    if (param.EntityParam.FieldId != null && param.EntityParam.FieldId != Guid.Empty)
+                    {
+                        //更新fieldname信息
+                        dynamic obj = _entityProRepository.GetFieldInfo(param.EntityParam.FieldId, userId);
+                        if (obj != null)
+                        {
+                            Dictionary<string, object> fieldInfo = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(obj));
+                            if (fieldInfo != null && fieldInfo.ContainsKey("displayname") && fieldInfo["displayname"] != null)
+                            {
+                                param.EntityParam.FieldDisplayName = fieldInfo["displayname"].ToString();
+                            }
+                        }
+                    }
+                }
+            }
+            retDict.Add("dealparam", param);
+            return retDict;
         }
 
         public void OrderRule(string recIds, int userId)
@@ -198,51 +252,244 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return this._iQRCodeRepository.UpdateMatchParamInfo(null, recId, checkType, checkParam, userId);
         }
 
-        private bool CheckMatchItem(QRCodeEntryItemInfo item, string code, int type, int userid) {
+        #region 检查项目的所有逻辑
+        private bool CheckMatchItem(QRCodeEntryItemInfo item, string code, int type, int userid, bool IsDebug=false) {
             if (item.CheckType == QRCodeCheckTypeEnum.StringSearch)
             {
-                return false;
+                return CheckMatchItem_String(item, code, type, userid, IsDebug);
             }
             else if (item.CheckType == QRCodeCheckTypeEnum.RegexSearch)
             {
-                return false;
+                return CheckMatchItem_Regex(item, code, type, userid, IsDebug);
             }
             else if (item.CheckType == QRCodeCheckTypeEnum.EntitySearch)
             {
-                return false;
+                return CheckMatchItem_EntitySearch(item, code, type, userid, IsDebug);
             }
             else if (item.CheckType == QRCodeCheckTypeEnum.InnerService)
             {
-                return false;
+                return CheckMatchItem_InnerService(item, code, type, userid, IsDebug);
             }
             else if (item.CheckType == QRCodeCheckTypeEnum.SQLFunction)
             {
-                return false;
+                return CheckMatchItem_SQL(item, code, type, userid, IsDebug);
             }
             else if (item.CheckType == QRCodeCheckTypeEnum.SQLScript) {
-                return false;
+                return CheckMatchItem_SQL(item, code, type, userid, IsDebug);
             }
             else if (item.CheckType == QRCodeCheckTypeEnum.JSPlugInSearch)
             {
-                UKJSEngineUtils utils = new UKJSEngineUtils(this._javaScriptUtilsServices);
-                Dictionary<string, object> param = new Dictionary<string, object>();
-                param.Add("QRCode", code);
-                param.Add("QRType", type);
-                utils.SetHostedObject("JsParam", param);
-                long tick = System.DateTime.Now.Ticks;
-                string jscode = "function ukejsengin_func_qrcode_" + tick + "(){" + item.CheckParam.UScriptParam.UScript + "};ukejsengin_func_qrcode_" + tick + "();";
-                try
-                {
-                    return utils.Evaluate<bool>(jscode);
-                }
-                catch (Exception ex)
-                {
-                    return false;
-                }
+                return CheckMatchItem_UScript(item, code, type, userid, IsDebug);
             }
             return false;
         }
 
+
+        /// <summary>
+        /// 字符串匹配
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="code"></param>
+        /// <param name="type"></param>
+        /// <param name="userid"></param>
+        /// <param name="IsDebug"></param>
+        /// <returns></returns>
+        private bool CheckMatchItem_String(QRCodeEntryItemInfo item, string code, int type, int userid, bool IsDebug)
+        {
+            try
+            {
+                if (item == null)
+                {
+                    throw (new Exception("检查项目异常"));
+                }
+                if (item.CheckParam.StringMatchParam == null
+                    || item.CheckParam.StringMatchParam.CheckItemString == null 
+                    || item.CheckParam.StringMatchParam.CheckItemString.Length == 0 ) {
+                    throw (new Exception("检查参数异常"));
+                }
+                string checkstring = item.CheckParam.StringMatchParam.CheckItemString.ToLower();
+                if (item.CheckParam.StringMatchParam.CaseSensitive != 1) {
+                    checkstring = checkstring.ToLower();
+                    code = code.ToLower();
+                }
+                if (item.CheckParam.StringMatchParam.MatchWholeWord == 1)
+                {
+                    return code.Equals(checkstring);
+                }
+                else {
+                    return code.IndexOf(checkstring) >= 0;
+                }
+            }
+            catch (Exception ex) {
+                _logger.Error("二维码检查：CheckMatchItem_String:" + ex.Message);
+                if (IsDebug) throw (ex);
+                return false;
+            }
+
+        }
+        private bool CheckMatchItem_Regex(QRCodeEntryItemInfo item, string code, int type, int userid, bool IsDebug)
+        {
+            try
+            {
+                if (item == null) throw (new Exception("参数异常"));
+                if (item.CheckParam == null
+                    || item.CheckParam.RegexMatchParam == null
+                    || item.CheckParam.RegexMatchParam.RegexString == null
+                    || item.CheckParam.RegexMatchParam.RegexString.Length == 0) {
+
+                    throw new Exception("参数异常");
+                }
+                Regex regex = null;
+                if (item.CheckParam.RegexMatchParam.CaseSensitive == 1)
+                {
+                    regex = new Regex(item.CheckParam.RegexMatchParam.RegexString);
+                }
+                else {
+                    regex = new Regex(item.CheckParam.RegexMatchParam.RegexString, RegexOptions.IgnoreCase);
+                }
+                Match match = regex.Match(code);
+                if (match == null || match.Length == 0) return false;
+                return true;
+            }
+            catch (Exception ex) {
+                _logger.Error("二维码检查：CheckMatchItem_Regex:" + ex.Message);
+                if (IsDebug) throw (ex);
+                return false;
+            }
+        }
+        private bool CheckMatchItem_InnerService(QRCodeEntryItemInfo item, string code, int type, int userid, bool IsDebug) {
+            try
+            {
+                if (item == null || item.CheckParam == null ) throw (new Exception("参数异常"));
+                if (item.CheckParam.InnerServiceMatchParam == null
+                    || item.CheckParam.InnerServiceMatchParam.ClassFullName == null || item.CheckParam.InnerServiceMatchParam.ClassFullName.Length == 0
+                    || item.CheckParam.InnerServiceMatchParam.MethodName == null || item.CheckParam.InnerServiceMatchParam.MethodName.Length == 0) {
+                    throw new Exception("参数异常");
+                }
+                object serviceInstance = dynamicCreateService(item.CheckParam.InnerServiceMatchParam.ClassFullName, true);
+                if (serviceInstance == null) {
+                    throw (new Exception("服务配置异常"));
+                }
+                MethodInfo methodInfo = serviceInstance.GetType().GetMethod(item.CheckParam.InnerServiceMatchParam.MethodName, new Type[] {
+                    typeof(string),typeof(int),typeof(Dictionary<string,object>),typeof(int)
+                });
+                if (methodInfo == null) throw (new Exception("无法获取方法"));
+                Dictionary<string, object> otherParams = item.CheckParam.InnerServiceMatchParam.OthterParams;
+                if (otherParams == null) otherParams = new Dictionary<string, object>();
+                return (bool)methodInfo.Invoke(serviceInstance, new object[] { code, type, otherParams, userid });
+            }
+            catch (Exception ex) {
+                _logger.Error("二维码检查：CheckMatchItem_InnerService:" + ex.Message);
+                if (IsDebug) throw (ex);
+                return false;
+            }
+        }
+        private bool CheckMatchItem_EntitySearch(QRCodeEntryItemInfo item, string code, int type, int userid, bool IsDebug) {
+            try
+            {
+                if (item == null || item.CheckParam == null) throw (new Exception("参数异常"));
+                if (item.CheckParam.EntityMatchParam == null
+                    || item.CheckParam.EntityMatchParam.EntityId == null || item.CheckParam.EntityMatchParam.EntityId == Guid.Empty
+                    || item.CheckParam.EntityMatchParam.FieldId == null || item.CheckParam.EntityMatchParam.FieldId == Guid.Empty) {
+                    throw (new Exception("参数异常"));
+                }
+                dynamic tmpfield = _entityProRepository.GetFieldInfo(item.CheckParam.EntityMatchParam.FieldId, userid);
+                Dictionary<string, object> fieldInfo = null;
+                if (tmpfield == null) throw (new Exception("字段配置信息异常"));
+                fieldInfo = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(tmpfield));
+                if (fieldInfo == null) throw (new Exception("字段配置信息异常"));
+                string fieldName = fieldInfo["fieldname"].ToString();
+                DynamicEntityListModel model = new DynamicEntityListModel() {
+                    EntityId = item.CheckParam.EntityMatchParam.EntityId,
+                    ViewType = 3,
+                    NeedPower = 1,
+                    SearchOrder = "",
+                    PageIndex = 1,
+                    PageSize = 2,
+                    IsAdvanceQuery = 1,
+                    SearchData = new Dictionary<string, object>(),
+                    ExtraData = new Dictionary<string, object>(),
+                    SearchDataXOR = new Dictionary<string, object>(),
+                    ColumnFilter = new Dictionary<string, string>()
+                };
+                model.ColumnFilter.Add(fieldName, code);
+
+                OutputResult<object> l = this._dynamicEntityServices.DataList2(model, true, userid);
+                return false;
+                
+            }
+            catch (Exception ex) {
+                _logger.Error("二维码检查：CheckMatchItem_EntitySearch:" + ex.Message);
+                if (IsDebug)
+                {
+                    throw (ex);
+                }
+                return false;
+            }
+        }
+
+        private bool CheckMatchItem_SQL(QRCodeEntryItemInfo item, string code, int type, int userid, bool isDebug) {
+            try
+            {
+                if (item == null || item.CheckParam == null) throw (new Exception("参数异常"));
+                if (item.CheckParam.SQLMatchParam == null 
+                    || item.CheckParam.SQLMatchParam.SQLScript == null
+                    || item.CheckParam.SQLMatchParam.SQLScript.Length == 0 )
+                {
+                    throw (new Exception("参数异常"));
+                }
+                string strSQL = item.CheckParam.SQLMatchParam.SQLScript;
+                
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@qrcode",code),
+                    new Npgsql.NpgsqlParameter("@qrcodetype",type),
+                    new Npgsql.NpgsqlParameter("@userid",userid)
+                };
+                List<Dictionary<string,object>>list =  this._iQRCodeRepository.ExecuteSQL(strSQL, p, userid);
+                if (list == null || list.Count == 0) return false;
+                else if (list.Count == 1) return true;
+                else {
+                    if (item.CheckParam.SQLMatchParam.MultiAsSuccess == 1)
+                        return true;
+                    else
+                        return false;
+                }
+            }
+            catch (Exception ex) {
+                _logger.Error("二维码检查：CheckMatchItem_SQL:" + ex.Message);
+                if (isDebug) {
+                    throw (ex);
+                }
+                return false;
+            }
+        }
+        /// <summary>
+        /// 运行UScript代码
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="code"></param>
+        /// <param name="type"></param>
+        /// <param name="userid"></param>
+        /// <returns></returns>
+        private bool CheckMatchItem_UScript(QRCodeEntryItemInfo item, string code, int type, int userid,bool IsDebug) {
+            UKJSEngineUtils utils = new UKJSEngineUtils(this._javaScriptUtilsServices);
+            Dictionary<string, object> param = new Dictionary<string, object>();
+            param.Add("QRCode", code);
+            param.Add("QRType", type);
+            utils.SetHostedObject("JsParam", param);
+            long tick = System.DateTime.Now.Ticks;
+            string jscode = "function ukejsengin_func_qrcode_" + tick + "(){" + item.CheckParam.UScriptParam.UScript + "};ukejsengin_func_qrcode_" + tick + "();";
+            try
+            {
+                return utils.Evaluate<bool>(jscode);
+            }
+            catch (Exception ex)
+            {
+                if (IsDebug) throw (ex);
+                return false;
+            }
+        }
+        #endregion
         private QRCodeEntryResultInfo RunQRCode(QRCodeEntryItemInfo item, string code, int type, int userid) {
             if (item.DealType == QRCodeCheckTypeEnum.SQLFunction)
             {
@@ -254,11 +501,37 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else if (item.DealType == QRCodeCheckTypeEnum.JSPlugInSearch)
             {
-                return testJsReturn(item,code,type,userid);
+                return testJsReturn(item, code, type, userid);
             }
-            else {
+            else if (item.DealType == QRCodeCheckTypeEnum.EntitySearch) {
+                return testEntitySearchReturn(item, code, type, userid);
+            }
+            else
+            {
                 return QRCodeEntryResultInfo.NoActionResultInfo;
             }
+        }
+        #region 测试时代码，发布前删除
+        private QRCodeEntryResultInfo testEntitySearchReturn(QRCodeEntryItemInfo item, string code, int type, int userid) {
+            QRCodeShowEntityUIResultInfo retInfo = new QRCodeShowEntityUIResultInfo();
+            retInfo.ActionType = QRCodeActionTypeEnum.ShowEntityUI;
+            retInfo.CodeType = type;
+            retInfo.QRCode = code;
+            retInfo.ViewType = QRCodeShowEntityUIViewType.View;
+            retInfo.EntityId = Guid.Parse("a4b2cbbe-6338-4d31-a9a3-28cdc8faa092");
+            retInfo.TypeId = Guid.Parse("a4b2cbbe-6338-4d31-a9a3-28cdc8faa092");
+            retInfo.RecId = Guid.Parse("88169a0c-9203-48ef-a7bb-876bda168b96");
+            return retInfo;
+
+        }
+        
+        private string getTestCheckScript()
+        {
+            string strScript = @"var sql = 'select * from crm_plu_waterbill  where billnumber =\''+JsParam.QRCode  +'\'';
+                                    var result = ukservices.DbExecute(sql);
+                                    if (result.Count >0 )return true;
+                                    else return false;";
+            return strScript;
         }
         private QRCodeEntryResultInfo testJsReturn(QRCodeEntryItemInfo item, string code, int type, int userid) {
             string jscode = @"var returnObj = {};
@@ -402,6 +675,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return QRCodeEntryResultInfo.NoActionResultInfo; 
             }
         }
+
+        #endregion 
     }
     /// <summary>
     /// 规则新增的参数结构

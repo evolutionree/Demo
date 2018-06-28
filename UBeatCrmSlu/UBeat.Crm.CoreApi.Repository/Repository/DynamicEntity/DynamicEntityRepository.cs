@@ -1601,12 +1601,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
         public bool ExistsData(Guid CacheId, int userNumber, DbTransaction tran)
         {
-            string sql = @"select * from crm_sys_temporary_entity where cacheid= @cacheid";
-            var param = new DbParameter[]
+            try
             {
+
+                string sql = @"select * from crm_sys_temporary_entity where cacheid= @cacheid";
+                var param = new DbParameter[]
+                {
                 new NpgsqlParameter("cacheid",CacheId)
-            };
-            return this.ExecuteQuery(sql, param, tran).Count() == 0;
+                };
+                return this.ExecuteQuery(sql, param, tran).Count() == 0;
+            }
+            catch (Exception ex) {
+                return false;
+            }
         }
 
         public bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)

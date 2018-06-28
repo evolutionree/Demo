@@ -47,7 +47,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
     {
         public Dictionary<string, object> DetailsInfo { get; set; }
         public Guid EntityId { get; set; }
+        public Guid TypeId { get; set; }
         public QRCodeShowEntityUIViewType ViewType { get; set; }
+        public Guid RecId { get; set; }
     }
     public class QRCodeShowCommonUIResult: QRCodeEntryResultInfo
     {

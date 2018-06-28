@@ -33,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly PushServices _pushServices;
         private readonly CacheServices _cacheService;
         private readonly IDynamicRepository _dynamicRepository;
-
+        private static NLog.ILogger _logger = NLog.LogManager.GetLogger(typeof(MessageServices).FullName);
         #region --GetDbConnect--
         private static string _connectString;
         public DbConnection GetDbConnect(string connectStr = null)
@@ -103,11 +103,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public void WriteMessage(DbTransaction tran, MessageParameter msgparam, int userNumber, Dictionary<string, object> pushCustomContent = null, int typeStatus = 0)
         {
             if (msgparam == null)
+            {
+                _logger.Error("WriteMessage msgparam isnull");
                 return;
+            }
 
             var configData = GetMessageConfigInfo(msgparam.EntityId, msgparam.FuncCode, msgparam.RelEntityId, msgparam.FlowId);
             if (configData == null)
             {
+                _logger.Error("WriteMessage configData isnull");
                 return;
             }
             List<int> receiverIds = new List<int>();
@@ -209,7 +213,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             catch (Exception ex)
             {
-                tran.Rollback();
+
+                _logger.Error("WriteMessage exception:"+ex.Message);
+                if (isLocalTransaction)//只有是本地事务，才需要回滚
+                    tran.Rollback();
                 throw ex;
             }
             finally
@@ -232,7 +239,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         CustomContent = pushCustomContent
                     };
 
-                    _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
+                    Task.Run(() => {
+                        try
+                        {
+                            _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
+                        }
+                        catch (Exception ex) {
+                            _logger.Error("推送消息失败：" + ex.Message);
+                        }
+                    });
+                    
                 }
 
 
