@@ -510,7 +510,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 RecStatus = body.RecStatus,
                 RepeatType = body.RepeatType,
                 CronString = body.CronString,
-                Remark = body.Remark
+                Remark = body.Remark,
+                ReminderLanguage = body.ReminderLanguage
             };
 
 

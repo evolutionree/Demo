@@ -184,7 +184,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.SalesTarget
         /// <returns></returns>
         public OperateResult InsertSalesTargetNormType(SalesTargetNormTypeMapper data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_sales_target_norm_type_save(@normtypeid,@normtypename,@entityid,@fieldname,@calcutetype,@userno)";
+            var executeSql = @"SELECT * FROM crm_func_sales_target_norm_type_save(@normtypeid,@normtypename,@entityid,@fieldname,@calcutetype,@userno,@reclanguage::jsonb)";
 
             var args = new
             {
@@ -193,7 +193,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.SalesTarget
                 EntityId = data.EntityId,
                 FieldName = data.FieldName,
                 CalcuteType = data.CaculateType,
-                UserNo = userNumber
+                UserNo = userNumber,
+                reclanguage = data.RecLanguage
             };
 
             return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);

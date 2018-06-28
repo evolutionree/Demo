@@ -81,8 +81,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 VocationId = body.VocationId.Value,
                 VocationName = body.VocationName,
-                Description = body.Description
-
+                Description = body.Description,
+                VocationLanguage = body.VocationLanguage
             };
 
             if (!crmData.IsValid())

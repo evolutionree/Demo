@@ -45,7 +45,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 TopSeriesId = body.TopSeriesId,
                 SeriesName = body.SeriesName,
-                SeriesCode = body.SeriesCode
+                SeriesCode = body.SeriesCode,
+                SeriesLanguage = body.SeriesLanguage
             };
 
             if (!crmData.IsValid())
@@ -78,8 +79,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 ProductsetId = body.ProductsetId,
                 SeriesName = body.SeriesName,
-                SeriesCode = body.SeriesCode
-
+                SeriesCode = body.SeriesCode,
+                SeriesLanguage = body.SeroesLanguage
             };
 
             if (!crmData.IsValid())

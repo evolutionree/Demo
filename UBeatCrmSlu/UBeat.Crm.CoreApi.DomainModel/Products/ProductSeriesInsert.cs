@@ -25,6 +25,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Products
         /// </summary>
         public string SeriesCode { get; set; }
 
+        public string SeriesLanguage { get; set; }
+
 
         protected override IValidator GetValidator()
         {
@@ -58,6 +60,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.Products
         /// 产品系列编码
         /// </summary>
         public string SeriesCode { get; set; }
+
+        /// <summary>
+        /// 多语言
+        /// </summary>
+        public string SeriesLanguage { get; set; }
 
         protected override IValidator GetValidator()
         {

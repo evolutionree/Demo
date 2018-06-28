@@ -538,12 +538,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertEntityTypePro(SaveEntityTypeMapper entityType, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_type_add(@categoryname,@entityid, @userno)
+                SELECT * FROM crm_func_entity_type_add(@categoryname,@entityid, @userno,@categorylanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("categoryname", entityType.CategoryName);
             param.Add("entityid", entityType.EntityId.ToString());
             param.Add("userno", userNumber);
+            param.Add("categorylanguage", entityType.CategoryLanguage);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -551,13 +552,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateEntityTypePro(SaveEntityTypeMapper entityType, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_type_edit(@entityid,@categoryid,@categoryname, @userno)
+                SELECT * FROM crm_func_entity_type_edit(@entityid,@categoryid,@categoryname, @userno,@categorylanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("entityid", entityType.EntityId);
             param.Add("categoryid", entityType.CategoryId);
             param.Add("categoryname", entityType.CategoryName);
             param.Add("userno", userNumber);
+            param.Add("categorylanguage", entityType.CategoryLanguage);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }

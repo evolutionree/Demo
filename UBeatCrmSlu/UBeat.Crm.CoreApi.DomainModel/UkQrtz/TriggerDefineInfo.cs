@@ -53,6 +53,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.UkQrtz
 
         [JsonProperty("errorcount")]
         public int ErrorCount { get; set; }
+        [JsonProperty("reclanguage")]
+        public string RecLanguage { get; set; }
     }
     public enum TriggerActionType {
         ActionType_Service = 1,
