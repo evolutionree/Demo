@@ -125,7 +125,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             try
             {
-                bool isSuccess = this._qRCodeServices.UpdateCheckParam(paramInfo.RecId, paramInfo.CheckType, paramInfo.CheckParam, UserId);
+                bool isSuccess = this._qRCodeServices.UpdateCheckParam(paramInfo.RecId, paramInfo.CheckType, paramInfo.CheckParam, paramInfo.CheckRemark,UserId);
             }
             catch (Exception ex) {
                 return ResponseError<object>(ex.Message);
@@ -148,7 +148,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             try
             {
-                bool IsSuccess = this._qRCodeServices.UpdateDealParam( paramInfo.RecId, paramInfo.DealType, paramInfo.DealParam, UserId);
+                bool IsSuccess = this._qRCodeServices.UpdateDealParam( paramInfo.RecId, paramInfo.DealType, paramInfo.DealParam, paramInfo.DealRemark,UserId);
                 return new OutputResult<object>(IsSuccess);
             }
             catch (Exception ex) {

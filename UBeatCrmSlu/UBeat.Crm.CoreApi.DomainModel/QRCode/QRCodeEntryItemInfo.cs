@@ -8,9 +8,13 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
     {
         public Guid RecId { get; set; }
         public QRCodeCheckTypeEnum CheckType { get; set; }
+        public string CheckType_Name { get; set; }
         public QRCodeCheckMatchParamInfo CheckParam { get; set; }
+        public string CheckRemark { get; set; }
         public QRCodeCheckTypeEnum DealType { get; set; }
+        public string DealType_Name { get; set; }
         public QRCodeDealParamInfo DealParam { get; set; }
+        public string DealRemark { get; set; }
         public string RecName { get;set; }
         public int RecOrder { get; set; }
         public int RecStatus { get; set; }

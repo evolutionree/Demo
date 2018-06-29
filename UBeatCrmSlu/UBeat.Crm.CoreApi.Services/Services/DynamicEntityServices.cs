@@ -2840,8 +2840,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
             if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
             newUserName = newUserInfo.UserName;
-            if (paramInfo.OldUserId > 0) {
-                UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(paramInfo.OldUserId);
+            if (paramInfo.OUserId > 0) {
+                UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(paramInfo.OUserId);
                 if (oldUserInfo != null) {
                     oldUserName = oldUserInfo.UserName;
                 }
@@ -2863,14 +2863,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else {
                     if (isMultiPerson)//多选的选人控件
                     {
-                        if (paramInfo.OldUserId > 0)
+                        if (paramInfo.OUserId > 0)
                         {
                             //需要检查人员匹配才增加
                             bool isNeed = false;
                             string[] oldPersons = detail[FieldName].ToString().Split(',');
                             foreach (string person in oldPersons)
                             {
-                                if (person == paramInfo.OldUserId.ToString())
+                                if (person == paramInfo.OUserId.ToString())
                                 {
                                     isNeed = true;
                                     break;
@@ -2893,7 +2893,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 newUserIds = paramInfo.NewUserId.ToString();
                                 foreach (string person in oldPersons)
                                 {
-                                    if (person != paramInfo.OldUserId.ToString())
+                                    if (person != paramInfo.OUserId.ToString())
                                         newUserIds = newUserIds + "," + person;
                                 }
                             }
@@ -2937,7 +2937,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NewUserId = paramInfo.NewUserId,
                         NewUserName = newUserName,
                         NewUserIds = newUserIds,
-                        OldUserId = paramInfo.OldUserId,
+                        OldUserId = paramInfo.OUserId,
                         OldUserName = oldUserName,
                         IsMultiPersonField = isMultiPerson,
                         TableName = entityTableName,
@@ -2987,9 +2987,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
             if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
             newUserName = newUserInfo.UserName;
-            if (paramInfo.OldUserId > 0)
+            if (paramInfo.OUserId > 0)
             {
-                UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(paramInfo.OldUserId);
+                UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(paramInfo.OUserId);
                 if (oldUserInfo != null)
                 {
                     oldUserName = oldUserInfo.UserName;
@@ -3014,14 +3014,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (isMultiPerson)//多选的选人控件
                     {
-                        if (paramInfo.OldUserId > 0)
+                        if (paramInfo.OUserId > 0)
                         {
                             //需要检查人员匹配才增加
                             bool isNeed = false;
                             string[] oldPersons = rowData[FieldName].ToString().Split(',');
                             foreach (string person in oldPersons)
                             {
-                                if (person == paramInfo.OldUserId.ToString())
+                                if (person == paramInfo.OUserId.ToString())
                                 {
                                     isNeed = true;
                                     break;
@@ -3044,7 +3044,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 newUserIds = paramInfo.NewUserId.ToString();
                                 foreach (string person in oldPersons)
                                 {
-                                    if (person != paramInfo.OldUserId.ToString())
+                                    if (person != paramInfo.OUserId.ToString())
                                         newUserIds = newUserIds + "," + person;
                                 }
                             }
@@ -3093,7 +3093,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NewUserId = paramInfo.NewUserId,
                         NewUserName = newUserName,
                         NewUserIds = newUserIds,
-                        OldUserId = paramInfo.OldUserId,
+                        OldUserId = paramInfo.OUserId,
                         OldUserName = oldUserName,
                         IsMultiPersonField = isMultiPerson,
                         TableName = entityTableName,

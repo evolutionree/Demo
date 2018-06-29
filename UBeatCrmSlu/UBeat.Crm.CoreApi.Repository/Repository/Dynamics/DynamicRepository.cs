@@ -748,7 +748,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
                 string setClau = "";
                 foreach (string fieldname in fieldNames)
                 {
-                    setClau = "," + fieldname + "= " + newUserIds;
+                    setClau = "," + fieldname + "= '" + newUserIds+"'";
                 }
                 setClau = setClau.Substring(1);
                 string strSQL = "update " + tableName + " set " + setClau + "  where recid = @recid";
