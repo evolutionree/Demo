@@ -126,7 +126,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
     /// UScript作为处理规则的相关参数
     /// </summary>
     public class QRCodeDeal_UScriptParamInfo {
-        public string UScirpt { get; set; }
+        public string UScript { get; set; }
     }
 
     /// <summary>
