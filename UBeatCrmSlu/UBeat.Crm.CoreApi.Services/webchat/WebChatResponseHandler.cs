@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.BaseSys;
+using UBeat.Crm.CoreApi.DomainModel.FileService;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -30,12 +31,14 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         private AutoResetEvent _wh = new AutoResetEvent(false);
         private CacheServices cacheServices;
         private Dictionary<string, int> ServerLastMsgId = new Dictionary<string, int>();
+        private readonly FileServices _fileService;
         private int CurrentMsgId = 1;
         private IAccountRepository _accountRepository;
 
         private WebChatResponseHandler() {
             cacheServices = ServiceLocator.Current.GetInstance<CacheServices>();
             _accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
+            _fileService = ServiceLocator.Current.GetInstance<FileServices>();
             StartTask();
 
         }
@@ -84,6 +87,25 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 {
                     if (pkg.MessageType == WebChatMsgType.ChatMessage) {
                         pkg.ChatMsg.MessageType = WebChatMsgType.ChatMessage;
+                        //需要处理文件的情况
+                        if (pkg.ChatMsg.CustomContent != null && pkg.ChatMsg.CustomContent.ContainsKey("ct") && pkg.ChatMsg.CustomContent["ct"]!= null)
+                        {
+                            int ct = 0;
+                            ct = int.Parse(pkg.ChatMsg.CustomContent["ct"].ToString());
+                            if (ct == 5) //文件才处理
+                            {
+                                try
+                                {
+
+                                    FileInfoModel fileInfo = _fileService.GetOneFileInfo(null, pkg.ChatMsg.CustomContent[""].ToString());
+                                    if (fileInfo != null) {
+                                        pkg.ChatMsg.CustomContent.Add("file", fileInfo);
+                                    }
+                                }
+                                catch (Exception ex) {
+                                }
+                            }
+                        }
                         Task task = SendStringAsync(socket, pkg.ChatMsg);
                         if (task != null)
                             ts.Add(task);
