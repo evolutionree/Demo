@@ -145,6 +145,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Reminder
         public int RepeatType { get; set; }
         public string CronString { get; set; }
         public string Remark { get; set; }
+        public string ReminderLanguage { get; set; }
 
     }
 

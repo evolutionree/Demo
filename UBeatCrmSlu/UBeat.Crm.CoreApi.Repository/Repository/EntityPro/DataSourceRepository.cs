@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertSaveDataSource(DataSourceMapper dataSource, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_datasource_add(@datasourcename,@srctype,@entityid, @srcmark,@isrelatepower, @status,@ispro, @userno)
+                SELECT * FROM crm_func_datasource_add(@datasourcename,@srctype,@entityid, @srcmark,@isrelatepower, @status,@ispro, @userno,@datasourcelanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("datasourcename", dataSource.DatasourceName);
@@ -48,6 +48,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("status", dataSource.RecStatus);
             param.Add("ispro", dataSource.IsPro);
             param.Add("userno", userNumber);
+            param.Add("datasourcelanguage", dataSource.DatasourceLanguage);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -55,7 +56,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateSaveDataSource(DataSourceMapper dataSource, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_datasource_edit(@datasourceid,@datasourcename,@srctype,@entityid, @srcmark, @status, @isrelatepower,@ispro,@userno)
+                SELECT * FROM crm_func_datasource_edit(@datasourceid,@datasourcename,@srctype,@entityid, @srcmark, @status, @isrelatepower,@ispro,@userno,@datasourcelanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("datasourceid", dataSource.DatasourceId);
@@ -67,6 +68,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("isrelatepower", dataSource.IsRelatePower);
             param.Add("ispro", dataSource.IsPro);
             param.Add("userno", userNumber);
+            param.Add("datasourcelanguage", dataSource.DatasourceLanguage);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -134,7 +136,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #region 单选 多选
         public List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "")
         {
-            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder,a.recstatus  from crm_sys_dictionary_type as a left join
+            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder,a.recstatus,a.dictypelanguage  from crm_sys_dictionary_type as a left join
  crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus ";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
@@ -180,7 +182,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public List<DictionaryDataModel> SelectFieldDicVaue(int dicTypeId, int userNumber)
         {
-            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,recorder,extfield1,extfield2,extfield3,extfield4,extfield5 from crm_sys_dictionary where recstatus = 1 and dictypeid = @dictypeid ";
+            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,recorder,extfield1,extfield2,extfield3,extfield4,extfield5,datalanguage from crm_sys_dictionary where recstatus = 1 and dictypeid = @dictypeid ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
@@ -212,8 +214,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
-            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder,isconfig,recstatus) values
-     (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4,@IsConfig,@RecStatus)";
+            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder,isconfig,recstatus,dictypelanguage) values
+     (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4,@IsConfig,@RecStatus,@dictypelanguage::jsonb)";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid", entity.DicTypeId),
@@ -225,7 +227,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 new NpgsqlParameter("RelateDicTypeId", entity.RelateDicTypeId),
                 new NpgsqlParameter("RecOrder",entity.RecOrder),
                 new NpgsqlParameter("IsConfig",entity.IsConfig),
-                new NpgsqlParameter("RecStatus",entity.RecStatus)
+                new NpgsqlParameter("RecStatus",entity.RecStatus),
+                new NpgsqlParameter("dictypelanguage",entity.DicTypeLanguage)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
@@ -233,7 +236,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public bool UpdateFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
             string sql = @"update crm_sys_dictionary_type set recupdator = @recupdator,  dictypename = @dictypename,dicremark = @dicremark,fieldconfig = @fieldconfig::jsonb,
-relatedictypeid = @RelateDicTypeId,recorder = @RecOrder::int4, isconfig = @IsConfig
+relatedictypeid = @RelateDicTypeId,recorder = @RecOrder::int4, isconfig = @IsConfig,dictypelanguage=@dictypelanguage::jsonb
 where dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
@@ -244,7 +247,8 @@ where dictypeid::text = @dictypeid";
                 new NpgsqlParameter("fieldconfig", entity.FieldConfig),
                 new NpgsqlParameter("RelateDicTypeId", entity.RelateDicTypeId),
                 new NpgsqlParameter("RecOrder",entity.RecOrder),
-                new NpgsqlParameter("IsConfig",entity.IsConfig)
+                new NpgsqlParameter("IsConfig",entity.IsConfig),
+                new NpgsqlParameter("dictypelanguage",entity.DicTypeLanguage)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
@@ -252,8 +256,8 @@ where dictypeid::text = @dictypeid";
         public bool AddDictionary(SaveDictionaryMapper entity, int userNumber)
         {
             string sql = @"insert into crm_sys_dictionary 
-(dicid,dictypeid,dataid,dataval,recorder,recstatus,reccreated,recupdated,reccreator,recupdator,relatedataid,extfield1,extfield2,extfield3,extfield4,extfield5)
-values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreated,@recupdated,@reccreator,@recupdator,@relatedataid,@extfield1,@extfield2,@extfield3,@extfield4,@extfield5)";
+(dicid,dictypeid,dataid,dataval,recorder,recstatus,reccreated,recupdated,reccreator,recupdator,relatedataid,extfield1,extfield2,extfield3,extfield4,extfield5,datalanguage)
+values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreated,@recupdated,@reccreator,@recupdator,@relatedataid,@extfield1,@extfield2,@extfield3,@extfield4,@extfield5,@DataLanguage::jsonb)";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dicid",entity.DicId),
@@ -271,7 +275,8 @@ values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreate
                 new NpgsqlParameter("extfield2",entity.ExtField2),
                 new NpgsqlParameter("extfield3",entity.ExtField3),
                 new NpgsqlParameter("extfield4",entity.ExtField4),
-                new NpgsqlParameter("extfield5",entity.ExtField5)
+                new NpgsqlParameter("extfield5",entity.ExtField5),
+                new NpgsqlParameter("datalanguage",entity.DataLanguage)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
@@ -279,7 +284,7 @@ values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreate
         public bool UpdateDictionary(SaveDictionaryMapper entity, int userNumber)
         {
             string sql = @"update crm_sys_dictionary set dictypeid = @dictypeid::int4,dataid = @dataid, dataval = @dataval,recorder = @recorder, recstatus = @recstatus, recupdated = @recupdated,
-recupdator = @recupdator, relatedataid = @relatedataid, extfield1 = @extfield1, extfield2 = @extfield2, extfield3 = @extfield3, extfield4 = @extfield4, extfield5 = @extfield5
+recupdator = @recupdator, relatedataid = @relatedataid, extfield1 = @extfield1, extfield2 = @extfield2, extfield3 = @extfield3, extfield4 = @extfield4, extfield5 = @extfield5,datalanguage=@datalanguage::jsonb
 where dicid = @dicid";
             var param = new DbParameter[]
             {
@@ -296,7 +301,8 @@ where dicid = @dicid";
                 new NpgsqlParameter("extfield3",entity.ExtField3),
                 new NpgsqlParameter("extfield4",entity.ExtField4),
                 new NpgsqlParameter("extfield5",entity.ExtField5),
-                new NpgsqlParameter("dicid",entity.DicId)
+                new NpgsqlParameter("dicid",entity.DicId),
+                new NpgsqlParameter("datalanguage",entity.DataLanguage)
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }

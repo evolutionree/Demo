@@ -51,6 +51,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public int RecStatus { get; set; }
 
         public Guid RelFieldId { get; set; }
+
+        public string EntityLanguage { get; set; }
     }
 
 
@@ -69,6 +71,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public int RecOrder { get; set; }
         public string FieldConfig { get; set; }
+        public string DispayLanguage { get; set; }
+        public string FieldLanguage { get; set; }
 
         // [JsonProperty("FieldConfig")]
         //   public JObject FieldConfigJson => FieldConfig.ToJsonObject();
@@ -140,6 +144,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public int RecOrder { get; set; }
 
         public int RecStatus { get; set; }
+
+        public string CategoryLanguage { get; set; }
     }
 
     public class EntityFieldRulesSaveModel

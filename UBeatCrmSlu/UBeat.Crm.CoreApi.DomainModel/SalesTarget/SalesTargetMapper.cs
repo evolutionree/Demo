@@ -351,6 +351,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.SalesTarget
 
         public int CaculateType { get; set; }
 
+        public string RecLanguage { get; set; }
+
         protected override IValidator GetValidator()
         {
             return new SalesTargetNormTypeMapperValidator();

@@ -10,6 +10,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Department
         public Guid PDeptId { get; set; }
         public string DeptName { get; set; }
         public int OgLevel { get; set; }
+        public string DeptLanguage { get; set; }
         protected override IValidator GetValidator()
         {
             return new DepartmentAddMapperValidator();
@@ -32,6 +33,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Department
         public string DeptName { get; set; }
         public Guid PDeptId { get; set; }
         public int OgLevel { get; set; }
+        public string DeptLanguage { get; set; }
         protected override IValidator GetValidator()
         {
             return new DepartmentEditMapperValidator();

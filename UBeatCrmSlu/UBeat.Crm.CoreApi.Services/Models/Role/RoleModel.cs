@@ -9,6 +9,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Role
         public string RoleGroupId { get; set; }
         public string GroupName { get; set; }
         public int GroupType { get; set; }
+        public string GroupLanguage { get; set; }
     }
 
     public class RoleListModel
@@ -28,6 +29,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Role
         public int RoleType { get; set; }
         public int RolePriority { get; set; }
         public string RoleRemark { get; set; }
+        public string RoleLanguage { get; set; }
 
     }
 

@@ -219,14 +219,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 				body.Id = Guid.Empty;
 			}
 
-			var crmData = new SalesTargetNormTypeMapper()
-			{
-				Id = body.Id,
-				Name = body.Name,
-				EntityId = Guid.Empty,
-				FieldName = string.Empty,
-				CaculateType = 0,
-			};
+            var crmData = new SalesTargetNormTypeMapper()
+            {
+                Id = body.Id,
+                Name = body.Name,
+                EntityId = Guid.Empty,
+                FieldName = string.Empty,
+                CaculateType = 0,
+                RecLanguage = body.RecLanguage
+            };
 
 			if (!crmData.IsValid())
 			{

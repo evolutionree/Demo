@@ -450,7 +450,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         public OperateResult AddFlow(WorkFlowAddMapper flowMapper, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_workflow_add(@entityId,@flowName,@flowType,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno)
+                SELECT * FROM crm_func_workflow_add(@entityId,@flowName,@flowType,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb)
             ";
 
             var param = new
@@ -463,7 +463,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 ExpireDay = flowMapper.ExpireDay,
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
-                UserNo = userNumber
+                UserNo = userNumber,
+                FlowLanguage =flowMapper.FlowLanguage
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -472,7 +473,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         public OperateResult UpdateFlow(WorkFlowUpdateMapper flowMapper, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_workflow_update(@flowId,@flowName,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno)
+                SELECT * FROM crm_func_workflow_update(@flowId,@flowName,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb)
             ";
 
             var param = new
@@ -484,7 +485,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 ExpireDay = flowMapper.ExpireDay,
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
-                UserNo = userNumber
+                UserNo = userNumber,
+                flowlanguage=flowMapper.FlowLanguage
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;

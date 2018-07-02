@@ -163,6 +163,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
         public object extradata { set; get; }
 
+        public string FuncBtnLanguage { get; set; }
+
+        public string TitleLanguage { get; set; }
+
     }
 
     public class DeleteFunctionBtnModel

@@ -27,6 +27,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
         /// </summary>
         public string SeriesCode { get; set; }
 
+        public string SeriesLanguage { get; set; }
+
     }
 
 
@@ -45,6 +47,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
         /// 产品系列编码
         /// </summary>
         public string SeriesCode { get; set; }
+
+        /// <summary>
+        /// 多语言（json字符串）
+        /// </summary>
+        public string SeroesLanguage { get; set; }
 
     }
 

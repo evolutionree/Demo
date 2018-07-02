@@ -304,7 +304,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                                 remark=@remark,
                                 recupdator=@recupdator,
                                 recupdated=now(),
-                                recversion=nextval('crm_sys_reminder_version_id_sequence'::regclass)
+                                recversion=nextval('crm_sys_reminder_version_id_sequence'::regclass),
+                                reminderlanguage=@reminderlanguage
                             WHERE recid=@reminderid; ";
                 }
                 else
@@ -318,15 +319,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                                 recstatus=@recstatus,
                                 remark=@remark,
                                 recupdator=@recupdator,
-                                recupdated=now()
+                                recupdated=now(),
+                                reminderlanguage=@reminderlanguage
                             WHERE recid=@reminderid; ";
                 }
 
             }
             else
             {
-                strSql = @"INSERT INTO crm_sys_reminder(recid,remindername,entityid,isrepeat,repeattype,cronstring,recstatus,remark,reccreator,recupdator,rectype) 
-                           VALUES(@reminderid,@remindername,@entityid,@isrepeat,@repeattype,@cronstring,@recstatus,@remark,@reccreator,@recupdator,@rectype); ";
+                strSql = @"INSERT INTO crm_sys_reminder(recid,remindername,entityid,isrepeat,repeattype,cronstring,recstatus,remark,reccreator,recupdator,rectype,reminderlanguage) 
+                           VALUES(@reminderid,@remindername,@entityid,@isrepeat,@repeattype,@cronstring,@recstatus,@remark,@reccreator,@recupdator,@rectype,@reminderlanguage); ";
             }
 
 
@@ -349,7 +351,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                 remark = data.Remark,
                 reccreator = usernumber,
                 recupdator = usernumber,
-                rectype = data.RecType
+                rectype = data.RecType,
+                reminderlanguage = data.ReminderLanguage
             };
 
             bool isSuccess = false;

@@ -77,6 +77,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public Guid WebFuncId { set; get; }
 
         public Guid MobileFuncId { set; get; }
+        public string FuncBtnLanguage { get; set; }
+        public string TitleLanguage { get; set; }
 
     }
 

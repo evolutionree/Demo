@@ -16,13 +16,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
     {
         public OperateResult AddProductSeries(DbTransaction trans, ProductSeriesInsert data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_productseries_insert(@topseriesid,@seriesname,@seriescode,@userno)";
+            var executeSql = @"SELECT * FROM crm_func_productseries_insert(@topseriesid,@seriesname,@seriescode,@userno,@serieslanguage::jsonb)";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("topseriesid", data.TopSeriesId),
                 new NpgsqlParameter("seriesname", data.SeriesName),
                 new NpgsqlParameter("seriescode", data.SeriesCode),
+                new NpgsqlParameter("serieslanguage", data.SeriesLanguage),
                 new NpgsqlParameter("userno", userNumber),
 
             };
@@ -37,13 +38,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 
         public OperateResult EditProductSeries(DbTransaction trans, ProductSeriesEdit data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_productseries_update(@productsetid,@seriesname,@seriescode,@userno)";
+            var executeSql = @"SELECT * FROM crm_func_productseries_update(@productsetid,@seriesname,@seriescode,@userno,@serieslanguage::jsonb)";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("productsetid", data.ProductsetId.ToString()),
                 new NpgsqlParameter("seriesname", data.SeriesName),
                 new NpgsqlParameter("seriescode", data.SeriesCode),
+                new NpgsqlParameter("serieslanguage", data.SeriesLanguage),
                 new NpgsqlParameter("userno", userNumber),
 
             };

@@ -144,6 +144,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.SalesTarget
         public Guid? Id { get; set; }
         public string Name { get; set; }
 
+        public string RecLanguage { get; set; }
+
     }
 
 

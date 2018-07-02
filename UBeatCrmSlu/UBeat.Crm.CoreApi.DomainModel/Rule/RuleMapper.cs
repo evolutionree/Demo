@@ -36,6 +36,7 @@ namespace UBeat.Crm.CoreApi.DomainMapper.Rule
         public string entityid { get; set; }
         public string flowid { get; set; }
         public string rulesql { get; set; }
+        public string menulanguage { get; set; }
 
         [JsonIgnore]
         public ICollection<RuleItemMapper> RuleItems { get; set; }

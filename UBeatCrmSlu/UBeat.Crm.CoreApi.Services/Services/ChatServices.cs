@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Chat;
+using UBeat.Crm.CoreApi.DomainModel.FileService;
 using UBeat.Crm.CoreApi.DomainModel.PushService;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -21,11 +22,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         IChatRepository _repository;
         PushServices _pushServices;
         private static readonly Logger Logger = LogManager.GetLogger(typeof(ChatServices).FullName);
+        private readonly FileServices _fileService;
 
-        public ChatServices(IChatRepository repository, PushServices pushService)
+        public ChatServices(IChatRepository repository, PushServices pushService, FileServices fileService)
         {
             _repository = repository;
             _pushServices = pushService;
+            _fileService = fileService;
 
         }
 
@@ -487,7 +490,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(crmData);
             }
-            return new OutputResult<object>(_repository.ChatList(crmData));
+            List<IDictionary<string, object>> chatList = _repository.ChatList(crmData);
+            #region 如果是文件，则返回文件信息
+            if (chatList != null)
+            {
+                foreach (IDictionary<string, object> msg in chatList) {
+                    if (msg.ContainsKey("chattype") && msg["chattype"] != null) {
+                        int chattype = 0;
+                        if (!int.TryParse(msg["chattype"].ToString(), out chattype)) {
+                            continue;
+                        }
+                        if (chattype == 5) //文件
+                        {
+                            if (msg.ContainsKey("chatcon") && msg["chatcon"] != null) {
+                                string fileid = msg["chatcon"].ToString();
+                                try
+                                {
+
+                                    FileInfoModel fileInfo = _fileService.GetOneFileInfo(null, fileid);
+                                    if (fileInfo != null)
+                                    {
+                                        msg.Add("file", fileInfo);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+            return new OutputResult<object>(chatList);
         }
         #endregion
 

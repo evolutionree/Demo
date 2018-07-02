@@ -44,13 +44,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Vocation
         /// <returns></returns>
         public OperateResult AddCopyVocation(CopyVocationAdd data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_vocation_copy(@vocationid,@vocationname,@description,@userno)";
+            var executeSql = @"SELECT * FROM crm_func_vocation_copy(@vocationid,@vocationname,@description,@userno,@vocationlanguage::jsonb)";
             var args = new
             {
                 VocationId = data.VocationId,
                 VocationName = data.VocationName,
                 Description = data.Description,
-                UserNo = userNumber
+                UserNo = userNumber,
+                VocationLanguage = data.VocationLanguage
             };
 
             return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);
@@ -64,13 +65,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Vocation
 
         public OperateResult EditVocation(VocationEdit data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_vocation_update(@vocationid,@vocationname,@description,@userno)";
+            var executeSql = @"SELECT * FROM crm_func_vocation_update(@vocationid,@vocationname,@description,@userno,@vocationlanguage::jsonb)";
             var args = new
             {
                 VocationId = data.VocationId,
                 VocationName = data.VocationName,
                 Description = data.Description,
-                UserNo = userNumber
+                UserNo = userNumber,
+                VocationLanguage=data.VocationLanguage
+
             };
 
             return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);

@@ -9,6 +9,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Department
         public Guid PDeptId { get; set; }
         public string DeptName { get; set; }
         public int OgLevel { get; set; }
+        public string DeptLanguage { get; set; }
     }
 
     public class DepartmentEditModel
@@ -18,6 +19,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Department
 
         public Guid PDeptId { get; set; }
         public int OgLevel { get; set; }
+        public string DeptLanguage { get; set; }
     }
     public class DepartmentListSubDeptParamInfo {
         public Guid DeptId { get; set; }
