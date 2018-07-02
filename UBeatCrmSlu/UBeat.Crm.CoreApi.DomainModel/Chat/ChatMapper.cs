@@ -7,6 +7,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Chat
 {
     public class ChatInsert: BaseEntity
     {
+        public Guid? MessageId { get; set; }
         /// <summary>
         /// 0私聊  1群聊
         /// </summary>

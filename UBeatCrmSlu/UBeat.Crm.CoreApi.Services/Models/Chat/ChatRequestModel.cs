@@ -119,6 +119,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Chat
         /// </summary>
         public int ChatType { set; get; }
 
+        public Guid? MessageId { get; set; }
     }
 
     public class ChatListModel

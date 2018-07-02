@@ -125,9 +125,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Chat
 
         public OperateResult InsertChatMessage(ChatInsert data)
         {
-            var executeSql = "select * from crm_func_chat_message_insert(@groupid,@chattype,@msgtype,@chatcon,@contype,@receivers,@userno)";
+            Guid messid = Guid.Empty;
+            if (data.MessageId == null || data.MessageId.Equals(Guid.Empty) == false)
+            {
+                messid = Guid.NewGuid();
+            }
+            else {
+                messid = (Guid)data.MessageId;
+            }
+            var executeSql = "select * from crm_func_chat_message_insert(@messageid,@groupid,@chattype,@msgtype,@chatcon,@contype,@receivers,@userno)";
             var args = new
             {
+                messageid = messid,
                 groupid = data.GroupId,
                 chattype = data.ChatType,
                 msgtype = data.MsgType,
@@ -180,7 +189,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Chat
                 string strSQL = @"select * 
 from 
 	(
-		select msg.groupid::text  chatid ,chatgroup.chatgroupname   chatname ,0 chattype , '' chaticon ,max(msg.reccreated) recentlydate
+		select msg.groupid::text  chatid ,chatgroup.chatgroupname   chatname ,1 chattype , '' chaticon ,max(msg.reccreated) recentlydate
 		from crm_sys_chat_message  msg
 				inner join crm_sys_chat_group chatgroup on msg.groupid = chatgroup.chatgroupid 
 		where  msg.chattype = 1 
@@ -191,7 +200,7 @@ from
 							)
 		group by  msg.groupid,chatgroup.chatgroupname
 	union all
-		select chat.chatid::text  ,userinfo.username chatname ,1 chattype,userinfo.usericon chaticon ,max(recentlydate) recentlydate 
+		select chat.chatid::text  ,userinfo.username chatname ,0 chattype,userinfo.usericon chaticon ,max(recentlydate) recentlydate 
 		from (
 			select chatdetail.chatid,max(chatdetail.recentlydate) recentlydate
 			from (

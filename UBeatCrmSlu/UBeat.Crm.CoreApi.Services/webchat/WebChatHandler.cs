@@ -263,9 +263,13 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 InnerMsgDataInfo msgdata = Newtonsoft.Json.JsonConvert.DeserializeObject<InnerMsgDataInfo>(JsonConvert.SerializeObject(cmd.Data));
                 if (msgdata != null)
                 {
-
+                    Guid mid = Guid.Empty;
+                    if (msgdata.mid != null && msgdata.mid.Length > 0) {
+                        Guid.TryParse(msgdata.mid, out mid);
+                    }
                     SendChatModel model = new SendChatModel()
                     {
+                        MessageId = mid,
                         GroupId = msgdata.gid,
                         FriendId = msgdata.rec,
                         ContentType=msgdata.ct,
@@ -342,7 +346,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         public int ctype { get; set; }
         public Guid gid { get; set; }
         public int ct { get; set; }
-        public Guid fid { get; set; }
+        public Guid? fid { get; set; }
         public string cont { get; set; }
         public int rec{ get; set; }
         //发送人的detail信息
