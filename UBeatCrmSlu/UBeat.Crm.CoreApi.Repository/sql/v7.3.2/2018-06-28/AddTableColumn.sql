@@ -1,5 +1,7 @@
 alter table crm_sys_entity add entitylanguage jsonb;
 
+alter table crm_sys_entity_menu add menulanguage jsonb;
+
 alter table crm_sys_entity_fields add fieldlanguage jsonb;
 alter table crm_sys_entity_fields add displaylanguage jsonb;
 
