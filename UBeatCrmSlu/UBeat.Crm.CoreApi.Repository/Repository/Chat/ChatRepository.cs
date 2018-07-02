@@ -232,9 +232,11 @@ limit 50";
             {
                 string strSQL = @"select s.*  
 from ( 
-    select *, row_number() over (partition by groupid order by reccreated desc ) as group_idx  
-    from crm_sys_chat_message
-		where groupid =any(@groupids)
+    select a.*,b.username reccreator_name, row_number() over (partition by a.groupid order by a.reccreated desc ) as group_idx  
+    from crm_sys_chat_message a
+                inner join crm_sys_userinfo b on a.reccreator = b.userid
+            
+		where a.groupid =any(@groupids)
 ) s
 where s.group_idx <=2
 order by s.groupid ,s.reccreated desc ";
@@ -260,17 +262,19 @@ order by s.groupid ,s.reccreated desc ";
                 string strSQL = @"select * FROM(
 select *, row_number() over (partition by a.relateuser order by a.reccreated desc ) as group_idx  
 from (
-select receivers relateuser ,*
-from crm_sys_chat_message
-where reccreator = @userid
-		and receivers =any(@relateusers)
-	and chattype =0
+select a.receivers relateuser ,b.username reccreator_name,a.*
+from crm_sys_chat_message a 
+        inner join crm_sys_userinfo b on a.reccreator = b.userid 
+where a.reccreator = @userid
+		and a.receivers =any(@relateusers)
+	and a.chattype =0
 union all 
-select reccreator relateuser , *
-from crm_sys_chat_message
-where receivers = @userid
-	and reccreator =any(@relateusers)
-	and chattype =0
+select a.reccreator relateuser , ,b.username reccreator_name, *
+from crm_sys_chat_message a
+    inner join crm_sys_userinfo b on a.reccreator = b.userid 
+where a.receivers = @userid
+	and a.reccreator =any(@relateusers)
+	and a.chattype =0
 ) a
 )s
 where s.group_idx <=2

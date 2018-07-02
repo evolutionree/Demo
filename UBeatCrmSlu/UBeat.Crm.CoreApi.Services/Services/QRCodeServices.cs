@@ -33,17 +33,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         
         public OutputResult<object> CheckQrCode(string code, int codetype, int userid) {
-            List<QRCodeEntryItemInfo> checkList = new List<QRCodeEntryItemInfo>();
-            QRCodeEntryItemInfo ite1m = new QRCodeEntryItemInfo() {
-                CheckType = QRCodeCheckTypeEnum.JSPlugInSearch,
-                CheckParam = new QRCodeCheckMatchParamInfo() {
-                    UScriptParam = new QRCodeUScriptCheckMatchParamInfo() {
-                        UScript = getTestCheckScript()// "if (JsParam.QRCode == 'abc') return true; else return false ;"
-                    }
-                },
-                DealType = QRCodeCheckTypeEnum.EntitySearch
-            };
-            checkList.Add(ite1m);
+            //List<QRCodeEntryItemInfo> checkList = new List<QRCodeEntryItemInfo>();
+            //QRCodeEntryItemInfo ite1m = new QRCodeEntryItemInfo() {
+            //    CheckType = QRCodeCheckTypeEnum.JSPlugInSearch,
+            //    CheckParam = new QRCodeCheckMatchParamInfo() {
+            //        UScriptParam = new QRCodeUScriptCheckMatchParamInfo() {
+            //            UScript = getTestCheckScript()// "if (JsParam.QRCode == 'abc') return true; else return false ;"
+            //        }
+            //    },
+            //    DealType = QRCodeCheckTypeEnum.JSPlugInSearch
+            //};
+            //checkList.Add(ite1m);
+            List<QRCodeEntryItemInfo> checkList =  this._iQRCodeRepository.ListRules(null, false, userid);
             QRCodeEntryItemInfo matchedItem = null;
             foreach (QRCodeEntryItemInfo item in checkList) {
                 if (CheckMatchItem(item, code, codetype, userid)) {
@@ -543,7 +544,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else if (item.DealType == QRCodeCheckTypeEnum.JSPlugInSearch)
             {
-                return testJsReturn(item, code, type, userid);
+                return RunCode_UScript(item, code, type, userid,false);
             }
             else if (item.DealType == QRCodeCheckTypeEnum.EntitySearch) {
                 return testEntitySearchReturn(item, code, type, userid);
@@ -566,7 +567,57 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return retInfo;
 
         }
-        
+
+        private QRCodeEntryResultInfo RunCode_UScript(QRCodeEntryItemInfo item, string code, int type, int userid,bool isDebug) {
+            UKJSEngineUtils utils = new UKJSEngineUtils(this._javaScriptUtilsServices);
+            Dictionary<string, object> param = new Dictionary<string, object>();
+            param.Add("QRCode", code);
+            param.Add("QRType", type);
+            utils.SetHostedObject("JsParam", param);
+            long tick = System.DateTime.Now.Ticks;
+            string jscode_rel = "function ukejsengin_func_qrcode_" + tick + "(){" + item.DealParam.UScriptParam.UScript + "};ukejsengin_func_qrcode_" + tick + "();";
+            try
+            {
+                object obj = utils.Evaluate(jscode_rel);
+                if (obj != null)
+                {
+                    Dictionary<string, object> newObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                        Newtonsoft.Json.JsonConvert.SerializeObject(obj)
+                        );
+                    if (newObj.ContainsKey("ActionType") && newObj["ActionType"] != null)
+                    {
+                        int actiontype = int.Parse(newObj["ActionType"].ToString());
+                        switch ((QRCodeActionTypeEnum)actiontype)
+                        {
+                            case QRCodeActionTypeEnum.NoAction:
+                                return QRCodeEntryResultInfo.NoActionResultInfo;
+                            case QRCodeActionTypeEnum.SimpleMsg:
+                                return Newtonsoft.Json.JsonConvert.DeserializeObject<QRCodeSimpleMsgResultInfo>(
+                                Newtonsoft.Json.JsonConvert.SerializeObject(obj)
+                                );
+                        }
+                        return QRCodeEntryResultInfo.NoActionResultInfo;
+                    }
+                    else
+                    {
+                        return QRCodeEntryResultInfo.NoActionResultInfo;
+                    }
+                }
+                else
+                {
+
+                    return QRCodeEntryResultInfo.NoActionResultInfo;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("执行脚本发生异常：" + ex.Message);
+                if (isDebug) {
+                    throw (ex);
+                }
+                return QRCodeEntryResultInfo.NoActionResultInfo;
+            }
+        }
         private string getTestCheckScript()
         {
             string strScript = @"var sql = 'select * from crm_plu_waterbill  where billnumber =\''+JsParam.QRCode  +'\'';
@@ -575,6 +626,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     else return false;";
             return strScript;
         }
+
         private QRCodeEntryResultInfo testJsReturn(QRCodeEntryItemInfo item, string code, int type, int userid) {
             string jscode = @"var returnObj = {};
                         var sql = 'select * from crm_plu_waterbill  where billnumber =\''+JsParam.QRCode  +'\'';

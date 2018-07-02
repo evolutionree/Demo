@@ -18,6 +18,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
 
     public class QRCodeSimpleMsgResultInfo: QRCodeEntryResultInfo {
         public List<QRCodeSimpleMsg_FieldInfo> DetailsInfo { get; set; }
+        public string Title { get; set; }
         public int IsSuccess { get; set; }
         public int ButtonCount { get; set; }
         public QRCodeSimpleMsgButtonInfo Button1 { get; set; }
