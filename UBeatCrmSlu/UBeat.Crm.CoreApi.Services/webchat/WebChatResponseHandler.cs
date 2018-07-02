@@ -97,7 +97,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                                 try
                                 {
 
-                                    FileInfoModel fileInfo = _fileService.GetOneFileInfo(null, pkg.ChatMsg.CustomContent[""].ToString());
+                                    FileInfoModel fileInfo = _fileService.GetOneFileInfo(null, pkg.ChatMsg.CustomContent["ct"].ToString());
                                     if (fileInfo != null) {
                                         pkg.ChatMsg.CustomContent.Add("file", fileInfo);
                                     }
@@ -158,6 +158,13 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             UserList.Add(uid, userInfo);
             return userInfo;
         }
+        /// <summary>
+        /// 用于移动端向web端发送消息，
+        /// </summary>
+        /// <param name="accountList"></param>
+        /// <param name="title"></param>
+        /// <param name="message"></param>
+        /// <param name="customContent"></param>
         public void addMessages(string accountList,string title,string message, Dictionary<string, object> customContent)
         {
             if (accountList == null) return;

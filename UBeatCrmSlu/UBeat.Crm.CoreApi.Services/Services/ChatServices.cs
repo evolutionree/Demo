@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.Chat;
 using UBeat.Crm.CoreApi.DomainModel.FileService;
 using UBeat.Crm.CoreApi.DomainModel.PushService;
@@ -492,7 +493,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             List<IDictionary<string, object>> chatList = _repository.ChatList(crmData);
             #region 如果是文件，则返回文件信息
-            if (chatList != null)
+            if (chatList != null && DeviceType == DeviceType.WEB)//只有WEB才解析，手机端为了减少网络流量，这些数据都不获取
             {
                 foreach (IDictionary<string, object> msg in chatList) {
                     if (msg.ContainsKey("chattype") && msg["chattype"] != null) {
@@ -515,6 +516,40 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                                 catch (Exception ex)
                                 {
+                                }
+                            }
+                        }
+                    }
+                    if (msg.ContainsKey("reccreator") && msg["reccreator"] != null) {
+                        //处理发送人
+                        try
+                        {
+                            int recc = 0;
+                            recc = int.Parse(msg["reccreator"].ToString());
+                            UserInfo userInfo = WebChatCachedDataUtils.getInstance().getUserInfo(recc);
+                            if (userInfo != null) {
+                                msg.Add("ud", userInfo);
+                            }
+                        }
+                        catch (Exception ex) {
+
+                        }
+                    }
+                    if (msg.ContainsKey("groupid") && msg["groupid"] != null) {
+                        Guid gid = Guid.Empty;
+                        if (Guid.TryParse(msg["groupid"].ToString(), out gid)){
+                            if (gid != Guid.Empty) {
+                                try
+                                {
+                                    ChatGroupModel groupInfo = WebChatCachedDataUtils.getInstance().GetGroupInfo(gid);
+                                    if (groupInfo != null)
+                                    {
+                                        msg.Add("gd", groupInfo);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+
                                 }
                             }
                         }
