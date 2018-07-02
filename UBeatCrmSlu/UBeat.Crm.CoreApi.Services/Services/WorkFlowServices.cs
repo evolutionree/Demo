@@ -1305,10 +1305,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Guid nodeid = Guid.Empty;
             Guid event_nodeid = Guid.Empty;
             Guid lastNodeId = Guid.Empty;
+            int lastNodeNum = 0;
             bool canAddNextNode = true;
             bool isbranchFlow = false;
             WorkFlowNodeInfo nextnode = null;
             DbConnection conn = null;
+            bool IsFinishAfterStart = false;
             if (tran == null)
             {
                 conn = GetDbConnect();
@@ -1367,7 +1369,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, out nextnode, out canAddNextNode);
                     if (casefinish)
+                    {
                         lastNodeId = nextnode.NodeId;
+                        lastNodeNum = nextnode.NodeNum;
+                    }
 
                 }
                 //流程审批过程修改实体字段时，更新关联实体的字段数据
@@ -1385,6 +1390,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 
                 if (casefinish)//审批已经到达了最后一步
                 {
+                    if (caseItemEntity.NodeNum == 0 && caseItemEntity.ChoiceStatus == 4) {
+                        //发起节点就立即结束，则默认为审批通过
+                        caseItemEntity.ChoiceStatus = 1;
+                        IsFinishAfterStart = true;
+                    }
                     _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
 
                     //判断是否有附加函数_event_func
@@ -1409,8 +1419,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     canWriteCaseMessage = true;
                 }
                 //写审批消息
-                WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId);
-
+                WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId,IsFinishAfterStart);
 
             }
             catch (Exception ex)
@@ -1584,7 +1593,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     auditstatus = hasNextNode ? AuditStatusType.Begin : AuditStatusType.Finished;
                     canAddNextNodeItem = hasNextNode;
                     casefinish = !hasNextNode;
-                    _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
+                    if (hasNextNode)
+                    {
+                        _workFlowRepository.ReOpenWorkFlowCase(caseInfo.CaseId, nowcaseitem.CaseItemId, userinfo.UserId, tran);
+                    }
                     break;
             }
             if (casefinish)
@@ -1751,7 +1763,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="caseId"></param>
         /// <param name="nodeNum"></param>
         /// <param name="userNumber"></param>
-        public void WriteCaseAuditMessage(Guid caseId, int nodeNum, int stepNum, int userNumber)
+        public void WriteCaseAuditMessage(Guid caseId, int nodeNum, int stepNum, int userNumber, bool isFinishAfterStart = false)
         {
             Task.Run(() =>
             {
@@ -1801,7 +1813,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             return;
                         }
 
-                        var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, nodeNum, stepNum);
+                        var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, nodeNum,  stepNum);
                         if (caseitems == null || caseitems.Count == 0)
                         {
                             _logger.Error("写工作流消息:无法获取流程实例节点信息");
@@ -1987,6 +1999,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         conn.Dispose();
                     }
                 }
+                if (isFinishAfterStart) {
+                    WriteCaseAuditMessage(caseId, -1, stepNum + 1, userNumber, false);//特殊处理，当且仅当固定流程，且启动后立即终止的情况
+                }
                 canWriteCaseMessage = false;
             });
         }
@@ -2052,7 +2067,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     if (caseInfo.AuditStatus == AuditStatusType.Finished)//审批完成
                     {
-                        funcCode = "WorkFlowLaunch";
+                        if (auditCaseItem.NodeNum == 0 && auditCaseItem.StepNum == 0)
+                        {
+                            funcCode = "WorkFlowLaunch";//这种情况是固定流程，但第一个节点结束后直接跳到最后一个节点，这时候应该发启动消息（动态），后面发结束消息
+                        }
+                        else {
+
+                            funcCode = "WorkFlowNodeFinish";
+                        }
                     }
                     break;
                 case ChoiceStatusType.Approval://普通审批通过
@@ -2079,6 +2101,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     break;
                 case ChoiceStatusType.Stop:
                     funcCode = "WorkFlowNodeStop";
+                    break;
+                case ChoiceStatusType.EndPoint:
+                    funcCode = "WorkFlowNodeFinish";
                     break;
             }
             return funcCode;
