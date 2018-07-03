@@ -495,7 +495,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private void SearchProductForSearchKey(char [] searchkey ,bool isForWeb,bool isSetOnly,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
             int index = 0;
             bool isMatch = true;
-            string searchstr = searchkey.ToString().ToLower();
+            string searchstr = new string(searchkey);// searchkey.ToString().ToLower();
             string productname = item.ProductSetName.ToLower();
 
             isMatch = productname.IndexOf(searchstr) >= 0;
