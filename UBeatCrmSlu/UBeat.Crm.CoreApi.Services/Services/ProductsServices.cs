@@ -495,13 +495,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private void SearchProductForSearchKey(char [] searchkey ,bool isForWeb,bool isSetOnly,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
             int index = 0;
             bool isMatch = true;
-            foreach (char ch in searchkey) {
-                index = item.ProductSetName.IndexOf(ch, index);
-                if (index < 0) {
-                    isMatch = false;
-                    break;
-                }
-            }
+            string searchstr = searchkey.ToString().ToLower();
+            string productname = item.ProductSetName.ToLower();
+
+            isMatch = productname.IndexOf(searchstr) >= 0;
+            //foreach (char ch in searchkey) {
+            //    index = productname.IndexOf(ch, index);
+            //    if (index < 0) {
+            //        isMatch = false;
+            //        break;
+            //    }
+            //}
             if (isMatch == false) {
                 index = 0;
                 isMatch = true;
@@ -528,15 +532,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     string fieldValue = item.ProductDetail[fieldname].ToString();
                     index = 0;
                     isMatch = true;
-                    foreach (char ch in searchkey)
-                    {
-                        index = item.ProductSetName.IndexOf(ch, index);
-                        if (index < 0)
-                        {
-                            isMatch = false;
-                            break;
-                        }
-                    }
+                    fieldValue = fieldValue.ToLower();
+                    isMatch = fieldValue.IndexOf(searchstr) >= 0;
+                    //foreach (char ch in searchkey)
+                    //{
+                    //    index = fieldValue.IndexOf(ch, index);
+                    //    if (index < 0)
+                    //    {
+                    //        isMatch = false;
+                    //        break;
+                    //    }
+                    //}
                     if (isMatch) break;
                 }
             }
