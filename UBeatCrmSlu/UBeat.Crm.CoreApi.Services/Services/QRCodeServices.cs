@@ -595,6 +595,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 return Newtonsoft.Json.JsonConvert.DeserializeObject<QRCodeSimpleMsgResultInfo>(
                                 Newtonsoft.Json.JsonConvert.SerializeObject(obj)
                                 );
+                            case QRCodeActionTypeEnum.ShowEntityUI:
+                                return Newtonsoft.Json.JsonConvert.DeserializeObject<QRCodeShowEntityUIResultInfo>(
+                                Newtonsoft.Json.JsonConvert.SerializeObject(obj)
+                                );
                         }
                         return QRCodeEntryResultInfo.NoActionResultInfo;
                     }

@@ -46,7 +46,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
     }
     public class QRCodeShowEntityUIResultInfo : QRCodeEntryResultInfo
     {
-        public Dictionary<string, object> DetailsInfo { get; set; }
+        public Dictionary<string, object> ExpandFields { get; set; }
         public Guid EntityId { get; set; }
         public Guid TypeId { get; set; }
         public QRCodeShowEntityUIViewType ViewType { get; set; }
@@ -66,10 +66,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.QRCode
     }
     public enum QRCodeShowEntityUIViewType : Int32
     {
+        List = 0,
         Add = 1 ,
         Edit =2,
-        View = 3,
-        List = -1
+        View = 3
 
     }
     public class QRCodeSimpleMsgButtonInfo {
