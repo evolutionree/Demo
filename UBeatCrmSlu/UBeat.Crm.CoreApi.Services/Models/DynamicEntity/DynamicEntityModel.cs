@@ -479,6 +479,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public string RecRelateId { get; set; }
         public string RelateEntityId { get; set; }
         public string RelateTypeId { get; set; }
+        public string EntityId { get; set; }
     }
 
     public class TemporaryDetailMode

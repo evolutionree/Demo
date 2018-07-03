@@ -1619,7 +1619,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
         {
             string sql = @"insert into crm_sys_temporary_entity values 
-(@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@relatetypeid)";
+(@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@relatetypeid,@entityid)";
             var p = new DbParameter[]
             {
                 new NpgsqlParameter("recmanager",userNumber),
@@ -1633,7 +1633,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 new NpgsqlParameter("fieldname",data.FieldName),
                 new NpgsqlParameter("recrelateid",data.RecRelateId),
                 new NpgsqlParameter("relateentityid",data.RelateEntityId),
-                new NpgsqlParameter("relatetypeid",data.RelateTypeId)
+                new NpgsqlParameter("relatetypeid",data.RelateTypeId),
+                new NpgsqlParameter("entityid",data.EntityId)
             };
             return this.ExecuteNonQuery(sql, p, tran) > 0;
         }
