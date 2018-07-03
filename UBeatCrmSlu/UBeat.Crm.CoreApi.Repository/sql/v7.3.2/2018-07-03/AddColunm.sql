@@ -1,0 +1,1 @@
+alter table crm_sys_temporary_entity add entityid uuid
