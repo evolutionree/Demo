@@ -1619,7 +1619,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
         {
             string sql = @"insert into crm_sys_temporary_entity values 
-(@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@relatetypeid,@entityid)";
+(@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@relatetypeid,@entityid::uuid)";
             var p = new DbParameter[]
             {
                 new NpgsqlParameter("recmanager",userNumber),
