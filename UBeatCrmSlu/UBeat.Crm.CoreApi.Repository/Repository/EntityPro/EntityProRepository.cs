@@ -1702,10 +1702,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public void UpdateExtFunction(DbTransaction tran, Guid entityId, List<ExtFunction> data, int userNumber)
         {
+            foreach (ExtFunction item in data) {
+                item.RecStatus = 1;
+            }
             #region sql
             string delSQL = @"Delete from crm_sys_entity_extfunction where entityid = @entityid";
-            string insertSql = string.Format(@"INSERT INTO crm_sys_entity_extfunction(dbfuncid,functionname,entityid,parameters,recorder,returntype,recstatus,remark)
-                                   SELECT uuid_generate_v4(),functionname,entityid,parameters,recorder,returntype,recstatus,remark
+            string insertSql = string.Format(@"INSERT INTO crm_sys_entity_extfunction(dbfuncid,functionname,entityid,parameters,recorder,returntype,recstatus,remark,enginetype,uscript)
+                                   SELECT uuid_generate_v4(),functionname,entityid,parameters,recorder,returntype,recstatus,remark,enginetype,uscript
                                    FROM json_populate_recordset(null::crm_sys_entity_extfunction,@condition)");
             #endregion
             #region 删除

@@ -65,5 +65,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public int RecStatus { get; set; }
         [JsonProperty("remark")]
         public string Remark { get; set; }
+        [JsonProperty("enginetype")]
+        public int EngineType { get; set; }
+        [JsonProperty("uscript")]
+        public string UScript { get; set; }
     }
 }

@@ -39,7 +39,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
         public void AddMessage(string typeid , string entityid, string businessid, int msggroupid, int msgstyletype,
-                    string msgtitle, string msgtitletip, string msgcontent, Dictionary<string, object> msgparam,string receivers)
+                    string msgtitle, string msgtitletip, string msgcontent, string receivers)
         {
             MessageParameter param = new MessageParameter();
             param.Receivers = new Dictionary<DomainModel.Message.MessageUserType, List<int>>();
@@ -57,6 +57,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             param.BusinessId = Guid.Parse(businessid);
             MessageGroupType groupType = (MessageGroupType)msggroupid;
             MessageStyleType messageStyleType = (MessageStyleType)msgstyletype;
+            Dictionary<string, object> msgparam = new Dictionary<string, object>();
             MessageService.WriteMessageWithoutTemplate(null, param, 0, groupType, messageStyleType, msgtitle, msgcontent, msgparam);
             //return Guid.Empty;
         }
