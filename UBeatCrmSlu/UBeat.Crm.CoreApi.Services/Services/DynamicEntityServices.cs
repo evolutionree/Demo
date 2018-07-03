@@ -39,6 +39,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IAccountRepository _accountRepository;
         private readonly IDataSourceRepository _dataSourceRepository;
         private readonly ICustomerRepository _customerRepository;
+        private readonly JavaScriptUtilsServices _javaScriptUtilsServices;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService;
@@ -49,7 +50,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository,
                 IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
                 IDataSourceRepository dataSourceRepository,
-                ICustomerRepository customerRepository)
+                ICustomerRepository customerRepository,
+                JavaScriptUtilsServices javaScriptUtilsServices)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
             _entityProRepository = entityProRepository;
@@ -59,6 +61,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _accountRepository = accountRepository;
             _dataSourceRepository = dataSourceRepository;
             _customerRepository = customerRepository;
+            _javaScriptUtilsServices = javaScriptUtilsServices;
             //_workflowService = workflowService;
         }
 
@@ -601,15 +604,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entityInfo == null || entityInfo.Count == 0) throw (new Exception("实体信息异常"));
             //
             EntityExtFunctionInfo extFuncInfo = this._dynamicEntityRepository.getExtFunctionByFunctionName(paramInfo.EntityId ?? Guid.Empty, functionname);
-            if (extFuncInfo == null) throw (new Exception("实体函数异常"));
+            if (extFuncInfo == null) throw (new Exception("实体扩展定义异常"));
             if (extFuncInfo.RecStatus != 1)
             {
-                throw (new Exception("该函数已经被停用了"));
+                throw (new Exception("该扩展已经被停用了"));
             }
             try
             {
 
-                object retObj = this._dynamicEntityRepository.ExecuteExtFunction(extFuncInfo, paramInfo.RecIds, paramInfo.OtherParams, userId);
+                object retObj = null;
+                if (extFuncInfo.EngineType == EngineTypeEnum.SQLEngine)
+                {
+                    retObj = this._dynamicEntityRepository.ExecuteExtFunction(extFuncInfo, paramInfo.RecIds, paramInfo.OtherParams, userId);
+                }
+                else
+                {
+                    retObj = ExecuteUScript(extFuncInfo, paramInfo.RecIds, paramInfo.OtherParams, userId);
+                }
                 return new OutputResult<object>(retObj);
             }
             catch (Exception ex)
@@ -622,6 +633,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     return new OutputResult<object>("", ex.Message, -1);
                 }
+            }
+        }
+
+        private object ExecuteUScript(EntityExtFunctionInfo extFuncInfo, string[] recIds, Dictionary<string, object> otherParams, int userId)
+        {
+            try
+            {
+                if (extFuncInfo.UScript == null || extFuncInfo.UScript.Length == 0) {
+                    throw (new Exception("脚本定义失败"));
+                }
+                UKJSEngineUtils utils = new UKJSEngineUtils(this._javaScriptUtilsServices);
+                Dictionary<string, object> param = new Dictionary<string, object>();
+                param.Add("recids", recIds);
+                param.Add("OtherParams", otherParams);
+                utils.SetHostedObject("JsParam", param);
+                long tick = System.DateTime.Now.Ticks;
+                string jscode = "function ukejsengin_func_entity_" + tick + "(){" + extFuncInfo.UScript + @"};
+                               ukejsengin_func_entity_" + tick + "();";
+                return utils.Evaluate(jscode);
+            }
+            catch (Exception ex) {
+                _logger.Error("执行引擎失败：" + ex.Message);
+                throw (ex);
             }
         }
 

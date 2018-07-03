@@ -22,6 +22,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         /// </summary>
         public string FunctionName { get; set; }
         /// <summary>
+        /// 引擎类型
+        /// </summary>
+        public EngineTypeEnum EngineType { get; set; }
+        /// <summary>
+        /// U脚本
+        /// </summary>
+        public string UScript { get; set; }
+        /// <summary>
         /// 参数列表,以@开头，以,分隔
         /// </summary>
         public string Parameters { get; set; }
@@ -38,6 +46,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         /// </summary>
         public int RecStatus { get; set; }
 
+    }
+    public enum EngineTypeEnum {
+        SQLEngine = 1 ,
+        UScriptEngine = 2
     }
     public enum EntityExtFunctionReturnType {
         /// <summary>

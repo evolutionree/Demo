@@ -93,6 +93,123 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --同步方式写离线消息并发送消息--
+
+        public void WriteMessageWithoutTemplate(DbTransaction tran, 
+                MessageParameter msgparam, 
+                int userNumber,
+                MessageGroupType grouptype,
+                MessageStyleType styletype,
+                string title,
+                string msgContent,
+                Dictionary<string, object> pushCustomContent = null, 
+                int typeStatus = 0)
+        {
+            if (msgparam == null)
+            {
+                _logger.Error("WriteMessage msgparam isnull");
+                return;
+            }
+
+            List<int> receiverIds = new List<int>();
+            foreach (var receiverItem in msgparam.Receivers)
+            {
+                receiverIds.AddRange(receiverItem.Value);
+            }
+            receiverIds = receiverIds.Distinct().ToList();
+
+
+            bool msgSuccess = true;
+            bool isLocalTransaction = false;
+            DbConnection conn = null;
+            if (tran == null)
+            {
+                isLocalTransaction = true;
+                conn = GetDbConnect();
+                conn.Open();
+                tran = conn.BeginTransaction();
+            }
+            try
+            {
+                
+                MsgParamInfo tempData = null;
+                
+                if (receiverIds.Count > 0)//没有接收人，则不发消息
+                {
+                    if (tempData == null)
+                    {
+                        tempData = new MsgParamInfo();
+                        tempData.Data = JsonConvert.DeserializeObject(string.IsNullOrEmpty(msgparam.ParamData) ? "{}" : msgparam.ParamData);
+                    }
+                    //var entityInfotemp = _entityProRepository.GetEntityInfo(typeId);
+                    tempData.EntityId = msgparam.EntityId;
+                    tempData.EntityName = msgparam.EntityName;
+                    tempData.TypeId = msgparam.TypeId;
+                    tempData.BusinessId = msgparam.BusinessId;
+                    tempData.RelEntityId = msgparam.RelEntityId.GetValueOrDefault();
+                    tempData.RelEntityName = msgparam.RelEntityName;
+                    tempData.RelBusinessId = msgparam.RelBusinessId;
+                    tempData.CopyUsers = msgparam.CopyUsers;
+                    tempData.ApprovalUsers = msgparam.ApprovalUsers;
+
+                    var msgInfo = new MessageInsertInfo()
+                    {
+                        EntityId = msgparam.EntityId,
+                        BusinessId = msgparam.BusinessId,
+                        MsgGroupId = grouptype,
+                        MsgStyleType = styletype,
+                        MsgTitle = title,
+                        MsgTitleTip = "",
+                        MsgContent = msgContent,
+                        MsgpParam = tempData == null ? "" : JsonConvert.SerializeObject(tempData),
+                        ReceiverIds = receiverIds,
+                    };
+                    msgSuccess = _msgRepository.WriteMessage(tran, msgInfo, userNumber);
+                }
+
+                if (msgSuccess == false)
+                    throw new Exception("写入消息失败");
+                if (isLocalTransaction)
+                {
+                    tran.Commit();
+                }
+            }
+            catch (Exception ex)
+            {
+
+                _logger.Error("WriteMessage exception:" + ex.Message);
+                if (isLocalTransaction)//只有是本地事务，才需要回滚
+                    tran.Rollback();
+                throw ex;
+            }
+            finally
+            {
+                if (isLocalTransaction)
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+                //推送消息
+                var pushMsg = new AccountsPushExtModel()
+                {
+                    Accounts = receiverIds.Select(m => m.ToString()).ToList(),
+                    Title = FormatMsgTemplate(msgparam.TemplateKeyValue, title),
+                    Message = FormatMsgTemplate(msgparam.TemplateKeyValue,msgContent),
+                    SendTime = DateTime.Now.AddYears(-1).ToString(),
+                    CustomContent = pushCustomContent
+                };
+
+                Task.Run(() => {
+                    try
+                    {
+                        _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error("推送消息失败：" + ex.Message);
+                    }
+                });
+            }
+        }
         /// <summary>
         /// 写入离线消息，并发起推送
         /// </summary>
