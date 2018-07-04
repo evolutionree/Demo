@@ -77,7 +77,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Chat
 
         public dynamic GetMembers(GroupMemberSelect data)
         {
-            return null;
+            try
+            {
+                var sql = @"select a.isadmin,b.userid,b.username,b.usericon  from crm_sys_chat_group_members a
+inner join crm_sys_userinfo b  on a.memberid = b.userid 
+where a.recstatus = 1 and b.recstatus = 1 and a.chatgroupid = @chatgroupid order by b.username ";
+                var args = new
+                {
+                    chatgroupid = data.GroupId
+                };
+                return DataBaseHelper.Query(sql, args);
+            }
+            catch (Exception ex) {
+                return null;
+            }
         }
         #endregion
 

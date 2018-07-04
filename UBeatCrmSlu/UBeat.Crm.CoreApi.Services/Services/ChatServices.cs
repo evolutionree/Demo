@@ -85,6 +85,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return HandleResult(result);
         }
+
+        public OutputResult<object> GetMembers(GetMembersModel bodyData, int userId)
+        {
+            List<IDictionary<string, object>> result = this._repository.GetMembers(new GroupMemberSelect()
+            {
+                GroupId = (Guid)bodyData.GroupId,
+                MaxRecVersion = bodyData.RecVersion,
+                UserNo = userId
+            });
+            return new OutputResult<object>(result);
+        }
         #endregion
 
         #region --修改群资料--

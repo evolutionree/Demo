@@ -57,11 +57,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _service.SetMembers(bodyData, UserId);
         }
 
-        //[HttpPost("getmembers")]
-        //public OutputResult<object> GetMembers([FromBody] GetMembersModel bodyData)
-        //{
-        //    return _service.GetMembers(bodyData, UserId);
-        //}
+        [HttpPost("getmembers")]
+        public OutputResult<object> GetMembers([FromBody] GetMembersModel bodyData)
+        {
+            return _service.GetMembers(bodyData, UserId);
+        }
 
         [HttpPost("deletegroup")]
         public OutputResult<object> DeleteGroup([FromBody] DeleteGroupModel bodyData)
