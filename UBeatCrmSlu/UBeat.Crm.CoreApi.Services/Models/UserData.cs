@@ -147,6 +147,7 @@ namespace UBeat.Crm.CoreApi.Services.Models
             if (routePath == null)
                 return false;
             string ruleSql = string.Empty;
+            if (routePath.StartsWith("/")) routePath = routePath.Substring(1);
             ruleSql = RuleSqlFormat(routePath, entityid, deviceClassic);
 
             IRuleRepository repository = new RuleRepository();
