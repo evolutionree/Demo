@@ -25,8 +25,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Chat
         /// 成员id，如用户id
         /// </summary>
         public List<int> MemberIds { set; get; }
-
-
+        public List<Guid> DeptIds { get; set; }
     }
 
     public class UpdateGroupModel
@@ -46,6 +45,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Chat
         /// 成员id，如用户id
         /// </summary>
         public List<int> MemberIds { set; get; }
+        public List<Guid> DeptIds { get; set; }
     }
 
     public class SetMembersModel
@@ -156,5 +156,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Chat
         /// </summary>
         public long RecVersion { set; get; }
     }
+    public class ChatUserListModel
+    {
+        public string SearchKey { get; set; }
+    }
+
 
 }

@@ -317,5 +317,37 @@ order by s.group_idx,s.reccreated desc ";
                 return new List<IDictionary<string, object>>();
             }
         }
+
+        public void UpdateMembers(GroupMemberAdd crmData, int userId)
+        {
+            try
+            {
+                var sql = @"INSERT INTO crm_sys_chat_group_members( chatgroupid, memberid, isadmin, isrefuse, recstatus,  reccreator, recupdator)
+SELECT @groupid,userid,0,0,1,@userid,@userid FROM crm_sys_userinfo  t WHERE t.recstatus = 1 and t.userid =any(@members) 
+	and t.userid NOT IN(
+				SELECT memberid FROM crm_sys_chat_group_members WHERE chatgroupid=@groupid  
+				);
+update crm_sys_chat_group_members  a set recstatus = 1
+where a.chatgroupid = @groupid
+and a.recstatus = 0
+and  a.memberid  =any(@members)
+;
+update  crm_sys_chat_group_members  set recstatus = 0 
+where chatgroupid =  @groupid 
+    and recstatus  = 1 
+and memberid in (select memberid from crm_sys_chat_group_members where chatgroupid = @groupid)
+	and(not ( memberid = any (@members)));
+";
+                var p = new {
+                    groupid = crmData.GroupId,
+                    members = crmData.Members,
+                    userid = userId
+                };
+                DataBaseHelper.ExecuteNonQuery(sql, p);
+            }
+            catch (Exception ex) {
+                throw (ex);
+            }
+        }
     }
 }

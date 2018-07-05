@@ -24,12 +24,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         PushServices _pushServices;
         private static readonly Logger Logger = LogManager.GetLogger(typeof(ChatServices).FullName);
         private readonly FileServices _fileService;
-
-        public ChatServices(IChatRepository repository, PushServices pushService, FileServices fileService)
+        private readonly IAccountRepository _accountRepository;
+        public ChatServices(IChatRepository repository, PushServices pushService,
+                IAccountRepository accountRepository)
         {
+
             _repository = repository;
             _pushServices = pushService;
-            _fileService = fileService;
+            _accountRepository = accountRepository;
 
         }
 
@@ -57,6 +59,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(crmData);
             }
+            #region 需要处理部门的情况
+            if (data.DeptIds != null && data.DeptIds.Count > 0) {
+
+                foreach (Guid deptid in data.DeptIds) {
+                    PageParam pageParam = new PageParam() {
+                        PageIndex = 1,
+                        PageSize = 10000
+                    };
+                    AccountUserQueryMapper accountUserQueryMapper = new AccountUserQueryMapper()
+                    {
+                        RecStatus = 1,
+                        DeptId = deptid
+                    };
+                    Dictionary<string, List<IDictionary<string, object>>> pageData = this._accountRepository.GetUserList(pageParam, accountUserQueryMapper, userId);
+                    List<IDictionary<string, object>> userList = pageData["PageData"];
+                    foreach (IDictionary<string, object> user in userList) {
+                        int userid = 0;
+                        if (user.ContainsKey("userid") && user["userid"] != null) {
+                            if (int.TryParse(user["userid"].ToString(), out userid)) {
+                                if (crmData.MemberIds.Contains(userid) == false) {
+                                    crmData.MemberIds.Add(userid);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion 
             var result = _repository.AddGroup(crmData);
             if (result.Flag == 1)
             {
@@ -247,6 +277,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(crmData);
             }
+            #region 需要处理部门的情况
+            if (data.DeptIds != null && data.DeptIds.Count > 0)
+            {
+
+                foreach (Guid deptid in data.DeptIds)
+                {
+                    PageParam pageParam = new PageParam()
+                    {
+                        PageIndex = 1,
+                        PageSize = 10000
+                    };
+                    AccountUserQueryMapper accountUserQueryMapper = new AccountUserQueryMapper()
+                    {
+                        RecStatus = 1,
+                        DeptId = deptid
+                    };
+                    Dictionary<string, List<IDictionary<string, object>>> pageData = this._accountRepository.GetUserList(pageParam, accountUserQueryMapper, userId);
+                    List<IDictionary<string, object>> userList = pageData["PageData"];
+                    foreach (IDictionary<string, object> user in userList)
+                    {
+                        int userid = 0;
+                        if (user.ContainsKey("userid") && user["userid"] != null)
+                        {
+                            if (int.TryParse(user["userid"].ToString(), out userid))
+                            {
+                                if (crmData.Members.Contains(userid) == false)
+                                {
+                                    crmData.Members.Add(userid);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion 
             var result = _repository.AddMembers(crmData);
             //result.Id格式：邀请人名字|被邀请人1，被邀请人2....
             var resultIDData = result.Id.Split('|');
@@ -295,7 +360,211 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return HandleResult(result);
         }
         #endregion
+        #region 更新讨论群的成员
+        public OutputResult<object> UpdateMembers(AddMembersModel data, string userName,int userId) {
+            if (data == null)
+            {
+                return ShowError<object>("参数错误");
+            }
+            if (data.MemberIds == null || data.MemberIds.Count == 0)
+            {
+                return ShowError<object>("成员不可为空");
+            }
+            GroupMemberSelect groupMemberSelect = new GroupMemberSelect()
+            {
+                GroupId = (Guid)data.GroupId
+            };
+            List<IDictionary<string, object>> oldUsers = this._repository.GetMembers(groupMemberSelect);
+            #region  检查本人是否存在群聊中
+            bool isFoundInGroupChat = false;
+            bool isAdminInGroupChat = false;
+            foreach (IDictionary<string, object> userInfo in oldUsers) {
+                int oldUserid = 0;
+                if (userInfo.ContainsKey("userid") && userInfo["userid"] != null) {
+                    if (int.TryParse(userInfo["userid"].ToString(), out oldUserid)) {
+                        if (oldUserid == userId) {
+                            isFoundInGroupChat = true;
+                            if (userInfo.ContainsKey("isadmin") && userInfo["isadmin"] != null) {
+                                int iIsAdmin = 0;
+                                if (int.TryParse(userInfo["isadmin"].ToString(), out iIsAdmin)) {
+                                    isAdminInGroupChat =( iIsAdmin == 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (isFoundInGroupChat == false ) {
+                throw (new Exception("您不是群成员，无法管理群"));
+            }
+            if (isAdminInGroupChat == false) {
+                throw (new Exception("您不是群管理员，无法管理群"));
+            }
+            #endregion
 
+            GroupMemberAdd crmData = new GroupMemberAdd()
+            {
+                GroupId = data.GroupId.HasValue ? data.GroupId.Value : Guid.Empty,
+                Members = data.MemberIds,
+                UserNo = userId,
+            };
+            if (!crmData.IsValid())
+            {
+                return HandleValid(crmData);
+            }
+            #region 需要处理部门的情况
+            if (data.DeptIds != null && data.DeptIds.Count > 0)
+            {
+
+                foreach (Guid deptid in data.DeptIds)
+                {
+                    PageParam pageParam = new PageParam()
+                    {
+                        PageIndex = 1,
+                        PageSize = 10000
+                    };
+                    AccountUserQueryMapper accountUserQueryMapper = new AccountUserQueryMapper()
+                    {
+                        RecStatus = 1,
+                        DeptId = deptid
+                    };
+                    Dictionary<string, List<IDictionary<string, object>>> pageData = this._accountRepository.GetUserList(pageParam, accountUserQueryMapper, userId);
+                    List<IDictionary<string, object>> userList = pageData["PageData"];
+                    foreach (IDictionary<string, object> user in userList)
+                    {
+                        int userid = 0;
+                        if (user.ContainsKey("userid") && user["userid"] != null)
+                        {
+                            if (int.TryParse(user["userid"].ToString(), out userid))
+                            {
+                                if (crmData.Members.Contains(userid) == false)
+                                {
+                                    crmData.Members.Add(userid);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+            _repository.UpdateMembers(crmData,userId);
+            List<IDictionary<string, object>> newUsers = this._repository.GetMembers(groupMemberSelect);
+            List<IDictionary<string, object>> addList = new List<IDictionary<string, object>>();
+            List<IDictionary<string, object>> removeList = new List<IDictionary<string, object>>();
+
+            #region 检查增加的和检查移除的
+            foreach (IDictionary<string, object> oldUserInfo in oldUsers) {
+                bool isFoundInNew = false;
+                int oldUserId = 0;
+                if (oldUserInfo.ContainsKey("userid") == false && oldUserInfo["userid"] == null) continue;
+                if (int.TryParse(oldUserInfo["userid"].ToString(), out oldUserId) == false) continue;
+                if (oldUserId <= 0) continue;
+                foreach (IDictionary<string, object> newUserInfo in newUsers)
+                {
+                    int newUserId = 0;
+                    if (newUserInfo.ContainsKey("userid") == false && newUserInfo["userid"] == null) continue;
+                    if (int.TryParse(newUserInfo["userid"].ToString(), out newUserId) == false) continue;
+                    if (newUserId <= 0) continue;
+                    if (newUserId == oldUserId) {
+                        isFoundInNew = true;
+                        break;
+                    }
+                }
+                if (isFoundInNew == false) {
+                    removeList.Add(oldUserInfo);
+                }
+            }
+            foreach (IDictionary<string, object> newUserInfo  in newUsers)
+            {
+                bool isFoundInOld = false;
+                int newUserId = 0;
+                if (newUserInfo.ContainsKey("userid") == false && newUserInfo["userid"] == null) continue;
+                if (int.TryParse(newUserInfo["userid"].ToString(), out newUserId) == false) continue;
+                if (newUserId <= 0) continue;
+                foreach (IDictionary<string, object> oldUserInfo in newUsers)
+                {
+                    int oldUserId = 0;
+                    if (oldUserInfo.ContainsKey("userid") == false && oldUserInfo["userid"] == null) continue;
+                    if (int.TryParse(oldUserInfo["userid"].ToString(), out oldUserId) == false) continue;
+                    if (oldUserId <= 0) continue;
+                    if (newUserId == oldUserId)
+                    {
+                        isFoundInOld = true;
+                        break;
+                    }
+                }
+                if (isFoundInOld == false)
+                {
+                    addList.Add(newUserInfo);
+                }
+            }
+            #endregion
+
+            #region 发送踢人和加人消息
+            string currentUserName = userName;
+            string addUsersName = "";
+            foreach (IDictionary<string, object> userInfo in addList) {
+                if (userInfo.ContainsKey("username") && userInfo["username"] != null) {
+                    addUsersName = addUsersName + "、" + userInfo["username"].ToString();
+                }
+            }
+            if (addUsersName.Length > 0) {
+                addUsersName = addUsersName.Substring(1);
+                string _chatContent = string.Format("{0}邀请{1}加入了群聊", currentUserName, addUsersName);
+                ChatInsert msgData = new ChatInsert()
+                {
+                    ChatType = 1,
+                    GroupId = crmData.GroupId,
+                    ChatContent = _chatContent,
+                    ContentType = 1,
+                    FriendId = 0,
+                    MsgType = 4,
+                    UserNo = userId,
+                };
+
+                var msg = InsertChat(msgData, userId, null);
+                string msgid = null;
+                if (msg.Status == 0)//消息新增成功
+                {
+                    Dictionary<string, object> mdata = msg.DataBody as Dictionary<string, object>;
+                    msgid = mdata["mid"].ToString();
+                }
+            }
+            string removeUsersName = "";
+            foreach (IDictionary<string, object> userInfo in removeList)
+            {
+                if (userInfo.ContainsKey("username") && userInfo["username"] != null)
+                {
+                    removeUsersName = removeUsersName + "、" + userInfo["username"].ToString();
+                }
+            }
+            if (removeUsersName.Length > 0)
+            {
+                removeUsersName = removeUsersName.Substring(1);
+                string _chatContent = string.Format("{0}已被管理员移除群聊", removeUsersName);
+                ChatInsert msgData = new ChatInsert()
+                {
+                    ChatType = 1,
+                    GroupId = crmData.GroupId,
+                    ChatContent = _chatContent,
+                    ContentType = 1,
+                    FriendId = 0,
+                    MsgType = 4,
+                    UserNo = userId,
+                };
+
+                var msg = InsertChat(msgData, userId, null);
+                string msgid = null;
+                if (msg.Status == 0)//消息新增成功
+                {
+                    Dictionary<string, object> mdata = msg.DataBody as Dictionary<string, object>;
+                    msgid = mdata["mid"].ToString();
+                }
+            }
+            #endregion
+            return new OutputResult<object>("ok");
+        }
+        #endregion
         #region --设置成员：设置管理员，取消管理员，设置屏蔽群，取消屏蔽群，管理员踢人--
         public OutputResult<object> SetMembers(SetMembersModel data, int userId)
         {
@@ -659,6 +928,115 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebChatResponseHandler.getInstance().addMessages(pushAccounts, titile, message, customContent);//web聊天
             });
             return new OutputResult<object>(customContent);
+        }
+        public OutputResult<object> GetUserList(string searchKey, int userId)
+        {
+            try
+            {
+                PageParam pageParam = new PageParam()
+                {
+                    PageIndex = 1,
+                    PageSize = 100000
+                };
+                AccountUserQueryMapper accountUserQueryMapper = new AccountUserQueryMapper()
+                {
+                    DeptId = Guid.Empty,
+                    RecStatus = 1,
+                    UserName = "",
+                    UserPhone = ""
+                };
+                Dictionary<string, List<IDictionary<string, object>>> result = _accountRepository.GetUserList(pageParam, accountUserQueryMapper, userId);
+                List<IDictionary<string, object>> userList = result["PageData"];
+                List<UserInfo> fullUserList = new List<UserInfo>();
+                #region 整理用户数据
+                foreach (IDictionary<string, object> item in userList)
+                {
+                    int userid = 0;
+                    if (item.ContainsKey("userid") && item["userid"] != null)
+                    {
+                        int.TryParse(item["userid"].ToString(), out userid);
+                    }
+                    if (userid <= 0) continue;
+                    UserInfo userInfo = new UserInfo();
+                    userInfo.UserId = userid;
+                    if (item.ContainsKey("usericon") && item["usericon"] != null)
+                    {
+                        userInfo.UserIcon = item["usericon"].ToString();
+                    }
+
+                    if (item.ContainsKey("username") && item["username"] != null)
+                    {
+                        userInfo.UserName = item["username"].ToString();
+                    }
+                    if (item.ContainsKey("usersex") && item["usersex"] != null)
+                    {
+                        int sex = 0;
+                        if (int.TryParse(item["usersex"].ToString(), out sex))
+                        {
+                            userInfo.UserSex = sex;
+                        }
+                    }
+                    if (userInfo.UserName != null && userInfo.UserName.Length > 0)
+                    {
+                        userInfo.NamePinyin = PingYinHelper.ConvertToAllSpell(userInfo.UserName);
+                        userInfo.NamePinyin_FistChar = PingYinHelper.ConvertFirstChar(userInfo.UserName);
+                    }
+                    fullUserList.Add(userInfo);
+                }
+                #endregion
+
+                #region 排序
+                List<UserInfo> rawList = new List<UserInfo>();
+                string lowersearch = searchKey ==null?"": searchKey.ToLower();
+                foreach (UserInfo item in fullUserList) {
+                    bool IsMatch = false;
+                    if (item.UserName.ToLower().IndexOf(lowersearch) >= 0) {
+                        IsMatch = true;
+                    }
+                    if (!IsMatch) {
+                        if (item.NamePinyin.ToLower().IndexOf(lowersearch) > 0) {
+                            IsMatch = true;
+                        }
+                    }
+                    if (!IsMatch) {
+                        if (item.NamePinyin_FistChar.ToLower().IndexOf(lowersearch) > 0) {
+                            IsMatch = true;
+                        }
+                    }
+                    if (IsMatch) {
+                        rawList.Add(item);
+                    }
+                }
+                #endregion
+                #region 处理分组
+                rawList.Sort((o1, o2) => {
+                    return o1.NamePinyin.CompareTo(o2.NamePinyin);
+                });
+                Dictionary<string, List<UserInfo>> returnDict = new Dictionary<string, List<UserInfo>>();
+                foreach (UserInfo item in rawList) {
+                    char firstChar = item.NamePinyin.ToUpper()[0];
+                    if (!(firstChar >= 'A' && firstChar <= 'Z')) {
+                        firstChar = '#';
+                    }
+                    List<UserInfo> tmplist = null;
+                    if (returnDict.ContainsKey(firstChar.ToString()))
+                    {
+                        tmplist = returnDict[firstChar.ToString()];
+                    }
+                    else {
+                        tmplist = new List<UserInfo>();
+                        returnDict.Add(firstChar.ToString(), tmplist);
+                    }
+                    tmplist.Add(item);
+
+                }
+                #endregion
+                return new OutputResult<object>(returnDict);
+            }
+            catch (Exception ex)
+            {
+                return new OutputResult<object>(new List<Dictionary<string, object>>());
+            }
         }
     }
 }

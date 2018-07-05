@@ -923,6 +923,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return string.Empty;
         }
 
+        public static string ConvertFirstChar(string strChinese) {
+            try
+            {
+                if (strChinese.Length != 0)
+                {
+                    StringBuilder fullSpell = new StringBuilder();
+                    for (int i = 0; i < strChinese.Length; i++)
+                    {
+                        var chr = strChinese[i];
+                        fullSpell.Append(GetSpell(chr));
+                    }
+
+                    return fullSpell.ToString().ToUpper();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("全拼转化出错！" + e.Message);
+            }
+
+            return string.Empty;
+        }
         /// <summary>
         /// 汉字转首字母
         /// </summary>
@@ -941,7 +963,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     for (int i = 0; i < strChinese.Length; i++)
                     {
                         var chr = strChinese[i];
-                        fullSpell.Append(GetSpell(chr)[0]);
+                        fullSpell.Append(GetSpellFirstChar(chr));
                     }
 
                     return fullSpell.ToString().ToUpper();
@@ -973,6 +995,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return coverchr.Substring(0,1);
+
+        }
+        private static string GetSpellFirstChar(char chr)
+        {
+            var coverchr = NPinyin.Pinyin.GetPinyin(chr);
+
+            bool isChineses = ChineseChar.IsValidChar(coverchr[0]);
+            if (isChineses)
+            {
+                ChineseChar chineseChar = new ChineseChar(coverchr[0]);
+                foreach (string value in chineseChar.Pinyins)
+                {
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return value.Substring(0,1);
+                    }
+                }
+            }
+
+            return "";
 
         }
     }

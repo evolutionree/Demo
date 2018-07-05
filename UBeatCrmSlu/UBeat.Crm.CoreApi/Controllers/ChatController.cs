@@ -49,7 +49,18 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return _service.AddMembers(bodyData, UserId);
         }
+        [HttpPost("updatemembers")]
+        public OutputResult<object> UpdateMembers([FromBody] AddMembersModel bodyData)
+        {
+            try
+            {
 
+                return _service.UpdateMembers(bodyData, LoginUser.UserName, UserId);
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+        }
         //设置成员：设置管理员，取消管理员，设置屏蔽群，取消屏蔽群
         [HttpPost("setmembers")]
         public OutputResult<object> SetMembers([FromBody] SetMembersModel bodyData)
@@ -104,6 +115,13 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> RecentChatList() {
             List<IDictionary<string, object>> ret = this._service.GetRecentChatList(UserId);
             return new OutputResult<object>(ret);
+        }
+        [HttpPost("userlist")]
+        public OutputResult<object> UserList([FromBody]ChatUserListModel paramInfo)
+        {
+            string key = "";
+            if (paramInfo != null) key = paramInfo.SearchKey;
+            return _service.GetUserList(key, UserId);
         }
     }
 }

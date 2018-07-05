@@ -36,5 +36,6 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<IDictionary<string, object>> GetRecentChatList(DbTransaction tran, int userId);
         List<IDictionary<string, object>> GetRecentMsgByGroupChatIds(DbTransaction tran, List<Guid> groupchatids, int userId);
         List<IDictionary<string, object>> GetRecentMsgByPersonalChatIds(DbTransaction tran, List<int> singlechatids, int userId);
+        void UpdateMembers(GroupMemberAdd crmData, int userId);
     }
 }
