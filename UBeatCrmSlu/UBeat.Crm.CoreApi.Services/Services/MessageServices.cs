@@ -237,6 +237,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (receiverItem.Value != null && receiverItem.Value.Count > 0 && configData.MessageUserType.Contains(receiverItem.Key))
                 {
                     receiverIds.AddRange(receiverItem.Value);
+                    if (receiverItem.Key == MessageUserType.WorkFlowCreateUser || receiverItem.Key == MessageUserType.WorkFlowCompletedApprover) {
+                        msgparam.NoticeUsers.AddRange(receiverItem.Value);
+                        msgparam.CopyUsers.AddRange(receiverItem.Value);//临时性,以后会删除
+                    }
                 }
             }
             receiverIds = receiverIds.Distinct().ToList();
@@ -257,6 +261,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var msgContent = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.MsgTemplate);
                 MsgParamInfo tempData = null;
                 //如果是动态点赞和动态评论，则先获取动态模板内容
+                if (configData.MsgStyleType == MessageStyleType.DynamicPrase)
                 if (configData.MsgStyleType == MessageStyleType.DynamicPrase)
                 {
                     var template = _dynamicRepository.GetDynamicTemplate(msgparam.EntityId, msgparam.TypeId);
@@ -375,6 +380,109 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
         #endregion
 
+        #region 工作流相关的消息处理
+        /// <summary>
+        /// 更新会审的消息状态
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="caseId"></param>
+        /// <param name="caseItemId"></param>
+        /// <param name="handlerUserId"></param>
+        public void UpdateJointAuditMessage(DbTransaction tran, Guid businessId,Guid caseId,int stepnum,  int choiceStatus ,int handlerUserId) {
+
+            DbConnection conn = null;
+            bool isLocalTransaction = false;
+            try
+            {
+                if (tran == null)
+                {
+                    isLocalTransaction = true;
+                    conn = GetDbConnect();
+                    conn.Open();
+                    tran = conn.BeginTransaction();
+                }
+                if (isLocalTransaction)
+                {
+                    tran.Commit();
+                }
+                //获取当前节点的消息和接收者的状态
+                List<MsgWriteBackBizStatusInfo> msglist = this._msgRepository.GetWorkflowMsgList(tran, businessId,caseId, stepnum,handlerUserId);
+                List<MsgWriteBackBizStatusInfo> needChangedMsgList = new List<MsgWriteBackBizStatusInfo>();
+                foreach (MsgWriteBackBizStatusInfo msg in msglist) {
+                    if (msg.BizStatus != 0) continue;
+                    if (msg.ReceiverId == handlerUserId)
+                    {
+                        msg.BizStatus = 10 + choiceStatus;
+                    }
+                    else {
+                        msg.BizStatus = 2;
+                    }
+                    needChangedMsgList.Add(msg);
+                }
+                this._msgRepository.UpdateMessageBizStatus(tran, needChangedMsgList, handlerUserId);
+            }
+            catch (Exception ex)
+            {
+                if (isLocalTransaction)//只有是本地事务，才需要回滚
+                    tran.Rollback();
+                _logger.Error(ex.Message);
+            }
+            finally {
+                if (isLocalTransaction)
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
+        }
+
+        public void UpdateWorkflowNodeMessage(DbTransaction tran, Guid businessId, Guid caseId, int stepnum, int choiceStatus, int handlerUserId)
+        {
+            DbConnection conn = null;
+            bool isLocalTransaction = false;
+            try
+            {
+                if (tran == null)
+                {
+                    isLocalTransaction = true;
+                    conn = GetDbConnect();
+                    conn.Open();
+                    tran = conn.BeginTransaction();
+                }
+                if (isLocalTransaction)
+                {
+                    tran.Commit();
+                }
+                //获取当前节点的消息和接收者的状态
+                List<MsgWriteBackBizStatusInfo> msglist = this._msgRepository.GetWorkflowMsgList(tran, businessId, caseId, stepnum, handlerUserId);
+                List<MsgWriteBackBizStatusInfo> needChangedMsgList = new List<MsgWriteBackBizStatusInfo>();
+                foreach (MsgWriteBackBizStatusInfo msg in msglist)
+                {
+                    if (msg.BizStatus != 0) continue;
+                    if (msg.ReceiverId != handlerUserId) { continue; }
+                    msg.BizStatus = 10 + choiceStatus;
+                    needChangedMsgList.Add(msg);
+
+                }
+                this._msgRepository.UpdateMessageBizStatus(tran, needChangedMsgList, handlerUserId);
+            }
+            catch (Exception ex)
+            {
+                if (isLocalTransaction)//只有是本地事务，才需要回滚
+                    tran.Rollback();
+                _logger.Error(ex.Message);
+            }
+            finally
+            {
+                if (isLocalTransaction)
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
+        }
+
+        #endregion 
 
         #region --实体类型离线消息的公共方法--
 
@@ -874,6 +982,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+        
 
         #endregion
 

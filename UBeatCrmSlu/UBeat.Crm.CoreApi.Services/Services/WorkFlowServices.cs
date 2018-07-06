@@ -1510,6 +1510,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             var auditResult = _workFlowRepository.AuditWorkFlowCaseItem(caseItemEntity, nowcaseitem, userinfo.UserId, tran);
 
+            MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, nowcaseitem.StepNum, (int)caseItemEntity.ChoiceStatus, userinfo.UserId);
+
             switch (caseItemEntity.ChoiceStatus)  //0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
             {
                 case 0:        //0流程被拒绝而结束
@@ -1559,7 +1561,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int casenodenum = caseInfo.NodeNum;
             AuditStatusType auditstatus = AuditStatusType.Approving;
             var auditResult = _workFlowRepository.AuditWorkFlowCaseItem(caseItemEntity, nowcaseitem, userinfo.UserId, tran);
-
+            MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, nowcaseitem.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
             switch (caseItemEntity.ChoiceStatus)  //0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
             {
                 case 0:        //0流程被拒绝而结束
@@ -1616,6 +1618,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             AuditStatusType auditstatus = AuditStatusType.Approving;
 
             var auditResult = _workFlowRepository.AuditWorkFlowCaseItem(caseItemEntity, nowcaseitem, userinfo.UserId, tran);
+            #region 处理当前节点的消息状态 
+            MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseItemEntity.CaseId,
+                            nowcaseitem.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
+           // MessageService.UpdateJointAuditMessage(tran, caseInfo.RecId, caseItemEntity.CaseId, nowcaseitem.CaseItemId, caseItemEntity.ChoiceStatus, userinfo.UserId);
+            #endregion
             //获取当前审批结果
             var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
             if (caseitems == null || caseitems.Count == 0)
@@ -1656,6 +1663,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         auditstatus = AuditStatusType.Finished;
                         casefinish = true;
                     }
+                    //处理其他人的情况
+                    MessageService.UpdateJointAuditMessage(tran, caseInfo.RecId,caseItemEntity.CaseId, nowcaseitem.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
                 }
                 else if (aproval_notdeal_count > 0) //是否还有人未处理会审审批,若有，则等待他人完成当前步骤审批
                 {
@@ -1900,6 +1909,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         msg.Receivers = MessageService.GetWorkFlowMessageReceivers(caseInfo.RecCreator, approvers, copyusers, completedApprovers);
                         var msgParamData = new Dictionary<string, object>();
                         msgParamData.Add("caseid", caseInfo.CaseId.ToString());
+                        if (stepNum == 0)
+                        {
+
+                            msgParamData.Add("stepnum", stepNum + 1);
+                        }
+                        else
+                        {
+                            msgParamData.Add("stepnum", stepNum+1 );
+
+                        }
                         msg.ParamData = JsonConvert.SerializeObject(msgParamData);
 
                         var users = new List<int>();

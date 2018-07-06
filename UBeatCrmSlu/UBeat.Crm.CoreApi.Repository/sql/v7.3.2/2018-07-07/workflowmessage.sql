@@ -1,0 +1,1 @@
+﻿alter table crm_sys_message_receiver add bizstatus int4 default 0;

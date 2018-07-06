@@ -183,7 +183,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
             }
 
 
-            var executeSql = string.Format(@"SELECT m.*,mr.readstatus,mr.userid,e.entityname AS EntityName ,e.modeltype AS EntityModel,u.username AS RecCreatorName,u.usericon AS RecCreatorIcon FROM crm_sys_message_receiver AS mr
+            var executeSql = string.Format(@"SELECT m.*,mr.readstatus,mr.userid,e.entityname AS EntityName ,e.modeltype AS EntityModel,u.username AS RecCreatorName,u.usericon AS RecCreatorIcon 
+                                FROM crm_sys_message_receiver AS mr
                                 LEFT JOIN crm_sys_message AS m ON m.msgid= mr.msgid
                                 LEFT JOIN crm_sys_userinfo AS u ON m.reccreator = u.userid
                                 LEFT JOIN crm_sys_entity AS e ON e.entityid = m.entityid
@@ -318,5 +319,45 @@ where userid = @userid and msgid IN (SELECT msgid from crm_sys_message where msg
             ExecuteNonQuery(sql, parm.ToArray(), tran);
         }
 
+        public void UpdateMessageBizStatus(DbTransaction tran, List<MsgWriteBackBizStatusInfo> messages, int userNumber)
+        {
+            Guid msgid = Guid.NewGuid();
+            DateTime sendtime = DateTime.Now;
+            //插入消息信息数据
+            var executeSql = @"UPDATE crm_sys_message_receiver SET bizstatus=@bizstatus  WHERE msgid=@msgid and userid=@userid";
+            foreach (MsgWriteBackBizStatusInfo msg in messages) {
+
+                var param = new DbParameter[]
+                 {
+                    new NpgsqlParameter("bizstatus", msg.BizStatus),
+                    new NpgsqlParameter("msgid", msg.MsgId),
+                    new NpgsqlParameter("userid",msg.ReceiverId)
+                 };
+                ExecuteNonQuery(executeSql, param);
+            }
+        }
+
+        public List<MsgWriteBackBizStatusInfo> GetWorkflowMsgList(DbTransaction tran,Guid bizId, Guid caseId,int stepnum, int handlerUserId)
+        {
+            try {
+                string sql = @"select a.msgid,b.userid ReceiverId,b.bizstatus 
+from crm_sys_message a 
+	inner join crm_sys_message_receiver b on a.msgid = b.msgid 
+where a.msgstyletype =5 and a.businessid = @businessid 
+     and  ((msgparam->>'Data')::jsonb->>'caseid')::uuid = @caseid 
+		and ((msgparam->>'Data')::jsonb->>'stepnum') = @stepnum::text";
+                var param = new DbParameter[]
+                 {
+                    new NpgsqlParameter("caseid",caseId),
+                    new NpgsqlParameter("stepnum",stepnum),
+                    new NpgsqlParameter("businessid",bizId)
+                 };
+                return ExecuteQuery<MsgWriteBackBizStatusInfo>(sql, param, tran);
+            }
+            catch(Exception e)
+            {
+                return new List<MsgWriteBackBizStatusInfo>();
+            }
+        }
     }
 }

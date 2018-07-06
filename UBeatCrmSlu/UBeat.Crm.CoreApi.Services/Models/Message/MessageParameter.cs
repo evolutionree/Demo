@@ -77,6 +77,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Message
         /// 批阅人
         /// </summary>
         public List<int> ApprovalUsers { set; get; } = new List<int>();
+        /// <summary>
+        /// 工作流专用，通知类的用户
+        /// </summary>
+        public List<int> NoticeUsers { get; set; } = new List<int>();
 
 
     }

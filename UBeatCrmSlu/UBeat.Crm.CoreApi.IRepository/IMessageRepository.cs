@@ -37,5 +37,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         void UpdateMessageStatus(List<MsgWriteBackInfo> messages, int userNumber);
 
         void UpdateMessageStatus(DbTransaction tran, int msgGroupId, List<Guid> msgIds, int readstatus, int userNumber);
+        void UpdateMessageBizStatus(DbTransaction tran, List<MsgWriteBackBizStatusInfo> messages,int userNumber);
+        List<MsgWriteBackBizStatusInfo> GetWorkflowMsgList(DbTransaction tran, Guid bizId,Guid caseId,int stepnum, int handlerUserId);
     }
 }

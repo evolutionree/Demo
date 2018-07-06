@@ -61,5 +61,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Message
         /// 批阅人
         /// </summary>
         public List<int> ApprovalUsers { set; get; } 
+
+        /// <summary>
+        /// 通知人，工作流专用
+        /// </summary>
+        public List<int> NoticeUsers { get; set; }
     }
 }
