@@ -84,9 +84,8 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.0-msbuild3-final" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Controller\UBeat.Crm.CoreApi.Controller.csproj" />
     <ProjectReference Include="..\UBeat.Crm.CoreApi.Core\UBeat.Crm.CoreApi.Core.csproj" />
-    <ProjectReference Include="..\UBeat.Crm.CoreApi.Services\UBeat.Crm.CoreApi.Services.csproj" />
-    <ProjectReference Include="..\UBeat.Crm.LicenseCore\UBeat.Crm.LicenseCore.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="NLog.config">

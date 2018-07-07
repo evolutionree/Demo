@@ -8,13 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using NLog.Web;
-using UBeat.Crm.CoreApi.Core;
-using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.Utility;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Diagnostics;
-using UBeat.Crm.CoreApi.Services.Services;
 using System.IO;
 using System.Collections.Generic;
 using System.Runtime.Loader;
@@ -28,6 +23,8 @@ using UBeat.Crm.CoreApi.Models;
 using System.Net.WebSockets;
 using UBeat.Crm.CoreApi.Services.webchat;
 using UBeat.Crm.CoreApi.Controllers;
+using UBeat.Crm.CoreApi.Core;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi
 {
