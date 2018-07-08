@@ -35,6 +35,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return retList;
         }
+
+        public int ClearRunningStatus(string serverid)
+        {
+            int count = 0;
+            List<TriggerDefineInfo> triggers =  this._qrtzRepository.ListDeadTriggers(serverid, 0, null);
+            foreach (TriggerDefineInfo triggerInfo in triggers) {
+                this._qrtzRepository.ClearTiggerRunningStatus(null, triggerInfo.RecId, serverid, 0);
+                count++;
+            }
+            return count;
+        }
+
         public void ExecuteSQL(string strSQL, int userid) {
             this._qrtzRepository.ExecuteSQL(strSQL,0, null);
         }
@@ -58,7 +70,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             oldInfo.InBusy = triggerInfo.InBusy;
             oldInfo.EndRunTime = triggerInfo.EndRunTime;
             oldInfo.StartRunTime = triggerInfo.StartRunTime;
-            oldInfo.RunningServer = triggerInfo.RunningServer;
+            oldInfo.RunningServer = ServerFingerPrintUtils.getInstance().CurrentFingerPrint.ServerId.ToString();
             oldInfo.ErrorCount = triggerInfo.ErrorCount;
             oldInfo.LastErrorTime = triggerInfo.LastErrorTime;
             this._qrtzRepository.UpdateTrigger(oldInfo, userid, null);

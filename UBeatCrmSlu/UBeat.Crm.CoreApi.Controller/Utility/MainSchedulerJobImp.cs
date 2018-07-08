@@ -7,17 +7,27 @@ using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.UkQrtz;
 using UBeat.Crm.CoreApi.Services.Services;
 using System.Reflection;
+using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Utility
 {
     public class MainSchedulerJobImp : IJob
     {
+        public static MainSchedulerJobImp instance = null;
         private QrtzServices _qrtzServices;
+        private bool IsClearStatus = false;
         private string ServerName = null;
+        private static NLog.ILogger _logger = NLog.LogManager.GetLogger(typeof(MainSchedulerJobImp).FullName);
         public void clearRunningStatus (){
+            if (IsClearStatus == true) return;
+            string serverid = ServerFingerPrintUtils.getInstance().CurrentFingerPrint.ServerId.ToString();
+            _logger.Trace("开始重置服务器上次关闭后的未处理完毕的调度任务,serverid="+ serverid);
+            int clearCount = GetQrtzServices().ClearRunningStatus(serverid);
+            _logger.Trace(string.Format("调度任务的实例已经清理完毕，工清理了{0}个任务", clearCount));
         }
         public Task Execute(IJobExecutionContext context)
         {
+            clearRunningStatus();
             DateTime dt = DateTime.Now;
             if (context.ScheduledFireTimeUtc != null && context.ScheduledFireTimeUtc.HasValue) {
                 context.ScheduledFireTimeUtc.Value.ToLocalTime();

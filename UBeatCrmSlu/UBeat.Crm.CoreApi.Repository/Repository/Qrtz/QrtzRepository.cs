@@ -279,6 +279,45 @@ where  triggerid = @triggerid
             }
         }
 
+        public List<TriggerDefineInfo> ListDeadTriggers(string serverid, int userid, DbTransaction tran) {
+            try
+            {
+                string strSQL = @"select * 
+                        from crm_sys_qrtz_triggerdefine  
+                        where recstatus = 1 and  runningserver = @serverid ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("serverid",serverid)
+                };
+                return ExecuteQuery<TriggerDefineInfo>(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+                return new List<TriggerDefineInfo>();
+            }
+
+        }
+        public void ClearTiggerRunningStatus(DbTransaction tran, Guid triggerid, string serverid, int userid)
+        {
+            try
+            {
+                //先清除运行实例，然后才重置事务定义
+                string strSQL = @"update crm_sys_qrtz_triggerinstance  set status =2 where triggerid = @triggerid and status = 1 and runserver = @runserver";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@triggerid",triggerid),
+                    new Npgsql.NpgsqlParameter("@runserver",serverid)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+
+                strSQL = @"update  crm_sys_qrtz_triggerdefine set isbusy = 0 and runningserver = null 
+                        where recid = @recid ";
+                p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@recid",triggerid)
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+
+            }
+        }
         public PageDataInfo<TriggerDefineInfo> ListTriggers(string SearchKey, bool LoadNormal, bool LoadStop, bool LoadDeleted, int PageIndex, int PageSize, int userid, DbTransaction tran)
         {
             try

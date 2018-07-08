@@ -90,6 +90,7 @@ namespace UBeat.Crm.CoreApi
             var mainScheduleJob = JobBuilder.Create<MainSchedulerJobImp>()
                 .WithIdentity("MainScheduleJob")
                 .Build();
+            MainSchedulerJobImp.instance =(MainSchedulerJobImp) mainScheduleJob;
             var mainScheduleTrigger = TriggerBuilder.Create()
                 .WithIdentity("MainScheduleCron")
                 .StartNow()

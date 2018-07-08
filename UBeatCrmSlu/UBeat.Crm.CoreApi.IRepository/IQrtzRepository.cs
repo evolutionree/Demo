@@ -105,5 +105,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         void ExecuteSQL(string sql, int userid, DbTransaction tran);
         List<TriggerDefineInfo> ListNeedArchiveTriggers(int v1, int v2, DbTransaction dbTransaction);
         void ArchiveInstances(Guid recId, int maxInstancesCount, int userid, DbTransaction tran);
+        void ClearTiggerRunningStatus(DbTransaction tran, Guid triggerid, string serverid, int userid);
+        List<TriggerDefineInfo> ListDeadTriggers(string serverid, int userid, DbTransaction tran);
     }
 }
