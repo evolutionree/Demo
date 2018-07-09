@@ -183,7 +183,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
             }
 
 
-            var executeSql = string.Format(@"SELECT m.*,mr.readstatus,mr.userid,e.entityname AS EntityName ,e.modeltype AS EntityModel,u.username AS RecCreatorName,u.usericon AS RecCreatorIcon 
+            var executeSql = string.Format(@"SELECT m.*,mr.bizstatus,mr.readstatus,mr.userid,e.entityname AS EntityName ,e.modeltype AS EntityModel,u.username AS RecCreatorName,u.usericon AS RecCreatorIcon 
                                 FROM crm_sys_message_receiver AS mr
                                 LEFT JOIN crm_sys_message AS m ON m.msgid= mr.msgid
                                 LEFT JOIN crm_sys_userinfo AS u ON m.reccreator = u.userid

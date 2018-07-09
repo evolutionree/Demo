@@ -311,15 +311,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             return result;
         }
 
-        public Dictionary<string, List<IDictionary<string, object>>> GetUserInfo(int userNumber)
+        public Dictionary<string, List<IDictionary<string, object>>> GetUserInfo(int userNumber,int currentUserId)
         {
             var procName =
-               "SELECT crm_func_account_userinfo_fetch(@userNo)";
+               "SELECT crm_func_account_userinfo_fetch(@userNo,@CurrentUserId)";
 
             var dataNames = new List<string> { "User", "Role", "Vocation" };
             var param = new
             {
-                UserNo = userNumber
+                UserNo = userNumber,
+                CurrentUserId = currentUserId
             };
 
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
