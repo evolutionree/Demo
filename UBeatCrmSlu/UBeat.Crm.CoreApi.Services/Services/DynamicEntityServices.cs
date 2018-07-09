@@ -71,7 +71,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             OutputResult<object> addRes = null;
             var res = ExcuteInsertAction((transaction, arg, userData) =>
             {
-                if (_dynamicEntityRepository.ExistsData(dynamicModel.CacheId, userNumber, transaction))
+                if (dynamicModel.CacheId != Guid.Empty && !_dynamicEntityRepository.ExistsData(dynamicModel.CacheId, userNumber, transaction))
                     _dynamicEntityRepository.DeleteTemporary(dynamicModel.CacheId, userNumber, transaction);
                 WorkFlowAddCaseModel workFlowAddCaseModel = null;
                 return addRes = AddEntityData(transaction, userData, entityInfo, arg, header, userNumber, out workFlowAddCaseModel);
