@@ -305,7 +305,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                                 recupdator=@recupdator,
                                 recupdated=now(),
                                 recversion=nextval('crm_sys_reminder_version_id_sequence'::regclass),
-                                reminderlanguage=@reminderlanguage
+                                reminderlanguage=@reminderlanguage::jsonb
                             WHERE recid=@reminderid; ";
                 }
                 else
@@ -320,7 +320,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                                 remark=@remark,
                                 recupdator=@recupdator,
                                 recupdated=now(),
-                                reminderlanguage=@reminderlanguage
+                                reminderlanguage=@reminderlanguage::jsonb
                             WHERE recid=@reminderid; ";
                 }
 
@@ -328,7 +328,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
             else
             {
                 strSql = @"INSERT INTO crm_sys_reminder(recid,remindername,entityid,isrepeat,repeattype,cronstring,recstatus,remark,reccreator,recupdator,rectype,reminderlanguage) 
-                           VALUES(@reminderid,@remindername,@entityid,@isrepeat,@repeattype,@cronstring,@recstatus,@remark,@reccreator,@recupdator,@rectype,@reminderlanguage); ";
+                           VALUES(@reminderid,@remindername,@entityid,@isrepeat,@repeattype,@cronstring,@recstatus,@remark,@reccreator,@recupdator,@rectype,@reminderlanguage::jsonb); ";
             }
 
 
