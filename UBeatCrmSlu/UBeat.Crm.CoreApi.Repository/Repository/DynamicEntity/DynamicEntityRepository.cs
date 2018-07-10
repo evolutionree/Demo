@@ -1643,7 +1643,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         {
             string sql = @"update crm_sys_temporary_entity 
 set recmanager=@recmanager,datajson=@datajson::jsonb,fieldjson=@fieldjson::jsonb,inputjson=@inputjson::jsonb,typeid=@typeid::uuid,
-title=@title,fieldname=@fieldname,recrelateid=@recrelateid,relateentityid=@relateentityid,relatetypeid=@relatetypeid
+title=@title,fieldname=@fieldname,recrelateid=@recrelateid,relateentityid=@relateentityid,relatetypeid=@relatetypeid,createdtime=@createdtime
 where cacheid = @cacheid";
             var p = new DbParameter[]
             {
@@ -1657,7 +1657,8 @@ where cacheid = @cacheid";
                 new NpgsqlParameter("fieldname",data.FieldName),
                 new NpgsqlParameter("recrelateid",data.RecRelateId),
                 new NpgsqlParameter("relateentityid",data.RelateEntityId),
-                new NpgsqlParameter("relatetypeid",data.RelateTypeId)
+                new NpgsqlParameter("relatetypeid",data.RelateTypeId),
+                new NpgsqlParameter("createdtime",DateTime.Now)
             };
             return this.ExecuteNonQuery(sql, p, tran) > 0;
         }
@@ -1677,20 +1678,22 @@ where cacheid = @cacheid";
 
             string sql = @"select e.entityname,te.* from crm_sys_temporary_entity as te 
                                 left JOIN crm_sys_entity as e
-                                on te.typeid=e.entityid  ";
+                                on te.typeid=e.entityid where recmanager::text=@userid ";
             DbParameter[] p;
             if (cacheId != Guid.Empty)
             {
-                sql += "where te.cacheid = @cacheId";
+                sql += "and te.cacheid = @cacheId";
                 p = new DbParameter[]
                 {
-                    new NpgsqlParameter("cacheId",cacheId)
+                    new NpgsqlParameter("cacheId",cacheId),
+                     new NpgsqlParameter("userid",userNumber)
                 };
             }
             else
             {
                 p = new DbParameter[] { };
             }
+            sql += " order by te.createdtime dese";
             return this.ExecuteQuery(sql, p, tran);
         }
 
