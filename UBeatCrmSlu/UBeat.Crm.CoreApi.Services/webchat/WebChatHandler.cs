@@ -21,8 +21,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
 
         private AccountServices _accountService = null;
         private ChatServices _chatService = null;
-
-        private int UserId = 0;
+        
         public WebChatHandler(RequestDelegate next)
         {
             _next = next;
@@ -66,13 +65,14 @@ namespace UBeat.Crm.CoreApi.Services.webchat
             };
 
             WebChatResponseHandler.getInstance().Enqueue(pkg);
+            int userid = 0;
             while (true)
             {
                 if (ct.IsCancellationRequested)
                 {
                     break;
                 }
-
+                
 
                 string response = null;
                 try
@@ -113,14 +113,14 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 };
                 switch (msg.Cmd) {
                     case WebChatCommandType.WebChatLogin:
-                        Login(msg, currentSocket);
+                        userid = Login(msg, currentSocket);
                         break;
                     case WebChatCommandType.WebChatLogout:
                         break;
                     case WebChatCommandType.WebChatListMsg:
                         break;
                     case WebChatCommandType.WebChatSendMsg:
-                        ReceiveMsg(msg, currentSocket);
+                        ReceiveMsg(msg, currentSocket,userid);
                         break;
                 }
                 //responseMsg = new WebChatResponseMsg()
@@ -161,7 +161,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         /// </summary>
         /// <param name="cmd"></param>
         /// <param name="websock"></param>
-        public void Login(WebChatMsgTemplate cmd, WebSocket websock)
+        public int Login(WebChatMsgTemplate cmd, WebSocket websock)
         {
             WebChatResponseMsg responseMsg = null;
             WebResponsePackage pkg = null;
@@ -191,12 +191,11 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                         MessageType = WebChatMsgType.Command//命令回复数据
                     };
                     WebChatResponseHandler.getInstance().Enqueue(pkg);
-                    return;
+                    return 0;
                 }
                 if (true || _accountService.CheckAuthorizedCodeValid(userid, authcode))
                 {
                     WebSockChatSocketManager.getInstance().MapSocketToUser(websock, userid);
-                    UserId = userid;
                     //发送登陆成功的消息
                     responseMsg = new WebChatResponseMsg()
                     {
@@ -210,6 +209,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                         MessageType = WebChatMsgType.Command//命令回复数据
                     };
                     WebChatResponseHandler.getInstance().Enqueue(pkg);
+                    return userid;
                 }
                 else {
                     //发送登陆失败的回复
@@ -242,6 +242,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 };
                 WebChatResponseHandler.getInstance().Enqueue(pkg);
             }
+            return 0;
         }
 
 
@@ -255,7 +256,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         /// </summary>
         /// <param name="cmd"></param>
         /// <param name="webSock"></param>
-        public void ReceiveMsg(WebChatMsgTemplate cmd, WebSocket webSock) {
+        public void ReceiveMsg(WebChatMsgTemplate cmd, WebSocket webSock,int userid) {
             WebChatResponseMsg responseMsg = null;
             WebResponsePackage pkg = null;
             try
@@ -277,7 +278,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                         ChatType = msgdata.ctype
 
                     };
-                    _chatService.SendChat(model, UserId);
+                    _chatService.SendChat(model, userid);
                 }
                 else {
                     //发送消息异常的回复
@@ -288,7 +289,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                     };
                     pkg = new WebResponsePackage()
                     {
-                        ReceiverId = UserId,
+                        ReceiverId = userid,
                         CmdMsg = responseMsg,
                         MessageType = WebChatMsgType.Command//命令回复数据
                     };
@@ -304,7 +305,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                 };
                 pkg = new WebResponsePackage()
                 {
-                    ReceiverId = UserId,
+                    ReceiverId = userid,
                     CmdMsg = responseMsg,
                     MessageType = WebChatMsgType.Command//命令回复数据
                 };
