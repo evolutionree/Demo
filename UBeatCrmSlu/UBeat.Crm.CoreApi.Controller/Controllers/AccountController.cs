@@ -419,14 +419,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("userinfo")]
         public OutputResult<object> UserInfo()
         {
-            return _accountServices.GetUserInfo(UserId);
+            return _accountServices.GetUserInfo(UserId,UserId);
         }
         [HttpPost]
         [Route("getuserinfo")]
         public OutputResult<object> GetUserInfo([FromBody]UserInfoModel queryModel = null)
         {
             if (queryModel == null) return ResponseError<object>("参数格式错误");
-            return _accountServices.GetUserInfo(queryModel.UserId);
+            return _accountServices.GetUserInfo(queryModel.UserId,UserId);
         }
 
         [HttpPost]

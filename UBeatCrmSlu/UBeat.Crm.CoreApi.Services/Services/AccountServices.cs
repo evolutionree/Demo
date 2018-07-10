@@ -415,9 +415,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = _accountRepository.GetUserPowerListForControl(pageParam, searchEntity, userNumber);
             return new OutputResult<object>(result);
         }
-        public OutputResult<object> GetUserInfo(int userNumber)
+        public OutputResult<object> GetUserInfo(int userNumber,int CurrentUserId)
         {
-            var result = _accountRepository.GetUserInfo(userNumber);
+            var result = _accountRepository.GetUserInfo(userNumber, CurrentUserId);
             return new OutputResult<object>(result);
         }
 

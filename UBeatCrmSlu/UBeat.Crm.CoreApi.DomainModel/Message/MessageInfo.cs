@@ -99,6 +99,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Message
         /// 是否已读，0未读 1已查，2已读
         /// </summary>
         public MessageReadStatus ReadStatus { set; get; }
+        public int BizStatus { get; set; }
     }
    
 }

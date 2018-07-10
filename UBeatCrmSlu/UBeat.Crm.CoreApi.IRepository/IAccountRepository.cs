@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, List<IDictionary<string, object>>> GetUserPowerListForControl(PageParam pageParam,
        AccountUserQueryForControlMapper searchParam, int userNumber);
 
-        Dictionary<string, List<IDictionary<string, object>>> GetUserInfo(int userNumber);
+        Dictionary<string, List<IDictionary<string, object>>> GetUserInfo(int userNumber,int currentUserId);
 
         OperateResult UpdateAccountStatus(AccountStatusMapper entity, int userNumber);
 
