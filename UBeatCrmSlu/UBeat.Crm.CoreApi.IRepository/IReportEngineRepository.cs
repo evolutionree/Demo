@@ -31,5 +31,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="tran"></param>
         /// <returns></returns>
         Dictionary<string, object> getMyRangeWithType(int userNum, DbTransaction tran);
+
+        
     }
 }
