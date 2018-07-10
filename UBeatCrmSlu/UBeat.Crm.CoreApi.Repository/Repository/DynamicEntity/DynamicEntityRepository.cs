@@ -1678,7 +1678,7 @@ where cacheid = @cacheid";
 
             string sql = @"select e.entityname,te.* from crm_sys_temporary_entity as te 
                                 left JOIN crm_sys_entity as e
-                                on te.typeid=e.entityid where recmanager::text=@userid ";
+                                on te.typeid=e.entityid where te.recmanager::text=@userid ";
             DbParameter[] p;
             if (cacheId != Guid.Empty)
             {
@@ -1693,7 +1693,7 @@ where cacheid = @cacheid";
             {
                 p = new DbParameter[] { };
             }
-            sql += " order by te.createdtime dese";
+            sql += " order by te.createdtime desc";
             return this.ExecuteQuery(sql, p, tran);
         }
 
