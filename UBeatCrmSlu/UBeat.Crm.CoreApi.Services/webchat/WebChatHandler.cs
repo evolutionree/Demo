@@ -200,6 +200,7 @@ namespace UBeat.Crm.CoreApi.Services.webchat
                     responseMsg = new WebChatResponseMsg()
                     {
                         ResultCode = 0,
+                        Data = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ffff"),
                         ErrorMsg = "登陆成功"
                     };
                     pkg = new WebResponsePackage()
