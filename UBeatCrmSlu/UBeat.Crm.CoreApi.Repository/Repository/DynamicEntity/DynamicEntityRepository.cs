@@ -1678,7 +1678,7 @@ where cacheid = @cacheid";
 
             string sql = @"select e.entityname,te.* from crm_sys_temporary_entity as te 
                                 left JOIN crm_sys_entity as e
-                                on te.typeid=e.entityid where te.recmanager::text=@userid ";
+                                on te.typeid=e.entityid where te.recmanager=@userid ";
             DbParameter[] p;
             if (cacheId != Guid.Empty)
             {
@@ -1686,12 +1686,14 @@ where cacheid = @cacheid";
                 p = new DbParameter[]
                 {
                     new NpgsqlParameter("cacheId",cacheId),
-                     new NpgsqlParameter("userid",userNumber)
+                    new NpgsqlParameter("userid",userNumber)
                 };
             }
             else
             {
-                p = new DbParameter[] { };
+                p = new DbParameter[] {
+                    new NpgsqlParameter("userid",userNumber)
+                };
             }
             sql += " order by te.createdtime desc";
             return this.ExecuteQuery(sql, p, tran);
