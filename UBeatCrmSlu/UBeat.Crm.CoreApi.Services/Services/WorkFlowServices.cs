@@ -417,7 +417,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var tran = conn.BeginTransaction();
                 try
                 {
-
+                    Guid g = Guid.Parse(caseModel.CacheId);
+                    if (!string.IsNullOrEmpty(caseModel.CacheId) && !(_dynamicEntityRepository.ExistsData(g, userinfo.UserId, tran)))
+                        _dynamicEntityRepository.DeleteTemporary(g, userinfo.UserId, tran);
                     if (caseModel.DataType == 0)
                     {
                         var entityInfo = _entityProRepository.GetEntityInfo(caseModel.EntityModel.TypeId);
