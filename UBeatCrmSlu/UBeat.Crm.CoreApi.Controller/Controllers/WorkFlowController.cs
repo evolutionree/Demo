@@ -39,6 +39,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> AddCase([FromBody] WorkFlowCaseAddModel caseModel = null)
         {
             if (caseModel == null) return ResponseError<object>("参数格式错误");
+            Guid g;
+            if (!string.IsNullOrEmpty(caseModel.CacheId) && !Guid.TryParse(caseModel.CacheId, out g))
+                return ResponseError<object>("CacheId格式错误");
             WriteOperateLog("发起审批数据", caseModel);
             return _workFlowServices.AddWorkflowCase(caseModel, LoginUser);
         }
@@ -51,7 +54,6 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> PreAddCase([FromBody] WorkFlowCaseAddModel caseModel = null)
         {
             if (caseModel == null) return ResponseError<object>("参数格式错误");
-            
             return _workFlowServices.PreAddWorkflowCase(caseModel, LoginUser);
         }
 
