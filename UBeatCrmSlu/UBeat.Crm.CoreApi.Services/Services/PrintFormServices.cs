@@ -24,6 +24,7 @@ using Irony.Parsing;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony.Evaluations;
 using UBeat.Crm.CoreApi.Services.Utility.OpenXMLUtility.Irony;
 using System.Diagnostics;
+using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -33,15 +34,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IAccountRepository _accountRepository;
         private readonly IEntityProRepository _entityProRepository;
         private readonly DynamicEntityServices _entityServices;
+        private JavaScriptUtilsServices _javaScriptUtilsServices;
         //
         FileServices _fileServices;
-        public PrintFormServices(IPrintFormRepository repository, IAccountRepository accountRepository, IEntityProRepository entityProRepository, DynamicEntityServices entityServices)
+        public PrintFormServices(IPrintFormRepository repository, IAccountRepository accountRepository, 
+            IEntityProRepository entityProRepository, DynamicEntityServices entityServices,
+           JavaScriptUtilsServices javaScriptUtilsServices )
         {
             _repository = repository;
             _fileServices = new FileServices();
             _accountRepository = accountRepository;
             _entityProRepository = entityProRepository;
             _entityServices = entityServices;
+            _javaScriptUtilsServices =javaScriptUtilsServices;
         }
 
         #region ---套打模板管理---
@@ -158,8 +163,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var excelData = ExcelHelper.ReadExcel(fileStream);
             if (excelData == null || excelData.Sheets == null || excelData.Sheets.Count == 0)
                 throw new Exception("输出模板文件解析错误，请检查模板文件格式并上传Office 2007以上版本模板文件");
-
+            
             IDictionary<string, object> detailData = GetDetailData(data.EntityId, data.RecId, templateInfo, usernumber);
+            #region 处理UScript
+            
+            if (templateInfo.ExtJs != null && templateInfo.ExtJs.Length > 0)
+            {
+                UKJSEngineUtils uscript = new UKJSEngineUtils(this._javaScriptUtilsServices);
+                uscript.SetHostedObject("DetailData", detailData);
+                uscript.Evaluate(templateInfo.ExtJs);
+            }
+            #endregion
             var fields = _entityProRepository.EntityFieldProQuery(data.EntityId.ToString(), usernumber).FirstOrDefault().Value;
             var userinfo = _accountRepository.GetAccountUserInfo(usernumber);
             foreach (var sheet in excelData.Sheets)
@@ -246,13 +260,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IDictionary<string, object> detailData = null;
             if (templateInfo.DataSourceType == DataSourceType.EntityDetail)
             {
-                var paramData = new DynamicEntityDetailtMapper()
+                if (entityId.Equals(Guid.Parse("00000000-0000-0000-0000-000000000001")))
                 {
-                    EntityId = entityId,
-                    RecId = recId,
-                    NeedPower = 0
-                };
-                detailData = _entityServices.Detail(paramData, usernumber)["Detail"].FirstOrDefault();
+                    //处理审批
+                    return GetWorkflowDetail(entityId, recId, templateInfo, usernumber);
+                }
+                else
+                {
+                    var paramData = new DynamicEntityDetailtMapper()
+                    {
+                        EntityId = entityId,
+                        RecId = recId,
+                        NeedPower = 0
+                    };
+                    detailData = _entityServices.Detail(paramData, usernumber)["Detail"].FirstOrDefault();
+                    #region 获取流程列表信息
+                    #endregion
+                }
             }
             else if (templateInfo.DataSourceType == DataSourceType.DbFunction)
             {
@@ -264,6 +288,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return detailData;
+        }
+        private IDictionary<string, object> GetWorkflowDetail(Guid entityId, Guid recId, CrmSysEntityPrintTemplate templateInfo, int usernumber)
+        {
+            //获取审批实例详情
+            //获取审批节点列表
+            //获取审批单据的详情
+            //获取审批
+            return null;
         }
         #endregion
 

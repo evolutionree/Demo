@@ -1892,9 +1892,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (tempcaseitems == null || tempcaseitems.Count == 0)
                                 tempcaseitems = caseitems;
                         }
-                        approvers = tempcaseitems.Select(m => m.HandleUser).Distinct().ToList();
 
                         copyusers = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId).Select(m => m.UserId).ToList();
+                        if (isAddNextStep == false && (funcode.Equals("WorkFlowNodeFinish") || funcode.Equals("WorkFlowNodeReject") || 
+                                                        funcode.Equals("WorkFlowNodeStop")||funcode.Equals("WorkFlowNodeJointApproval") 
+                                                        || funcode.Equals("WorkFlowNodeJointReject")
+                                                        || funcode.Equals("WorkFlowNodeJointFallback"))) {
+                            completedApprovers.AddRange(tempcaseitems.Select(m => m.HandleUser).Distinct().ToList());
+                        }
+                        else
+                        {
+                            approvers = tempcaseitems.Select(m => m.HandleUser).Distinct().ToList();
+                        }
+
                         #endregion
 
 
@@ -1909,16 +1919,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         msg.Receivers = MessageService.GetWorkFlowMessageReceivers(caseInfo.RecCreator, approvers, copyusers, completedApprovers);
                         var msgParamData = new Dictionary<string, object>();
                         msgParamData.Add("caseid", caseInfo.CaseId.ToString());
-                        if (stepNum == 0)
-                        {
-
-                            msgParamData.Add("stepnum", stepNum + 1);
-                        }
-                        else
-                        {
-                            msgParamData.Add("stepnum", stepNum+1 );
-
-                        }
+                        msgParamData.Add("stepnum", stepNum + 1);
                         msg.ParamData = JsonConvert.SerializeObject(msgParamData);
 
                         var users = new List<int>();

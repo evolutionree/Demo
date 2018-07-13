@@ -239,7 +239,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     receiverIds.AddRange(receiverItem.Value);
                     if (receiverItem.Key == MessageUserType.WorkFlowCreateUser || receiverItem.Key == MessageUserType.WorkFlowCompletedApprover) {
                         msgparam.NoticeUsers.AddRange(receiverItem.Value);
-                        msgparam.CopyUsers.AddRange(receiverItem.Value);//临时性,以后会删除
                     }
                 }
             }
@@ -309,6 +308,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         tempData.RelBusinessId = msgparam.RelBusinessId;
                         tempData.CopyUsers = msgparam.CopyUsers;
                         tempData.ApprovalUsers = msgparam.ApprovalUsers;
+                        tempData.NoticeUsers = msgparam.NoticeUsers;
 
                         var msgInfo = new MessageInsertInfo()
                         {
