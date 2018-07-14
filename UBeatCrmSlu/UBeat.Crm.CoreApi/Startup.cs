@@ -87,9 +87,19 @@ namespace UBeat.Crm.CoreApi
             containerBuilder.Populate(services);
             // Regists Dependency
 
-            CoreApiRegistEngine.RegisterServices(containerBuilder, "UBeat.Crm.CoreApi.Services", "Services");
-            CoreApiRegistEngine.RegisterImplemented(containerBuilder, "UBeat.Crm.CoreApi.Repository", "Repository");
-
+            // CoreApiRegistEngine.RegisterServices(containerBuilder, "UBeat.Crm.CoreApi.Services", "Services");
+            //  CoreApiRegistEngine.RegisterImplemented(containerBuilder, "UBeat.Crm.CoreApi.Repository", "Repository");
+            #region 新的装载程序
+            dynamic type = this.GetType();
+            string currentDirectory = Path.GetDirectoryName(type.Assembly.Location);
+            System.IO.DirectoryInfo dir = new DirectoryInfo(currentDirectory);
+            FileInfo [] files = dir.GetFiles("UBeat.Crm.CoreApi.*.dll");
+            foreach (FileInfo f in files) {
+                string assemblename = f.Name.Substring(0, f.Name.Length - 4);
+                CoreApiRegistEngine.RegisterServices(containerBuilder, assemblename, "Services");
+                CoreApiRegistEngine.RegisterImplemented(containerBuilder, assemblename, "Repository");
+            }
+            #endregion
             LoadCustomerProjectAssemblyForService(containerBuilder);
             Container = containerBuilder.Build();
 
