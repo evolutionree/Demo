@@ -372,8 +372,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             object mytemp = 1;
             mainCustDetail.TryGetValue("custstatus", out mytemp);
-            if ((int)mytemp > _custstatus)
-                _custstatus = (int)mytemp;
+            if (mytemp == null)
+            {
+                _custstatus = 1;
+            }
+            else {
+                if ((int)mytemp > _custstatus)
+                    _custstatus = (int)mytemp;
+            }
+
             custstatus = _custstatus;
             return viewusers;
         }
