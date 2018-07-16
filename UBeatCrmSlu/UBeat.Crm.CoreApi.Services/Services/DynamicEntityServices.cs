@@ -443,10 +443,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         msgpParam = newJo.ToString();
                     }
+                    newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);
+                    #region 把主实体的人员信息
                     detailMapper.EntityId = entityInfotemp.RelEntityId.Value;
                     detailMapper.RecId = relbussinessId;
-
-                    newMembers = MessageService.GetEntityMember(detail as Dictionary<string, object>);
+                    IDictionary<string, object>  Rel_detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
+                    EntityMemberModel MainMembers = MessageService.GetEntityMember(Rel_detail as Dictionary<string, object>);
+                    if (MainMembers != null) {
+                        if (MainMembers.CopyUsers != null)
+                            newMembers.CopyUsers.AddRange(MainMembers.CopyUsers);
+                        if (MainMembers.FollowUsers != null )
+                            newMembers.FollowUsers.AddRange(MainMembers.FollowUsers);
+                        if (MainMembers.Members != null)
+                            newMembers.Members.AddRange(MainMembers.Members);
+                        if (MainMembers.ViewUsers != null)
+                            newMembers.ViewUsers.AddRange(MainMembers.ViewUsers);
+                        if (MainMembers.RecManager>0)
+                            newMembers.RecManager = MainMembers.RecManager;
+                    }
+                    #endregion
                 }
                 else
                 {
