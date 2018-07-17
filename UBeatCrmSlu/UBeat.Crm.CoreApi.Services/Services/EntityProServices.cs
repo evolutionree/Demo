@@ -53,6 +53,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
+            foreach (var item in entity.EntityName_Lang)
+            {
+                if (item.Key.ToUpper() == "CN")
+                    entity.EntityName = item.Value;
+            }
             OperateResult newEntity = _entityProRepository.InsertEntityPro(entity, userNumber);
             if (newEntity.Flag == 0)
                 return HandleResult(newEntity);
@@ -93,6 +98,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
+            foreach (var item in entity.EntityName_Lang)
+            {
+                if (item.Key.ToUpper() == "CN")
+                    entity.EntityName = item.Value;
+            }
             var result = HandleResult(_entityProRepository.UpdateEntityPro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             IncreaseDataVersion(DataVersionType.PowerData);

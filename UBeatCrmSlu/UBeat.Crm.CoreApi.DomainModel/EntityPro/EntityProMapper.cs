@@ -55,7 +55,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public Guid RelFieldId { get; set; }
 
-        public string EntityLanguage { get; set; }
+        public Dictionary<string,string> EntityName_Lang { get; set; }
 
         protected override IValidator GetValidator()
         {
@@ -633,4 +633,5 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         }
 
     }
+    
 }

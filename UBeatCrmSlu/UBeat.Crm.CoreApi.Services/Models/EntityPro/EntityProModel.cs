@@ -52,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public Guid RelFieldId { get; set; }
 
-        public string EntityLanguage { get; set; }
+        public Dictionary<string,string> EntityName_Lang { get; set; }
     }
 
 

@@ -52,7 +52,11 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> InsertEntityPro([FromBody]EntityProModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
+            foreach (var item in entityModel.EntityName_Lang.Values)
+            {
+                if (string.IsNullOrEmpty(item))
+                    return ResponseError<object>("请完善多语言信息");
+            }
             return _entityProService.InsertEntityPro(entityModel, UserId);
         }
 
@@ -61,7 +65,11 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> UpdateEntityPro([FromBody]EntityProModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
+            foreach (var item in entityModel.EntityName_Lang.Values)
+            {
+                if (string.IsNullOrEmpty(item))
+                    return ResponseError<object>("请完善多语言信息");
+            }
             return _entityProService.UpdateEntityPro(entityModel, UserId);
         }
 
