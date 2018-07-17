@@ -142,8 +142,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public int RecOrder { get; set; }
 
-        public string DispayLanguage { get; set; }
-        public string FieldLanguage { get; set; }
+        public Dictionary<string, string> DispayName_Lang { get; set; }
+        public Dictionary<string, string> FieldName_Lang { get; set; }
 
 
         [JsonIgnore]

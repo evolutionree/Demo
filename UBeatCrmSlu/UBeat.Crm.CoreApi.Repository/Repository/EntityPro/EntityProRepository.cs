@@ -240,8 +240,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("controltype", entity.ControlType);
             param.Add("status", entity.RecStatus);
             param.Add("userno", userNumber);
-            param.Add("dispaylanguage", entity.DispayLanguage);
-            param.Add("fieldlanguage", entity.FieldLanguage);
+            param.Add("dispaylanguage", JsonConvert.SerializeObject(entity.DispayName_Lang));
+            param.Add("fieldlanguage", JsonConvert.SerializeObject(entity.FieldName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -261,8 +261,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("fieldtype", entity.FieldType);
             param.Add("controltype", entity.ControlType);
             param.Add("userno", userNumber);
-            param.Add("dispaylanguage", entity.DispayLanguage);
-            param.Add("fieldlanguage", entity.FieldLanguage);
+            param.Add("dispaylanguage", JsonConvert.SerializeObject(entity.DispayName_Lang));
+            param.Add("fieldlanguage", JsonConvert.SerializeObject(entity.FieldName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
