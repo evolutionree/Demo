@@ -9,6 +9,7 @@ using UBeat.Crm.CoreApi.Repository.Utility;
 using System.Data.Common;
 using Npgsql;
 using UBeat.Crm.CoreApi.Repository.Repository;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.SalesTarget
 {
@@ -184,7 +185,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.SalesTarget
         /// <returns></returns>
         public OperateResult InsertSalesTargetNormType(SalesTargetNormTypeMapper data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_sales_target_norm_type_save(@normtypeid,@normtypename,@entityid,@fieldname,@calcutetype,@userno,@reclanguage::jsonb)";
+            var executeSql = @"SELECT * FROM crm_func_sales_target_norm_type_save(@normtypeid,@normtypename,@entityid,@fieldname,@calcutetype,@userno,@name_lang::jsonb)";
 
             var args = new
             {
@@ -194,7 +195,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.SalesTarget
                 FieldName = data.FieldName,
                 CalcuteType = data.CaculateType,
                 UserNo = userNumber,
-                reclanguage = data.RecLanguage
+                name_lang = JsonConvert.SerializeObject(data.Name_Lang)
             };
 
             return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);
