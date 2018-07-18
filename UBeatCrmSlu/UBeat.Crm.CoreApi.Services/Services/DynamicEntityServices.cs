@@ -1557,7 +1557,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (!string.IsNullOrEmpty(SpecFuncName))
             {
                 var innerResult = _dynamicEntityRepository.DataListUseFunc(SpecFuncName, pageParam, dynamicEntity.ExtraData, dynamicEntity, userNumber);
-                return new OutputResult<object>(innerResult);
+                return new OutputResult<object>(JsonConvert.DeserializeObject<Dictionary<string, List<Dictionary<string, object>>>>(JsonConvert.SerializeObject(innerResult)));
             }
             #endregion
 
