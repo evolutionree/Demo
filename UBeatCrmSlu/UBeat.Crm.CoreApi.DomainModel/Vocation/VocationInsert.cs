@@ -9,6 +9,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
     {
         public string VocationName { get; set; }
         public string Description { get; set; }
+        public Dictionary<string, string> VocationName_Lang { get; set; }
 
 
         protected override IValidator GetValidator()
@@ -56,7 +57,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
         public string Description { get; set; }
 
         public bool IsCopy { get; set; }
-        public string VocationLanguage { get; set; }
+        public Dictionary<string,string> VocationName_Lang { get; set; }
 
 
 

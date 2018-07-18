@@ -34,5 +34,24 @@ namespace UBeat.Crm.CoreApi.Core.Utility
             }
             return null;
         }
+
+        public static string GetDefaultLanguageValue(string DefaultValue,Dictionary<string, string> multilanguage,out string Result)
+        {
+            Result = DefaultValue;
+            
+            if (multilanguage == null) return Result;
+            foreach (var item in multilanguage)
+            {
+                if (item.Key.ToUpper() == DefaultLanguage)
+                {
+                    if (item.Value == null) return Result;
+                    else {
+                        Result= item.Value;
+                        return Result;
+                    }
+                }
+            }
+            return null;
+        }
     }
 }

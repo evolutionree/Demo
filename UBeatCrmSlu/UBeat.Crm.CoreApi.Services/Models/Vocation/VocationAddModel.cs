@@ -11,7 +11,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Vocation
         public Guid? VocationId { get; set; }
         public string VocationName { get; set; }
         public string Description { get; set; }
-        public string VocationLanguage { get; set; }
+        public Dictionary<string,string> VocationName_Lang { get; set; }
 
 
     }

@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Newtonsoft.Json;
 using Npgsql;
 using System;
 using System.Collections.Generic;
@@ -26,11 +27,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Vocation
         /// <returns></returns>
         public OperateResult AddVocation(VocationAdd data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_vocation_insert(@vocationname,@description,@userno)";
+            var executeSql = @"SELECT * FROM crm_func_vocation_insert(@vocationname,@description,@vocationname_lang::jsonb,@userno)";
             var args = new
             {
                 VocationName = data.VocationName,
                 Description = data.Description,
+                vocationname_lang = JsonConvert.SerializeObject(data.VocationName_Lang),
                 UserNo = userNumber
             };
 
@@ -65,14 +67,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Vocation
 
         public OperateResult EditVocation(VocationEdit data, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_vocation_update(@vocationid,@vocationname,@description,@userno,@vocationlanguage::jsonb)";
+            var executeSql = @"SELECT * FROM crm_func_vocation_update(@vocationid,@vocationname,@description,@userno,@vocationname_lang::jsonb)";
             var args = new
             {
                 VocationId = data.VocationId,
                 VocationName = data.VocationName,
                 Description = data.Description,
                 UserNo = userNumber,
-                VocationLanguage=data.VocationLanguage
+                VocationName_Lang = JsonConvert.SerializeObject(data.VocationName_Lang)
 
             };
 
