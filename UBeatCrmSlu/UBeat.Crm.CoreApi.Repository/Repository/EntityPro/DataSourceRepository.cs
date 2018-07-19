@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertSaveDataSource(DataSourceMapper dataSource, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_datasource_add(@datasourcename,@srctype,@entityid, @srcmark,@isrelatepower, @status,@ispro, @userno,@datasourcelanguage::jsonb)
+                SELECT * FROM crm_func_datasource_add(@datasourcename,@srctype,@entityid, @srcmark,@isrelatepower, @status,@ispro, @userno,@datasourcename_lang::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("datasourcename", dataSource.DatasourceName);
@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("status", dataSource.RecStatus);
             param.Add("ispro", dataSource.IsPro);
             param.Add("userno", userNumber);
-            param.Add("datasourcelanguage", dataSource.DatasourceLanguage);
+            param.Add("datasourcename_lang", JsonConvert.SerializeObject(dataSource.DatasourceName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -68,7 +68,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("isrelatepower", dataSource.IsRelatePower);
             param.Add("ispro", dataSource.IsPro);
             param.Add("userno", userNumber);
-            param.Add("datasourcelanguage", dataSource.DatasourceLanguage);
+            param.Add("datasourcelanguage", JsonConvert.SerializeObject(dataSource.DatasourceName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }

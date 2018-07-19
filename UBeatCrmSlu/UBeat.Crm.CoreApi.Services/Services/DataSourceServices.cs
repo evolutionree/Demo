@@ -14,6 +14,7 @@ using Newtonsoft.Json.Linq;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using System.Data.Common;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -46,6 +47,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
+            string datasourceName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
+            if (datasourceName != null) entity.DatasourceName = datasourceName;
             return HandleResult(dataSourceRepository.InsertSaveDataSource(entity, userNumber));
         }
 
@@ -56,6 +60,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
+            string datasourceName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
+            if (datasourceName != null) entity.DatasourceName = datasourceName;
             return HandleResult(dataSourceRepository.UpdateSaveDataSource(entity, userNumber));
         }
 

@@ -26,7 +26,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string Rulesql { get; set; }
         public int RecStatus { get; set; }
 
-        public string DatasourceLanguage { get; set; }
+        public Dictionary<string,string> DatasourceName_Lang { get; set; }
         public int IsPro { get; set; }
     }
     public class DataSourceDetailModel
