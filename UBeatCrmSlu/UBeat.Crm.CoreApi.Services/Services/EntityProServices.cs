@@ -1224,8 +1224,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         WebFuncId = webFuncid,
                         MobileFuncId = mobileFuncid,
                         FuncBtnLanguage = dynamicModel.FuncBtnLanguage,
-                        TitleLanguage= dynamicModel.TitleLanguage
+                        Title_Lang = dynamicModel.Title_Lang
+
                     };
+                    string Title = "";
+                    MultiLanguageUtils.GetDefaultLanguageValue(model.Title, model.Title_Lang, out Title);
+                    if (Title != null) model.Title = Title;
                     info.FuncBtns.Add(model);
                     if (_entityProRepository.SaveFunctionJson(dynamicModel.EntityId, info, userNumber, tran))
                     {
@@ -1272,7 +1276,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                     model.Name = dynamicModel.Name;
-                    model.Title = dynamicModel.Title;
                     model.ButtonCode = dynamicModel.ButtonCode;
                     model.Icon = dynamicModel.Icon;
                     model.DisplayPosition = dynamicModel.DisplayPosition;
@@ -1284,7 +1287,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     model.WebFuncId = webFuncid;
                     model.MobileFuncId = mobileFuncid;
                     model.FuncBtnLanguage = dynamicModel.FuncBtnLanguage;
-                    model.TitleLanguage = dynamicModel.TitleLanguage;
+                    model.Title_Lang = dynamicModel.Title_Lang;
+                    model.Title = dynamicModel.Title;
+                    string Title = "";
+                    MultiLanguageUtils.GetDefaultLanguageValue(model.Title, model.Title_Lang, out Title);
+                    if (Title != null) model.Title = Title;
                     if (_entityProRepository.SaveFunctionJson(dynamicModel.EntityId, info, userNumber, tran))
                     {
                         tran.Commit();
