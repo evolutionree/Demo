@@ -769,8 +769,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var dic = new Dictionary<string, object>();
                         foreach (var item2 in item1)
                         {
-
-                            dic.Add(item2.Key, item2.Value);
+                            if (dic.ContainsKey(item2.Key))
+                            {
+                                dic[item2.Key] = item2.Value;
+                            }
+                            else
+                            {
+                                dic.Add(item2.Key, item2.Value);
+                            }
                         }
                         pageData.Add(dic);
                     }
