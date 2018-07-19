@@ -212,10 +212,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 entity.RecCreator = userNumber;
                 entity.RecCreated = DateTime.Now;
                 entity.RecOrder = entity.DataId;
+                string DataVal = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DataVal, entity.DataName_Lang, out DataVal);
+                if (DataVal != null) entity.DataVal = DataVal;
                 falg = dataSourceRepository.AddDictionary(entity, userNumber);
             }
             else //edit
             {
+                string DataVal = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DataVal, entity.DataName_Lang, out DataVal);
+                if (DataVal != null) entity.DataVal = DataVal;
                 falg = dataSourceRepository.UpdateDictionary(entity, userNumber);
             }
             if (falg)

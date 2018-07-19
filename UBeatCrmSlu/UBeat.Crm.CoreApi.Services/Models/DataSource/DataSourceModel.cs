@@ -161,7 +161,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string ExtField3 { get; set; }
         public string ExtField4 { get; set; }
         public string ExtField5 { get; set; }
-        public string DataLanguage { get; set; }
+        public Dictionary<string,string> DataName_Lang { get; set; }
     }
 
     public class OrderByDictionaryModel
