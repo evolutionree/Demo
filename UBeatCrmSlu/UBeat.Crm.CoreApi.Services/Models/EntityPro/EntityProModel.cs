@@ -145,7 +145,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public int RecStatus { get; set; }
 
-        public string CategoryLanguage { get; set; }
+        public Dictionary<string,string> CategoryName_Lang { get; set; }
     }
 
     public class EntityFieldRulesSaveModel

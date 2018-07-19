@@ -285,7 +285,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public int RecStatus { get; set; }
 
-        public string CategoryLanguage { get; set; }
+        public Dictionary<string,string> CategoryName_Lang { get; set; }
         protected override IValidator GetValidator()
         {
             return new SaveEntityTypeMapperValidator();

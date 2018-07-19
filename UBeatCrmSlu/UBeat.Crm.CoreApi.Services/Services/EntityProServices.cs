@@ -266,6 +266,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertEntityTypePro(EntityTypeModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityTypeModel, SaveEntityTypeMapper>(entityModel);
+            string CategoryName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.CategoryName, entity.CategoryName_Lang, out CategoryName);
+            if (CategoryName != null) entity.CategoryName = CategoryName;
             var result = HandleResult(_entityProRepository.InsertEntityTypePro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
@@ -274,6 +277,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityTypePro(EntityTypeModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityTypeModel, SaveEntityTypeMapper>(entityModel);
+            string CategoryName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.CategoryName, entity.CategoryName_Lang, out CategoryName);
+            if (CategoryName != null) entity.CategoryName = CategoryName;
             var result = HandleResult(_entityProRepository.UpdateEntityTypePro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
