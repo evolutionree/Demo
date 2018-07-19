@@ -21,6 +21,7 @@ using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Models.Account;
 using UBeat.Crm.CoreApi.DomainModel.Rule;
 using System.Text.RegularExpressions;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -2349,6 +2350,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             //获取该实体分类的字段
             var flowEntity = _mapper.Map<WorkFlowAddModel, WorkFlowAddMapper>(flowModel);
+            string FlowName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(flowEntity.FlowName, flowEntity.FlowName_Lang, out FlowName);
+            if (FlowName != null) flowEntity.FlowName = FlowName;
             if (flowEntity == null || !flowEntity.IsValid())
             {
                 return HandleValid(flowEntity);
@@ -2365,6 +2369,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             //获取该实体分类的字段
             var flowEntity = _mapper.Map<WorkFlowUpdateModel, WorkFlowUpdateMapper>(flowModel);
+            string FlowName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(flowEntity.FlowName, flowEntity.FlowName_Lang, out FlowName);
+            if (FlowName != null) flowEntity.FlowName = FlowName;
             if (flowEntity == null || !flowEntity.IsValid())
             {
                 return HandleValid(flowEntity);

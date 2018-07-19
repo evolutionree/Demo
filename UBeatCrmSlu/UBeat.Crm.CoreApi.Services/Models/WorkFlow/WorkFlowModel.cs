@@ -168,7 +168,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string Remark { get; set; }
         public Guid EntityId { get; set; }
         public int SkipFlag { get; set; }
-        public string FlowLanguage { get; set; }
+        public Dictionary<string, string> FlowName_Lang { get; set; }
     }
 
     public class WorkFlowUpdateModel
@@ -180,7 +180,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public int ExpireDay { get; set; }
         public string Remark { get; set; }
         public int SkipFlag { get; set; }
-        public string FlowLanguage { get; set; }
+        public Dictionary<string,string> FlowName_Lang { get; set; }
     }
 
     public class WorkFLowDeleteModel

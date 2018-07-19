@@ -464,7 +464,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
-                FlowLanguage =flowMapper.FlowLanguage
+                FlowLanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang)
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -486,7 +486,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
-                flowlanguage=flowMapper.FlowLanguage
+                flowlanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang)
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
