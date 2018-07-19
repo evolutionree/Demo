@@ -53,11 +53,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
-            foreach (var item in entity.EntityName_Lang)
-            {
-                if (item.Key.ToUpper() == "CN")
-                    entity.EntityName = item.Value;
-            }
+            string EntityName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.EntityName, entity.EntityName_Lang, out EntityName);
+            if (EntityName != null) entity.EntityName = EntityName;
             OperateResult newEntity = _entityProRepository.InsertEntityPro(entity, userNumber);
             if (newEntity.Flag == 0)
                 return HandleResult(newEntity);
@@ -98,11 +96,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
-            foreach (var item in entity.EntityName_Lang)
-            {
-                if (item.Key.ToUpper() == "CN")
-                    entity.EntityName = item.Value;
-            }
+            string EntityName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.EntityName, entity.EntityName_Lang, out EntityName);
+            if (EntityName != null) entity.EntityName = EntityName;
             var result = HandleResult(_entityProRepository.UpdateEntityPro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             IncreaseDataVersion(DataVersionType.PowerData);
@@ -169,7 +165,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "【字段表列名】不能是保留的关键字", -1);
             }
             var entity = _mapper.Map<EntityFieldProModel, EntityFieldProSaveMapper>(entityModel);
-
+            string DisplayName = "", FieldName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DispayName_Lang, out DisplayName);
+            if (DisplayName != null) entity.DisplayName = DisplayName;
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldName, entity.FieldName_Lang, out FieldName);
+            if (FieldName != null) entity.FieldName = FieldName;
             var result = HandleResult(_entityProRepository.InsertEntityField(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
@@ -196,6 +196,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityField(EntityFieldProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityFieldProModel, EntityFieldProSaveMapper>(entityModel);
+            string DisplayName = "", FieldName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DispayName_Lang, out DisplayName);
+            if (DisplayName != null) entity.DisplayName = DisplayName;
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldName, entity.FieldName_Lang, out FieldName);
+            if (FieldName != null) entity.FieldName = FieldName;
             var result = HandleResult(_entityProRepository.UpdateEntityField(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;

@@ -978,7 +978,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             param.Add("srcsql", entity.SrcSql);
             param.Add("srctitle", entity.SrcTitle);
             param.Add("userno", userNumber);
-            param.Add("reltablanguage", entity.RelTabLanguage);
+            param.Add("reltablanguage", JsonConvert.SerializeObject(entity.RelName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }

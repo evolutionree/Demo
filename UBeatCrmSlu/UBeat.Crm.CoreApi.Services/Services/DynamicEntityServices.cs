@@ -3863,6 +3863,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> AddRelTab(AddRelTabModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<AddRelTabModel, AddRelTabMapper>(entityModel);
+            string RelName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.RelName, entity.RelName_Lang, out RelName);
+            if (RelName != null) entity.RelName = RelName;
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
@@ -3890,6 +3893,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entityModel.type == 0)
             {
                 var entity = _mapper.Map<UpdateRelTabModel, UpdateRelTabMapper>(entityModel);
+                string RelName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.RelName, entity.RelName_Lang, out RelName);
+                if (RelName != null) entity.RelName = RelName;
                 if (entity == null || !entity.IsValid())
                 {
                     return HandleValid(entity);
