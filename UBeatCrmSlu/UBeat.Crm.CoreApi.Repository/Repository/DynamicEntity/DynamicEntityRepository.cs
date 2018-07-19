@@ -1549,7 +1549,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                         FROM
 	                        crm_sys_entity_condition AS con
                         RIGHT OUTER  JOIN crm_sys_entity_fields AS fie ON con.fieldid = fie.fieldid
-                        WHERE fie.entityid = @entityid
+                        WHERE fie.entityid = @entityid and fie.recstatus =1 
                         ORDER BY fie.recorder ";
             #endregion
             var data = ExecuteQuery(sql, new DbParameter[] { new Npgsql.NpgsqlParameter("@entityid", entity.EntityId) }, tran);
