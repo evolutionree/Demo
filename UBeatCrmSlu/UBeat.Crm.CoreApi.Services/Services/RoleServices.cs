@@ -8,6 +8,7 @@ using UBeat.Crm.CoreApi.Services.Models.Role;
 using System.Linq;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.DomainModel.Version;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -30,12 +31,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertRoleGroup(SaveRoleGroupModel model, int userNumber)
         {
             var entity = _mapper.Map<SaveRoleGroupModel, SaveRoleGroupMapper>(model);
+            
 
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
-
+            string groupname = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.GroupName, entity.GroupName_Lang, out groupname);
+            if (groupname != null)
+            {
+                entity.GroupName = groupname;
+            }
             return HandleResult(_roleRepsitory.InsertRoleGroup(entity, userNumber));
         }
 
@@ -46,6 +53,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
+            }
+            string groupname = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.GroupName, entity.GroupName_Lang, out groupname);
+            if (groupname != null)
+            {
+                entity.GroupName = groupname;
             }
             return HandleResult(_roleRepsitory.UpdateRoleGroup(entity, userNumber));
         }
@@ -75,7 +88,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-
+            string rolename = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.RoleName, entity.RoleName_Lang, out rolename);
+            if (rolename != null)
+            {
+                entity.RoleName = rolename;
+            }
             return HandleResult(_roleRepsitory.InsertRole(entity, userNumber));
         }
 
@@ -86,6 +104,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
+            }
+            string rolename = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.RoleName, entity.RoleName_Lang, out rolename);
+            if (rolename != null)
+            {
+                entity.RoleName = rolename;
             }
             List<Guid> roleIds = new List<Guid>();
             role.RoleId.Split(',').ToList().ForEach(a =>
@@ -111,6 +135,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
+            }
+            string rolename = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.RoleName, entity.RoleName_Lang, out rolename);
+            if (rolename != null)
+            {
+                entity.RoleName = rolename;
             }
             List<Guid> roleIds = new List<Guid>();
             role.RoleId.Split(',').ToList().ForEach(a =>
