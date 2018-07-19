@@ -548,7 +548,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public string Item3ValueScheme { get; set; }
         public string Item3LabelScheme { get; set; }
         public string Item4ValueScheme { get; set; }
-        public string Item4LableScheme { get; set; }
+        public string Item4LabelScheme { get; set; }
     }
 
     /// <summary>
