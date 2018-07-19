@@ -1,0 +1,1 @@
+alter table crm_sys_dictionary_type rename column dictypelanguage to dictypename_lang;

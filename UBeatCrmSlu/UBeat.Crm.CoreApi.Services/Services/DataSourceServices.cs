@@ -175,12 +175,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 entity.RecOrder = recOrder;
                 if (!dataSourceRepository.HasDicTypeName(entity.DicTypeName))
                     return new OutputResult<object>(null, "类型名称已存在", 1);
+                string DicTypeName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DicTypeName, entity.DicTypeName_Lang, out DicTypeName);
+                if (DicTypeName != null) entity.DicTypeName = DicTypeName;
                 falg = dataSourceRepository.AddFieldDicType(entity, userNumber);
             }
             else
             {
                 if (entity.DicTypeId == "-1") //全局配置时处理
                     entity.RecOrder = "0";
+                string DicTypeName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DicTypeName, entity.DicTypeName_Lang, out DicTypeName);
+                if (DicTypeName != null) entity.DicTypeName = DicTypeName;
                 falg = dataSourceRepository.UpdateFieldDicType(entity, userNumber);
             }
             if (falg)

@@ -136,7 +136,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #region 单选 多选
         public List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "")
         {
-            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder,a.recstatus,a.dictypelanguage  from crm_sys_dictionary_type as a left join
+            string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder,a.recstatus,a.dictypename_lang  from crm_sys_dictionary_type as a left join
  crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus ";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
@@ -214,7 +214,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public bool AddFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
-            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder,isconfig,recstatus,dictypelanguage) values
+            string sql = @"insert into crm_sys_dictionary_type(dictypeid, dictypename, reccreator, recupdator, dicremark, fieldconfig, RelateDicTypeId,RecOrder,isconfig,recstatus,dictypename_lang) values
      (@dictypeid::int4, @dictypename, @reccreator, @recupdator, @dicremark, @fieldconfig::jsonb, @RelateDicTypeId,@RecOrder::int4,@IsConfig,@RecStatus,@dictypelanguage::jsonb)";
             var param = new DbParameter[]
             {
@@ -228,7 +228,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 new NpgsqlParameter("RecOrder",entity.RecOrder),
                 new NpgsqlParameter("IsConfig",entity.IsConfig),
                 new NpgsqlParameter("RecStatus",entity.RecStatus),
-                new NpgsqlParameter("dictypelanguage",entity.DicTypeLanguage)
+                new NpgsqlParameter("dictypelanguage",JsonConvert.SerializeObject( entity.DicTypeName_Lang))
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
@@ -236,7 +236,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public bool UpdateFieldDicType(DictionaryTypeMapper entity, int userNumber)
         {
             string sql = @"update crm_sys_dictionary_type set recupdator = @recupdator,  dictypename = @dictypename,dicremark = @dicremark,fieldconfig = @fieldconfig::jsonb,
-relatedictypeid = @RelateDicTypeId,recorder = @RecOrder::int4, isconfig = @IsConfig,dictypelanguage=@dictypelanguage::jsonb
+relatedictypeid = @RelateDicTypeId,recorder = @RecOrder::int4, isconfig = @IsConfig,dictypename_lang=@dictypelanguage::jsonb
 where dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
@@ -248,7 +248,7 @@ where dictypeid::text = @dictypeid";
                 new NpgsqlParameter("RelateDicTypeId", entity.RelateDicTypeId),
                 new NpgsqlParameter("RecOrder",entity.RecOrder),
                 new NpgsqlParameter("IsConfig",entity.IsConfig),
-                new NpgsqlParameter("dictypelanguage",entity.DicTypeLanguage)
+                new NpgsqlParameter("dictypelanguage",JsonConvert.SerializeObject( entity.DicTypeName_Lang))
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }

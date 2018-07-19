@@ -108,7 +108,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public string FieldConfig { get; set; }
         public int? RelateDicTypeId { get; set; }
         public string RecOrder { get; set; }
-        public string DicTypeLanguage { get; set; }
+        public Dictionary<string,string> DicTypeName_Lang { get; set; }
         /// <summary>
         /// 0:使用自定义 1:使用全局
         /// </summary>
