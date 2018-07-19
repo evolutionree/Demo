@@ -43,26 +43,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertSaveDataSource(DataSourceModel dataSource, int userNumber)
         {
             var entity = mapper.Map<DataSourceModel, DataSourceMapper>(dataSource);
+            if (entity != null)
+            {
+                string datasourceName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
+                if (datasourceName != null) entity.DatasourceName = datasourceName;
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
-            string datasourceName = "";
-            MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
-            if (datasourceName != null) entity.DatasourceName = datasourceName;
+            
             return HandleResult(dataSourceRepository.InsertSaveDataSource(entity, userNumber));
         }
 
         public OutputResult<object> UpdateSaveDataSource(DataSourceModel dataSource, int userNumber)
         {
             var entity = mapper.Map<DataSourceModel, DataSourceMapper>(dataSource);
+            if (entity != null)
+            {
+                string datasourceName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
+                if (datasourceName != null) entity.DatasourceName = datasourceName;
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
-            string datasourceName = "";
-            MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
-            if (datasourceName != null) entity.DatasourceName = datasourceName;
             return HandleResult(dataSourceRepository.UpdateSaveDataSource(entity, userNumber));
         }
 
