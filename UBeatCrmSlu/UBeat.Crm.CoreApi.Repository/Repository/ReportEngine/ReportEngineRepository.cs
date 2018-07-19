@@ -531,8 +531,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportEngine
                 string id = (string)ExecuteScalar(cmdText, new DbParameter[] { }, tran);
                 if (id == null || id.Length == 0) {
                     cmdText = string.Format(@"INSERT INTO crm_sys_webmenu (
-	                                                id,index,	name,path,funcid,parentid,isdynamic
-                                                )values('{0}',{1},'{2}','{3}','{4}',1)", WebMenu_ReportRootId, 9, "统计报表", "", "");
+	                                                id,index,	name,path,funcid,parentid,isdynamic,name_lang
+                                                )values('{0}',{1},'{2}','{3}','{4}',1)", WebMenu_ReportRootId, 9, "统计报表", "", "","{'CN':'统计报表','EN':'Reports'}");
                     ExecuteNonQuery(cmdText, new DbParameter[] { }, tran);
                 }
                 #endregion
@@ -573,9 +573,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportEngine
             }
             try
             {
+                string name_lang = "{}";
                 string cmdText = string.Format(@"INSERT INTO crm_sys_webmenu (
-	                                                id,index,	name,path,funcid,parentid,isdynamic
-                                                )values('{0}',{1},'{2}','{3}','{4}','{5}',1)", item["id"].ToString(), index, item["name"].ToString(), path, funcid, parentid);
+	                                                id,index,	name,path,funcid,parentid,isdynamic,name_lang
+                                                )values('{0}',{1},'{2}','{3}','{4}','{5}',1,'{6}'::jsonb)", item["id"].ToString(), index, item["name"].ToString(), path, funcid, parentid, name_lang);
                 ExecuteNonQuery(cmdText, new DbParameter[] { }, trans);
             }
             catch (Exception ex) {
