@@ -142,8 +142,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public int RecOrder { get; set; }
 
-        public Dictionary<string, string> DispayName_Lang { get; set; }
-        public Dictionary<string, string> FieldName_Lang { get; set; }
+        public Dictionary<string, string> DisplayName_Lang { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
 
 
         [JsonIgnore]
@@ -161,6 +161,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
                 RuleFor(d => d.FieldName).NotEmpty().WithMessage("字段列名不能为空");
             }
         }
+    }
+    public class EntityFieldLanguage
+    {
+        public Dictionary<string,string> DisplayName_Lang { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
     }
 
     public class DeleteEntityDataMapper : BaseEntity

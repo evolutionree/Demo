@@ -165,11 +165,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "【字段表列名】不能是保留的关键字", -1);
             }
             var entity = _mapper.Map<EntityFieldProModel, EntityFieldProSaveMapper>(entityModel);
-            string DisplayName = "", FieldName = "";
-            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DispayName_Lang, out DisplayName);
+            var data = JsonConvert.DeserializeObject<EntityFieldLanguage>(entity.FieldConfig);
+            entity.FieldLabel_Lang = data.FieldLabel_Lang;
+            entity.DisplayName_Lang = data.DisplayName_Lang;
+            string DisplayName = "", FieldLabel = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DisplayName_Lang, out DisplayName);
             if (DisplayName != null) entity.DisplayName = DisplayName;
-            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldName, entity.FieldName_Lang, out FieldName);
-            if (FieldName != null) entity.FieldName = FieldName;
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldLabel, entity.FieldLabel_Lang, out FieldLabel);
+            if (FieldLabel != null) entity.FieldLabel = FieldLabel;
             var result = HandleResult(_entityProRepository.InsertEntityField(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
@@ -196,11 +199,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityField(EntityFieldProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityFieldProModel, EntityFieldProSaveMapper>(entityModel);
-            string DisplayName = "", FieldName = "";
-            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DispayName_Lang, out DisplayName);
+            var data = JsonConvert.DeserializeObject<EntityFieldLanguage>(entity.FieldConfig);
+            entity.FieldLabel_Lang = data.FieldLabel_Lang;
+            entity.DisplayName_Lang = data.DisplayName_Lang;
+            string DisplayName = "", FieldLabel = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DisplayName_Lang, out DisplayName);
             if (DisplayName != null) entity.DisplayName = DisplayName;
-            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldName, entity.FieldName_Lang, out FieldName);
-            if (FieldName != null) entity.FieldName = FieldName;
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldLabel, entity.FieldLabel_Lang, out FieldLabel);
+            if (FieldLabel != null) entity.FieldLabel = FieldLabel;
             var result = HandleResult(_entityProRepository.UpdateEntityField(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;

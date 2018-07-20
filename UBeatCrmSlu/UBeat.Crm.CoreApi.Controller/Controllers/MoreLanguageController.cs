@@ -16,7 +16,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("morelanglist")]
         public OutputResult<object> MoreLanguageList()
         {
-            string[] language = { "CN-中文-GMT+8", "EN-English-GMT", "TW-繁体-GMT+8" };
+            string[] language = { "cn-中文-GMT+8", "en-English-GMT", "tw-繁体-GMT+8" };
             List<Dictionary<string, string>> list = new List<Dictionary<string, string>>();
             foreach (var item in language)
             {

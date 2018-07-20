@@ -140,7 +140,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> InsertEntityField([FromBody]EntityFieldProModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
+            if (entityModel.DisplayName_Lang == null || entityModel.FieldLabel_Lang == null) ResponseError<object>("请完善多语言");
             return _entityProService.InsertEntityField(entityModel, UserId);
         }
         [HttpPost]
@@ -148,7 +148,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> UpdateEntityField([FromBody]EntityFieldProModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
+            if (entityModel.DisplayName_Lang == null || entityModel.FieldLabel_Lang == null) ResponseError<object>("请完善多语言");
             return _entityProService.UpdateEntityField(entityModel, UserId);
         }
         [HttpPost]
@@ -483,6 +483,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> AddFunctionBtn([FromBody] FunctionBtnDetailModel dynamicModel = null)
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            if (dynamicModel.Title_Lang == null) return ResponseError<object>("请完善多语言");
             return _entityProService.AddFunctionBtn(dynamicModel, UserId);
         }
 
@@ -496,6 +497,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> EditFunctionBtn([FromBody] FunctionBtnDetailModel dynamicModel = null)
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            if (dynamicModel.Title_Lang == null) return ResponseError<object>("请完善多语言");
             return _entityProService.EditFunctionBtn(dynamicModel, UserId);
         }
 

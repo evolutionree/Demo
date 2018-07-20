@@ -71,8 +71,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public int RecOrder { get; set; }
         public string FieldConfig { get; set; }
-        public Dictionary<string, string> DispayName_Lang { get; set; }
-        public Dictionary<string, string> FieldName_Lang { get; set; }
+        public Dictionary<string, string> DisplayName_Lang { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
 
         // [JsonProperty("FieldConfig")]
         //   public JObject FieldConfigJson => FieldConfig.ToJsonObject();
