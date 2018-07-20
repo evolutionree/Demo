@@ -338,7 +338,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetDictionaryByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "dicid,dictypeid,dataid,dataval,recorder,recstatus,datalanguage";
+            var selectFields = "dicid,dictypeid,dataid,dataval,recorder,recstatus,dataname_lang";
             return GetDatasByVersion("crm_sys_dictionary", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -368,7 +368,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetEntityListByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "entityid,entityname,modeltype,styles,icons,relentityid,relaudit,recorder,recstatus,newload,editload,checkload,servicesjson,relfieldid,relfieldname,inputmethod,entitylanguage,funcbtnlanguage";
+            var selectFields = "entityid,entityname,modeltype,styles,icons,relentityid,relaudit,recorder,recstatus,newload,editload,checkload,servicesjson,relfieldid,relfieldname,inputmethod,entityname_lang,funcbtnlanguage";
             return GetDatasByVersion("crm_sys_entity", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -399,7 +399,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetEntityFieldsByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "fieldid,fieldname,entityid,fieldlabel,displayname,controltype,fieldtype,fieldconfig,recorder,recstatus,expandjs,filterjs,fieldlanguage,displaylanguage";
+            var selectFields = "fieldid,fieldname,entityid,fieldlabel,displayname,controltype,fieldtype,fieldconfig,recorder,recstatus,expandjs,filterjs,fieldname_lang,displayname_lang";
             return GetDatasByVersion("crm_sys_entity_fields", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -415,7 +415,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetEntityCategoryByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "categoryid,categoryname,entityid,recorder,recstatus,relcategoryid,categorylanguage";
+            var selectFields = "categoryid,categoryname,entityid,recorder,recstatus,relcategoryid,categoryname_lang";
             return GetDatasByVersion("crm_sys_entity_category", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -462,7 +462,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetEntityMenuByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "menuid,menuname,menutype,entityid,ruleid,recorder,recstatus,menulanguage ";
+            var selectFields = "menuid,menuname,menutype,entityid,ruleid,recorder,recstatus,menuname_lang ";
             return GetDatasByVersion("crm_sys_entity_menu", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -561,7 +561,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
                 FROM crm_sys_entity_rel_tab AS t
                 LEFT JOIN crm_sys_entity_fields f on f.fieldid=t.fieldid
                 ) AS t");
-            var selectFields = "relid,entityid,relentityid,relname,icon,recorder,recstatus,tabtype,fieldid,fieldname,ismanytomany,srcsql,srctitle,reltablanguage";
+            var selectFields = "relid,entityid,relentityid,relname,icon,recorder,recstatus,tabtype,fieldid,fieldname,ismanytomany,srcsql,srctitle,relname_lang";
             return GetDatasTabsByVersion(tempTable, selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -593,7 +593,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetWorkflowListByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "flowid,flowtype,backflag,resetflag,flowname,entityid,vernum,recorder,recstatus,flowlanguage";
+            var selectFields = "flowid,flowtype,backflag,resetflag,flowname,entityid,vernum,recorder,recstatus,flowname_lang";
             return GetDatasByVersion("crm_sys_workflow", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
