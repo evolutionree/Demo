@@ -63,7 +63,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 t.RuleId,
                 t.RuleName,
                 t.RuleSet,
-                t.MenuName
+                t.MenuName,
+                t.MenuName_Lang,
             }).Select(group => new RuleInfoModel
             {
                 RuleId = group.Key.RuleId,
@@ -84,7 +85,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 RuleSet = new RuleSetInfoModel
                 {
                     RuleSet = group.Key.RuleSet
-                }
+                },
+                MenuName_Lang=group.Key.MenuName_Lang
             }).ToList();
             List<RuleInfoModel> tmp = (List<RuleInfoModel>)obj;
             foreach (RuleInfoModel i in tmp) {
@@ -134,6 +136,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
 
             var ruleSetEntity = mapper.Map<RuleSetModel, RuleSetMapper>(entityModel.RuleSet);
+            
             if (ruleSetEntity == null || !ruleSetEntity.IsValid())
             {
                 return HandleValid(ruleSetEntity);
@@ -231,6 +234,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var ruleItems = entityModel.RuleItems.ToList();
             entityModel.RuleSet.RuleFormat = TranslateRuleSet(entityModel.RuleSet.RuleSet, ref ruleItems);
             var mapperEntity = mapper.Map<RuleModel, RuleMapper>(entityModel);
+            string menuname = "", rulename = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(mapperEntity.menuname, mapperEntity.menuname_lang, out menuname);
+            if (menuname != null) mapperEntity.menuname = menuname;
+            MultiLanguageUtils.GetDefaultLanguageValue(mapperEntity.rulename, mapperEntity.menuname_lang, out rulename);
+            if (rulename != null) mapperEntity.rulename = rulename;
             if (mapperEntity == null || !mapperEntity.IsValid())
             {
                 return HandleValid(mapperEntity);

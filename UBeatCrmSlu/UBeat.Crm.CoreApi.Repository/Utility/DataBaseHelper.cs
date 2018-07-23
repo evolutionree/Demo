@@ -205,7 +205,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                     var resultsReference = resultsReferences.FirstOrDefault();
                     var resultSetName = resultsReference.Values.FirstOrDefault();
                     var resultSetReferenceCommand = string.Format("FETCH ALL IN \"{0}\";", resultSetName);
-
+                   var tmp = conn.Query(resultSetReferenceCommand, null, commandType: CommandType.Text,
+                           transaction: tran).ToList();
                     result =
                         conn.Query<TDataType>(resultSetReferenceCommand, null, commandType: CommandType.Text,
                             transaction: tran).ToList();

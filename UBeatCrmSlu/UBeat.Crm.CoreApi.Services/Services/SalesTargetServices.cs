@@ -219,9 +219,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			{
 				body.Id = Guid.Empty;
 			}
-            string name = body.Name;
             string tmpName = MultiLanguageUtils.GetDefaultLanguageValue(body.Name_Lang);
-            if (tmpName != null) name = tmpName;
+            if (tmpName != null) body.Name = tmpName;
+            string name = body.Name;
             var crmData = new SalesTargetNormTypeMapper()
             {
                 Id = body.Id,

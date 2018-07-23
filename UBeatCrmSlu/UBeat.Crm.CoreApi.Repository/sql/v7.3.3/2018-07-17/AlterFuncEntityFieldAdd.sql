@@ -103,7 +103,7 @@ WHERE
 		recstatus,
 		reccreator,
 		recupdator,
-		fieldname_lang,
+		fieldlabel_lang,
 		displayname_lang
 	)
 VALUES

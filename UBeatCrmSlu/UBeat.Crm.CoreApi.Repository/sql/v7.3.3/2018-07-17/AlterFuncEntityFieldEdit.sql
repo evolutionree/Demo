@@ -47,7 +47,7 @@ SET fieldlabel = _fieldlabel,
  fieldconfig = _fieldconfig :: jsonb,
  recstatus = _status,
  recupdator = _userno,
-fieldname_lang=_fieldlanguage,
+fieldlabel_lang=_fieldlanguage,
 displayname_lang=_displaylanguage
 WHERE
 	fieldid = _fieldid :: uuid ; _codeid := _fieldid :: TEXT ; _codeflag := 1 ; _codemsg := '新增实体成功' ; EXCEPTION

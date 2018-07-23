@@ -53,6 +53,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.SalesStage
         public string SalesStageId { get; set; }
         public string StageName { get; set; }
         public decimal WinRate { get; set; }
+        public Dictionary<string, string> StageName_Lang { get; set; }
         protected override IValidator GetValidator()
         {
             return new SaveSalesStageMapperValidator();

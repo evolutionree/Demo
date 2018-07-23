@@ -43,7 +43,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> InsertEntityPro([FromBody]SaveSalesStageModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
+            if (entityModel.StageName_Lang == null) return ResponseError<object>("请完善多语言");
             return _salesStageServices.InsertSalesStage(entityModel, UserId);
         }
 
@@ -52,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> UpdateEntityPro([FromBody]SaveSalesStageModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
+            if (entityModel.StageName_Lang == null) return ResponseError<object>("请完善多语言");
             return _salesStageServices.UpdateSalesStage(entityModel, UserId);
         }
 

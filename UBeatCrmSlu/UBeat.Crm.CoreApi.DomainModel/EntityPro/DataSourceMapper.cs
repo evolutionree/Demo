@@ -189,7 +189,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string ExtField3 { get; set; }
         public string ExtField4 { get; set; }
         public string ExtField5 { get; set; }
-        public Dictionary<string,string> DataName_Lang { get; set; }
+        public Dictionary<string,string> DataVal_Lang { get; set; }
     }
 
     public class OrderByDictionaryMapper

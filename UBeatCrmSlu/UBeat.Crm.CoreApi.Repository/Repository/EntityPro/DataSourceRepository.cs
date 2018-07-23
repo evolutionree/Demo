@@ -150,7 +150,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public Dictionary<string, object> SelectFieldDicTypeDetail(string dicTypeId, int userNumber)
         {
-            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig,isconfig,recorder from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
+            string sql = @"select dictypeid,dictypename,relatedictypeid,fieldconfig,isconfig,recorder,dictypename_lang from crm_sys_dictionary_type where recstatus = 1 and dictypeid::text = @dictypeid";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
@@ -276,7 +276,7 @@ values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreate
                 new NpgsqlParameter("extfield3",entity.ExtField3),
                 new NpgsqlParameter("extfield4",entity.ExtField4),
                 new NpgsqlParameter("extfield5",entity.ExtField5),
-                new NpgsqlParameter("datalanguage",JsonConvert.SerializeObject( entity.DataName_Lang))
+                new NpgsqlParameter("datalanguage",JsonConvert.SerializeObject( entity.DataVal_Lang))
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
@@ -302,7 +302,7 @@ where dicid = @dicid";
                 new NpgsqlParameter("extfield4",entity.ExtField4),
                 new NpgsqlParameter("extfield5",entity.ExtField5),
                 new NpgsqlParameter("dicid",entity.DicId),
-                new NpgsqlParameter("datalanguage",JsonConvert.SerializeObject( entity.DataName_Lang))
+                new NpgsqlParameter("datalanguage",JsonConvert.SerializeObject( entity.DataVal_Lang))
             };
             return ExecuteNonQuery(sql, param, null) > 0;
         }
