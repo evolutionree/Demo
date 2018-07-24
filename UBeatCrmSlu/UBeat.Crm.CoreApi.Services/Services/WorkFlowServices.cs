@@ -221,6 +221,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(result);
         }
 
+        public Dictionary<string, object> GetWorkFlowIdByEntityId(Guid entityId, int userId)
+        {
+            DbTransaction tran = null;
+            Dictionary<string, object> ret = this._workFlowRepository.GetWorkflowByEntityId(null, entityId, userId);
+            return ret;
+
+        }
+
         public OutputResult<object> SaveTitleConfig(WorkFlowTitleConfigModel paramInfo, int userId)
         {
             return new OutputResult<object> (_workFlowRepository.SaveTitleConfig(paramInfo.FlowId,paramInfo.TitleConfig, userId));

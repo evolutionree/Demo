@@ -158,6 +158,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(taskList);
         }
 
+        /// <summary>
+        /// 生成嵌套表格导入模板（新增+编辑）
+        /// </summary>
+        /// <param name="mainEntityId"></param>
+        /// <param name="mainTypeId"></param>
+        /// <param name="detailEntityId"></param>
+        /// <returns></returns>
+        public ExportModel GenerateDetailImportTemplate(Guid mainEntityId, Guid mainTypeId, Guid detailEntityId)
+        {
+            List < SheetDefine > defines = this.GeneralDetailTemplate_Import(detailEntityId, mainTypeId, ExcelOperateType.ImportAdd, 1);
+            var sheetsdata = new List<ExportSheetData>();
+
+
+            foreach (var m in defines)
+            {
+                var tiprow = new Dictionary<string, object>();//字段说明的提示数据
+                var simpleTemp = m as SimpleSheetTemplate;
+                var typeFields = simpleTemp.DataObject as List<DynamicEntityDataFieldMapper>;
+                foreach (var header in simpleTemp.Headers)
+                {
+                    var field = typeFields.Find(o => o.FieldName == header.FieldName);
+                    tiprow.Add(field.FieldName, GetFieldTip(field));
+                }
+                var sheetDataTemp = new ExportSheetData() { SheetDefines = m };
+                sheetDataTemp.DataRows.Add(tiprow);
+                sheetsdata.Add(sheetDataTemp);
+            }
+            var entityname = _repository.GetEntityName(mainEntityId);
+            return new ExportModel()
+            {
+                FileName = entityname == null ? null : string.Format("{0}导入.xlsx", entityname),
+                ExcelFile = OXSExcelWriter.GenerateExcel(sheetsdata)
+            };
+        }
+
         public OutputResult<object> TaskStart(string taskid)
         {
             var taskData = _cache.Get<TaskDataModel>(taskDataId_prefix + taskid);
@@ -241,7 +276,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         numThreads = 1;
                         count = m.DataRows.Count / numThreads;
                     }
-
+                    numThreads = 1;
+                    count = m.DataRows.Count / numThreads;
                     var finished = new CountdownEvent(1);
                     for (int i = 0; i < numThreads; i++)
                     {
@@ -1574,6 +1610,57 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
         #endregion
+        #region --生成动态模板的导入模板定义（For 嵌套表格）--
+        private List<SheetDefine> GeneralDetailTemplate_Import(Guid entityId, Guid MainTypeId, ExcelOperateType operateType, int userNumber)
+        {
+            List<SheetDefine> defines = new List<SheetDefine>();
+            EntityTypeQueryMapper entityType = new EntityTypeQueryMapper()
+            {
+                EntityId = entityId.ToString()
+            };
+            Guid relTypeId = _dynamicEntityRepository.getGridTypeByMainType(MainTypeId, entityId);
+            List<DynamicEntityDataFieldMapper>  fields = _entityServices.GetGridTypeFields(relTypeId, entityId, DynamicProtocolOperateType.Add, userNumber);
+            try
+            {
+                    List<SimpleHeader> headers = new List<SimpleHeader>();
+                    foreach (var field in fields)
+                    {
+
+                        if (!ExportFieldSelect(field, operateType))
+                            continue;
+                        FieldType tempFieldType = FieldType.Text;
+                        //处理特殊类型字段，比如日期类型字段时只获取日期部分
+                        switch ((DynamicProtocolControlType)field.ControlType)
+                        {
+                            case DynamicProtocolControlType.TimeDate:
+                                tempFieldType = FieldType.TimeDate;
+                                break;
+                            case DynamicProtocolControlType.TimeStamp:
+                                tempFieldType = FieldType.TimeStamp;
+                                break;
+                            case DynamicProtocolControlType.NumberDecimal:
+                                tempFieldType = FieldType.NumberDecimal;
+                                break;
+                        }
+
+
+                        headers.Add(new SimpleHeader() { FieldName = field.FieldName, HeaderText = field.DisplayName, IsNotEmpty = field.IsRequire, Width = 150, FieldType = tempFieldType });
+                    }
+                    defines.Add(new SimpleSheetTemplate()
+                    {
+                        SheetName = "Sheet1",
+                        ExecuteSQL = "",
+                        Headers = headers,
+                        DataObject = fields
+                    });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("生成动态模板失败", ex);
+            }
+            return defines;
+        }
+        #endregion
 
         #region --生成动态模板的导入模板定义--
         private List<SheetDefine> GeneralDynamicTemplate_Import(Guid entityId, List<string> nestTableList,  ExcelOperateType operateType, int userNumber)
@@ -1777,7 +1864,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
         //校验字段的数据格式和处理特殊控件
-        private bool CheckFieldData(Guid typeId, DynamicEntityDataFieldMapper typeField, string columnValue, Dictionary<string, object> rowdata, int userno, out string errorMsg)
+        public  bool CheckFieldData(Guid typeId, DynamicEntityDataFieldMapper typeField, string columnValue, Dictionary<string, object> rowdata, int userno, out string errorMsg,Dictionary<string,object > fieldFilters  = null)
         {
             errorMsg = null;
             switch ((DynamicProtocolControlType)typeField.ControlType)
@@ -1873,6 +1960,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (string.IsNullOrEmpty(errorMsg))
                             {
                                 rowdata[typeField.FieldName] = string.Join(",", userids.ToArray());
+                                rowdata[typeField.FieldName+"_name"] = string.Join(",", names.ToArray());
                             }
                             else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
                         }
@@ -1898,6 +1986,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (string.IsNullOrEmpty(errorMsg))
                             {
                                 rowdata[typeField.FieldName] = useriddata;
+                                rowdata[typeField.FieldName + "_name"] = columnValue;
                             }
                             else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
                         }
@@ -1919,10 +2008,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case DynamicProtocolControlType.Product:
                     if (!string.IsNullOrEmpty(columnValue))
                     {
-                        var pid = _repository.GetProductId(columnValue, out errorMsg);
+                        var pid = _repository.GetProductId(columnValue, out errorMsg,fieldFilters);
                         if (string.IsNullOrEmpty(errorMsg))
                         {
                             rowdata[typeField.FieldName] = pid;
+                            rowdata[typeField.FieldName+"_name"] = columnValue;
                         }
                         else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
                     }
@@ -1934,6 +2024,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (string.IsNullOrEmpty(errorMsg))
                         {
                             rowdata[typeField.FieldName] = pid;
+                            rowdata[typeField.FieldName+"_name"] = columnValue;
                         }
                         else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
                     }
@@ -2078,6 +2169,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 var ruleSql = recDic["rulesql"].ToString().Trim();
                 ruleSql = ruleSql.Replace(",{querydata}", ",'{querydata}'");
+                ruleSql = ruleSql.Replace(",{needpower}", ",0");
                 ruleSql = _roleRepository.FormatRoleRule(ruleSql, userno);
                 object datainfo = null;
                 if ((DynamicProtocolControlType)typeField.ControlType == DynamicProtocolControlType.DataSourceSingle)
@@ -2239,7 +2331,92 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return result;
         }
         #endregion
+        public object DetailImport(DetailImportParamInfo paramInfo, int userId)
+        {
+            List<Dictionary<string, object>> retList = new List<Dictionary<string, object>>();
 
+            #region 获取嵌套实体字段信息（根据TypeId，注意转换）
+            List<EntityFieldProMapper> FieldList = this._entityProRepository.FieldQuery(paramInfo.DetailEntityId.ToString(), userId);
+            #endregion
+            #region 解析Excel,并调用前置调用UScript
+            List<Dictionary<string, object>> ExcelRowList = OXSExcelReader.ReadExcelFirstSheet(paramInfo.Data.OpenReadStream());
+            #endregion
+            #region 开始转换,转换过程中注意如果有错误，每行就有标识是否正确（"uk100v7_import_error:'xxx'"）
+            Dictionary<string, object> FieldRowDict = null;
+            if (ExcelRowList.Count >= 1)
+            {
+                FieldRowDict = ExcelRowList[0];
+                ExcelRowList.RemoveAt(0);
+            }
+            foreach (Dictionary<string, object> ExcelRowData in ExcelRowList)
+            {
+                Dictionary<string, object> RealDataRow = new Dictionary<string, object>();
+                //开始处理一行
+                foreach (string indexKey  in ExcelRowData.Keys)
+                {
+                    string fieldKey = FieldRowDict[indexKey].ToString() ;
+                    EntityFieldProMapper FieldInfo = null;
+                    foreach (EntityFieldProMapper field in FieldList)
+                    {
+                        if (field.FieldLabel.ToLower().Equals(fieldKey.ToLower())
+                            || field.FieldName.ToLower().Equals(fieldKey.ToLower()))
+                        {
+                            FieldInfo = field;
+                            break;
+                        }
+                    }
+                    if (FieldInfo != null && ExcelRowData[indexKey] != null)
+                    {
+                        //处理一列
+                        try
+                        {
+                            string errorMsg = "";
+                            DynamicEntityDataFieldMapper f = new DynamicEntityDataFieldMapper()
+                            {
+                                FieldId = Guid.Parse(FieldInfo.FieldId),
+                                FieldName = FieldInfo.FieldName,
+                                TypeId = paramInfo.MainTypeId,
+                                FieldLabel = FieldInfo.FieldLabel,
+                                DisplayName = FieldInfo.DisplayName,
+                                ControlType = FieldInfo.ControlType,
+                                FieldType = FieldInfo.FieldType,
+                                FieldConfig = FieldInfo.FieldConfig
+                            };
+                            RealDataRow[f.FieldName] = ExcelRowData[indexKey].ToString();
+                            if (CheckFieldData(paramInfo.MainTypeId, f, ExcelRowData[indexKey].ToString(), RealDataRow, userId, out errorMsg) == false) {
+                                if (RealDataRow.ContainsKey("uk100v7_import_error"))
+                                {
+                                    RealDataRow["uk100v7_import_error"] = RealDataRow["uk100v7_import_error"] + "\r\n" + errorMsg;
+                                }
+                                else
+                                {
+                                    RealDataRow["uk100v7_import_error"] = errorMsg;
+
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            if (RealDataRow.ContainsKey("uk100v7_import_error") == false)
+                            {
+                                RealDataRow.Add("uk100v7_import_error", ex.Message);
+                            }
+                            else
+                            {
+                                RealDataRow["uk100v7_import_error"] = RealDataRow["uk100v7_import_error"] + "\r\n" + ex.Message;
+                            }
+                        }
+                    }
+                }
+                retList.Add(RealDataRow);
+
+            }
+            #endregion
+            #region 调用后置处理UScript
+            #endregion
+            return retList;
+        }
         private bool IsPhoneNum(string value)
         {
             Regex r = new Regex(@"^1\d{10}$");
@@ -2272,4 +2449,5 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
     }
+
 }

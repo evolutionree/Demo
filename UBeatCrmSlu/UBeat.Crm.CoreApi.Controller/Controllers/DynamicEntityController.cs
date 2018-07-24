@@ -696,6 +696,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
+        
         [Route("sendtomule")]
 
         #region 用于测试安居宝，过后会删除

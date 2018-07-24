@@ -136,7 +136,33 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
-
+        /// <summary>
+        /// 嵌套表格导入数据
+        /// 仅仅是解析数据，然后返回数据
+        /// </summary>
+        /// <param name="ParamInfo"></param>
+        /// <returns></returns>
+        [HttpPost("detailimport")]
+        public OutputResult<object> DetailImport([FromForm] DetailImportParamInfo ParamInfo)
+        {
+            if (ParamInfo == null) return ResponseError<object>("参数异常");
+            OutputResult<object> ret = ParamInfo.ValidateData();
+            if (ret != null) return ret;
+            return new OutputResult<object>(this._service.DetailImport(ParamInfo, UserId));
+        }
+        /// <summary>
+        /// 嵌套表格导入模板生成
+        /// 返回fileid
+        /// </summary>
+        /// <param name="ParamInfo"></param>
+        /// <returns></returns>
+        [HttpGet("detailexporttemplate")]
+        [AllowAnonymous]
+        public IActionResult DetailExportDetail([FromQuery] DetailImportTemplateParamInfo ParamInfo)
+        {
+            ExportModel model = _service.GenerateDetailImportTemplate(ParamInfo.MainEntityId,ParamInfo.MainTypeId,ParamInfo.DetailEntityId);
+            return File(model.ExcelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", model.FileName ?? string.Format("{0:yyyyMMddHHmmssffff}.xlsx", DateTime.Now));
+        }
         #region --test--
         [HttpPost("importdata2")]
 		public OutputResult<object> ImportData2([FromForm] ImportDataModel formData)

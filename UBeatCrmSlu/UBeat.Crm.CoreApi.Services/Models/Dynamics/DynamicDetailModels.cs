@@ -9,6 +9,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Dynamics
         public Guid DynamicId { set; get; }
     }
 
+    public class SelectDynamicByBizIdParamInfo {
+        public Guid EntityId { get; set; }
+        public Guid RecId { get; set; }
+    }
     public class SelectDynamicListModel
     {
         public Guid? Businessid { set; get; }

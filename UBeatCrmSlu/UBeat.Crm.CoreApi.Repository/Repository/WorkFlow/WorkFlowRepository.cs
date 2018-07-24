@@ -1663,5 +1663,21 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             }
             return new List<WorkFlowCaseInfo>();
         }
+
+        public Dictionary<string, object> GetWorkflowByEntityId(DbTransaction tran, Guid entityId, int userId)
+        {
+            try
+            {
+                string strSQL = "select* from crm_sys_workflow  where entityid =@entityid and recstatus = 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@entityid",entityId)
+                };
+                return ExecuteQuery(strSQL, p, tran).FirstOrDefault();
+
+            }
+            catch (Exception ex) {
+                return null;
+            }
+        }
     }
 }
