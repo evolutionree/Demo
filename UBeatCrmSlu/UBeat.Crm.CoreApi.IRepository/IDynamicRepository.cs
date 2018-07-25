@@ -74,6 +74,15 @@ namespace UBeat.Crm.CoreApi.IRepository
         PageDataInfo<DynamicInfoExt> GetDynamicInfoList(DynamicListParameter param, int pageIndex, int pageSize, int userNumber);
 
         DynamicInfo GetDynamicInfo(Guid dynamicid);
+        /// <summary>
+        /// 根据实体id获取动态详情
+        /// </summary>
+        /// <param name="tran"></param>
+        /// <param name="entityid"></param>
+        /// <param name="RecId"></param>
+        /// <param name="userNo"></param>
+        /// <returns></returns>
+        DynamicInfo GetDynamicInfoByBizId(DbTransaction tran, Guid entityid, Guid RecId, int userNo);
 
         OperateResult AddDynamicComments(DynamicCommentsInsert data);
 

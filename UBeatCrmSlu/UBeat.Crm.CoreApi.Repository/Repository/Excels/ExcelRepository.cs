@@ -398,7 +398,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
         }
 
 
-        public Guid GetProductId(string namepath, out string errorMsg)
+        public Guid GetProductId(string namepath, out string errorMsg, Dictionary<string, object> FieldFilters = null)
         {
             errorMsg = null;
             if (string.IsNullOrEmpty(namepath))
@@ -411,11 +411,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
             var executeSql = string.Empty;
             if (string.IsNullOrEmpty(serialPath))
             {
-                executeSql = @"SELECT p.recid FROM crm_sys_product AS p WHERE productname=@productname ";
+                executeSql = @"SELECT p.recid,array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(s.productsetid, 0) ORDER BY nodepath DESC),',') fullname 
+                                FROM crm_sys_product AS p 
+                                    INNER JOIN crm_sys_products_series AS s ON s.productsetid=p.productsetid
+                                WHERE p.productname=@productname ";
             }
             else
             {
-                executeSql = @"SELECT p.recid FROM crm_sys_product AS p
+                executeSql = @"SELECT p.recid,
+                            ,array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(s.productsetid, 0) ORDER BY nodepath DESC),',') fullname
+                            FROM crm_sys_product AS p
                             INNER JOIN crm_sys_products_series AS s ON s.productsetid=p.productsetid
                             WHERE productname=@productname AND  array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(s.productsetid, 0) ORDER BY nodepath DESC),'/')=@serialPath
                             ";
@@ -428,10 +433,69 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
             };
 
             var dataResult = ExecuteQuery(executeSql, param);
+            #region 处理过滤条件问题,主要解决产品名称可能重复的问题
+            if (FieldFilters != null)
+            {
+                string includeFilters = "";
+                string excludeFilters = "";
+                string[] inFilters = null;
+                string[] exFilters = null;
+                if (FieldFilters.ContainsKey("includefilters"))
+                {
+                    includeFilters = FieldFilters["includefilters"].ToString();
+                    if (inFilters != null && inFilters.Length > 0)
+                        inFilters = includeFilters.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                }
+                if (FieldFilters.ContainsKey("excludefilters"))
+                {
+                    excludeFilters = FieldFilters["excludefilters"].ToString();
+                    if (excludeFilters != null && excludeFilters.Length > 0)
+                        exFilters = excludeFilters.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                }
+                List<Dictionary<string, object>> tmp = dataResult;
+                dataResult = new List<Dictionary<string, object>>();
+                foreach (Dictionary<string, object> item in tmp)
+                {
+                    if (item.ContainsKey("fullname") && item["fullname"] != null)
+                    {
+                        string fullName = item["fullname"].ToString();
+                        bool IsMatch = true;
+                        if (inFilters != null)
+                        {
+                            IsMatch = false;
+                            foreach (string key in inFilters)
+                            {
+                                if (fullName.IndexOf(key) >= 0)
+                                {
+                                    IsMatch = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (IsMatch == false) continue;
+                        if (exFilters != null)
+                        {
+                            foreach (string key in exFilters)
+                            {
+                                if (fullName.IndexOf(key) >= 0)
+                                {
+                                    IsMatch = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (IsMatch)
+                        {
+                            dataResult.Add(item);
+                        }
+                    }
+                }
 
+            }
+            #endregion
             if (dataResult.Count == 0)
             {
-                errorMsg = "产品不存在";
+                errorMsg = "产品不存在（或者不满足过滤条件）";
                 return Guid.Empty;
             }
             else if (dataResult.Count > 1)

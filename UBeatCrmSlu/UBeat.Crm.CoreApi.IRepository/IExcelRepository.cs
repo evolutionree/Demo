@@ -83,8 +83,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <param name="namepath"></param>
         /// <param name="errorMsg"></param>
+        /// <param name="FieldFilters">过滤条件</param>
         /// <returns></returns>
-        Guid GetProductId(string namepath, out string errorMsg);
+        Guid GetProductId(string namepath, out string errorMsg, Dictionary<string, object> FieldFilters = null);
         /// <summary>
         /// 获取产品系列id
         /// </summary>

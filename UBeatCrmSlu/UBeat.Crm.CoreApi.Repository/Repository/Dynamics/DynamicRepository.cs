@@ -302,6 +302,36 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
             };
             return ExecuteQuery<DynamicInfoExt>(sql, param).FirstOrDefault();
         }
+        public DynamicInfo GetDynamicInfoByBizId(DbTransaction tran , Guid entityid,Guid RecId,int userNo)
+        {
+            var sql = string.Format(@"SELECT d.*,t.tempcontent::Jsonb ,e.entityname,ec.categoryname AS TypeName, re.entityname AS relentityname,u.usericon AS reccreatorUserIcon,u.username AS reccreatorname,
+				                                    array(
+					                                    SELECT u.username  FROM crm_sys_dynamic_praise AS p 
+					                                    LEFT JOIN crm_sys_userinfo AS u ON u.userid=p.reccreator
+					                                    WHERE p.dynamicid=d.dynamicid AND p.recstatus=1 ORDER BY p.reccreated
+				                                    ) AS PraiseUsers,
+				                                    (SELECT array_to_json(array_agg(row_to_json(t))) FROM
+						                                    (SELECT c.dynamicid, c.commentsid,c.pcommentsid,c.comments,c.reccreator,u.username AS reccreator_name,u.usericon AS reccreator_icon,c.reccreated,uc.username AS tocommentor,dc.comments AS tocomments FROM crm_sys_dynamic_comments AS c 
+							                                    LEFT JOIN crm_sys_userinfo AS u ON u.userid=c.reccreator
+							                                    LEFT JOIN crm_sys_dynamic_comments AS dc ON dc.commentsid=c.pcommentsid
+							                                    LEFT JOIN crm_sys_userinfo AS uc ON uc.userid=dc.reccreator
+							                                    WHERE c.dynamicid=d.dynamicid AND c.recstatus=1 ORDER BY c.reccreated) AS t
+				                                     ) AS Comments
+                                                FROM public.crm_sys_dynamics AS d 
+                                                LEFT JOIN crm_sys_dynamic_template AS t ON t.templateid=d.templateid
+                                                LEFT JOIN crm_sys_entity AS re ON re.entityid=d.relentityid
+                                                LEFT JOIN crm_sys_entity AS e ON e.entityid=d.entityid 
+                                                LEFT JOIN crm_sys_entity_category AS ec ON ec.categoryid=d.typeid
+                                                LEFT JOIN crm_sys_userinfo AS u ON u.userid=d.reccreator 
+                                            WHERE d.businessid=@recid and d.entityid = @entityid");
+
+            var param = new DbParameter[]
+            {
+                 new NpgsqlParameter("recid", RecId),
+                 new NpgsqlParameter("entityid",entityid)
+            };
+            return ExecuteQuery<DynamicInfoExt>(sql, param).FirstOrDefault();
+        }
 
         #region --增量获取动态列表--
         /// <summary>
