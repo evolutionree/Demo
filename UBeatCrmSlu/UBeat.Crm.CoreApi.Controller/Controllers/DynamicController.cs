@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Models.Dynamics;
 using UBeat.Crm.CoreApi.Services.Models;
+using UBeat.Crm.CoreApi.DomainModel.Dynamics;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -115,7 +116,29 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("参数错误");
             return _service.GetDynamicInfo(body, UserId);
         }
+        /// <summary>
+        /// 根据实体EntityId和RecId获取数据
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("dynamicdetailbybizid")]
+        public OutputResult<object> GetDynamicInfoByBizId([FromBody] SelectDynamicByBizIdParamInfo paramInfo) {
+            if (paramInfo == null 
+                || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty
+                || paramInfo.RecId == null || paramInfo.RecId == Guid.Empty)
+            {
+                return ResponseError<object>("参数异常");
+            }
+            try
+            {
 
+                DynamicInfo ret =   this._service.GetDynamicInfoByBizId(paramInfo.EntityId, paramInfo.RecId, UserId);
+                return new OutputResult<object>(ret);
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+
+        }
 
         #endregion
 

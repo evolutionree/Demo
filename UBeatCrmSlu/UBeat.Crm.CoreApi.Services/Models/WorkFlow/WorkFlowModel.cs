@@ -220,4 +220,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public ICollection<RuleItemModel> RuleItems { get; set; }
         public RuleSetModel RuleSet { get; set; }
     }
+    public class WorkflowIdByEntityIdParamInfo
+    {
+        public Guid EntityId { get; set; }
+    }
 }

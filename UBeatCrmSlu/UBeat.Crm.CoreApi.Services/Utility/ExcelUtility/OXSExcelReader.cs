@@ -369,7 +369,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 int columnIndex = 0;
                 foreach (Cell cell in row.Descendants<Cell>()) {
 
-                    rowData.Add(columnIndex.ToString(), cell.CellValue.Text);
+                    rowData.Add(columnIndex.ToString(), GetCellValue(cell, workbookPart));
                     columnIndex++;
                 }
                 DataRows.Add(rowData);

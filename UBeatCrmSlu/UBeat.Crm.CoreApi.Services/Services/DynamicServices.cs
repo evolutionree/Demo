@@ -122,6 +122,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(_repository.SelectDynamic(dynamicid, userId));
         }
+        /// <summary>
+        /// 根据动态实体id获取动态详情（非动态实体详情）
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <param name="recId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public DynamicInfo GetDynamicInfoByBizId(Guid entityId, Guid recId, int userId)
+        {
+            return _repository.GetDynamicInfoByBizId(null, entityId, recId, userId);
+        }
 
         public OutputResult<object> GetDynamicInfoList(DynamicListModel data, int userId)
         {

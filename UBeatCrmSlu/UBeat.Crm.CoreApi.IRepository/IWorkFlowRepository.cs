@@ -170,6 +170,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         void TerminateCase(DbTransaction tran, Guid caseId);
         List<WorkFlowCaseItemInfo> GetWorkflowCaseWaitingDealItems(DbTransaction tran, Guid caseId);
         List<WorkFlowCaseInfo> GetExpiredWorkflowCaseList(DbTransaction tran, int userId);
+        Dictionary<string, object> GetWorkflowByEntityId(DbTransaction p, Guid entityId, int userId);
     }
 }
 
