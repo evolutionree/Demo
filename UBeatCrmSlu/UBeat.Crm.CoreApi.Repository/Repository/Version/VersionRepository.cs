@@ -249,7 +249,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         public List<Dictionary<string, object>> GetAnalyseFuncActiveByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
             var tempTable = @"
-            (SELECT a.recversion,a.recstatus, a.anafuncid,a.recorder,a.groupmark,f.anafuncname,f.moreflag,f.entityid,f.allowinto 
+            (SELECT a.recversion,a.recstatus, a.anafuncid,a.recorder,a.groupmark,f.anafuncname,f.moreflag,f.entityid,f.allowinto,a.groupmark_lang,f.anafuncname_lang
             FROM crm_sys_analyse_func_active AS a
             LEFT JOIN crm_sys_analyse_func AS f ON a.anafuncid = f.anafuncid  ) AS t";
             return GetDatasByVersion(tempTable, null, recVersion, userNumber, out maxVersion, out hasMoreData);
@@ -322,7 +322,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetNotifyGroupByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "msggroupid,msggroupname,msggroupicon,recorder,recstatus";
+            var selectFields = "msggroupid,msggroupname,msggroupicon,recorder,recstatus,msggroupname_lang";
             return GetDatasByVersion("crm_sys_notify_group", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
