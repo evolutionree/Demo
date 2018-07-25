@@ -219,7 +219,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			{
 				body.Id = Guid.Empty;
 			}
-            string tmpName = MultiLanguageUtils.GetDefaultLanguageValue(body.Name_Lang);
+            string tmpName = MultiLanguageUtils.GetDefaultLanguageValue(body.NormTypeName_Lang);
             if (tmpName != null) body.Name = tmpName;
             string name = body.Name;
             var crmData = new SalesTargetNormTypeMapper()
@@ -229,7 +229,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 EntityId = Guid.Empty,
                 FieldName = string.Empty,
                 CaculateType = 0,
-                Name_Lang = body.Name_Lang
+                NormTypeName_Lang = body.NormTypeName_Lang
             };
 
 			if (!crmData.IsValid())

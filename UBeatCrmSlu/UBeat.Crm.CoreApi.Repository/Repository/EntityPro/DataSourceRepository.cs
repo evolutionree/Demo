@@ -182,7 +182,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public List<DictionaryDataModel> SelectFieldDicVaue(int dicTypeId, int userNumber)
         {
-            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,recorder,extfield1,extfield2,extfield3,extfield4,extfield5,dataname_lang from crm_sys_dictionary where recstatus = 1 and dictypeid = @dictypeid ";
+            string sql = @"select dicid,dictypeid,dataid,dataval,relatedataid,recstatus,recorder,extfield1,extfield2,extfield3,extfield4,extfield5,dataval_lang from crm_sys_dictionary where recstatus = 1 and dictypeid = @dictypeid ";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("dictypeid",dicTypeId)
@@ -256,7 +256,7 @@ where dictypeid::text = @dictypeid";
         public bool AddDictionary(SaveDictionaryMapper entity, int userNumber)
         {
             string sql = @"insert into crm_sys_dictionary 
-(dicid,dictypeid,dataid,dataval,recorder,recstatus,reccreated,recupdated,reccreator,recupdator,relatedataid,extfield1,extfield2,extfield3,extfield4,extfield5,dataname_lang)
+(dicid,dictypeid,dataid,dataval,recorder,recstatus,reccreated,recupdated,reccreator,recupdator,relatedataid,extfield1,extfield2,extfield3,extfield4,extfield5,dataval_lang)
 values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreated,@recupdated,@reccreator,@recupdator,@relatedataid,@extfield1,@extfield2,@extfield3,@extfield4,@extfield5,@datalanguage::jsonb)";
             var param = new DbParameter[]
             {
@@ -284,7 +284,7 @@ values (@dicid,@dictypeid::int4,@dataid,@dataval,@recorder,@recstatus,@reccreate
         public bool UpdateDictionary(SaveDictionaryMapper entity, int userNumber)
         {
             string sql = @"update crm_sys_dictionary set dictypeid = @dictypeid::int4,dataid = @dataid, dataval = @dataval,recorder = @recorder, recstatus = @recstatus, recupdated = @recupdated,
-recupdator = @recupdator, relatedataid = @relatedataid, extfield1 = @extfield1, extfield2 = @extfield2, extfield3 = @extfield3, extfield4 = @extfield4, extfield5 = @extfield5,dataname_lang=@datalanguage::jsonb
+recupdator = @recupdator, relatedataid = @relatedataid, extfield1 = @extfield1, extfield2 = @extfield2, extfield3 = @extfield3, extfield4 = @extfield4, extfield5 = @extfield5,dataval_lang=@datalanguage::jsonb
 where dicid = @dicid";
             var param = new DbParameter[]
             {

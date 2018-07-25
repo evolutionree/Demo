@@ -195,7 +195,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.SalesTarget
                 FieldName = data.FieldName,
                 CalcuteType = data.CaculateType,
                 UserNo = userNumber,
-                name_lang = JsonConvert.SerializeObject(data.Name_Lang)
+                name_lang = JsonConvert.SerializeObject(data.NormTypeName_Lang)
             };
 
             return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);

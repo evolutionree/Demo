@@ -338,7 +338,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetDictionaryByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "dicid,dictypeid,dataid,dataval,recorder,recstatus,dataname_lang";
+            var selectFields = "dicid,dictypeid,dataid,dataval,recorder,recstatus,dataval_lang";
             return GetDatasByVersion("crm_sys_dictionary", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -524,7 +524,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetEntityCompomentByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "comptid,entityid,comptname,comptaction,icon,recorder,recstatus ";
+            var selectFields = "comptid,entityid,comptname,comptaction,icon,recorder,recstatus,comptname_lang ";
             return GetDatasByVersion("crm_sys_entity_compoment_config", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion

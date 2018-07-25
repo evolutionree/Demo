@@ -351,7 +351,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.SalesTarget
 
         public int CaculateType { get; set; }
 
-        public Dictionary<string, string> Name_Lang { get; set; }
+        public Dictionary<string, string> NormTypeName_Lang { get; set; }
 
         protected override IValidator GetValidator()
         {

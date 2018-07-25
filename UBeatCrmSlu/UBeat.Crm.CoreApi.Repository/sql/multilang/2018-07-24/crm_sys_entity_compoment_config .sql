@@ -1,0 +1,1 @@
+ALTER table crm_sys_entity_compoment_config add COLUMN comptname_lang jsonb;

@@ -3913,6 +3913,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
+                string RelName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entityModel.RelName, entityModel.RelName_Lang, out RelName);
+                if (RelName != null) entityModel.RelName = RelName;
                 UpdateRelTabMapper entity = new UpdateRelTabMapper
                 {
                     RelId = entityModel.RelId,
