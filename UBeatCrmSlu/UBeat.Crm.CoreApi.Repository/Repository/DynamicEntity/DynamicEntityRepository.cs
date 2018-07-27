@@ -44,16 +44,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             var procName =
               "SELECT crm_func_entity_protocol_type_fields(@typeId,@operateType,@userNo)";
 
-            var param = new
+            var param = new DbParameter[]
             {
-                TypeId = typeId,
-                OperateType = operateType,
-                UserNo = userNumber
+                new NpgsqlParameter("typeId",typeId),
+                new NpgsqlParameter("operateType",operateType),
+                new NpgsqlParameter("userNo",userNumber)
             };
-
-            var result = DataBaseHelper.QueryStoredProcCursor<DynamicEntityDataFieldMapper>(procName, param, CommandType.Text);
-
-            return result;
+            var result = ExecuteQueryRefCursor<DynamicEntityDataFieldMapper>(procName, param, null, CommandType.Text);
+            return result["field"];
         }
 
         public OperateResult DynamicAdd(DbTransaction tran, Guid typeId, Dictionary<string, object> fieldData, Dictionary<string, object> extraData, int userNumber)

@@ -45,7 +45,7 @@ BEGIN
 												GROUP BY fieldid,recstatus
 										) AS e
 							)
-							SELECT t.fieldid,t.typeid,t.fieldlabel,t.fieldname,t.displayname,t.controltype,t.fieldtype,t.isrequire,t.isvisible,t.isreadonly,json_object_update_key(json_object_update_key(t.fieldconfig::json,''isVisible'',t.isvisible::int4),''isReadOnly'',t.isreadonly::int4) AS fieldconfig,t.recorder,t.expandjs,t.filterjs,jsonb_extract_path_text(fieldconfig,''defaultValue'') AS defaultvalue FROM(
+							SELECT t.fieldid,t.typeid,t.fieldlabel,t.fieldname,t.displayname,t.controltype,t.fieldtype,t.isrequire,t.isvisible,t.isreadonly,json_object_update_key(json_object_update_key(t.fieldconfig::json,''isVisible'',t.isvisible::int4),''isReadOnly'',t.isreadonly::int4) AS fieldconfig,t.recorder,t.expandjs,t.filterjs,jsonb_extract_path_text(fieldconfig,''defaultValue'') AS defaultvalue,t.fieldlabel_lang,t.displayname_lang FROM(
 							SELECT f.fieldid,f.typeid,f.fieldlabel,f.fieldname,f.displayname,f.controltype,f.fieldtype,f.isrequire,CASE WHEN f.isvisible=1 THEN c.isvisible ELSE f.isvisible END isvisible,CASE WHEN f.isreadonly=1 THEN f.isreadonly ELSE c.isreadonly END isreadonly ,f.fieldconfig,f.recorder,f.expandjs,f.filterjs,f.fieldlabel_lang,f.displayname_lang FROM TTypeField AS f
 							INNER JOIN TFieldCalulate AS c ON c.fieldid = f.fieldid  AND c.recstatus=1
 							UNION
@@ -62,3 +62,4 @@ $BODY$
   LANGUAGE 'plpgsql' VOLATILE COST 100
  ROWS 1000
 ;
+
