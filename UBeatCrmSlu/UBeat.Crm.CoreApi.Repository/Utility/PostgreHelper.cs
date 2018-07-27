@@ -600,8 +600,32 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                         {
                             value = JsonConvert.DeserializeObject(value.ToString(), property.PropertyType);
                         }
-
-                        property.SetValue(md, value);
+                        if (property.PropertyType == typeof(System.Boolean))
+                        {
+                            if (value == null)
+                            {
+                                property.SetValue(md, false);
+                            }
+                            else {
+                                if (value.GetType() == typeof(System.Boolean))
+                                    property.SetValue(md, value);
+                                else
+                                {
+                                    string tmp = value.ToString().ToLower();
+                                    if (tmp == "true" || tmp != "0")
+                                    {
+                                        property.SetValue(md, true);
+                                    }
+                                    else {
+                                        property.SetValue(md, false);
+                                    }
+                                }
+                            }
+                            
+                        }
+                        else {
+                            property.SetValue(md, value);
+                        }
                     }
                 }
                 rows.Add(md);

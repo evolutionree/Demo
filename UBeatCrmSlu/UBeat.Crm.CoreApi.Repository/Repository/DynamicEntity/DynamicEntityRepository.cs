@@ -1070,16 +1070,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
             var procName = "SELECT crm_func_entity_protocol_type_fields_web(@typeId,@operateType,@userNo)";
 
-            var param = new
-            {
-                TypeId = typeId,
-                OperateType = operateType,
-                UserNo = userNumber
-            };
+            //var param = new
+            //{
+            //    TypeId = typeId,
+            //    OperateType = operateType,
+            //    UserNo = userNumber
+            //};
 
-            var result = DataBaseHelper.QueryStoredProcCursor<DynamicEntityWebFieldMapper>(procName, param, CommandType.Text);
+            // var result = DataBaseHelper.QueryStoredProcCursor<DynamicEntityWebFieldMapper>(procName, param, CommandType.Text);
+            Dictionary<string, List<DynamicEntityWebFieldMapper>> result = ExecuteQueryRefCursor<DynamicEntityWebFieldMapper>(procName, new DbParameter[] {
+                new Npgsql.NpgsqlParameter("@typeId",typeId),
+                new Npgsql.NpgsqlParameter("@operateType",operateType),
+                new Npgsql.NpgsqlParameter("@userNo",userNumber)
 
-            return result;
+            }, null, CommandType.Text);
+
+            return result["field"];
         }
 
         public List<DynamicEntityWebFieldMapper> GetWebDynamicListFields(Guid typeId, int operateType, int userNumber)
