@@ -1549,7 +1549,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 	                        con.functype,
 	                        fie.fieldid,
 	                        fie.displayname,
-	                        fie.fieldname
+	                        fie.fieldname,
+                            fie.fieldlabel_lang,
+                            fie.displayname_lang
                         FROM
 	                        crm_sys_entity_condition AS con
                         RIGHT OUTER  JOIN crm_sys_entity_fields AS fie ON con.fieldid = fie.fieldid

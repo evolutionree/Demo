@@ -214,7 +214,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                                     (select entityname from crm_sys_entity e where e.entityid = w.entityid limit 1) as entityname,
                                     (select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) as relentityid, 
                                     (select entityname from crm_sys_entity where entityid in(select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) limit 1) as relentityname,
-                                flowid,flowname,remark,vernum FROM crm_sys_workflow w WHERE flowid = @flowid LIMIT 1;";
+                                flowid,flowname,remark,vernum,flowname_lang FROM crm_sys_workflow w WHERE flowid = @flowid LIMIT 1;";
 
             var param = new DbParameter[]
             {
