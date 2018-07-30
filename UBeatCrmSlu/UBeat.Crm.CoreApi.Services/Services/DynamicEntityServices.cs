@@ -1780,7 +1780,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     case EntityFieldControlType.SelectSingle://3本地字典单选
                         fromClause = string.Format(@"{0} left outer join crm_sys_dictionary  as {1}_t on e.{1} = {1}_t.dataid and {1}_t.dictypeid={2} ", fromClause, fieldInfo.FieldName, fieldNameDictType[fieldInfo.FieldName]);
-                        selectClause = string.Format(@"{0},{1}_t.dataval as {1}_name", selectClause, fieldInfo.FieldName);
+                        selectClause = string.Format(@"{0},{1}_t.dataval as {1}_name, {1}_t.dataval_lang as {1}_lang", selectClause, fieldInfo.FieldName);
                         break;
                     case EntityFieldControlType.SalesStage://销售阶段
                         fromClause = string.Format(@"{0} left outer join crm_sys_salesstage_setting  as {1}_t on e.{1} = {1}_t.salesstageid ", fromClause, fieldInfo.FieldName);
@@ -1901,7 +1901,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         selectClause = string.Format(@"{0},{4} as {3}_name", selectClause, entityTable, relField.fieldname, fieldInfo.FieldName, selectField);
                         break;
                 }
-            }
+             }
             #endregion
             string WhereSQL = "1=1";
             string OrderBySQL = " e.recversion desc ";
@@ -1920,7 +1920,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             string innerSQL = string.Format(@"select {0} from {1}  where  {2} order by {3} limit {4} offset {5}",
                 selectClause, fromClause, WhereSQL, OrderBySQL, pageParam.PageSize, (pageParam.PageIndex - 1) * pageParam.PageSize);
-            string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
+                string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
             string CountSQL = string.Format(@"select total,(total-1)/{2}+1 as page from (select count(*)  AS total  from {0} where  {1} ) as k", fromClause, WhereSQL, pageParam.PageSize);
             List<Dictionary<string, object>> datas = null;
             if (CalcCountOnly)
