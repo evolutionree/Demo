@@ -1,0 +1,1 @@
+alter TABLE crm_sys_entity_rel_tab  rename  reltablanguage to relname_lang;
