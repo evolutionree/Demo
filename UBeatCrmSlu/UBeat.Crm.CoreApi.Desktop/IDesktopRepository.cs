@@ -7,5 +7,6 @@ namespace UBeat.Crm.CoreApi.Desktop
 {
     public interface IDesktopRepository : IBaseRepository
     {
+        DesktopMapper GetDesktop(int userId);
     }
 }

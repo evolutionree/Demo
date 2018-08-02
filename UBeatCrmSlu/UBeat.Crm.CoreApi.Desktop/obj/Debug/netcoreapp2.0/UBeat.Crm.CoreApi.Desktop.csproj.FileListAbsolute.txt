@@ -21,3 +21,6 @@ D:\SourceTree1\UBeatCrmSlu\UBeat.Crm.CoreApi.Desktop\bin\Debug\netcoreapp2.0\UBe
 D:\SourceTree1\UBeatCrmSlu\UBeat.Crm.CoreApi.Desktop\bin\Debug\netcoreapp2.0\UBeat.Crm.CoreApi.Repository.pdb
 D:\SourceTree1\UBeatCrmSlu\UBeat.Crm.CoreApi.Desktop\bin\Debug\netcoreapp2.0\UBeat.Crm.MailService.pdb
 D:\SourceTree1\UBeatCrmSlu\UBeat.Crm.CoreApi.Desktop\obj\Debug\netcoreapp2.0\UBeat.Crm.CoreApi.Desktop.csproj.CopyComplete
+D:\SourceTree1\UBeatCrmSlu\UBeat.Crm.CoreApi.Desktop\bin\Debug\netcoreapp2.0\UBeat.Crm.CoreApi.Desktop.pdb
+D:\SourceTree1\UBeatCrmSlu\UBeat.Crm.CoreApi.Desktop\obj\Debug\netcoreapp2.0\UBeat.Crm.CoreApi.Desktop.dll
+D:\SourceTree1\UBeatCrmSlu\UBeat.Crm.CoreApi.Desktop\obj\Debug\netcoreapp2.0\UBeat.Crm.CoreApi.Desktop.pdb

@@ -9,15 +9,23 @@ namespace UBeat.Crm.CoreApi.Desktop
 {
     public class DesktopMapper : BaseEntity
     {
+        public DesktopMapper() {
+            LeftDesktopComponents = new List<DesktopComponentMapper>();
+            RightDesktopComponents = new List<DesktopComponentMapper>();
+        }
         public Guid DesktopId { get; set; }
 
-        public String DeskptopName { get; set; }
+        public String DesktopName { get; set; }
 
         public int DesktopType { get; set; }
         public String LeftItems { get; set; }
         public String RightItems { get; set; }
 
         public Guid BaseDeskId { get; set; }
+
+        public List<DesktopComponentMapper> LeftDesktopComponents { get; set; }
+
+        public List<DesktopComponentMapper> RightDesktopComponents { get; set; }
 
         protected override IValidator GetValidator()
         {

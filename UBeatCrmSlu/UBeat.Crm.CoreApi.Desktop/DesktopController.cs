@@ -21,6 +21,21 @@ namespace UBeat.Crm.CoreApi.Desktop
     public class DesktopController : BaseController
     {
 
+        private readonly DesktopServices _desktopServices;
 
+        public DesktopController(DesktopServices desktopServices) : base(desktopServices)
+        {
+            _desktopServices = desktopServices;
+        }
+        /// <summary>
+        /// 发邮件
+        /// </summary>
+        /// <param name="emailServices"></param>
+        [HttpPost]
+        [Route("getdesktop")]
+        public dynamic GetDesktop()
+        {
+            return _desktopServices.GetDesktop(UserId);
+        }
     }
 }
