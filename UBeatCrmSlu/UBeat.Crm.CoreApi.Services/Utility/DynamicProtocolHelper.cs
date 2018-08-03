@@ -472,7 +472,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format(" {0} '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);//这里应该有问题，要判断多选还是单选
+                                    result.FieldData = string.Format(" {0} ilike  '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);//这里应该有问题，要判断多选还是单选
                                 }
                                 break;
                             }
@@ -529,7 +529,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format(" {0}_t.catalogname ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
                                 }
                                 break;
                             }

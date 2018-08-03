@@ -35,6 +35,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String ComUrl { get; set; }
         public String ComArgs { get; set; }
         public String ComDesciption { get; set; }
+        public int Status { get; set; }
     }
 
     public class DesktopRelation

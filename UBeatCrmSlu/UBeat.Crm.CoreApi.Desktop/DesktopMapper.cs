@@ -9,15 +9,24 @@ namespace UBeat.Crm.CoreApi.Desktop
 {
     public class DesktopMapper : BaseEntity
     {
+        public DesktopMapper()
+        {
+            LeftDesktopComponents = new List<DesktopComponentMapper>();
+            RightDesktopComponents = new List<DesktopComponentMapper>();
+        }
         public Guid DesktopId { get; set; }
 
-        public String DeskptopName { get; set; }
+        public String DesktopName { get; set; }
 
         public int DesktopType { get; set; }
         public String LeftItems { get; set; }
         public String RightItems { get; set; }
 
         public Guid BaseDeskId { get; set; }
+
+        public List<DesktopComponentMapper> LeftDesktopComponents { get; set; }
+
+        public List<DesktopComponentMapper> RightDesktopComponents { get; set; }
 
         protected override IValidator GetValidator()
         {
@@ -51,6 +60,8 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String ComArgs { get; set; }
         public String ComDesciption { get; set; }
 
+        public int Status { get; set; }
+
         protected override IValidator GetValidator()
         {
             return new DesktopComponentMapperValidator();
@@ -60,8 +71,16 @@ namespace UBeat.Crm.CoreApi.Desktop
         {
             public DesktopComponentMapperValidator()
             {
-                //          RuleFor(d => d.DatasourceName).NotNull().WithMessage("数据源名称不能为空");
-
+                RuleFor(d => d.ComName).NotNull().WithMessage("组件名称不能为空");
+                RuleFor(d => d.ComType).Must(t => t > 0).WithMessage("组件分类不存在");
+                RuleFor(d => d.ComWidth).Must(t => t > 0).WithMessage("组件宽度不能小于0");
+                RuleFor(d => d.ComHeightType).Must(t => t > 0).WithMessage("组件高度类型不存在");
+                RuleFor(d => d.MinComHeight).Must(t => t > 0).WithMessage("组件最小高度不能小于0");
+                RuleFor(d => d.MaxComHeight).Must(t => t > 0).WithMessage("组件最大高度不能小于0");
+                RuleFor(d => d.ComUrl).NotNull().WithMessage("组件处理页面不能为空");
+                RuleFor(d => d.ComArgs).NotNull().WithMessage("组件参数不能为空");
+                RuleFor(d => d.ComDesciption).NotNull().WithMessage("组件描述不能为空");
+                RuleFor(d => d.ComWidth).Must(t => t > 0).WithMessage("组件状态不能为0");
             }
         }
     }
