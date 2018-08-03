@@ -27,15 +27,28 @@ namespace UBeat.Crm.CoreApi.Desktop
         {
             _desktopServices = desktopServices;
         }
-        /// <summary>
-        /// 发邮件
-        /// </summary>
-        /// <param name="emailServices"></param>
+
         [HttpPost]
         [Route("getdesktop")]
         public dynamic GetDesktop()
         {
             return _desktopServices.GetDesktop(UserId);
+        }
+
+        [HttpPost]
+        [Route("savedesktopcomponent")]
+        public dynamic SaveDesktopComponent([FromBody]DesktopComponent model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.SaveDesktopComponent(model);
+        }
+
+        [HttpPost]
+        [Route("enabledesktopcomponent")]
+        public dynamic EnableDesktopComponent([FromBody]DesktopComponent model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.EnableDesktopComponent(model);
         }
     }
 }
