@@ -2389,7 +2389,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //处理排序语句
             if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
             {
-                dynamicEntity.SearchOrder = "";
+                if (SpecFuncName != null)
+                {
+                    dynamicEntity.SearchOrder = " t.recversion desc ";
+                }
+                else {
+                    dynamicEntity.SearchOrder = " e.recversion desc ";
+
+                }
             }
             return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber, CalcCountOnly);
         }
