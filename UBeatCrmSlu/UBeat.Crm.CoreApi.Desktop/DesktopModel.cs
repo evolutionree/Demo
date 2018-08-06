@@ -17,6 +17,8 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String RightItems { get; set; }
 
         public Guid BaseDeskId { get; set; }
+        public String Description { get; set; }
+        public int Status { get; set; }
     }
 
     public class DesktopComponent

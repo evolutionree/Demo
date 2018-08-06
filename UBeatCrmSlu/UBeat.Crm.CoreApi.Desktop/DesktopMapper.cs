@@ -23,6 +23,8 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String RightItems { get; set; }
 
         public Guid BaseDeskId { get; set; }
+        public String Description { get; set; }
+        public int Status { get; set; }
 
         public List<DesktopComponentMapper> LeftDesktopComponents { get; set; }
 

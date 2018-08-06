@@ -50,5 +50,19 @@ namespace UBeat.Crm.CoreApi.Desktop
             if (model == null) return ResponseError<object>("参数格式错误");
             return _desktopServices.EnableDesktopComponent(model);
         }
+        [HttpPost]
+        [Route("getdesktopcomdetail")]
+        public dynamic GetDesktopComponentDetail([FromBody]DesktopComponent model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.GetDesktopComponentDetail(model);
+        }
+        [HttpPost]
+        [Route("enabledesktop")]
+        public dynamic EnableDesktop([FromBody]Desktop model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.EnableDesktop(model);
+        }
     }
 }

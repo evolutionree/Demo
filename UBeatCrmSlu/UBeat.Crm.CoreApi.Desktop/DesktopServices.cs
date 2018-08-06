@@ -47,7 +47,26 @@ namespace UBeat.Crm.CoreApi.Desktop
                 return new OutputResult<object>(model, "状态码不能小于0", status: 1);
             }
             var mapper = _mapper.Map<DesktopComponent, DesktopComponentMapper>(model);
-            return new OutputResult<object>(_desktopRepository.SaveDesktopComponent(mapper));
+            return new OutputResult<object>(_desktopRepository.EnableDesktopComponent(mapper));
+        }
+
+        public OutputResult<object> GetDesktopComponentDetail(DesktopComponent model)
+        {
+            if (model.DsComponetId == null || model.DsComponetId == Guid.Empty)
+            {
+                return new OutputResult<object>(model, "工作台组件Id不能为空", status: 1);
+            }
+            return new OutputResult<object>(_desktopRepository.GetDesktopComponentDetail(model.DsComponetId));
+        }
+
+        public OutputResult<object> EnableDesktop(Desktop model)
+        {
+            if (model.Status < 0)
+            {
+                return new OutputResult<object>(model, "状态码不能小于0", status: 1);
+            }
+            var mapper = _mapper.Map<Desktop, DesktopMapper>(model);
+            return new OutputResult<object>(_desktopRepository.EnableDesktop(mapper));
         }
         #endregion
     }

@@ -14,5 +14,11 @@ namespace UBeat.Crm.CoreApi.Desktop
          OperateResult SaveDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
 
          OperateResult EnableDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
+
+        DesktopComponentMapper GetDesktopComponentDetail(Guid dsComponetId);
+
+        OperateResult SaveDesktop(DesktopMapper mapper, IDbTransaction trans = null);
+
+        OperateResult EnableDesktop(DesktopMapper mapper, IDbTransaction trans = null);
     }
 }
