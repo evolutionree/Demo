@@ -133,4 +133,26 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
         }
     }
+    public class DesktopRoleRelationMapper : BaseEntity
+    {
+
+        public Guid DesktopId { get; set; }
+
+        public Guid RoleId { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new DesktopRoleRelationMapperValidator();
+        }
+
+        class DesktopRoleRelationMapperValidator : AbstractValidator<DesktopRoleRelationMapper>
+        {
+            public DesktopRoleRelationMapperValidator()
+            {
+                RuleFor(d => d.DesktopId).Must(t => t != null || t != Guid.Empty).WithMessage("控制台Id不能为空");
+                RuleFor(d => d.RoleId).Must(t => t != null || t != Guid.Empty).WithMessage("角色Id不能为空");
+            }
+        }
+
+    }
 }

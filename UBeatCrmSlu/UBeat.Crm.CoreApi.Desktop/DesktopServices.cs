@@ -30,14 +30,20 @@ namespace UBeat.Crm.CoreApi.Desktop
 
 
         #region config
-        public OutputResult<object> SaveDesktopComponent(DesktopComponent model)
+        public OutputResult<object> SaveDesktopComponent(DesktopComponent model, int userId)
         {
             var mapper = _mapper.Map<DesktopComponent, DesktopComponentMapper>(model);
             if (mapper == null || !mapper.IsValid())
             {
                 return HandleValid(mapper);
             }
-            return new OutputResult<object>(_desktopRepository.SaveDesktopComponent(mapper));
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _desktopRepository.SaveDesktopComponent(mapper);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
         }
 
         public OutputResult<object> EnableDesktopComponent(DesktopComponent model)
@@ -67,6 +73,21 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
             var mapper = _mapper.Map<Desktop, DesktopMapper>(model);
             return new OutputResult<object>(_desktopRepository.EnableDesktop(mapper));
+        }
+
+        public OutputResult<object> SaveDesktopRoleRelation(IList<DesktopRoleRelation> models)
+        {
+            List<DesktopRoleRelationMapper> desktopRoleRelations = new List<DesktopRoleRelationMapper>();
+            foreach (var model in models)
+            {
+                var mapper = _mapper.Map<DesktopRoleRelation, DesktopRoleRelationMapper>(model);
+                if (mapper == null || !mapper.IsValid())
+                {
+                    return HandleValid(mapper);
+                }
+                desktopRoleRelations.Add(mapper);
+            }
+            return new OutputResult<object>(_desktopRepository.SaveDesktopRoleRelation(desktopRoleRelations));
         }
         #endregion
     }

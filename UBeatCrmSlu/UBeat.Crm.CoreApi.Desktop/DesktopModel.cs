@@ -56,4 +56,12 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         public JObject ComArgs { get; set; }
     }
+
+    public class DesktopRoleRelation
+    {
+
+        public Guid DesktopId { get; set; }
+
+        public Guid RoleId { get; set; }
+    }
 }
