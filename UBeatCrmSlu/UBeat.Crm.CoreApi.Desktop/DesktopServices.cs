@@ -14,13 +14,13 @@ namespace UBeat.Crm.CoreApi.Desktop
         private readonly IAccountRepository _accountRepository;
         private readonly IDesktopRepository _desktopRepository;
         private readonly IMapper _mapper;
-
-        public DesktopServices(IMapper mapper, IAccountRepository accountRepository, IDesktopRepository desktopRepository, IConfigurationRoot config)
+        private readonly IRoleRepository _roleRepsitory;
+        public DesktopServices(IMapper mapper, IAccountRepository accountRepository, IDesktopRepository desktopRepository, IRoleRepository roleRepsitory, IConfigurationRoot config)
         {
             _accountRepository = accountRepository;
             _desktopRepository = desktopRepository;
             _mapper = mapper;
-
+            _roleRepsitory = roleRepsitory;
         }
 
         public OutputResult<object> GetDesktop(int userId)
@@ -30,24 +30,80 @@ namespace UBeat.Crm.CoreApi.Desktop
 
 
         #region config
-        public OutputResult<object> SaveDesktopComponent(DesktopComponent model)
+        public OutputResult<object> SaveDesktopComponent(DesktopComponent model, int userId)
         {
             var mapper = _mapper.Map<DesktopComponent, DesktopComponentMapper>(model);
             if (mapper == null || !mapper.IsValid())
             {
                 return HandleValid(mapper);
             }
-            return new OutputResult<object>(_desktopRepository.SaveDesktopComponent(mapper));
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _desktopRepository.SaveDesktopComponent(mapper, transaction);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
         }
 
-        public OutputResult<object> EnableDesktopComponent(DesktopComponent model)
+        public OutputResult<object> EnableDesktopComponent(DesktopComponent model, int userId)
         {
             if (model.Status < 0)
             {
                 return new OutputResult<object>(model, "状态码不能小于0", status: 1);
             }
             var mapper = _mapper.Map<DesktopComponent, DesktopComponentMapper>(model);
-            return new OutputResult<object>(_desktopRepository.SaveDesktopComponent(mapper));
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _desktopRepository.EnableDesktopComponent(mapper, transaction);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
+        }
+
+        public OutputResult<object> GetDesktopComponentDetail(DesktopComponent model)
+        {
+            if (model.DsComponetId == null || model.DsComponetId == Guid.Empty)
+            {
+                return new OutputResult<object>(model, "工作台组件Id不能为空", status: 1);
+            }
+
+            return new OutputResult<object>(_desktopRepository.GetDesktopComponentDetail(model.DsComponetId));
+        }
+
+        public OutputResult<object> EnableDesktop(Desktop model, int userId)
+        {
+            if (model.Status < 0)
+            {
+                return new OutputResult<object>(model, "状态码不能小于0", status: 1);
+            }
+            var mapper = _mapper.Map<Desktop, DesktopMapper>(model);
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _desktopRepository.EnableDesktop(mapper, transaction);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
+        }
+
+        public OutputResult<object> SaveDesktopRoleRelation(IList<DesktopRoleRelation> models)
+        {
+            List<DesktopRoleRelationMapper> desktopRoleRelations = new List<DesktopRoleRelationMapper>();
+            foreach (var model in models)
+            {
+                var mapper = _mapper.Map<DesktopRoleRelation, DesktopRoleRelationMapper>(model);
+                if (mapper == null || !mapper.IsValid())
+                {
+                    return HandleValid(mapper);
+                }
+                desktopRoleRelations.Add(mapper);
+            }
+            return new OutputResult<object>(_desktopRepository.SaveDesktopRoleRelation(desktopRoleRelations));
+        }
+        public OutputResult<Object> GetRoles(int userId)
+        {
+            var result = _desktopRepository.GetRoles( userId);
+            return new OutputResult<object>(result);
         }
         #endregion
     }

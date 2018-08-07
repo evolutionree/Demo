@@ -17,6 +17,8 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String RightItems { get; set; }
 
         public Guid BaseDeskId { get; set; }
+        public String Description { get; set; }
+        public int Status { get; set; }
     }
 
     public class DesktopComponent
@@ -53,5 +55,13 @@ namespace UBeat.Crm.CoreApi.Desktop
         public int UserId { get; set; }
 
         public JObject ComArgs { get; set; }
+    }
+
+    public class DesktopRoleRelation
+    {
+
+        public Guid DesktopId { get; set; }
+
+        public Guid RoleId { get; set; }
     }
 }
