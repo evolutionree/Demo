@@ -40,7 +40,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         public dynamic SaveDesktopComponent([FromBody]DesktopComponent model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
-            return _desktopServices.SaveDesktopComponent(model);
+            return _desktopServices.SaveDesktopComponent(model, UserId);
         }
 
         [HttpPost]
@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         public dynamic EnableDesktopComponent([FromBody]DesktopComponent model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
-            return _desktopServices.EnableDesktopComponent(model);
+            return _desktopServices.EnableDesktopComponent(model, UserId);
         }
         [HttpPost]
         [Route("getdesktopcomdetail")]
@@ -62,7 +62,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         public dynamic EnableDesktop([FromBody]Desktop model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
-            return _desktopServices.EnableDesktop(model);
+            return _desktopServices.EnableDesktop(model, UserId);
         }
         [HttpPost]
         [Route("savedesktoprolerelat")]
@@ -70,6 +70,12 @@ namespace UBeat.Crm.CoreApi.Desktop
         {
             if (models == null || models.Count == 0) return ResponseError<object>("参数格式错误");
             return _desktopServices.SaveDesktopRoleRelation(models);
+        }
+        [HttpPost]
+        [Route("getroles")]
+        public dynamic GetRoles()
+        {
+            return _desktopServices.GetRoles(UserId);
         }
     }
 }

@@ -14,13 +14,13 @@ namespace UBeat.Crm.CoreApi.Desktop
         private readonly IAccountRepository _accountRepository;
         private readonly IDesktopRepository _desktopRepository;
         private readonly IMapper _mapper;
-
-        public DesktopServices(IMapper mapper, IAccountRepository accountRepository, IDesktopRepository desktopRepository, IConfigurationRoot config)
+        private readonly IRoleRepository _roleRepsitory;
+        public DesktopServices(IMapper mapper, IAccountRepository accountRepository, IDesktopRepository desktopRepository, IRoleRepository roleRepsitory, IConfigurationRoot config)
         {
             _accountRepository = accountRepository;
             _desktopRepository = desktopRepository;
             _mapper = mapper;
-
+            _roleRepsitory = roleRepsitory;
         }
 
         public OutputResult<object> GetDesktop(int userId)
@@ -46,7 +46,7 @@ namespace UBeat.Crm.CoreApi.Desktop
             }, model, userId);
         }
 
-        public OutputResult<object> EnableDesktopComponent(DesktopComponent model,int userId)
+        public OutputResult<object> EnableDesktopComponent(DesktopComponent model, int userId)
         {
             if (model.Status < 0)
             {
@@ -71,7 +71,7 @@ namespace UBeat.Crm.CoreApi.Desktop
             return new OutputResult<object>(_desktopRepository.GetDesktopComponentDetail(model.DsComponetId));
         }
 
-        public OutputResult<object> EnableDesktop(Desktop model,int userId)
+        public OutputResult<object> EnableDesktop(Desktop model, int userId)
         {
             if (model.Status < 0)
             {
@@ -99,6 +99,11 @@ namespace UBeat.Crm.CoreApi.Desktop
                 desktopRoleRelations.Add(mapper);
             }
             return new OutputResult<object>(_desktopRepository.SaveDesktopRoleRelation(desktopRoleRelations));
+        }
+        public OutputResult<Object> GetRoles(int userId)
+        {
+            var result = _desktopRepository.GetRoles( userId);
+            return new OutputResult<object>(result);
         }
         #endregion
     }

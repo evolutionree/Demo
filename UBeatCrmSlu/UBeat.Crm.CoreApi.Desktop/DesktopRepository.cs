@@ -170,7 +170,17 @@ namespace UBeat.Crm.CoreApi.Desktop
             };
 
         }
-
+        public IList<dynamic> GetRoles(int userId)
+        {
+            var sql = @"select * from 
+(select '00000000-0000-0000-0000-000000000001'::uuid,'全局角色',now() as reccreated 
+UNION
+select roleid,rolename,reccreated from crm_sys_role where recstatus=1 ) as tmp ORDER BY  reccreated DESC;";
+            var param = new DynamicParameters();
+            param.Add("userid", userId);
+            var result = DataBaseHelper.Query<dynamic>(sql, param);
+            return result;
+        }
 
 
 

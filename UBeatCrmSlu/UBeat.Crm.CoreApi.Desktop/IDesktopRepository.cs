@@ -22,5 +22,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         OperateResult EnableDesktop(DesktopMapper mapper, IDbTransaction trans = null);
 
         OperateResult SaveDesktopRoleRelation(List<DesktopRoleRelationMapper> mapper, IDbTransaction trans = null);
+
+        IList<dynamic> GetRoles(int userId);
     }
 }
