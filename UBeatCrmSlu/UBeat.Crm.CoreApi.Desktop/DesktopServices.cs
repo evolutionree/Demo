@@ -40,20 +40,25 @@ namespace UBeat.Crm.CoreApi.Desktop
 
             return ExcuteAction((transaction, arg, userData) =>
             {
-                var result = _desktopRepository.SaveDesktopComponent(mapper);
+                var result = _desktopRepository.SaveDesktopComponent(mapper, transaction);
                 return new OutputResult<object>(result);
 
             }, model, userId);
         }
 
-        public OutputResult<object> EnableDesktopComponent(DesktopComponent model)
+        public OutputResult<object> EnableDesktopComponent(DesktopComponent model,int userId)
         {
             if (model.Status < 0)
             {
                 return new OutputResult<object>(model, "状态码不能小于0", status: 1);
             }
             var mapper = _mapper.Map<DesktopComponent, DesktopComponentMapper>(model);
-            return new OutputResult<object>(_desktopRepository.EnableDesktopComponent(mapper));
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _desktopRepository.EnableDesktopComponent(mapper, transaction);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
         }
 
         public OutputResult<object> GetDesktopComponentDetail(DesktopComponent model)
@@ -62,17 +67,23 @@ namespace UBeat.Crm.CoreApi.Desktop
             {
                 return new OutputResult<object>(model, "工作台组件Id不能为空", status: 1);
             }
+
             return new OutputResult<object>(_desktopRepository.GetDesktopComponentDetail(model.DsComponetId));
         }
 
-        public OutputResult<object> EnableDesktop(Desktop model)
+        public OutputResult<object> EnableDesktop(Desktop model,int userId)
         {
             if (model.Status < 0)
             {
                 return new OutputResult<object>(model, "状态码不能小于0", status: 1);
             }
             var mapper = _mapper.Map<Desktop, DesktopMapper>(model);
-            return new OutputResult<object>(_desktopRepository.EnableDesktop(mapper));
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _desktopRepository.EnableDesktop(mapper, transaction);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
         }
 
         public OutputResult<object> SaveDesktopRoleRelation(IList<DesktopRoleRelation> models)
