@@ -70,7 +70,14 @@ namespace UBeat.Crm.CoreApi.Desktop
 
             return new OutputResult<object>(_desktopRepository.GetDesktopComponentDetail(model.DsComponetId));
         }
-
+        public OutputResult<object> GetDesktopDetail(Desktop model)
+        {
+            if (model.DesktopId == null || model.DesktopId == Guid.Empty)
+            {
+                return new OutputResult<object>(model, "工作台Id不能为空", status: 1);
+            }
+            return new OutputResult<object>(_desktopRepository.GetDesktopDetail(model.DesktopId));
+        }
         public OutputResult<object> EnableDesktop(Desktop model, int userId)
         {
             if (model.Status < 0)

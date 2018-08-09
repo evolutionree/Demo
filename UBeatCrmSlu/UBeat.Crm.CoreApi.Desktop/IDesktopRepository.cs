@@ -21,6 +21,8 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         OperateResult EnableDesktop(DesktopMapper mapper, IDbTransaction trans = null);
 
+        DesktopMapper GetDesktopDetail(Guid desktopId);
+
         OperateResult SaveDesktopRoleRelation(List<DesktopRoleRelationMapper> mapper, IDbTransaction trans = null);
 
         IList<dynamic> GetRoles(int userId);

@@ -48,6 +48,16 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
         }
 
+        public DesktopMapper GetDesktopDetail(Guid desktopId)
+        {
+            var sql = @"select desktopid,desktopname,description from crm_sys_desktop where desktopId=@desktopId limit 1;";
+            var param = new DynamicParameters();
+            param.Add("desktopId", desktopId);
+            var result = DataBaseHelper.QuerySingle<DesktopMapper>(sql, param);
+            return result;
+        }
+
+
         public OperateResult EnableDesktop(DesktopMapper mapper, IDbTransaction trans = null)
         {
             var sql = @"update crm_sys_desktop set status=@status where  desktopid=@desktopid;";
@@ -182,13 +192,19 @@ select roleid,rolename,reccreated from crm_sys_role where recstatus=1 ) as tmp O
             return result;
         }
 
+        
+
 
 
         #endregion
 
         public DesktopMapper GetDesktop(int userId)
         {
-            var sql = @"select * from crm_sys_desktop where desktopid in (select desktopid from crm_sys_desktop_relation where userid=@userid) limit 1;";
+            var sql = @"select * from crm_sys_desktop where desktopid in (select desktopid from crm_sys_desktop_relation where userid=@userid) AND EXISTS(
+select 1 FROM crm_sys_desktop_role_relation desktop 
+INNER JOIN  crm_sys_userinfo_role_relate userinfo
+ON desktop.roleid=userinfo.roleid
+ where userinfo.userid =1 and  desktop.desktopid =(select desktopid from crm_sys_desktop_relation where userid=1 limit 1)) limit 1;";
             var sqlLeft = @"select * from crm_sys_desktop_component where dscomponetid in (
             select   regexp_split_to_table::uuid as leftid  from  regexp_split_to_table((select leftitems from crm_sys_desktop where desktopid in (select desktopid from crm_sys_desktop_relation where userid=@userid) limit 1),','))";
             var sqlRight = @"select * from crm_sys_desktop_component where dscomponetid in (
