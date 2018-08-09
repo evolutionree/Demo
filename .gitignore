@@ -34,7 +34,5 @@ UBeatCrmSlu/UBeat.Crm.CoreApi/serverfinger.json
 UBeatCrmSlu/UBeat.Crm.CoreApi.Controller/obj/
 UBeatCrmSlu/UBeat.Crm.CoreApi.Controller/bin/
 UBeatCrmSlu/UBeat.Crm.CoreApi/workflowcopyusers.json
-UBeatCrmSlu/UBeat.Crm.CoreApi.Desktop/bin/Debug/netcoreapp2.0/UBeat.Crm.CoreApi.Desktop.dll
-UBeatCrmSlu/UBeat.Crm.CoreApi.Desktop/bin/Debug/netcoreapp2.0/UBeat.Crm.CoreApi.Desktop.pdb
-UBeatCrmSlu/UBeat.Crm.CoreApi.Desktop/obj/Debug/netcoreapp2.0/UBeat.Crm.CoreApi.Desktop.dll
-UBeatCrmSlu/UBeat.Crm.CoreApi.Desktop/obj/Debug/netcoreapp2.0/UBeat.Crm.CoreApi.Desktop.pdb
+UBeatCrmSlu/UBeat.Crm.CoreApi.Desktop/bin/Debug
+UBeatCrmSlu/UBeat.Crm.CoreApi.Desktop/obj/Debug

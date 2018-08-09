@@ -13,6 +13,7 @@ using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
 using UBeat.Crm.CoreApi.Services.Models.Excels;
 using System.IO;
+using UBeat.Crm.CoreApi.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -287,9 +288,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         int tmp = dataSourceInfo.DataSQL.LastIndexOf(".");
                         serviceName = dataSourceInfo.DataSQL.Substring(0, tmp);
                         methodName = dataSourceInfo.DataSQL.Substring(tmp + 1);
-                        object service = serviceProvider.GetService(Type.GetType(serviceName));
+                        Type type = AssemblyPluginUtils.getInstance().getUKType(serviceName);
+                        object service = serviceProvider.GetService(type);
                         System.Reflection.MethodInfo methodInfo = null;
-                        Type type = Type.GetType(serviceName);
                         methodInfo = type.GetMethod(methodName, new Type[] { typeof(Dictionary<string, object>), typeof(Dictionary<string, string>), typeof(int), typeof(int), typeof(int) });
                         if (finalQueryModel.Parameters == null)
                         {
