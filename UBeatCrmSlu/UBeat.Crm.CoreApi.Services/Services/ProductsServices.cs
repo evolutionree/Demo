@@ -313,6 +313,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             paramInfo.ExcludeFilter = paramInfo.ExcludeFilter.ToLower();
             paramInfo.IncludeFilters = paramInfo.IncludeFilter.Split(",");
             paramInfo.ExcludeFilters = paramInfo.ExcludeFilter.Split(",");
+            string[] searchkeys = null;
+            if (paramInfo.SearchKey != null)
+            {
+                searchkeys = paramInfo.SearchKey.Split(' ');
+            }
+            else {
+                searchkeys = new string[] { };
+            }
             #endregion
             
             Dictionary<string, object> retDict = new Dictionary<string, object>();
@@ -338,7 +346,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (newRoot != null)
                         {
                             #region 开始处理searchkey过滤
-                            SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, paramInfo.IsProductSetOnly != 0,newRoot, ret, ProductSet.VisibleFieldList);
+                            SearchProductForSearchKey(searchkeys, IsForWeb, paramInfo.IsProductSetOnly != 0,newRoot, ret, ProductSet.VisibleFieldList);
                             #endregion
                         }
                     }
@@ -380,7 +388,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (newRoot != null)
                             {
                                 #region 开始处理searchkey过滤
-                                SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb, paramInfo.IsProductSetOnly != 0, newRoot, ret, ProductSet.VisibleFieldList);
+                                SearchProductForSearchKey(searchkeys, IsForWeb, paramInfo.IsProductSetOnly != 0, newRoot, ret, ProductSet.VisibleFieldList);
                                 #endregion
                             }
                         }
@@ -412,7 +420,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo,ProductSet.RootProductSet);
                 if (newRoot != null) {
                     #region 开始处理searchkey过滤
-                    SearchProductForSearchKey(paramInfo.SearchKey.ToCharArray(), IsForWeb,paramInfo.IsProductSetOnly !=0 ,newRoot, ret, ProductSet.VisibleFieldList);
+                    SearchProductForSearchKey(searchkeys, IsForWeb,paramInfo.IsProductSetOnly !=0 ,newRoot, ret, ProductSet.VisibleFieldList);
                     #endregion
                 }
             }
@@ -492,13 +500,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             item.Children = new List<ProductSetsSearchInfo>();
         }
-        private void SearchProductForSearchKey(char [] searchkey ,bool isForWeb,bool isSetOnly,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
+
+        private void SearchProductForSearchKey(string [] searchkeys ,bool isForWeb,bool isSetOnly,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
             int index = 0;
             bool isMatch = true;
-            string searchstr = new string(searchkey);// searchkey.ToString().ToLower();
             string productname = item.ProductSetName.ToLower();
-
-            isMatch = productname.IndexOf(searchstr) >= 0;
+            if (searchkeys == null || searchkeys.Length == 0) isMatch = true;
+            else
+            {
+                foreach (string s in searchkeys)
+                {
+                    isMatch = productname.IndexOf(s) >= 0;
+                    if (isMatch == true) break;
+                }
+            }
             //foreach (char ch in searchkey) {
             //    index = productname.IndexOf(ch, index);
             //    if (index < 0) {
@@ -506,21 +521,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //        break;
             //    }
             //}
-            if (isMatch == false) {
-                index = 0;
-                isMatch = true;
-                if (item.ProductSetName_Pinyin != null) {
-                    foreach (char ch in searchkey)
-                    {
-                        index = item.ProductSetName_Pinyin.IndexOf(ch, index);
-                        if (index < 0)
-                        {
-                            isMatch = false;
-                            break;
-                        }
-                    }
-                }   
-            }
+            //if (isMatch == false) {
+            //    index = 0;
+            //    isMatch = true;
+            //    if (item.ProductSetName_Pinyin != null) {
+            //        foreach (char ch in searchkey)
+            //        {
+            //            index = item.ProductSetName_Pinyin.IndexOf(ch, index);
+            //            if (index < 0)
+            //            {
+            //                isMatch = false;
+            //                break;
+            //            }
+            //            index++;
+            //        }
+            //    }   
+            //}
             if (isMatch == false && item.SetOrProduct == 2 && item.ProductDetail != null ) {
                 foreach (IDictionary<string, object> field in fieldsVisible) {
                     string fieldname = field["fieldname"].ToString();
@@ -533,7 +549,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     index = 0;
                     isMatch = true;
                     fieldValue = fieldValue.ToLower();
-                    isMatch = fieldValue.IndexOf(searchstr) >= 0;
+                    foreach (string s in searchkeys)
+                    {
+                        isMatch = fieldValue.IndexOf(s) >= 0;
+                        if (isMatch == true) break;
+                    }
                     //foreach (char ch in searchkey)
                     //{
                     //    index = fieldValue.IndexOf(ch, index);
@@ -563,7 +583,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (item.Children != null) {
                 foreach (ProductSetsSearchInfo subitem in item.Children) {
-                    SearchProductForSearchKey(searchkey,isForWeb, isSetOnly, subitem, list, fieldsVisible);
+                    SearchProductForSearchKey(searchkeys,isForWeb, isSetOnly, subitem, list, fieldsVisible);
                 }
             }
         }
