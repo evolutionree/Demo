@@ -123,6 +123,20 @@ namespace UBeat.Crm.CoreApi.Services.Models.Vocation
 
     }
 
+    public class FuncRuleAddModel
+    {
+        public Guid VocationId { get; set; }
+        public Guid FunctionId { get; set; }
+        public Guid EntityId { get; set; }
+        public int SyncDevice { get; set; }
+
+        public RuleContent Rule { get; set; }
+        public ICollection<RuleItemModel> RuleItems { get; set; }
+        public RuleSetModel RuleSet { get; set; }
+
+
+    }
+
 
     public class FunctionRuleEditModel
     {

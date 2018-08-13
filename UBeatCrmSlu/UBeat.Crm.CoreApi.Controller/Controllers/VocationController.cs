@@ -136,6 +136,18 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _ruleService.SaveRuleForVocation(body, UserId);
         }
 
+        /// <summary>
+        /// 保存功能下的规则
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost("savefuncrule")]
+        public OutputResult<object> SaveFuncRule([FromBody] FuncRuleAddModel body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return _ruleService.SaveRuleForFunction(body, UserId);
+        }
+
 
         /// <summary>
         /// 获取功能下的规则

@@ -84,7 +84,23 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="userNumber"></param>
         /// <returns></returns>
         OperateResult EditFunctionRule(List<FunctionRuleEdit> data, int userNumber);
+        /// <summary>
+        /// 添加功能的规则
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        OperateResult AddFuncRule(List<FunctionRuleAdd> data, int userNumber);
 
+
+
+        /// <summary>
+        /// 修改功能的规则
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        OperateResult EditFuncRule(List<FunctionRuleEdit> data, int userNumber);
         /// <summary>
         /// 获取功能的规则
         /// </summary>

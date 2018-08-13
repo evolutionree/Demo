@@ -305,6 +305,142 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Vocation
                 conn.Dispose();
             }
         }
+
+
+        /// <summary>
+        /// 添加功能下的规则
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public OperateResult AddFuncRule(List<FunctionRuleAdd> data, int userNumber)
+        {
+            var conn = DataBaseHelper.GetDbConnect();
+            conn.Open();
+            var trans = conn.BeginTransaction();
+            OperateResult result = new OperateResult();
+            try
+            {
+                foreach (var tmp in data)
+                {
+                    string executeSql = string.Empty;
+                    object args = null;
+                    if (tmp.IsAdd)
+                    {
+                        executeSql = @"SELECT * FROM crm_func_function_rule_insert(@functionid,@rule,@ruleitem,@ruleset,@rulerelation,@userno)";
+                        args = new
+                        {
+                            VocationId = tmp.VocationId,
+                            FunctionId = tmp.FunctionId,
+                            Rule = tmp.Rule,
+                            Ruleitem = tmp.RuleItem,
+                            Ruleset = tmp.RuleSet,
+                            RuleRelation = tmp.RuleRelation,
+                            UserNo = userNumber
+                        };
+                    }
+                    else
+                    {
+                        executeSql = @"SELECT * FROM crm_func_function_rule_update(@functionid,@rule,@ruleitem,@ruleset,@rulerelation,@userno)";
+                        args = new
+                        {
+                            VocationId = tmp.VocationId,
+                            FunctionId = tmp.FunctionId,
+                            Rule = tmp.Rule,
+                            RuleItem = tmp.RuleItem,
+                            RuleSet = tmp.RuleSet,
+                            RuleRelation = tmp.RuleRelation,
+                            UserNo = userNumber
+                        };
+                    }
+
+                    result = DataBaseHelper.QuerySingle<OperateResult>(conn, executeSql, args);
+                    if (result.Flag == 0) throw new Exception("编辑职能规则异常");
+                }
+                trans.Commit();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                result.Msg = ex.Message;
+                return result;
+            }
+            finally
+            {
+                conn.Close();
+                conn.Dispose();
+            }
+        }
+
+
+        /// <summary>
+        /// 编辑功能下的规则
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="userNumber"></param>
+        /// <returns></returns>
+        public OperateResult EditFuncRule(List<FunctionRuleEdit> data, int userNumber)
+        {
+            var conn = DataBaseHelper.GetDbConnect();
+            conn.Open();
+            var trans = conn.BeginTransaction();
+            OperateResult result = new OperateResult();
+            try
+            {
+                foreach (var tmp in data)
+                {
+                    string executeSql = string.Empty;
+                    object args = null;
+                    if (tmp.IsAdd)
+                    {
+                        executeSql = @"SELECT * FROM crm_func_function_rule_insert(@functionid,@rule,@ruleitem,@ruleset,@rulerelation,@userno)";
+                        args = new
+                        {
+                            VocationId = tmp.VocationId,
+                            FunctionId = tmp.FunctionId,
+                            Rule = tmp.Rule,
+                            Ruleitem = tmp.RuleItem,
+                            Ruleset = tmp.RuleSet,
+                            RuleRelation = tmp.RuleRelation,
+                            UserNo = userNumber
+                        };
+                    }
+                    else
+                    {
+                        executeSql = @"SELECT * FROM crm_func_function_rule_update(@functionid,@rule,@ruleitem,@ruleset,@rulerelation,@userno)";
+                        args = new
+                        {
+                            VocationId = tmp.VocationId,
+                            FunctionId = tmp.FunctionId,
+                            Rule = tmp.Rule,
+                            RuleItem = tmp.RuleItem,
+                            RuleSet = tmp.RuleSet,
+                            RuleRelation = tmp.RuleRelation,
+                            UserNo = userNumber
+                        };
+                    }
+
+
+                    result = DataBaseHelper.QuerySingle<OperateResult>(conn, executeSql, args);
+                    if (result.Flag == 0) throw new Exception("编辑职能规则异常");
+                }
+                trans.Commit();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                result.Msg = ex.Message;
+                return result;
+            }
+            finally
+            {
+                conn.Close();
+                conn.Dispose();
+            }
+        }
+
         public dynamic GetFunctionRule(Guid vocationId, Guid entityId, Guid funcId)
         {
             var sql = @"
