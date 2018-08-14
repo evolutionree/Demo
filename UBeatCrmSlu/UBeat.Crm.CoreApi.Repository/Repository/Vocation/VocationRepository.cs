@@ -817,11 +817,13 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
                     {
                         // Functions
                         var functions_sql = string.Format(@"
-                                SELECT f.funcid,f.funcname,f.funccode,f.parentid,f.entityid,f.devicetype,f.rectype,f.relationvalue,f.routepath , row_to_json(r) ""Rule""
+                                SELECT f.funcid,f.funcname,f.funccode,f.parentid,f.entityid,f.devicetype,f.rectype,f.relationvalue,f.routepath , row_to_json(r) ""Rule"" , row_to_json(r1) ""BasicRule""
                                 FROM crm_sys_function AS f 
                                     left outer join (select * from crm_sys_vocation_function_rule_relation  where vocationid in (@vocationid) )  as vr 
                                          on   vr.functionid = f.funcid
                                     left outer join crm_sys_rule AS r on  vr.ruleid=r.ruleid
+                                    left outer join crm_sys_func_rule AS funcrule  on  f.funcid=funcrule.funcid
+                                    left outer join crm_sys_rule AS r1  on  r1.ruleid=funcrule.ruleid
                                 WHERE f.funcid NOT IN (  SELECT functionid FROM crm_sys_vocation_function_relation 
                                 WHERE  vocationid in (@vocationid) ) and f.recstatus=1 ;");
                         var functions_sqlParameters = new List<DbParameter>();
@@ -867,6 +869,43 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
         /// </summary>
         /// <returns></returns>
         public List<FunctionInfo> GetTotalFunctions()
+        {
+            using (var conn = DBHelper.GetDbConnect())
+            {
+                conn.Open();
+                var tran = conn.BeginTransaction();
+                try
+                {
+
+
+                    // Functions
+                    var functions_sql = string.Format(@"
+                                SELECT f.funcid,f.funcname,f.parentid,f.entityid,f.devicetype,f.rectype,f.relationvalue,f.routepath ,f.childtype,funcrule.ruleid
+                                FROM crm_sys_function AS f LEFT JOIN crm_sys_func_rule funcrule ON funcrule.funcid=f.funcid
+                                WHERE f.recstatus=1 ");
+                    var functions_sqlParameters = new List<DbParameter>();
+
+                    var fuctions = DBHelper.ExecuteQuery<FunctionInfo>(tran, functions_sql, functions_sqlParameters.ToArray());
+
+                    return fuctions;
+
+
+
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
+        }
+
+        public List<FunctionInfo> GetFunctionRelations()
         {
             using (var conn = DBHelper.GetDbConnect())
             {
