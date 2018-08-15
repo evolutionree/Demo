@@ -77,7 +77,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return addRes = AddEntityData(transaction, userData, entityInfo, arg, header, userNumber, out workFlowAddCaseModel);
 
             }, dynamicModel, entityInfo.EntityId, userNumber);
-
+            if (res.Status == 1)
+                return res;
             if (addRes.Status == 0)
             {
                 var bussinessId = Guid.Parse(addRes.DataBody.ToString());
