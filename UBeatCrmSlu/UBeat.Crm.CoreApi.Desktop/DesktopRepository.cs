@@ -7,6 +7,9 @@ using UBeat.Crm.CoreApi.Repository.Utility;
 using System.Data;
 using UBeat.Crm.CoreApi.DomainModel;
 using System.Linq;
+using Npgsql;
+using System.Data.Common;
+
 
 namespace UBeat.Crm.CoreApi.Desktop
 {
@@ -192,7 +195,7 @@ select roleid,rolename,reccreated from crm_sys_role where recstatus=1 ) as tmp O
             return result;
         }
 
-        
+
 
 
 
@@ -216,5 +219,222 @@ ON desktop.roleid=userinfo.roleid
             result.RightDesktopComponents = DataBaseHelper.Query<DesktopComponentMapper>(sqlRight, param);
             return result;
         }
+
+
+        #region  动态列表
+
+        public PageDataInfo<UBeat.Crm.CoreApi.DomainModel.Dynamics.DynamicInfoExt> GetDynamicList(DynamicListRequestMapper mapper, int userId)
+        {
+            List<DbParameter> dbParams = new List<DbParameter>();
+            int pageIndex = mapper.PageIndex;
+            int pageSize = mapper.PageSize;
+
+
+            int month = DateTime.Now.Month;
+            int year = DateTime.Now.Year;
+
+
+            var entityIdSql = string.Empty;
+            var businessIdSql = string.Empty;
+            var dynamictypeSql = string.Empty;
+
+
+            string dataRangeSql = string.Empty;
+            switch (mapper.DataRangeType)
+            {
+                case (int)DataRangeType.My:
+                    dataRangeSql = string.Format(" and  d.reccreator={0} ", userId);
+                    break;
+
+                case (int)DataRangeType.MyDepartment:
+
+                    dataRangeSql = string.Format(@" and au.deptid=(   
+                            select au.deptid 
+                            from crm_sys_userinfo u
+                            inner join crm_sys_account_userinfo_relate au on u.userid = au.userid
+                            inner join crm_sys_account a on au.accountid = a.accountid
+                            where u.recstatus = 1
+                            AND a.recstatus = 1
+                            AND au.recstatus = 1
+                            AND u.userid = {0} )", userId);
+                    break;
+
+                case (int)DataRangeType.LowerDepartment:
+                    dataRangeSql = string.Format(@" and au.deptid  IN (SELECT deptid FROM  crm_func_department_tree_power((   
+                            select au.deptid
+                            from crm_sys_userinfo u
+                            inner join crm_sys_account_userinfo_relate au on u.userid = au.userid
+                            inner join crm_sys_account a on au.accountid = a.accountid
+                            where u.recstatus = 1
+                            AND a.recstatus = 1
+                            AND au.recstatus = 1
+                            AND u.userid = {0}),1,1,{0}))",userId,userId);
+                    break;
+
+                case (int)DataRangeType.SpecialDepartment:
+                    dataRangeSql = string.Format(" and au.deptid='{0}'", mapper.DepartmetnId);
+                    break;
+
+                case (int)DataRangeType.SpecialUser:
+                    string idSql = string.Join(",", mapper.UserIds);
+                    dataRangeSql = string.Format(" and  d.reccreator in ({0}) ", idSql);
+                    break;
+
+                default:
+                    break;
+            }
+
+
+            string timeRangeSql = string.Empty;
+            switch (mapper.TimeRangeType)
+            {
+                case (int)TimeRangeType.CurrentDay:
+                    timeRangeSql = " and d.reccreated::date=now()::date ";
+                    break;
+
+                case (int)TimeRangeType.CurrentWeek:
+                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) and date_part('week',d.reccreated)=date_part('week',now()) ";
+                    break;
+
+                case (int)TimeRangeType.CurrentMonth:
+                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) and date_part('month',d.reccreated)=date_part('month',now()) ";
+                    break;
+
+                case (int)TimeRangeType.CurrentQuarter:
+                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) and date_part('quarter',d.reccreated)=date_part('quarter',now()) ";
+                    break;
+
+                case (int)TimeRangeType.CurrentYear:
+                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) ";
+                    break;
+
+
+
+                case (int)TimeRangeType.Yesterday:
+                    DateTime yesterday = DateTime.Now.AddDays(-1);
+                    timeRangeSql = string.Format(" and d.reccreated::date='{0}'::date ", yesterday.ToString());
+                    break;
+
+
+                case (int)TimeRangeType.LastWeek:
+                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) and date_part('week',d.reccreated)=(date_part('week',now())-1) ";
+                    break;
+
+
+                case (int)TimeRangeType.LastMonth:
+                    if (month == 1)
+                    {
+                        month = 12;
+                        year = year - 1;
+                    }
+                    else
+                    {
+                        month = month - 1;
+                    }
+
+                    timeRangeSql = " and date_part('year',d.reccreated)={0} and date_part('month',d.reccreated)={1} ";
+                    break;
+
+
+                case (int)TimeRangeType.LastQuarter:
+                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) and date_part('quarter',d.reccreated)=(date_part('quarter',now())-1) ";
+                    break;
+
+
+                case (int)TimeRangeType.LastYear:
+                    year = year - 1;
+                    timeRangeSql = string.Format(" and date_part('year',d.reccreated)={0} ",year);
+                    break;
+
+
+                case (int)TimeRangeType.SpecialYear:
+                    timeRangeSql = string.Format( " and date_part('year',d.reccreated)={0} ",mapper.SpecialYear);
+                    break;
+
+
+                case (int)TimeRangeType.TimeRnage:
+                    timeRangeSql = string.Format(" and d.reccreated between '{0}' and '{1}'", mapper.StartTime,mapper.EndTime);
+                    break;
+
+
+                default:
+                    break;
+            }
+
+
+
+
+            //处理主实体id
+            if (mapper.MainEntityId != Guid.Empty)
+            {
+                entityIdSql = " and  d.entityid=@entityid ";
+                dbParams.Add(new NpgsqlParameter("entityid", mapper.MainEntityId));
+            }
+
+
+            string relatedEntitySql = string.Empty;
+            if (mapper.RelatedEntityId != Guid.Empty)
+            {
+                relatedEntitySql = " and d.relentityid=@relentityid ";
+                dbParams.Add(new NpgsqlParameter("relentityid", mapper.RelatedEntityId));
+            }
+            else
+            {
+                relatedEntitySql = string.Format(@" and  re.entityname like '%{0}%'", mapper.SearchKey);
+            }
+
+
+            string strSql = @"SELECT d.*,t.tempcontent::Jsonb,e.entityname,ec.categoryname AS TypeName, re.entityname AS relentityname,
+                                u.usericon AS reccreatorUserIcon,u.username AS reccreatorname,
+				                array(
+					                SELECT u.username  
+                                    FROM crm_sys_dynamic_praise AS p 
+					                LEFT JOIN crm_sys_userinfo AS u ON u.userid=p.reccreator
+					                WHERE p.dynamicid=d.dynamicid 
+                                    AND p.recstatus=1 
+                                    ORDER BY p.reccreated
+				                ) AS PraiseUsers,
+				                (SELECT array_to_json(array_agg(row_to_json(t))) 
+                                 FROM
+						         (
+                                            SELECT c.dynamicid, c.commentsid,c.pcommentsid,c.comments,c.reccreator,u.username AS reccreator_name,u.usericon AS reccreator_icon,
+                                                    c.reccreated,uc.username AS tocommentor,dc.comments AS tocomments
+                                            FROM crm_sys_dynamic_comments AS c 
+							                LEFT JOIN crm_sys_userinfo AS u ON u.userid=c.reccreator
+							                LEFT JOIN crm_sys_dynamic_comments AS dc ON dc.commentsid=c.pcommentsid
+							                LEFT JOIN crm_sys_userinfo AS uc ON uc.userid=dc.reccreator
+							                WHERE c.dynamicid=d.dynamicid 
+                                            AND c.recstatus=1 
+                                            ORDER BY c.reccreated
+                                   ) AS t
+				                 ) AS Comments
+                            FROM public.crm_sys_dynamics AS d 
+                            LEFT JOIN crm_sys_dynamic_template AS t ON t.templateid=d.templateid
+                            LEFT JOIN crm_sys_entity AS re ON re.entityid=d.relentityid
+                            LEFT JOIN crm_sys_entity AS e ON e.entityid=d.entityid 
+                            LEFT JOIN crm_sys_entity_category AS ec ON ec.categoryid=d.typeid
+                            LEFT JOIN crm_sys_userinfo AS u ON u.userid=d.reccreator 
+                            LEFT JOIN crm_sys_account_userinfo_relate au on u.userid =au.userid
+                            LEFT JOIN crm_sys_account a on au.accountid=a.accountid
+                            WHERE d.recstatus=1
+                            AND u.recstatus=1 
+                            AND a.recstatus=1 
+                            AND au.recstatus=1
+                            {0} {1} {2} {3}
+                            ORDER BY d.recversion DESC ";
+
+
+            var executeSql = string.Format(strSql, dataRangeSql, timeRangeSql, entityIdSql, relatedEntitySql);
+
+            dbParams.Add(new NpgsqlParameter("userid", userId));
+            var result = ExecuteQueryByPaging<UBeat.Crm.CoreApi.DomainModel.Dynamics.DynamicInfoExt>(executeSql, dbParams.ToArray(), pageSize, pageIndex);
+            result.DataList = result.DataList.OrderByDescending(m => m.RecCreated).ToList();
+            return result;
+        }
+
+        #endregion
+
+
+
     }
 }

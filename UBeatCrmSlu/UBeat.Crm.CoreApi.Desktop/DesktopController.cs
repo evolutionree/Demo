@@ -78,11 +78,30 @@ namespace UBeat.Crm.CoreApi.Desktop
             if (models == null || models.Count == 0) return ResponseError<object>("参数格式错误");
             return _desktopServices.SaveDesktopRoleRelation(models);
         }
+
+
         [HttpPost]
         [Route("getroles")]
         public dynamic GetRoles()
         {
             return _desktopServices.GetRoles(UserId);
         }
+
+
+
+        /// <summary>
+        /// 动态列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("dynamiclist")]
+        public dynamic GetDynamicList([FromBody] DynamicListRequest body)
+        {
+            if (body == null)
+                return ResponseError<object>("参数错误");
+
+            return _desktopServices.GetDynamicList(body,UserId);
+        }
+
     }
 }
