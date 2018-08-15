@@ -11,9 +11,9 @@ namespace UBeat.Crm.CoreApi.Desktop
     {
         DesktopMapper GetDesktop(int userId);
 
-         OperateResult SaveDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
+        OperateResult SaveDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
 
-         OperateResult EnableDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
+        OperateResult EnableDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
 
         DesktopComponentMapper GetDesktopComponentDetail(Guid dsComponetId);
 
@@ -26,5 +26,8 @@ namespace UBeat.Crm.CoreApi.Desktop
         OperateResult SaveDesktopRoleRelation(List<DesktopRoleRelationMapper> mapper, IDbTransaction trans = null);
 
         IList<dynamic> GetRoles(int userId);
+
+
+        PageDataInfo<UBeat.Crm.CoreApi.DomainModel.Dynamics.DynamicInfoExt> GetDynamicList(DynamicListRequestMapper mapper, int userId);
     }
 }

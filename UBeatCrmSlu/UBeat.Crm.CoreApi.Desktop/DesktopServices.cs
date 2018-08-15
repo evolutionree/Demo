@@ -109,9 +109,26 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
         public OutputResult<Object> GetRoles(int userId)
         {
-            var result = _desktopRepository.GetRoles( userId);
+            var result = _desktopRepository.GetRoles(userId);
             return new OutputResult<object>(result);
         }
+        #endregion
+
+
+        #region 动态列表
+
+        public OutputResult<Object> GetDynamicList(DynamicListRequest requestModel,int userId)
+        {
+            var mapper = _mapper.Map<DynamicListRequest, DynamicListRequestMapper>(requestModel);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
+
+            var result = _desktopRepository.GetDynamicList(mapper,userId);
+            return new OutputResult<object>(result);
+        }
+
         #endregion
     }
 }

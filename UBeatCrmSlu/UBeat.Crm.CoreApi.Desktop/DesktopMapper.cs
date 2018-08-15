@@ -155,4 +155,50 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
 
     }
+
+
+
+    public class DynamicListRequestMapper : BaseEntity
+    {
+        public int DataRangeType { get; set; }
+
+        public Guid DepartmetnId { get; set; }
+
+        public List<int> UserIds { get; set; }
+
+        public int TimeRangeType { get; set; }
+
+        public int SpecialYear { get; set; }
+
+        public DateTime StartTime { get; set; }
+
+        public DateTime EndTime { get; set; }
+
+
+        public Guid MainEntityId { get; set; }
+
+        public string SearchKey { get; set; }
+
+        public Guid RelatedEntityId { get; set; }
+
+
+        public int PageSize { get; set; }
+
+       
+        public int PageIndex { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new DynamicListRequestMapperValidator();
+        }
+
+        class DynamicListRequestMapperValidator : AbstractValidator<DynamicListRequestMapper>
+        {
+            public DynamicListRequestMapperValidator()
+            {
+
+            }
+        }
+
+    }
 }
