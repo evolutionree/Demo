@@ -117,7 +117,7 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         #region 动态列表
 
-        public OutputResult<Object> GetDynamicList(DynamicListRequest requestModel,int userId)
+        public OutputResult<Object> GetDynamicList(DynamicListRequest requestModel, int userId)
         {
             var mapper = _mapper.Map<DynamicListRequest, DynamicListRequestMapper>(requestModel);
             if (mapper == null || !mapper.IsValid())
@@ -125,9 +125,37 @@ namespace UBeat.Crm.CoreApi.Desktop
                 return HandleValid(mapper);
             }
 
-            var result = _desktopRepository.GetDynamicList(mapper,userId);
+            var result = _desktopRepository.GetDynamicList(mapper, userId);
             return new OutputResult<object>(result);
         }
+
+
+        /// <summary>
+        /// 获取主实体列表
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OutputResult<Object> GetMainEntityList(int userId)
+        {
+            var result = _desktopRepository.GetMainEntityList(userId);
+            return new OutputResult<object>(result);
+
+        }
+
+
+        /// <summary>
+        /// 获取关联实体列表
+        /// </summary>
+        /// <param name="entityId"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OutputResult<Object> GetRelatedEntityList(Guid entityId, int userId)
+        {
+            var result = _desktopRepository.GetRelatedEntityList(entityId, userId);
+            return new OutputResult<object>(result);
+        }
+
+
 
         #endregion
     }

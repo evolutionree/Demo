@@ -88,6 +88,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
 
 
+        #region 动态列表
 
         /// <summary>
         /// 动态列表
@@ -100,8 +101,40 @@ namespace UBeat.Crm.CoreApi.Desktop
             if (body == null)
                 return ResponseError<object>("参数错误");
 
-            return _desktopServices.GetDynamicList(body,UserId);
+            return _desktopServices.GetDynamicList(body, UserId);
         }
+
+
+        /// <summary>
+        /// 获取主实体列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("entitylist")]
+        public dynamic GetMainEntityList()
+        {
+            return _desktopServices.GetMainEntityList(UserId);
+        }
+
+
+        /// <summary>
+        /// 获取关联实体列表
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("relatedentitylist")]
+        public dynamic GetRelatdEntityList([FromBody] RelatdEntityListRequest body)
+        {
+            if (body == null)
+                return ResponseError<object>("参数错误");
+
+            return _desktopServices.GetRelatedEntityList(body.EntityId, UserId);
+
+        }
+
+
+        #endregion
 
     }
 }

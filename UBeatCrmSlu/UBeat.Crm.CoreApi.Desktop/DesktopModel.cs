@@ -219,4 +219,14 @@ namespace UBeat.Crm.CoreApi.Desktop
 
     }
 
+
+
+    public class RelatdEntityListRequest
+    {
+
+
+        public Guid EntityId { get; set; }
+
+    }
+
 }

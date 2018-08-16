@@ -9,7 +9,7 @@ using UBeat.Crm.CoreApi.DomainModel;
 using System.Linq;
 using Npgsql;
 using System.Data.Common;
-
+using System.Globalization;
 
 namespace UBeat.Crm.CoreApi.Desktop
 {
@@ -230,8 +230,12 @@ ON desktop.roleid=userinfo.roleid
             int pageSize = mapper.PageSize;
 
 
-            int month = DateTime.Now.Month;
-            int year = DateTime.Now.Year;
+            DateTime now = DateTime.Now;
+
+            int month = now.Month;
+            int year = now.Year;
+            int week = GetWeekOfYear(now);
+            int quarter = GetQuarterOfYear(now);
 
 
             var entityIdSql = string.Empty;
@@ -268,7 +272,7 @@ ON desktop.roleid=userinfo.roleid
                             where u.recstatus = 1
                             AND a.recstatus = 1
                             AND au.recstatus = 1
-                            AND u.userid = {0}),1,1,{0}))",userId,userId);
+                            AND u.userid = {0}),1,1,{0}))", userId, userId);
                     break;
 
                 case (int)DataRangeType.SpecialDepartment:
@@ -317,7 +321,16 @@ ON desktop.roleid=userinfo.roleid
 
 
                 case (int)TimeRangeType.LastWeek:
-                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) and date_part('week',d.reccreated)=(date_part('week',now())-1) ";
+                    if (week == 1)
+                    {
+                        week = 52;
+                        year = year - 1;
+                    }
+                    else
+                    {
+                        week = week - 1;
+                    }
+                    timeRangeSql = string.Format(" and date_part('year',d.reccreated)={0} and date_part('week',d.reccreated)={1} ", year, week);
                     break;
 
 
@@ -332,28 +345,38 @@ ON desktop.roleid=userinfo.roleid
                         month = month - 1;
                     }
 
-                    timeRangeSql = " and date_part('year',d.reccreated)={0} and date_part('month',d.reccreated)={1} ";
+                    timeRangeSql =  string.Format(" and date_part('year',d.reccreated)={0} and date_part('month',d.reccreated)={1} ",year,month);
                     break;
 
 
                 case (int)TimeRangeType.LastQuarter:
-                    timeRangeSql = " and date_part('year',d.reccreated)=date_part('year',now()) and date_part('quarter',d.reccreated)=(date_part('quarter',now())-1) ";
+                    if (quarter == 1)
+                    {
+                        quarter = 4;
+                        year = year - 1;
+                    }
+                    else
+                    {
+                        quarter = quarter - 1;
+
+                    }
+                    timeRangeSql = string.Format(" and date_part('year',d.reccreated)={0} and date_part('quarter',d.reccreated)={1} ", year, quarter);
                     break;
 
 
                 case (int)TimeRangeType.LastYear:
                     year = year - 1;
-                    timeRangeSql = string.Format(" and date_part('year',d.reccreated)={0} ",year);
+                    timeRangeSql = string.Format(" and date_part('year',d.reccreated)={0} ", year);
                     break;
 
 
                 case (int)TimeRangeType.SpecialYear:
-                    timeRangeSql = string.Format( " and date_part('year',d.reccreated)={0} ",mapper.SpecialYear);
+                    timeRangeSql = string.Format(" and date_part('year',d.reccreated)={0} ", mapper.SpecialYear);
                     break;
 
 
                 case (int)TimeRangeType.TimeRnage:
-                    timeRangeSql = string.Format(" and d.reccreated between '{0}' and '{1}'", mapper.StartTime,mapper.EndTime);
+                    timeRangeSql = string.Format(" and d.reccreated between '{0}' and '{1}'", mapper.StartTime, mapper.EndTime);
                     break;
 
 
@@ -397,8 +420,9 @@ ON desktop.roleid=userinfo.roleid
 				                (SELECT array_to_json(array_agg(row_to_json(t))) 
                                  FROM
 						         (
-                                            SELECT c.dynamicid, c.commentsid,c.pcommentsid,c.comments,c.reccreator,u.username AS reccreator_name,u.usericon AS reccreator_icon,
-                                                    c.reccreated,uc.username AS tocommentor,dc.comments AS tocomments
+                                            SELECT c.dynamicid, c.commentsid,c.pcommentsid,c.comments,c.reccreator,
+                                                   u.username AS reccreator_name,u.usericon AS reccreator_icon,
+                                                   c.reccreated,uc.username AS tocommentor,dc.comments AS tocomments
                                             FROM crm_sys_dynamic_comments AS c 
 							                LEFT JOIN crm_sys_userinfo AS u ON u.userid=c.reccreator
 							                LEFT JOIN crm_sys_dynamic_comments AS dc ON dc.commentsid=c.pcommentsid
@@ -430,6 +454,92 @@ ON desktop.roleid=userinfo.roleid
             var result = ExecuteQueryByPaging<UBeat.Crm.CoreApi.DomainModel.Dynamics.DynamicInfoExt>(executeSql, dbParams.ToArray(), pageSize, pageIndex);
             result.DataList = result.DataList.OrderByDescending(m => m.RecCreated).ToList();
             return result;
+        }
+
+
+
+        public IList<dynamic> GetMainEntityList(int userId)
+        {
+            var strSql = @" select '00000000-0000-0000-0000-000000000000' as entityid,'全部' as entityname
+                            union all
+                            select entityid,entityname
+                            from crm_sys_entity 
+                            where modeltype=0
+                            and recstatus=1 ";
+
+            var param = new DynamicParameters();
+            var result = DataBaseHelper.Query<dynamic>(strSql, param);
+            return result;
+
+        }
+
+        public IList<dynamic> GetRelatedEntityList(Guid entityid, int userId)
+        {
+            var strSql = @"select '00000000-0000-0000-0000-000000000000' as entityid,'全部' as entityname
+                            union all
+                            select entityid,entityname
+                            from crm_sys_entity 
+                            where  recstatus=1
+                            and relentityid=@relentityid ";
+
+            var param = new DynamicParameters();
+            param.Add("relentityid", entityid);
+            var result = DataBaseHelper.Query<dynamic>(strSql, param);
+            return result;
+
+        }
+
+
+        public int GetWeekOfYear(DateTime date)
+        {
+            int week = 0;
+
+            CultureInfo myCI = new CultureInfo("en-US");
+            Calendar myCal = myCI.Calendar;
+            CalendarWeekRule myCWR = myCI.DateTimeFormat.CalendarWeekRule;
+            week = myCal.GetWeekOfYear(date, myCWR, DayOfWeek.Monday);
+
+            return week;
+
+        }
+
+
+
+        private int GetQuarterOfYear(DateTime date)
+        {
+
+            var month = date.Month;
+            int quarter = 0;
+
+            if (month >= 1 && month <= 3)
+            {
+
+                quarter = 1;
+            }
+            else if (month >= 4 && month <= 6)
+            {
+
+                quarter = 2;
+            }
+
+            else if (month >= 7 && month <= 9)
+            {
+
+                quarter = 3;
+            }
+            else if (month >= 10 && month <= 12)
+            {
+
+                quarter = 4;
+            }
+            else
+            {
+
+                quarter = 0;
+            }
+
+            return quarter;
+
         }
 
         #endregion

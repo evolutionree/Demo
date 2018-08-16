@@ -29,5 +29,13 @@ namespace UBeat.Crm.CoreApi.Desktop
 
 
         PageDataInfo<UBeat.Crm.CoreApi.DomainModel.Dynamics.DynamicInfoExt> GetDynamicList(DynamicListRequestMapper mapper, int userId);
+
+
+        IList<dynamic> GetMainEntityList(int userId);
+
+
+        IList<dynamic> GetRelatedEntityList(Guid entityid, int userId);
+
+
     }
 }
