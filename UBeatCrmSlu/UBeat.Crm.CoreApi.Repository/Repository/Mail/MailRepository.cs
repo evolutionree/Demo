@@ -46,7 +46,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Mail
             string recursiveSql = string.Empty;
             if (!string.IsNullOrEmpty(keyWord))
             {
-                sqlCondition = "  ((body.sender ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers ILIKE '%' || @keyword || '%' ESCAPE '`'))";
+                sqlCondition = "  ((body.sender::text ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.title ILIKE '%' || @keyword || '%' ESCAPE '`') OR (body.receivers::text ILIKE '%' || @keyword || '%' ESCAPE '`'))";
                 sqlWhere = sqlWhere.Concat(new object[] { sqlCondition }).ToArray();
             }
             var catalogSql = @"SELECT ctype FROM crm_sys_mail_catalog WHERE viewuserid = @userid AND  recid=@catalogid LIMIT 1; ";
