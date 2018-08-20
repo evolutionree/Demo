@@ -26,5 +26,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _scheduleTaskServices.GetScheduleTaskCount(model, UserId);
         }
 
+        [HttpPost]
+        [Route("getunconfirmList")]
+        public dynamic GetUnConfirmList([FromBody]UnConfirmListModel model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _scheduleTaskServices.GetUnConfirmList(model, UserId);
+        }
     }
 }

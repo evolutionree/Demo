@@ -10,5 +10,7 @@ namespace UBeat.Crm.CoreApi.IRepository
     public interface IScheduleTaskRepository
     {
         ScheduleTaskCountMapper GetScheduleTaskCount(ScheduleTaskListMapper mapper, int userId,DbTransaction trans=null);
+
+        List<Dictionary<string, object>> GetUnConfirmList(UnConfirmListMapper mapper, int userId);
     }
 }

@@ -1862,7 +1862,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     case EntityFieldControlType.RecItemid://1010明细ID
                         break;
-                        break;
                     case EntityFieldControlType.RecName://1012记录名称
                         break;
                     case EntityFieldControlType.RecOnlive://1011 活动时间

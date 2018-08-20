@@ -20,5 +20,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.ScheduleTask
 
         public int AffairType { get; set; }
     }
-   
+
+    public class UnConfirmListModel
+    {
+        public int Affairtype { get; set; }
+    }
+
+
 }

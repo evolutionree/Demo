@@ -34,5 +34,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             }, model, userId);
         }
+
+        public OutputResult<object> GetUnConfirmList(UnConfirmListModel model, int userId)
+        {
+            var mapper = _iMapper.Map<UnConfirmListModel, UnConfirmListMapper>(model);
+
+            var result = _iScheduleTaskRepository.GetUnConfirmList(mapper, userId);
+            return new OutputResult<object>(result);
+        }
     }
 }

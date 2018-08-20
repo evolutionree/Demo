@@ -48,4 +48,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.ScheduleTask
 
         public int UnFinishedTask { get; set; }
     }
+
+    public class UnConfirmListMapper
+    {
+        public int Affairtype { get; set; }
+    }
 }
