@@ -53,4 +53,28 @@ namespace UBeat.Crm.CoreApi.DomainModel.ScheduleTask
     {
         public int Affairtype { get; set; }
     }
+
+    public class UnConfirmScheduleStatusMapper : BaseEntity
+    {
+        public int AffairType { get; set; }
+        public Guid RecId { get; set; }
+
+        public int AcceptStatus { get; set; }
+
+        public String RejectReason { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new UnConfirmScheduleStatusMapperValidator();
+        }
+
+        class UnConfirmScheduleStatusMapperValidator : AbstractValidator<UnConfirmScheduleStatusMapper>
+        {
+            public UnConfirmScheduleStatusMapperValidator()
+            {
+                RuleFor(d => d.RecId).Must(t => t != Guid.Empty).WithMessage("日程Id不能为空");
+                RuleFor(d => d.AffairType).Must(t => t >= 0).WithMessage("类型不能小于0");
+                RuleFor(d => d.AcceptStatus).Must(t => t >= 0 && t <= 1).WithMessage("日程状态必须是0或者1");
+            }
+        }
+    }
 }

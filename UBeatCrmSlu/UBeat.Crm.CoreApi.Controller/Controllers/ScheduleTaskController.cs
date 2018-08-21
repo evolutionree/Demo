@@ -33,5 +33,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (model == null) return ResponseError<object>("参数格式错误");
             return _scheduleTaskServices.GetUnConfirmList(model, UserId);
         }
+        [HttpPost]
+        [Route("schedulestatus")]
+        public dynamic ScheduleStatus([FromBody]UnConfirmScheduleStatusModel model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _scheduleTaskServices.ScheduleStatus(model, UserId);
+        }
     }
 }

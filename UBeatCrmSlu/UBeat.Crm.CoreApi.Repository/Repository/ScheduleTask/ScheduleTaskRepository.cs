@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.ScheduleTask;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
@@ -12,7 +13,7 @@ using UBeat.Crm.CoreApi.Repository.Utility;
 namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
 {
 
-    public class ScheduleTaskRepository :RepositoryBase, IScheduleTaskRepository
+    public class ScheduleTaskRepository : RepositoryBase, IScheduleTaskRepository
     {
 
         public ScheduleTaskCountMapper GetScheduleTaskCount(ScheduleTaskListMapper mapper, int userId, DbTransaction trans = null)
@@ -41,7 +42,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
         }
 
 
-        public List<Dictionary<string, object>> GetUnConfirmList(UnConfirmListMapper mapper,int userId)
+        public List<Dictionary<string, object>> GetUnConfirmList(UnConfirmListMapper mapper, int userId)
         {
             var sql = @"Select outersql.*,
 crm_func_entity_protocol_format_userinfo_multi(outersql.participant) as participant_name,
@@ -67,6 +68,65 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
 ) as outersql";
 
             return base.ExecuteQuery(sql, new DbParameter[] { new NpgsqlParameter("userid", userId) });
+        }
+
+        public OperateResult AceptSchedule(UnConfirmScheduleStatusMapper mapper, int userId, DbTransaction trans = null)
+        {
+            var sqlAcept = @"update crm_sys_schedule set participant=array_to_string
+(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(participant,',') UNION select @userid), ',') where recid=@recid
+ ";
+
+            var param = new DynamicParameters();
+            param.Add("recid", mapper.RecId);
+            param.Add("userid", userId);
+            param.Add("scheduleid", mapper.RecId);
+
+            var result = DataBaseHelper.ExecuteNonQuery(sqlAcept, trans.Connection, trans, param);
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag=1,
+                    Msg="确认成功"
+                };
+            }
+            else
+                return new OperateResult
+                {
+                    Msg = "确认失败"
+                };
+
+        }
+        public OperateResult RejectSchedule(UnConfirmScheduleStatusMapper mapper, int userId, DbTransaction trans = null)
+        {
+            var sqlReject = @"update crm_sys_schedule set participant=array_to_string
+(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(refuser,',') UNION select @userid), ',') where recid=@recid
+ ";
+            var sqlRejectReason = @" insert into  crm_sys_schedule_rej_reason(userid,scheduleid,recjectreason) values (@userid,@scheduleid,@recjectreason);";
+            var sqlDel = @"delete from crm_sys_schedule_rej_reason where userid=@userid and scheduleid=@scheduleid";
+
+            var param = new DynamicParameters();
+            param.Add("recid", mapper.RecId);
+            param.Add("userid", userId);
+            param.Add("scheduleid", mapper.RecId);
+
+            var result = DataBaseHelper.ExecuteNonQuery(sqlReject, trans.Connection, trans, param);
+            if (result > 0)
+            {
+                DataBaseHelper.ExecuteNonQuery(sqlDel, trans.Connection, trans, param);
+                DataBaseHelper.ExecuteNonQuery(sqlRejectReason, trans.Connection, trans, param);
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "拒绝成功"
+                };
+            }
+            else
+                return new OperateResult
+                {
+                    Msg = "拒绝失败"
+                };
+
         }
     }
 }
