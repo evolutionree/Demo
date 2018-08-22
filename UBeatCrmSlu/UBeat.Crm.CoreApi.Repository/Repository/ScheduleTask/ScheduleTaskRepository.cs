@@ -75,6 +75,9 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
             var sqlAcept = @"update crm_sys_schedule set participant=array_to_string
 (array(select regexp_split_to_table::int4 FROM regexp_split_to_table(participant,',') UNION select @userid), ',') where recid=@recid
  ";
+            var sql = @"update crm_sys_schedule set notConfirmParticipant=array_to_string
+(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(notConfirmParticipant,',') where regexp_split_to_table::int4 not in (@userid) ), ',') where recid=@recid
+ ";
 
             var param = new DynamicParameters();
             param.Add("recid", mapper.RecId);
@@ -84,10 +87,11 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
             var result = DataBaseHelper.ExecuteNonQuery(sqlAcept, trans.Connection, trans, param);
             if (result > 0)
             {
+                DataBaseHelper.ExecuteNonQuery(sql, trans.Connection, trans, param);
                 return new OperateResult
                 {
-                    Flag=1,
-                    Msg="确认成功"
+                    Flag = 1,
+                    Msg = "确认成功"
                 };
             }
             else
@@ -102,6 +106,9 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
             var sqlReject = @"update crm_sys_schedule set participant=array_to_string
 (array(select regexp_split_to_table::int4 FROM regexp_split_to_table(refuser,',') UNION select @userid), ',') where recid=@recid
  ";
+            var sql = @"update crm_sys_schedule set notConfirmParticipant=array_to_string
+(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(notConfirmParticipant,',') where regexp_split_to_table::int4 not in (@userid) ), ',') where recid=@recid
+ ";
             var sqlRejectReason = @" insert into  crm_sys_schedule_rej_reason(userid,scheduleid,recjectreason) values (@userid,@scheduleid,@recjectreason);";
             var sqlDel = @"delete from crm_sys_schedule_rej_reason where userid=@userid and scheduleid=@scheduleid";
 
@@ -113,6 +120,7 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
             var result = DataBaseHelper.ExecuteNonQuery(sqlReject, trans.Connection, trans, param);
             if (result > 0)
             {
+                DataBaseHelper.ExecuteNonQuery(sql, trans.Connection, trans, param);
                 DataBaseHelper.ExecuteNonQuery(sqlDel, trans.Connection, trans, param);
                 DataBaseHelper.ExecuteNonQuery(sqlRejectReason, trans.Connection, trans, param);
                 return new OperateResult
@@ -127,6 +135,106 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
                     Msg = "拒绝失败"
                 };
 
+        }
+
+        public OperateResult DeleteOrExitSchedule(DeleteScheduleTaskMapper mapper, int userId, DbTransaction trans = null)
+        {
+            var sql = @"delete from crm_sys_schedule where recid=@recid";
+            var sqlExit = @"update crm_sys_schedule set participant=array_to_string
+(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(notConfirmParticipant,',') UNION select @userid), ',') where recid=@recid";
+            OperateResult result = null;
+            var param = new DynamicParameters();
+            param.Add("recid", mapper.RecId);
+            param.Add("userid", userId);
+            if (mapper.OperateType == 1)
+            {
+                var count = DataBaseHelper.ExecuteNonQuery(sql, trans.Connection, trans, param);
+                if (count > 0)
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 1,
+                        Msg = "删除成功"
+                    };
+                }
+                else
+                {
+                    result = new OperateResult
+                    {
+                        Msg = "删除失败"
+                    };
+                }
+            }
+            else
+            {
+                var count = DataBaseHelper.ExecuteNonQuery(sqlExit, trans.Connection, trans, param);
+                if (count > 0)
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 1,
+                        Msg = "退出成功"
+                    };
+                }
+                else
+                {
+                    result = new OperateResult
+                    {
+                        Msg = "退出失败"
+                    };
+                }
+            }
+            return result;
+        }
+
+        public OperateResult DeleteOrExitTask(DeleteScheduleTaskMapper mapper, int userId, DbTransaction trans = null)
+        {
+            var sql = @"delete from crm_sys_schedule where recid=@recid";
+            var sqlExit = @"update crm_sys_schedule set participant=array_to_string
+(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(notConfirmParticipant,',') UNION select @userid), ',') where recid=@recid";
+            OperateResult result = null;
+            var param = new DynamicParameters();
+            param.Add("recid", mapper.RecId);
+            param.Add("userid", userId);
+            if (mapper.OperateType == 1)
+            {
+                var count = DataBaseHelper.ExecuteNonQuery(sql, trans.Connection, trans, param);
+                if (count > 0)
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 1,
+                        Msg = "删除成功"
+                    };
+                }
+                else
+                {
+                    result = new OperateResult
+                    {
+                        Msg = "删除失败"
+                    };
+                }
+            }
+            else
+            {
+                var count = DataBaseHelper.ExecuteNonQuery(sqlExit, trans.Connection, trans, param);
+                if (count > 0)
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 1,
+                        Msg = "退出成功"
+                    };
+                }
+                else
+                {
+                    result = new OperateResult
+                    {
+                        Msg = "退出失败"
+                    };
+                }
+            }
+            return result;
         }
     }
 }

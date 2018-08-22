@@ -16,5 +16,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult RejectSchedule(UnConfirmScheduleStatusMapper mapper, int userId, DbTransaction trans = null);
         OperateResult AceptSchedule(UnConfirmScheduleStatusMapper mapper, int userId, DbTransaction trans = null);
+
+        OperateResult DeleteOrExitSchedule(DeleteScheduleTaskMapper mapper, int userId, DbTransaction trans = null);
     }
 }

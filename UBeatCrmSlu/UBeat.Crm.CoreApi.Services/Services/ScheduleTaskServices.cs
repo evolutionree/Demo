@@ -66,5 +66,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(result);
             }, model, userId);
         }
+
+        public OutputResult<object> DeleteOrExitSchedule(DeleteScheduleTaskModel model, int userId)
+        {
+            var mapper = _iMapper.Map<DeleteScheduleTaskModel, DeleteScheduleTaskMapper>(model);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                OperateResult result    = _iScheduleTaskRepository.DeleteOrExitSchedule(mapper, userId, transaction);
+     
+                return new OutputResult<object>(result);
+            }, model, userId);
+        }
     }
 }

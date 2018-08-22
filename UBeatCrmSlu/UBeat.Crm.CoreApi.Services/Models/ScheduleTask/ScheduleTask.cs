@@ -35,4 +35,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.ScheduleTask
         public String RejectReason { get; set; }
     }
 
+    public class DeleteScheduleTaskModel
+    {
+        public int AffairType { get; set; }
+        public Guid RecId { get; set; }
+        public int OperateType { get; set; }
+    }
 }

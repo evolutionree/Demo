@@ -11,6 +11,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SalesStage
             CreateMap<ScheduleTaskListModel, ScheduleTaskListMapper>();
             CreateMap<UnConfirmListModel, UnConfirmListMapper>();
             CreateMap<UnConfirmScheduleStatusModel, UnConfirmScheduleStatusMapper>();
+            CreateMap<DeleteScheduleTaskModel, DeleteScheduleTaskMapper>();
         }
     }
 }
