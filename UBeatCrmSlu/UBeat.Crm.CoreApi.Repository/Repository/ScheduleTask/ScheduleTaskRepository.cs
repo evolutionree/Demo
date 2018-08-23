@@ -236,5 +236,30 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
             }
             return result;
         }
+
+        public OperateResult DelayScheduleDay(DelayScheduleMapper mapper,int userId,DbTransaction trans=null)
+        {
+            var sql = @"update crm_sys_schedule set   starttime=@starttime,endtime=@endtime where recid=@recid;";
+            var param = new DynamicParameters();
+            param.Add("recid", mapper.RecId);
+            param.Add("starttime", mapper.StartTime);
+            param.Add("endtime", mapper.EndTime);
+
+            var result = DataBaseHelper.ExecuteNonQuery(sql, trans.Connection, trans, param);
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "确认成功"
+                };
+            }
+            else
+                return new OperateResult
+                {
+                    Msg = "确认失败"
+                };
+
+        }
     }
 }

@@ -98,4 +98,30 @@ namespace UBeat.Crm.CoreApi.DomainModel.ScheduleTask
             }
         }
     }
+
+    public class DelayScheduleMapper : BaseEntity
+    {
+        public int AffairType { get; set; }
+
+        public Guid RecId { get; set; }
+
+        public DateTime? StartTime { get; set; }
+
+        public DateTime? EndTime { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new DelayScheduleMapperValidator();
+        }
+
+        class DelayScheduleMapperValidator : AbstractValidator<DelayScheduleMapper>
+        {
+            public DelayScheduleMapperValidator()
+            {
+                RuleFor(d => d.RecId).Must(t => t != Guid.Empty).WithMessage("日程Id不能为空");
+                RuleFor(d => d.AffairType).Must(t => t >= 0).WithMessage("类型不能小于0");
+                RuleFor(d => d.StartTime).NotNull().WithMessage("开始时间不能为空");
+                RuleFor(d => d.EndTime).NotNull().WithMessage("结束时间不能为空");
+            }
+        }
+    }
 }

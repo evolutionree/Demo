@@ -82,5 +82,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(result);
             }, model, userId);
         }
+
+        public OutputResult<object> DelayScheduleDay(DelayScheduleModel model, int userId)
+        {
+            var mapper = _iMapper.Map<DelayScheduleModel, DelayScheduleMapper>(model);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _iScheduleTaskRepository.DelayScheduleDay(mapper, userId, transaction);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
+        }
     }
 }

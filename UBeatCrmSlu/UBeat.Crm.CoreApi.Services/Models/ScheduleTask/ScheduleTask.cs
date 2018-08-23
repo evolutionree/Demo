@@ -41,4 +41,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.ScheduleTask
         public Guid RecId { get; set; }
         public int OperateType { get; set; }
     }
-}
+    public class DelayScheduleModel
+    {
+        public int AffairType { get; set; }
+
+        public Guid RecId { get; set; }
+
+        public DateTime? StartTime { get; set; }
+
+        public DateTime? EndTime { get; set; }
+    }
+    }

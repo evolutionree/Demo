@@ -47,5 +47,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (model == null) return ResponseError<object>("参数格式错误");
             return _scheduleTaskServices.DeleteOrExitSchedule(model, UserId);
         }
+        [HttpPost]
+        [Route("delayscheduleday")]
+        public dynamic DelayScheduleDay([FromBody]DelayScheduleModel model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _scheduleTaskServices.DelayScheduleDay(model, UserId);
+        }
     }
 }
