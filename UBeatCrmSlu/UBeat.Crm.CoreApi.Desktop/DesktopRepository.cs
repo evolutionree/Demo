@@ -59,7 +59,20 @@ namespace UBeat.Crm.CoreApi.Desktop
             var result = DataBaseHelper.QuerySingle<DesktopMapper>(sql, param);
             return result;
         }
-
+        public IList<DesktopMapper> GetDesktops(SearchDesktopMapper mapper,int userId)
+        {
+            var sql = @"select * from crm_sys_desktop where status=@status {0}";
+            var param = new DynamicParameters();
+            param.Add("status", mapper.Status);
+            param.Add("desktopname", mapper.DesktopName);
+            String condition = String.Empty;
+            if (!string.IsNullOrEmpty(mapper.DesktopName)) {
+                condition = " and desktopname ILIKE '%' || @desktopname || '%' ESCAPE '`'";
+            }
+            sql = string.Format(sql, condition);
+            var result = DataBaseHelper.Query<DesktopMapper>(sql, param);
+            return result;
+        }
 
         public OperateResult EnableDesktop(DesktopMapper mapper, IDbTransaction trans = null)
         {
@@ -154,6 +167,22 @@ namespace UBeat.Crm.CoreApi.Desktop
             var param = new DynamicParameters();
             param.Add("dscomponetid", dsComponetId);
             var result = DataBaseHelper.QuerySingle<DesktopComponentMapper>(sql, param);
+            return result;
+        }
+        public IList<DesktopComponentMapper> GetDesktopComponents(SearchDesktopComponentMapper mapper,int userId)
+        {
+            var sql = @"select * from crm_sys_desktop_component where status=@status ";
+
+            var param = new DynamicParameters();
+            param.Add("status", mapper.Status);
+            param.Add("comname", mapper.ComName);
+            String condition = String.Empty;
+            if (!string.IsNullOrEmpty(mapper.ComName))
+            {
+                condition = " and comname ILIKE '%' || @comname || '%' ESCAPE '`'";
+            }
+            sql = string.Format(sql, condition);
+            var result = DataBaseHelper.Query<DesktopComponentMapper>(sql, param);
             return result;
         }
 

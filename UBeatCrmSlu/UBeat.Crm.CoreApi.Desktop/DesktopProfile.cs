@@ -15,6 +15,8 @@ namespace UBeat.Crm.CoreApi.Desktop
             CreateMap<DesktopRelation, DesktopRelationMapper>();
             CreateMap<DesktopRunTime, DesktopRunTimeMapper>();
             CreateMap<DesktopRoleRelation, DesktopRoleRelationMapper>();
+            CreateMap<SearchDesktop, SearchDesktopMapper>();
+            CreateMap<SearchDesktopComponent, SearchDesktopComponentMapper>();
         }
     }
 }

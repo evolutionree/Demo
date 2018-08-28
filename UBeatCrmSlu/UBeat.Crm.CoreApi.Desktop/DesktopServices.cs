@@ -28,7 +28,17 @@ namespace UBeat.Crm.CoreApi.Desktop
             return new OutputResult<object>(_desktopRepository.GetDesktop(userId));
         }
 
-
+        public OutputResult<object> GetDesktops(SearchDesktop model,int userId)
+        {
+            var mapper = _mapper.Map<SearchDesktop, SearchDesktopMapper>(model);
+            return new OutputResult<object>(_desktopRepository.GetDesktops(mapper, userId));
+        }
+        
+       public OutputResult<object> GetDesktopComponents(SearchDesktopComponent model,int userId)
+        {
+            var mapper = _mapper.Map<SearchDesktopComponent, SearchDesktopComponentMapper>(model);
+            return new OutputResult<object>(_desktopRepository.GetDesktopComponents(mapper, userId));
+        }
         #region config
         public OutputResult<object> SaveDesktopComponent(DesktopComponent model, int userId)
         {
@@ -45,6 +55,23 @@ namespace UBeat.Crm.CoreApi.Desktop
 
             }, model, userId);
         }
+
+        public OutputResult<object> SaveDesktop(Desktop model, int userId)
+        {
+            var mapper = _mapper.Map<Desktop, DesktopMapper>(model);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _desktopRepository.SaveDesktop(mapper, transaction);
+                return new OutputResult<object>(result);
+
+            }, model, userId);
+        }
+
 
         public OutputResult<object> EnableDesktopComponent(DesktopComponent model, int userId)
         {

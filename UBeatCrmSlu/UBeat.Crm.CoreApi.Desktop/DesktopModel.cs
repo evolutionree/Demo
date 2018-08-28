@@ -20,7 +20,19 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String Description { get; set; }
         public int Status { get; set; }
     }
+    public class SearchDesktopComponent
+    {
+        public String ComName { get; set; }
 
+        public int Status { get; set; }
+    }
+    public class SearchDesktop
+    {
+
+        public String DesktopName { get; set; }
+
+        public int Status { get; set; }
+    }
     public class DesktopComponent
     {
         public Guid DsComponetId { get; set; }

@@ -34,13 +34,31 @@ namespace UBeat.Crm.CoreApi.Desktop
         {
             return _desktopServices.GetDesktop(UserId);
         }
-
+        [HttpPost]
+        [Route("getdesktops")]
+        public dynamic GetDesktops([FromBody]SearchDesktop model)
+        {
+            return _desktopServices.GetDesktops(model, UserId);
+        }
+        [HttpPost]
+        [Route("getdesktopcoms")]
+        public dynamic GetDesktopComponents([FromBody]SearchDesktopComponent model)
+        {
+            return _desktopServices.GetDesktopComponents(model, UserId);
+        }
         [HttpPost]
         [Route("savedesktopcomponent")]
         public dynamic SaveDesktopComponent([FromBody]DesktopComponent model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");
             return _desktopServices.SaveDesktopComponent(model, UserId);
+        }
+        [HttpPost]
+        [Route("savedesktop")]
+        public dynamic SaveDesktop([FromBody]Desktop model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.SaveDesktop(model, UserId);
         }
 
         [HttpPost]
