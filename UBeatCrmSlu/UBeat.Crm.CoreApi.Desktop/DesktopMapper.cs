@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -8,12 +9,7 @@ using UBeat.Crm.CoreApi.DomainModel;
 namespace UBeat.Crm.CoreApi.Desktop
 {
     public class DesktopMapper : BaseEntity
-    {
-        public DesktopMapper()
-        {
-            LeftDesktopComponents = new List<DesktopComponentMapper>();
-            RightDesktopComponents = new List<DesktopComponentMapper>();
-        }
+    { 
         public Guid DesktopId { get; set; }
 
         public String DesktopName { get; set; }
@@ -25,10 +21,8 @@ namespace UBeat.Crm.CoreApi.Desktop
         public Guid BaseDeskId { get; set; }
         public String Description { get; set; }
         public int Status { get; set; }
-
-        public List<DesktopComponentMapper> LeftDesktopComponents { get; set; }
-
-        public List<DesktopComponentMapper> RightDesktopComponents { get; set; }
+        public List<DesktopComponentMapper> LeftDesktopComponents { get; set; } 
+        public List<DesktopComponentMapper> RightDesktopComponents { get; set; } 
 
         protected override IValidator GetValidator()
         {
@@ -39,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         {
             public DesktopMapperValidator()
             {
-                RuleFor(d => d.DesktopName).NotNull().WithMessage("控制台名称不能为空");
+                RuleFor(d => d.DesktopName).NotEmpty().WithMessage("控制台名称不能为空");
 
             }
         }

@@ -171,7 +171,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
         public IList<DesktopComponentMapper> GetDesktopComponents(SearchDesktopComponentMapper mapper,int userId)
         {
-            var sql = @"select * from crm_sys_desktop_component where status=@status ";
+            var sql = @"select * from crm_sys_desktop_component where status=@status {0};";
 
             var param = new DynamicParameters();
             param.Add("status", mapper.Status);
