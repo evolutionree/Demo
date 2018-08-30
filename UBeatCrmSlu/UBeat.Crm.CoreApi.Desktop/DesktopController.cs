@@ -100,9 +100,9 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         [HttpPost]
         [Route("getroles")]
-        public dynamic GetRoles()
+        public dynamic GetRoles([FromBody]DesktopRoleRelation model)
         {
-            return _desktopServices.GetRoles(UserId);
+            return _desktopServices.GetRoles(model, UserId);
         }
 
 

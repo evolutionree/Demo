@@ -163,6 +163,12 @@ namespace UBeat.Crm.CoreApi.Desktop
 
     }
 
+    public class RoleRelationMapper
+    {
+        public Guid RoleId { get; set; }
+        public String RoleName { get; set; }
+        public int IsChecked { get; set; }
+    }
 
 
     public class DynamicListRequestMapper : BaseEntity

@@ -25,7 +25,7 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         OperateResult SaveDesktopRoleRelation(List<DesktopRoleRelationMapper> mapper, IDbTransaction trans = null);
 
-        IList<dynamic> GetRoles(int userId);
+        IList<RoleRelationMapper> GetRoles(Guid desktopId, int userId);
 
 
         PageDataInfo<UBeat.Crm.CoreApi.DomainModel.Dynamics.DynamicInfoExt> GetDynamicList(DynamicListRequestMapper mapper, int userId);

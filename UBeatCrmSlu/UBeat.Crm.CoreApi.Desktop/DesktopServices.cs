@@ -28,13 +28,13 @@ namespace UBeat.Crm.CoreApi.Desktop
             return new OutputResult<object>(_desktopRepository.GetDesktop(userId));
         }
 
-        public OutputResult<object> GetDesktops(SearchDesktop model,int userId)
+        public OutputResult<object> GetDesktops(SearchDesktop model, int userId)
         {
             var mapper = _mapper.Map<SearchDesktop, SearchDesktopMapper>(model);
             return new OutputResult<object>(_desktopRepository.GetDesktops(mapper, userId));
         }
-        
-       public OutputResult<object> GetDesktopComponents(SearchDesktopComponent model,int userId)
+
+        public OutputResult<object> GetDesktopComponents(SearchDesktopComponent model, int userId)
         {
             var mapper = _mapper.Map<SearchDesktopComponent, SearchDesktopComponentMapper>(model);
             return new OutputResult<object>(_desktopRepository.GetDesktopComponents(mapper, userId));
@@ -134,9 +134,9 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
             return new OutputResult<object>(_desktopRepository.SaveDesktopRoleRelation(desktopRoleRelations));
         }
-        public OutputResult<Object> GetRoles(int userId)
+        public OutputResult<Object> GetRoles(DesktopRoleRelation model, int userId)
         {
-            var result = _desktopRepository.GetRoles(userId);
+            var result = _desktopRepository.GetRoles(model.DesktopId, userId);
             return new OutputResult<object>(result);
         }
         #endregion

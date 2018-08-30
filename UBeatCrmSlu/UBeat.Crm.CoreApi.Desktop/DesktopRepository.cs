@@ -59,14 +59,15 @@ namespace UBeat.Crm.CoreApi.Desktop
             var result = DataBaseHelper.QuerySingle<DesktopMapper>(sql, param);
             return result;
         }
-        public IList<DesktopMapper> GetDesktops(SearchDesktopMapper mapper,int userId)
+        public IList<DesktopMapper> GetDesktops(SearchDesktopMapper mapper, int userId)
         {
             var sql = @"select * from crm_sys_desktop where status=@status {0}";
             var param = new DynamicParameters();
             param.Add("status", mapper.Status);
             param.Add("desktopname", mapper.DesktopName);
             String condition = String.Empty;
-            if (!string.IsNullOrEmpty(mapper.DesktopName)) {
+            if (!string.IsNullOrEmpty(mapper.DesktopName))
+            {
                 condition = " and desktopname ILIKE '%' || @desktopname || '%' ESCAPE '`'";
             }
             sql = string.Format(sql, condition);
@@ -169,7 +170,7 @@ namespace UBeat.Crm.CoreApi.Desktop
             var result = DataBaseHelper.QuerySingle<DesktopComponentMapper>(sql, param);
             return result;
         }
-        public IList<DesktopComponentMapper> GetDesktopComponents(SearchDesktopComponentMapper mapper,int userId)
+        public IList<DesktopComponentMapper> GetDesktopComponents(SearchDesktopComponentMapper mapper, int userId)
         {
             var sql = @"select * from crm_sys_desktop_component where status=@status {0};";
 
@@ -212,15 +213,16 @@ namespace UBeat.Crm.CoreApi.Desktop
             };
 
         }
-        public IList<dynamic> GetRoles(int userId)
+        public IList<RoleRelationMapper> GetRoles(Guid desktopId, int userId)
         {
             var sql = @"select * from 
-(select '00000000-0000-0000-0000-000000000001'::uuid,'全局角色',now() as reccreated 
+(select '00000000-0000-0000-0000-000000000001'::uuid as roleid,'全局角色' as rolename,now() as reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid='00000000-0000-0000-0000-000000000001' and desktopid=@desktopid limit 1 ) as ischecked
 UNION
-select roleid,rolename,reccreated from crm_sys_role where recstatus=1 ) as tmp ORDER BY  reccreated DESC;";
+select roleid,rolename,reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid=tmprole.roleid and  desktopid=@desktopid limit 1 ) as ischecked from crm_sys_role as tmprole where recstatus=1 ) as tmp ORDER BY  reccreated DESC;";
             var param = new DynamicParameters();
             param.Add("userid", userId);
-            var result = DataBaseHelper.Query<dynamic>(sql, param);
+            param.Add("desktopid", desktopId);
+            var result = DataBaseHelper.Query<RoleRelationMapper>(sql, param);
             return result;
         }
 
@@ -374,7 +376,7 @@ ON desktop.roleid=userinfo.roleid
                         month = month - 1;
                     }
 
-                    timeRangeSql =  string.Format(" and date_part('year',d.reccreated)={0} and date_part('month',d.reccreated)={1} ",year,month);
+                    timeRangeSql = string.Format(" and date_part('year',d.reccreated)={0} and date_part('month',d.reccreated)={1} ", year, month);
                     break;
 
 
