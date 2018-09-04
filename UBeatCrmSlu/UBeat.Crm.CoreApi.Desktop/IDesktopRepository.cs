@@ -10,7 +10,7 @@ namespace UBeat.Crm.CoreApi.Desktop
     public interface IDesktopRepository : IBaseRepository
     {
         DesktopMapper GetDesktop(int userId);
-        IList<DesktopMapper> GetDesktops(SearchDesktopMapper mapper,int userId);
+        IList<DesktopsMapper> GetDesktops(SearchDesktopMapper mapper,int userId);
         OperateResult SaveDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
 
         OperateResult EnableDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);

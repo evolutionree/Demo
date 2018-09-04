@@ -9,7 +9,7 @@ using UBeat.Crm.CoreApi.DomainModel;
 namespace UBeat.Crm.CoreApi.Desktop
 {
     public class DesktopMapper : BaseEntity
-    { 
+    {
         public Guid DesktopId { get; set; }
 
         public String DesktopName { get; set; }
@@ -21,8 +21,9 @@ namespace UBeat.Crm.CoreApi.Desktop
         public Guid BaseDeskId { get; set; }
         public String Description { get; set; }
         public int Status { get; set; }
-        public List<DesktopComponentMapper> LeftDesktopComponents { get; set; } 
-        public List<DesktopComponentMapper> RightDesktopComponents { get; set; } 
+
+        public List<DesktopComponentMapper> LeftDesktopComponents { get; set; }
+        public List<DesktopComponentMapper> RightDesktopComponents { get; set; }
 
         protected override IValidator GetValidator()
         {
@@ -39,12 +40,46 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
     }
 
-    public class SearchDesktopMapper
+    public class DesktopsMapper
+    {
+        public Guid DesktopId { get; set; }
+
+        public String DesktopName { get; set; }
+
+        public int DesktopType { get; set; }
+        public String LeftItems { get; set; }
+        public String RightItems { get; set; }
+
+        public Guid BaseDeskId { get; set; }
+        public String Description { get; set; }
+        public int Status { get; set; }
+
+        public String RolesName { get; set; }
+
+        public String RolesId { get; set; }
+
+    }
+
+    public class SearchDesktopMapper : BaseEntity
     {
 
         public String DesktopName { get; set; }
 
         public int Status { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new SearchDesktopMapperValidator();
+        }
+
+        class SearchDesktopMapperValidator : AbstractValidator<SearchDesktopMapper>
+        {
+            public SearchDesktopMapperValidator()
+            {
+                RuleFor(d =>d).NotNull().WithMessage("参数不能为空");
+
+            }
+        }
     }
     public class SearchDesktopComponentMapper
     {
@@ -83,7 +118,7 @@ namespace UBeat.Crm.CoreApi.Desktop
                 RuleFor(d => d.ComName).NotNull().WithMessage("组件名称不能为空");
                 //RuleFor(d => d.ComType).Must(t => t > 0).WithMessage("组件分类不存在");
                 RuleFor(d => d.ComWidth).Must(t => t > 0).WithMessage("组件宽度不能小于0");
-               // RuleFor(d => d.ComHeightType).Must(t => t > 0).WithMessage("组件高度类型不存在");
+                // RuleFor(d => d.ComHeightType).Must(t => t > 0).WithMessage("组件高度类型不存在");
                 RuleFor(d => d.MinComHeight).Must(t => t > 0).WithMessage("组件最小高度不能小于0");
                 RuleFor(d => d.MaxComHeight).Must(t => t > 0).WithMessage("组件最大高度不能小于0");
                 RuleFor(d => d.ComUrl).NotNull().WithMessage("组件处理页面不能为空");

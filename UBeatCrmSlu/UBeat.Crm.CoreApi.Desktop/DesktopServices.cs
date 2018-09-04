@@ -31,6 +31,10 @@ namespace UBeat.Crm.CoreApi.Desktop
         public OutputResult<object> GetDesktops(SearchDesktop model, int userId)
         {
             var mapper = _mapper.Map<SearchDesktop, SearchDesktopMapper>(model);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
             return new OutputResult<object>(_desktopRepository.GetDesktops(mapper, userId));
         }
 
@@ -120,7 +124,7 @@ namespace UBeat.Crm.CoreApi.Desktop
             }, model, userId);
         }
 
-        public OutputResult<object> SaveDesktopRoleRelation(IList<DesktopRoleRelation> models)
+        public OutputResult<object> SaveDesktopRoleRelation(IList<DesktopRoleRelation> models, int userId)
         {
             List<DesktopRoleRelationMapper> desktopRoleRelations = new List<DesktopRoleRelationMapper>();
             foreach (var model in models)
@@ -132,7 +136,10 @@ namespace UBeat.Crm.CoreApi.Desktop
                 }
                 desktopRoleRelations.Add(mapper);
             }
-            return new OutputResult<object>(_desktopRepository.SaveDesktopRoleRelation(desktopRoleRelations));
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                return new OutputResult<object>(_desktopRepository.SaveDesktopRoleRelation(desktopRoleRelations, transaction));
+            }, models, userId);
         }
         public OutputResult<Object> GetRoles(DesktopRoleRelation model, int userId)
         {

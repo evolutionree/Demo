@@ -59,19 +59,22 @@ namespace UBeat.Crm.CoreApi.Desktop
             var result = DataBaseHelper.QuerySingle<DesktopMapper>(sql, param);
             return result;
         }
-        public IList<DesktopMapper> GetDesktops(SearchDesktopMapper mapper, int userId)
+        public IList<DesktopsMapper> GetDesktops(SearchDesktopMapper mapper, int userId)
         {
-            var sql = @"select * from crm_sys_desktop where status=@status {0}";
+            var sql = @"select *,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.rolename))),',') FROM crm_sys_desktop_role_relation relate
+  INNER JOIN crm_sys_role ro1 ON ro1.roleid=relate.roleid where desktopid=de1.desktopid ) as rolesname,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.roleid))),',') FROM crm_sys_desktop_role_relation relate
+  INNER JOIN crm_sys_role ro1 ON ro1.roleid=relate.roleid where desktopid=de1.desktopid ) as rolesid from crm_sys_desktop  de1
+ where de1.status=@status {0}";
             var param = new DynamicParameters();
             param.Add("status", mapper.Status);
             param.Add("desktopname", mapper.DesktopName);
             String condition = String.Empty;
             if (!string.IsNullOrEmpty(mapper.DesktopName))
             {
-                condition = " and desktopname ILIKE '%' || @desktopname || '%' ESCAPE '`'";
+                condition = " and de1.desktopname ILIKE '%' || @desktopname || '%' ESCAPE '`'";
             }
             sql = string.Format(sql, condition);
-            var result = DataBaseHelper.Query<DesktopMapper>(sql, param);
+            var result = DataBaseHelper.Query<DesktopsMapper>(sql, param);
             return result;
         }
 

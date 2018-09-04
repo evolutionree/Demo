@@ -94,7 +94,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         public dynamic SaveDesktopRoleRelation([FromBody]IList<DesktopRoleRelation> models)
         {
             if (models == null || models.Count == 0) return ResponseError<object>("参数格式错误");
-            return _desktopServices.SaveDesktopRoleRelation(models);
+            return _desktopServices.SaveDesktopRoleRelation(models,UserId);
         }
 
 
