@@ -11,6 +11,7 @@ using UBeat.Crm.CoreApi.DomainModel.PushService.XGPush;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository.PushService;
 using UBeat.Crm.CoreApi.Services.Models.PushService;
+using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -194,6 +195,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public Dictionary<string, HttpResponse<object>> PushMessage(List<string> account_list, string title, string message, Dictionary<string, object> customContent, int messageType, string sendTime)
         {
+            //测试代码---推送消息到企业微信
+            Pug_inMsg msg = new Pug_inMsg();
+            msg.content = message;
+            msg.title = title;
+            msg.recevier.Add("HuangGuoChen");
+            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, msg);
+
             //var accounts = accountsStr.Split(',');
             string androidmes = GetSimpleMessage(PushDeviceType.Android, title, message, customContent, messageType);
             string iosmes = GetSimpleMessage(PushDeviceType.IOS, null, message, customContent, messageType);
