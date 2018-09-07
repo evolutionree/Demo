@@ -34,7 +34,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             commonRequest.Add("agentid", AgentId);
         }
 
-        public string updateToken()
+        public string getToken()
         {
             string realUrl = string.Format(getTokenURL, CorpId, Secret);
             var response = HttpLib.Get(realUrl);
@@ -48,6 +48,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             }
             return "";
 
+        }
+
+        public void updateToken(string token)
+        {
+            _token = token;
         }
 
         public bool sendTextMessage(Pug_inMsg msg)

@@ -11,9 +11,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
 
         }
 
-        public string updateToken()
+        public string getToken()
         {
             return "";
+        }
+
+        public void updateToken(string token)
+        {
+            
         }
 
         public bool sendTextMessage(Pug_inMsg msg)

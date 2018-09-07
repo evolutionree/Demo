@@ -7,10 +7,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
     public interface IMSGService
     {
         /// <summary>
-        /// 根据企业微信/钉钉等第三方对接平台API接口请求token过期时间更新token
+        /// 根据企业微信/钉钉等第三方对接平台API接口请求token过期时间获取更新token
         /// </summary>
         /// <returns></returns>
-        string updateToken();
+        string getToken();
+        void updateToken(string token);
 
         /// <summary>
         /// 发送文本信息
