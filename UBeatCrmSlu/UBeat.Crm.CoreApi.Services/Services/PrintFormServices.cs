@@ -877,7 +877,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     var tempfield = fieldnames[0].Trim();
                     //获取实体字段名称
-                    var entityfield = fields.Find(m => tempfield.Equals(m["fieldname"]) || tempfield.Equals(m["displayname"]));
+                    var entityfield = fields.Find(m => tempfield.Equals(m["fieldname"].ToString().ToLower()) || tempfield.Equals(m["displayname"].ToString().ToLower()));
                     if ((EntityFieldControlType)entityfield["controltype"] != EntityFieldControlType.LinkeTable)
                     {
                         throw new Exception("Loop的字段必须为表格控件");

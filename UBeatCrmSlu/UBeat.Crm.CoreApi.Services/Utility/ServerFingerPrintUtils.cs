@@ -66,7 +66,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     || filePrint.ServerUrl != serverPrint.ServerUrl)
                 {
                     _logger.Error("检查服务指纹失败");
-                    throw new Exception("检查服务指纹失败");
+                   // throw new Exception("检查服务指纹失败");
                 }
                 _currentFingerPrint = filePrint;
                 return filePrint;

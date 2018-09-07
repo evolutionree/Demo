@@ -267,6 +267,21 @@ namespace UBeat.Crm.CoreApi.Controllers
 
 
         #endregion
+        #region 获取简单实体的对应的工作流定义id
+        [HttpPost("workflowidbyentityid")]
+        public OutputResult<object> GetWorkflowIdByEntityId([FromBody] WorkflowIdByEntityIdParamInfo paramInfo) {
+            try
+            {
+
+                if (paramInfo == null) return ResponseError<object>("参数异常");
+                if (paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) return ResponseError<object>("参数异常");
+                return new OutputResult<object>(this._workFlowServices.GetWorkFlowIdByEntityId(paramInfo.EntityId, UserId));
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+        }
+        #endregion 
     }
 }
  

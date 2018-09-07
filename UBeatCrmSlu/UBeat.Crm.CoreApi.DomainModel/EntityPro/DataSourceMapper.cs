@@ -39,7 +39,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string Rulesql { get; set; }
         public int RecStatus { get; set; }
 
-        public string DatasourceLanguage { get; set; }
+        public Dictionary<string,string> DatasourceName_Lang { get; set; }
         public int IsPro { get; set; }
 
         protected override IValidator GetValidator()
@@ -189,7 +189,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string ExtField3 { get; set; }
         public string ExtField4 { get; set; }
         public string ExtField5 { get; set; }
-        public string DataLanguage { get; set; }
+        public Dictionary<string,string> DataVal_Lang { get; set; }
     }
 
     public class OrderByDictionaryMapper
@@ -207,7 +207,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public int RecStatus { get; set; }
         public int? RelateDicTypeId { get; set; }
         public string RecOrder { get; set; }
-        public string DicTypeLanguage { get; set; }
+        public Dictionary<string, string> DicTypeName_Lang { get; set; }
         /// <summary>
         /// 0:使用自定义 1:使用全局
         /// </summary>

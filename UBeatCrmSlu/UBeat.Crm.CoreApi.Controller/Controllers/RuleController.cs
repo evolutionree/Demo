@@ -54,6 +54,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             //删除规则
             //if (entityModel.RuleItems.Count == 0) return ResponseError<object>("规则明细不能为空");
             //if (string.IsNullOrEmpty(entityModel.RuleSet.RuleSet)) return ResponseError<object>("规则集合不能为空");
+            if (entityModel.MenuName_Lang == null) ResponseError<object>("请完善多语言");
             return _ruleTranslatorServices.SaveRule(entityModel, UserId);
         }
 

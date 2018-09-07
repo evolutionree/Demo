@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.SalesStage;
@@ -52,6 +53,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertSalesStage(SaveSalesStageModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<SaveSalesStageModel, SaveSalesStageMapper>(entityModel);
+            string StageName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.StageName, entity.StageName_Lang, out StageName);
+            if (StageName != null) entity.StageName = StageName;
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
@@ -63,6 +67,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateSalesStage(SaveSalesStageModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<SaveSalesStageModel, SaveSalesStageMapper>(entityModel);
+            string StageName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.StageName, entity.StageName_Lang, out StageName);
+            if (StageName != null) entity.StageName = StageName;
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);

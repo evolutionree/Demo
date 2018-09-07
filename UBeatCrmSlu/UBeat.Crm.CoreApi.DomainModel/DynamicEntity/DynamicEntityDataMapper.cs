@@ -21,6 +21,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
 
         public string ExpandJS { get; set; }
         public string FilterJS { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
+        public Dictionary<string, string> DisplayName_Lang { get; set; }
     }
 
     public class DynamicEntityWebFieldMapper
@@ -37,6 +39,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public bool IsVisible { get; set; }
         public bool IsReadOnly { get; set; }
         public string DefaultValue { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
+        public Dictionary<string, string> DisplayName_Lang { get; set; }
         /// <summary>
         /// 默认的列表显示宽度
         /// </summary>

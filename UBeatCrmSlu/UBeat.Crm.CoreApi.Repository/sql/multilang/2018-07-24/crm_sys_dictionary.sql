@@ -1,0 +1,1 @@
+alter table crm_sys_dictionary rename column dataname_lang to dataval_lang;

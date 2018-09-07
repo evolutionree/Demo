@@ -11,7 +11,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Role
         public string GroupName { get; set; }
 
         public int GroupType { get; set; }
-        public string GroupLanguage { get; set; }
+        public Dictionary<string, string> GroupName_Lang { get; set; }
 
         protected override IValidator GetValidator()
         {
@@ -46,7 +46,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Role
         public int RolePriority { get; set; }
         public string RoleRemark { get; set; }
 
-        public string RoleLanguage { get; set; }
+        public Dictionary<string,string> RoleName_Lang { get; set; }
         protected override IValidator GetValidator()
         {
             return new RoleMapperValidator();
@@ -71,6 +71,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Role
         public int RoleType { get; set; }
         public int RolePriority { get; set; }
         public string RoleRemark { get; set; }
+        public Dictionary<string, string> RoleName_Lang { get; set; }
         protected override IValidator GetValidator()
         {
             return new RoleCopyMapperValidator();

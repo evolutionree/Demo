@@ -8,6 +8,7 @@ using UBeat.Crm.CoreApi.Services.Models.Role;
 using System.Linq;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.DomainModel.Version;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -30,23 +31,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertRoleGroup(SaveRoleGroupModel model, int userNumber)
         {
             var entity = _mapper.Map<SaveRoleGroupModel, SaveRoleGroupMapper>(model);
-
+            if (entity != null) {
+                string groupname = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.GroupName, entity.GroupName_Lang, out groupname);
+                if (groupname != null)
+                {
+                    entity.GroupName = groupname;
+                }
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
-
+            
             return HandleResult(_roleRepsitory.InsertRoleGroup(entity, userNumber));
         }
 
         public OutputResult<object> UpdateRoleGroup(SaveRoleGroupModel model, int userNumber)
         {
             var entity = _mapper.Map<SaveRoleGroupModel, SaveRoleGroupMapper>(model);
-
+            if (entity != null) {
+                string groupname = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.GroupName, entity.GroupName_Lang, out groupname);
+                if (groupname != null)
+                {
+                    entity.GroupName = groupname;
+                }
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
+           
             return HandleResult(_roleRepsitory.UpdateRoleGroup(entity, userNumber));
         }
         public OutputResult<object> DisabledRoleGroup(SaveRoleGroupModel model, int userNumber)
@@ -70,23 +86,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertRole(RoleModel role, int userNumber)
         {
             var entity = _mapper.Map<RoleModel, RoleMapper>(role);
-
+            if (entity != null) {
+                string rolename = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.RoleName, entity.RoleName_Lang, out rolename);
+                if (rolename != null)
+                {
+                    entity.RoleName = rolename;
+                }
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
-
+            
             return HandleResult(_roleRepsitory.InsertRole(entity, userNumber));
         }
 
         public OutputResult<object> UpdateRole(RoleModel role, int userNumber)
         {
             var entity = _mapper.Map<RoleModel, RoleMapper>(role);
-
+            if (entity != null) {
+                string rolename = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.RoleName, entity.RoleName_Lang, out rolename);
+                if (rolename != null)
+                {
+                    entity.RoleName = rolename;
+                }
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
+            
             List<Guid> roleIds = new List<Guid>();
             role.RoleId.Split(',').ToList().ForEach(a =>
             {
@@ -107,11 +138,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> CopyRole(RoleCopyModel role, int userNumber)
         {
             var entity = _mapper.Map<RoleCopyModel, RoleCopyMapper>(role);
-
+            if (entity != null) {
+                string rolename = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.RoleName, entity.RoleName_Lang, out rolename);
+                if (rolename != null)
+                {
+                    entity.RoleName = rolename;
+                }
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
+            
             List<Guid> roleIds = new List<Guid>();
             role.RoleId.Split(',').ToList().ForEach(a =>
             {

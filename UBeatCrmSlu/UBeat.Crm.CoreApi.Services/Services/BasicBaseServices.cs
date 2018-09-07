@@ -21,7 +21,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return HasFunctionAccess(usernumber, Guid.Empty);
         }
-        protected UserData HasFunctionAccess(int usernumber,Guid entityid )
+        protected UserData HasFunctionAccess(int usernumber, Guid entityid)
         {
             //获取公共缓存数据
             var commonData = GetCommonCacheData(usernumber);
@@ -31,28 +31,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
 
-                //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
-                if (commonData.TotalFunctions.Exists(a => a.EntityId == entityid &&  a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath)))
+            //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
+            if (commonData.TotalFunctions.Exists(a => a.EntityId == entityid && a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath)))
+            {
+                if (!userData.HasFunction(RoutePath, entityid, DeviceClassic))
                 {
-                    if (!userData.HasFunction(RoutePath, entityid, DeviceClassic))
-                    {
-                        throw new Exception("对不起，您没有该功能的权限");
-                    }
-
+                    throw new Exception("对不起，您没有该功能的权限");
                 }
+
+            }
             return userData;
         }
-        protected Dictionary<string, FunctionInfo> AllMyFunctionIds( int userNumber) {
+        protected Dictionary<string, FunctionInfo> AllMyFunctionIds(int userNumber)
+        {
             //获取公共缓存数据
             var commonData = GetCommonCacheData(userNumber);
             //获取个人用户数据
             UserData userData = GetUserData(userNumber);
             Dictionary<string, FunctionInfo> myFunctions = new Dictionary<string, FunctionInfo>();
-            if (userData.Vocations != null) {
-                foreach (VocationInfo vInfo in userData.Vocations) {
+            if (userData.Vocations != null)
+            {
+                foreach (VocationInfo vInfo in userData.Vocations)
+                {
                     if (vInfo.Functions == null) continue;
-                    foreach (FunctionInfo func in vInfo.Functions) {
-                        if (myFunctions.ContainsKey(func.FuncId.ToString()) == false) {
+                    foreach (FunctionInfo func in vInfo.Functions)
+                    {
+                        if (myFunctions.ContainsKey(func.FuncId.ToString()) == false)
+                        {
                             myFunctions.Add(func.FuncId.ToString(), func);
                         }
                     }
@@ -61,7 +66,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return myFunctions;
         }
-        protected List<FunctionInfo> AllFunctions(int userNumber) {
+        protected List<FunctionInfo> AllFunctions(int userNumber)
+        {
             var commonData = GetCommonCacheData(userNumber);
             return commonData.TotalFunctions;
         }
@@ -112,7 +118,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     outResult = func.Invoke(tran, arg, userData);
                     actionResult = outResult.DataBody;
-                    
+
                     if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0 && outResult.Status == 0)
                     {
                         //执行预处理逻辑，返回值必须与func返回值一致，参数为func参数的json对象和func执行结果数据的json

@@ -14,6 +14,7 @@ using Newtonsoft.Json.Linq;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using System.Data.Common;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -42,16 +43,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertSaveDataSource(DataSourceModel dataSource, int userNumber)
         {
             var entity = mapper.Map<DataSourceModel, DataSourceMapper>(dataSource);
+            if (entity != null)
+            {
+                string datasourceName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
+                if (datasourceName != null) entity.DatasourceName = datasourceName;
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
             }
+            
             return HandleResult(dataSourceRepository.InsertSaveDataSource(entity, userNumber));
         }
 
         public OutputResult<object> UpdateSaveDataSource(DataSourceModel dataSource, int userNumber)
         {
             var entity = mapper.Map<DataSourceModel, DataSourceMapper>(dataSource);
+            if (entity != null)
+            {
+                string datasourceName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DatasourceName, entity.DatasourceName_Lang, out datasourceName);
+                if (datasourceName != null) entity.DatasourceName = datasourceName;
+            }
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
@@ -161,12 +175,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 entity.RecOrder = recOrder;
                 if (!dataSourceRepository.HasDicTypeName(entity.DicTypeName))
                     return new OutputResult<object>(null, "类型名称已存在", 1);
+                string DicTypeName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DicTypeName, entity.DicTypeName_Lang, out DicTypeName);
+                if (DicTypeName != null) entity.DicTypeName = DicTypeName;
                 falg = dataSourceRepository.AddFieldDicType(entity, userNumber);
             }
             else
             {
                 if (entity.DicTypeId == "-1") //全局配置时处理
                     entity.RecOrder = "0";
+                string DicTypeName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DicTypeName, entity.DicTypeName_Lang, out DicTypeName);
+                if (DicTypeName != null) entity.DicTypeName = DicTypeName;
                 falg = dataSourceRepository.UpdateFieldDicType(entity, userNumber);
             }
             if (falg)
@@ -192,10 +212,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 entity.RecCreator = userNumber;
                 entity.RecCreated = DateTime.Now;
                 entity.RecOrder = entity.DataId;
+                string DataVal = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DataVal, entity.DataVal_Lang, out DataVal);
+                if (DataVal != null) entity.DataVal = DataVal;
                 falg = dataSourceRepository.AddDictionary(entity, userNumber);
             }
             else //edit
             {
+                string DataVal = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.DataVal, entity.DataVal_Lang, out DataVal);
+                if (DataVal != null) entity.DataVal = DataVal;
                 falg = dataSourceRepository.UpdateDictionary(entity, userNumber);
             }
             if (falg)

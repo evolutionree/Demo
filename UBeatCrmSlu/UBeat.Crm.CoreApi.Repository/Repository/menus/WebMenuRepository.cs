@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -94,7 +95,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
             {
                 return Guid.Empty;
             }
-            string cmdText = @"insert into crm_sys_webmenu(id,index,name,icon,path,funcid,parentid,isdynamic)values(@id,@index,@name,@icon,@path,@funcid,@parentid,@isdynamic) returning id";
+            string cmdText = @"insert into crm_sys_webmenu(id,index,name,icon,path,funcid,parentid,isdynamic,name_lang)values(@id,@index,@name,@icon,@path,@funcid,@parentid,@isdynamic,@name_lang::jsonb) returning id";
             var param = new
             {
                 item.Id,
@@ -104,7 +105,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
                 item.path,
                 item.FuncID,
                 item.ParentId,
-                item.IsDynamic
+                item.IsDynamic,
+                Name_Lang =JsonConvert.SerializeObject( item.Name_Lang)
             };
             return DataBaseHelper.ExecuteScalar<Guid>(cmdText, param);
         }
@@ -116,7 +118,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
                 return false;
             }
             string cmdText = @"update crm_sys_webmenu set index=@index,
-                                name=@name,icon=@icon,path=@path,funcid=@funcid,parentid=@parentid,isdynamic=@isdynamic
+                                name=@name,icon=@icon,path=@path,funcid=@funcid,parentid=@parentid,isdynamic=@isdynamic,name_lang =@name_lang::jsonb
                                 where id=@id";
             var param = new
             {
@@ -127,7 +129,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
                 item.FuncID,
                 item.ParentId,
                 item.IsDynamic,
-                item.Id
+                item.Id,
+                Name_Lang = JsonConvert.SerializeObject(item.Name_Lang)
             };
             DataBaseHelper.ExecuteNonQuery(cmdText, param);
             return true;

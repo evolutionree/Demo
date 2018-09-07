@@ -36,13 +36,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.SalesStage
         public OperateResult InsertSalesStage(SaveSalesStageMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_stage_setting_add(@stagename,@winrate,@typeid,@userno)
+                SELECT * FROM crm_func_stage_setting_add(@stagename,@winrate,@typeid,@userno,@stagename_lang)
             ";
             var param = new DynamicParameters();
             param.Add("stagename", entity.StageName);
             param.Add("winrate", entity.WinRate);
             param.Add("userno", userNumber);
             param.Add("typeid", entity.SalesStageTypeId);
+            param.Add("stagename_lang", JsonConvert.SerializeObject(entity.StageName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -50,13 +51,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.SalesStage
         public OperateResult UpdateSalesStage(SaveSalesStageMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_stage_setting_edit(@salesstageid,@stagename,@winrate,@userno)
+                SELECT * FROM crm_func_stage_setting_edit(@salesstageid,@stagename,@winrate,@userno,@stagename_lang)
             ";
             var param = new DynamicParameters();
             param.Add("salesstageid", entity.SalesStageId);
             param.Add("stagename", entity.StageName);
             param.Add("winrate", entity.WinRate);
             param.Add("userno", userNumber);
+            param.Add("stagename_lang", JsonConvert.SerializeObject(entity.StageName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }

@@ -1,10 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.IO;
 using System.Linq;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
@@ -212,7 +214,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                                     (select entityname from crm_sys_entity e where e.entityid = w.entityid limit 1) as entityname,
                                     (select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) as relentityid, 
                                     (select entityname from crm_sys_entity where entityid in(select relentityid from crm_sys_entity e where e.entityid = w.entityid limit 1) limit 1) as relentityname,
-                                flowid,flowname,remark,vernum FROM crm_sys_workflow w WHERE flowid = @flowid LIMIT 1;";
+                                flowid,flowname,remark,vernum,flowname_lang FROM crm_sys_workflow w WHERE flowid = @flowid LIMIT 1;";
 
             var param = new DbParameter[]
             {
@@ -464,7 +466,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
-                FlowLanguage =flowMapper.FlowLanguage
+                FlowLanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang)
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -486,7 +488,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
-                flowlanguage=flowMapper.FlowLanguage
+                flowlanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang)
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -1392,11 +1394,39 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 throw new Exception("流程步骤不能重复提交");
             }
 
+            #region 临时处理默认抄送问题,读取抄送规则,这是临时规则，在2018年8月-9月会更改为正式的规则
+            string AdditionCopyUsers = "";
+            try
+            {
+                string tmpsql = "select flowid from crm_sys_workflow_case where caseid = @caseid";
+                Guid flowid = (Guid)ExecuteScalar(tmpsql, new DbParameter[] { new Npgsql.NpgsqlParameter("@caseid", caseid) },trans);
+                var config = new ConfigurationBuilder()
+                  .SetBasePath(Directory.GetCurrentDirectory())
+                  .AddJsonFile("workflowcopyusers.json")
+                  .Build();
+                IConfigurationSection it2 = config.GetSection(flowid.ToString());
+                if (it2 !=null && it2.Value != null)
+                {
+                    AdditionCopyUsers = it2.Value.ToString();
+                }
+            }
+            catch (Exception ex) {
+                AdditionCopyUsers = "";
+            }
+            #endregion
             string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseitemid,caseid,nodeid, nodenum,stepnum,choicestatus,suggest, casestatus,casedata,remark,handleuser,copyuser, reccreator, recupdator) 
                                          VALUES (@caseitemid,@caseid,@nodeid, @nodenum,@stepnum,@choicestatus,@suggest, @casestatus,@casedata,@remark,@handleuser,@copyuser, @userno, @userno);");
             List<DbParameter[]> sqlParameters = new List<DbParameter[]>();
+           
             foreach (var item in caseitems)
             {
+                #region 临时处理默认抄送问题
+                if (AdditionCopyUsers.Length > 0) {
+                    if (item.CopyUser == null) item.CopyUser = AdditionCopyUsers;
+                    else item.CopyUser = item.CopyUser + "," + AdditionCopyUsers;
+                    item.CopyUser = string.Join(',', item.CopyUser.Split(',').Distinct());
+                }
+                #endregion
                 var temparm = new List<DbParameter>();
                 temparm.Add(new NpgsqlParameter("caseitemid", item.CaseItemId));
                 temparm.Add(new NpgsqlParameter("caseid", item.CaseId));
@@ -1632,6 +1662,22 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             catch (Exception x) {
             }
             return new List<WorkFlowCaseInfo>();
+        }
+
+        public Dictionary<string, object> GetWorkflowByEntityId(DbTransaction tran, Guid entityId, int userId)
+        {
+            try
+            {
+                string strSQL = "select* from crm_sys_workflow  where entityid =@entityid and recstatus = 1 ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@entityid",entityId)
+                };
+                return ExecuteQuery(strSQL, p, tran).FirstOrDefault();
+
+            }
+            catch (Exception ex) {
+                return null;
+            }
         }
     }
 }

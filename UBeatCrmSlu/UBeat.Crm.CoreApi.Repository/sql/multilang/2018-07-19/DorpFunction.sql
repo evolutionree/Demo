@@ -1,0 +1,1 @@
+drop function "crm_func_rel_tab_update"("_relid" uuid, "_relentityid" uuid, "_fieldid" uuid, "_relname" text, "_icon" text, "_ismanytomany" int4, "_srcsql" text, "_srctitle" text, "_userno" int4);

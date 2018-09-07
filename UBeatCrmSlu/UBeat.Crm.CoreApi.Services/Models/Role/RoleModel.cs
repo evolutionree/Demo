@@ -9,7 +9,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Role
         public string RoleGroupId { get; set; }
         public string GroupName { get; set; }
         public int GroupType { get; set; }
-        public string GroupLanguage { get; set; }
+        public Dictionary<string, string> GroupName_Lang { get; set; }
     }
 
     public class RoleListModel
@@ -20,6 +20,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Role
         public int PageSize { get; set; }
 
         public string GroupId { get; set; }
+        public Dictionary<string, string> RoleName_Lang { get; set; }
     }
     public class RoleModel
     {
@@ -29,7 +30,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Role
         public int RoleType { get; set; }
         public int RolePriority { get; set; }
         public string RoleRemark { get; set; }
-        public string RoleLanguage { get; set; }
+        public Dictionary<string, string> RoleName_Lang { get; set; }
 
     }
 
@@ -41,6 +42,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Role
         public int RoleType { get; set; }
         public int RolePriority { get; set; }
         public string RoleRemark { get; set; }
+        public Dictionary<string, string> RoleName_Lang { get; set; }
     }
 
     public class RoleUserModel

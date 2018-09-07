@@ -90,7 +90,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reminder
         public string CronString { get; set; }
         public string Remark { get; set; }
 
-        public string ReminderLanguage { get; set; }
+        public Dictionary<string, string> ReminderName_Lang { get; set; }
         protected override IValidator GetValidator()
         {
             return new Validator();

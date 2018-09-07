@@ -86,6 +86,7 @@
   <ItemGroup>
     <ProjectReference Include="..\UBeat.Crm.CoreApi.Controller\UBeat.Crm.CoreApi.Controller.csproj" />
     <ProjectReference Include="..\UBeat.Crm.CoreApi.Core\UBeat.Crm.CoreApi.Core.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Desktop\UBeat.Crm.CoreApi.Desktop.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="NLog.config">

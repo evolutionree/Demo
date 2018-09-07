@@ -23,8 +23,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Rule
             var param = new DynamicParameters();
             param.Add("menuid", menuId);
             param.Add("userno", userNumber);
-            var result = DataBaseHelper.QueryStoredProcCursor<RuleQueryMapper>(procName, param, CommandType.Text);
-            return result;
+            Dictionary<string, List<RuleQueryMapper>> tmpDict =  ExecuteQueryRefCursor<RuleQueryMapper>(procName, new Npgsql.NpgsqlParameter[] { new NpgsqlParameter("@menuid", menuId), new NpgsqlParameter("@userno", userNumber) });
+            if (tmpDict != null && tmpDict.ContainsKey("data"))
+                return tmpDict["data"];
+            else
+                return null;
         }
         public List<RoleRuleQueryMapper> RoleRuleInfoQuery(string roleId, string entityId, int userNumber)
         {

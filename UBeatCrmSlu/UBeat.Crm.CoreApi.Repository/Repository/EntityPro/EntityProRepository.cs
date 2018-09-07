@@ -61,7 +61,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertEntityPro(EntityProSaveMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_add(@entityname,@entitytable, @typeid, @remark, @styles, @icons,@relentityid,@relfieldid,@relaudit, @recstatus,@userno)
+                SELECT * FROM crm_func_entity_add(@entityname,@entitytable, @typeid, @remark, @styles, @icons,@relentityid,@relfieldid,@relaudit, @recstatus,@userno,@entitylanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("entityname", entity.EntityName);
@@ -75,7 +75,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("relaudit", entity.Relaudit);
             param.Add("recstatus", 1);
             param.Add("userno", userNumber);
-            param.Add("entitylanguage", entity.EntityLanguage);
+            param.Add("entitylanguage", JsonConvert.SerializeObject(entity.EntityName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -126,7 +126,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("relfieldid", entity.RelFieldId);
             param.Add("relaudit", entity.Relaudit);
             param.Add("userno", userNumber);
-            param.Add("entitylanguage", entity.EntityLanguage);
+            param.Add("entitylanguage", JsonConvert.SerializeObject(entity.EntityName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -228,7 +228,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertEntityField(EntityFieldProSaveMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_field_add(@entityid,@fieldlable, @displayname, @fieldname, @fieldconfig, @fieldtype, @status,@controltype, @userno,@dispaylanguage::jsonb,@fieldlanguage::jsonb)
+                SELECT * FROM crm_func_entity_field_add(@entityid,@fieldlable, @displayname, @fieldname, @fieldconfig, @fieldtype, @status,@controltype, @userno,@fieldlanguage::jsonb,@displaylanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
@@ -240,8 +240,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("controltype", entity.ControlType);
             param.Add("status", entity.RecStatus);
             param.Add("userno", userNumber);
-            param.Add("dispaylanguage", entity.DispayLanguage);
-            param.Add("fieldlanguage", entity.FieldLanguage);
+            param.Add("fieldlanguage", JsonConvert.SerializeObject(entity.FieldLabel_Lang));
+            param.Add("displaylanguage", JsonConvert.SerializeObject(entity.DisplayName_Lang));
+           
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -249,7 +250,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateEntityField(EntityFieldProSaveMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_field_edit(@entityid,@fieldid,@fieldlabel, @displayname, @fieldconfig, @fieldtype, @status,@controltype, @userno,@dispaylanguage::jsonb,@fieldlanguage::jsonb)
+                SELECT * FROM crm_func_entity_field_edit(@entityid,@fieldid,@fieldlabel, @displayname, @fieldconfig, @fieldtype, @status,@controltype, @userno,@fieldlanguage::jsonb,@displaylanguage::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
@@ -261,8 +262,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("fieldtype", entity.FieldType);
             param.Add("controltype", entity.ControlType);
             param.Add("userno", userNumber);
-            param.Add("dispaylanguage", entity.DispayLanguage);
-            param.Add("fieldlanguage", entity.FieldLanguage);
+            param.Add("displaylanguage", JsonConvert.SerializeObject(entity.DisplayName_Lang));
+            param.Add("fieldlanguage", JsonConvert.SerializeObject(entity.FieldLabel_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -538,13 +539,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult InsertEntityTypePro(SaveEntityTypeMapper entityType, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_type_add(@categoryname,@entityid, @userno,@categorylanguage::jsonb)
+                SELECT * FROM crm_func_entity_type_add(@categoryname,@entityid, @userno,@categoryname_lang::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("categoryname", entityType.CategoryName);
             param.Add("entityid", entityType.EntityId.ToString());
             param.Add("userno", userNumber);
-            param.Add("categorylanguage", entityType.CategoryLanguage);
+            param.Add("categoryname_lang", JsonConvert.SerializeObject(entityType.CategoryName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -552,14 +553,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateEntityTypePro(SaveEntityTypeMapper entityType, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_type_edit(@entityid,@categoryid,@categoryname, @userno,@categorylanguage::jsonb)
+                SELECT * FROM crm_func_entity_type_edit(@entityid,@categoryid,@categoryname, @userno,@categoryname_lang::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("entityid", entityType.EntityId);
             param.Add("categoryid", entityType.CategoryId);
             param.Add("categoryname", entityType.CategoryName);
             param.Add("userno", userNumber);
-            param.Add("categorylanguage", entityType.CategoryLanguage);
+            param.Add("categoryname_lang", JsonConvert.SerializeObject(entityType.CategoryName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }

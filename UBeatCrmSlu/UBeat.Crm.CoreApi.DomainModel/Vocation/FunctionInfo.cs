@@ -32,6 +32,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
 
         //public Guid VocationId { set; get; }
 
+
         public Guid FuncId { set; get; }
         /// <summary>
         /// 功能名称
@@ -105,8 +106,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
 
 
         public RuleInfo Rule { set; get; }
-    }
 
+
+        public RuleInfo BasicRule{ get; set; }
+    }
 
     /// <summary>
     /// 功能类型

@@ -1,0 +1,1 @@
+alter table crm_sys_webmenu add name_lang jsonb;

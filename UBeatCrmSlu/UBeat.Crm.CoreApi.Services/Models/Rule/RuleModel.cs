@@ -27,7 +27,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
         public string Rulesql { get; set; }
         public ICollection<RuleItemModel> RuleItems { get; set; }
         public RuleSetModel RuleSet { get; set; }
-        public string MenuLanguage { get; set; }
+        public Dictionary<string,string> MenuName_Lang { get; set; }
+        public Dictionary<string, string> RuleName_Lang { get; set; }
     }
     /// <summary>
     /// menu 规则
@@ -121,6 +122,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
         public string Rulesql { get; set; }
         public ICollection<RuleItemInfoModel> RuleItems { get; set; }
         public RuleSetInfoModel RuleSet { get; set; }
+        public Dictionary<string, string> MenuName_Lang { get; set; }
     }
 
     public class RoleRuleInfoModel

@@ -11,7 +11,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Vocation
         public Guid? VocationId { get; set; }
         public string VocationName { get; set; }
         public string Description { get; set; }
-        public string VocationLanguage { get; set; }
+        public Dictionary<string,string> VocationName_Lang { get; set; }
 
 
     }
@@ -110,6 +110,20 @@ namespace UBeat.Crm.CoreApi.Services.Models.Vocation
     }
 
     public class FunctionRuleAddModel
+    {
+        public Guid VocationId { get; set; }
+        public Guid FunctionId { get; set; }
+        public Guid EntityId { get; set; }
+        public int SyncDevice { get; set; }
+
+        public RuleContent Rule { get; set; }
+        public ICollection<RuleItemModel> RuleItems { get; set; }
+        public RuleSetModel RuleSet { get; set; }
+
+
+    }
+
+    public class FuncRuleAddModel
     {
         public Guid VocationId { get; set; }
         public Guid FunctionId { get; set; }

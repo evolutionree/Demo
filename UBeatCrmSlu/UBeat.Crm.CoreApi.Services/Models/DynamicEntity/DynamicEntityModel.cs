@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
@@ -277,7 +278,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public string SrcSql { get; set; }
 
         public string SrcTitle { get; set; }
-        public string RelTabLanguage { get; set; }
+        public Dictionary<string,string> RelName_Lang { get; set; }
     }
     public class SaveRelConfigModel
     {
@@ -332,7 +333,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public int IsManyToMany { get; set; }
         public string SrcSql { get; set; }
         public string SrcTitle { get; set; }
-        public string RelTabLanguage { get; set; }
+        public Dictionary<string, string> RelName_Lang { get; set; }
     }
     public class DisabledRelTabModel
     {
@@ -489,5 +490,52 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
     public class DelTempListModel
     {
         public string CacheIds { get; set; }
+    }
+
+
+    /// <summary>
+    /// 嵌套表格导入（新增+编辑）时下载导出模板的接口参数
+    /// </summary>
+    public class DetailImportTemplateParamInfo {
+        public Guid MainEntityId { get; set; }
+        public Guid MainTypeId { get; set; }
+        public Guid DetailEntityId { get; set; }
+    }
+    public class DetailImportParamInfo {
+        /// <summary>
+        /// 主实体的EntityId
+        /// </summary>
+        public Guid MainEntityId { get; set; }
+        /// <summary>
+        /// 主实体的RecID
+        /// </summary>
+        public Guid MainRecId { get; set; }
+        public Guid MainTypeId { get; set; }
+        public Guid DetailEntityId { get; set; }
+        /// <summary>
+        /// 当前实体数据的信息，包括所有嵌套实体的信息
+        /// </summary>
+        public Dictionary<string, object> MainDetail { get; set; }
+        /// <summary>
+        /// 当前界面上的当前分录的过滤信息，主要用于清理数据时考虑过滤条件问题(暂时不考虑此问题)
+        /// </summary>
+        public Dictionary<string,Dictionary<string, object>> DetailFieldsFilter { get; set; }
+
+        /// <summary>
+        /// Excel文件
+        /// </summary>
+        public IFormFile Data { set; get; }
+        public OutputResult<object> ValidateData() {
+            try
+            {
+                if (MainTypeId == null || MainTypeId == Guid.Empty) throw (new Exception("主实体类型不存在"));
+                if (MainEntityId == null || MainEntityId == Guid.Empty) throw (new Exception("主实体EntityId不存在"));
+                if (DetailEntityId == null || DetailEntityId == Guid.Empty) throw (new Exception("嵌套实体的EntityId"));
+                return null;
+            }
+            catch (Exception ex) {
+                return new OutputResult<object>(null, ex.Message, -1);
+            }
+        }
     }
 }

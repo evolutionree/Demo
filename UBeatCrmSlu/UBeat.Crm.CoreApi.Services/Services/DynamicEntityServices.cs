@@ -77,7 +77,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return addRes = AddEntityData(transaction, userData, entityInfo, arg, header, userNumber, out workFlowAddCaseModel);
 
             }, dynamicModel, entityInfo.EntityId, userNumber);
-
+            if (res.Status == 1)
+                return res;
             if (addRes.Status == 0)
             {
                 var bussinessId = Guid.Parse(addRes.DataBody.ToString());
@@ -594,6 +595,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+        
+       
 
 
         /// <summary>
@@ -1557,7 +1560,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (!string.IsNullOrEmpty(SpecFuncName))
             {
                 var innerResult = _dynamicEntityRepository.DataListUseFunc(SpecFuncName, pageParam, dynamicEntity.ExtraData, dynamicEntity, userNumber);
-                return new OutputResult<object>(innerResult);
+                return new OutputResult<object>(JsonConvert.DeserializeObject<Dictionary<string, List<Dictionary<string, object>>>>(JsonConvert.SerializeObject(innerResult)));
             }
             #endregion
 
@@ -1774,11 +1777,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         selectClause = string.Format(@"{0},{1}_t.categoryname as {1}_name", selectClause, fieldInfo.FieldName);
                         break;
                     case EntityFieldControlType.SelectMulti://4本地字典多选
-                        selectClause = string.Format(@"{0},crm_func_entity_protocol_format_dictionary({2},e.{1}) {1}_name", selectClause, fieldInfo.FieldName,fieldNameDictType[fieldInfo.FieldName]);
+                        selectClause = string.Format(@"{0},crm_func_entity_protocol_format_dictionary({2},e.{1}) {1}_name, crm_func_entity_protocol_format_dictionary_lang({2},e.{1})::jsonb {1}_lang", selectClause, fieldInfo.FieldName,fieldNameDictType[fieldInfo.FieldName]);
                         break;
                     case EntityFieldControlType.SelectSingle://3本地字典单选
                         fromClause = string.Format(@"{0} left outer join crm_sys_dictionary  as {1}_t on e.{1} = {1}_t.dataid and {1}_t.dictypeid={2} ", fromClause, fieldInfo.FieldName, fieldNameDictType[fieldInfo.FieldName]);
-                        selectClause = string.Format(@"{0},{1}_t.dataval as {1}_name", selectClause, fieldInfo.FieldName);
+                        selectClause = string.Format(@"{0},{1}_t.dataval as {1}_name, {1}_t.dataval_lang as {1}_lang", selectClause, fieldInfo.FieldName);
                         break;
                     case EntityFieldControlType.SalesStage://销售阶段
                         fromClause = string.Format(@"{0} left outer join crm_sys_salesstage_setting  as {1}_t on e.{1} = {1}_t.salesstageid ", fromClause, fieldInfo.FieldName);
@@ -1859,7 +1862,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     case EntityFieldControlType.RecItemid://1010明细ID
                         break;
-                        break;
                     case EntityFieldControlType.RecName://1012记录名称
                         break;
                     case EntityFieldControlType.RecOnlive://1011 活动时间
@@ -1899,7 +1901,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         selectClause = string.Format(@"{0},{4} as {3}_name", selectClause, entityTable, relField.fieldname, fieldInfo.FieldName, selectField);
                         break;
                 }
-            }
+             }
             #endregion
             string WhereSQL = "1=1";
             string OrderBySQL = " e.recversion desc ";
@@ -1918,7 +1920,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             string innerSQL = string.Format(@"select {0} from {1}  where  {2} order by {3} limit {4} offset {5}",
                 selectClause, fromClause, WhereSQL, OrderBySQL, pageParam.PageSize, (pageParam.PageIndex - 1) * pageParam.PageSize);
-            string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
+                string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
             string CountSQL = string.Format(@"select total,(total-1)/{2}+1 as page from (select count(*)  AS total  from {0} where  {1} ) as k", fromClause, WhereSQL, pageParam.PageSize);
             List<Dictionary<string, object>> datas = null;
             if (CalcCountOnly)
@@ -2387,7 +2389,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //处理排序语句
             if (string.IsNullOrWhiteSpace(dynamicEntity.SearchOrder))
             {
-                dynamicEntity.SearchOrder = "";
+                if (SpecFuncName != null)
+                {
+                    dynamicEntity.SearchOrder = " t.recversion desc ";
+                }
+                else {
+                    dynamicEntity.SearchOrder = " e.recversion desc ";
+
+                }
             }
             return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber, CalcCountOnly);
         }
@@ -3863,6 +3872,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> AddRelTab(AddRelTabModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<AddRelTabModel, AddRelTabMapper>(entityModel);
+            string RelName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.RelName, entity.RelName_Lang, out RelName);
+            if (RelName != null) entity.RelName = RelName;
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
@@ -3890,6 +3902,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entityModel.type == 0)
             {
                 var entity = _mapper.Map<UpdateRelTabModel, UpdateRelTabMapper>(entityModel);
+                string RelName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entity.RelName, entity.RelName_Lang, out RelName);
+                if (RelName != null) entity.RelName = RelName;
                 if (entity == null || !entity.IsValid())
                 {
                     return HandleValid(entity);
@@ -3907,6 +3922,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
+                string RelName = "";
+                MultiLanguageUtils.GetDefaultLanguageValue(entityModel.RelName, entityModel.RelName_Lang, out RelName);
+                if (RelName != null) entityModel.RelName = RelName;
                 UpdateRelTabMapper entity = new UpdateRelTabMapper
                 {
                     RelId = entityModel.RelId,

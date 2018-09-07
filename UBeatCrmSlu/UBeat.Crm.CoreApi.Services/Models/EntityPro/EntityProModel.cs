@@ -52,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public Guid RelFieldId { get; set; }
 
-        public string EntityLanguage { get; set; }
+        public Dictionary<string,string> EntityName_Lang { get; set; }
     }
 
 
@@ -71,8 +71,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public int RecOrder { get; set; }
         public string FieldConfig { get; set; }
-        public string DispayLanguage { get; set; }
-        public string FieldLanguage { get; set; }
+        public Dictionary<string, string> DisplayName_Lang { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
 
         // [JsonProperty("FieldConfig")]
         //   public JObject FieldConfigJson => FieldConfig.ToJsonObject();
@@ -145,7 +145,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public int RecStatus { get; set; }
 
-        public string CategoryLanguage { get; set; }
+        public Dictionary<string,string> CategoryName_Lang { get; set; }
     }
 
     public class EntityFieldRulesSaveModel

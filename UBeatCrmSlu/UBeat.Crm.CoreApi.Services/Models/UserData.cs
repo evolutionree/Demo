@@ -148,10 +148,22 @@ namespace UBeat.Crm.CoreApi.Services.Models
                 return false;
             string ruleSql = string.Empty;
             if (routePath.StartsWith("/")) routePath = routePath.Substring(1);
-            ruleSql = RuleSqlFormat(routePath, entityid, deviceClassic);
+            ruleSql = BasicRuleSqlFormat(routePath, entityid, deviceClassic);
 
             IRuleRepository repository = new RuleRepository();
-            return repository.HasDataAccess(tran, ruleSql, entityid, recids, recidFieldName);
+            bool result = repository.HasDataAccess(tran, ruleSql, entityid, recids, recidFieldName);
+            if (result)
+            {
+                if (routePath == null)
+                    return false;
+                ruleSql = string.Empty;
+                if (routePath.StartsWith("/")) routePath = routePath.Substring(1);
+                ruleSql = RuleSqlFormat(routePath, entityid, deviceClassic);
+
+                repository = new RuleRepository();
+                return repository.HasDataAccess(tran, ruleSql, entityid, recids, recidFieldName);
+            }
+            return result;
         }
 
 
@@ -179,10 +191,11 @@ namespace UBeat.Crm.CoreApi.Services.Models
                         if (entityid == Guid.Empty)
                             functionInfo = vocation.Functions.Find(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(routePath)
                             && a.DeviceType == (int)deviceClassic);
-                        else functionInfo = vocation.Functions.Find(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(routePath)
+                        else
+                            functionInfo = vocation.Functions.Find(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(routePath)
                              && a.DeviceType == (int)deviceClassic && a.EntityId == entityid);
 
-                        if (functionInfo != null )
+                        if (functionInfo != null)
                         {
                             string temp = string.Empty;
                             if (functionInfo.Rule != null && !string.IsNullOrEmpty(functionInfo.Rule.Rulesql))
@@ -190,7 +203,8 @@ namespace UBeat.Crm.CoreApi.Services.Models
                             else temp = "1=1";
                             if (string.IsNullOrEmpty(functionRuleSql))
                                 functionRuleSql = temp;
-                            else functionRuleSql = string.Format("{0} OR {1}", functionRuleSql, temp );
+                            else
+                                functionRuleSql = string.Format("{0} OR {1}", functionRuleSql, temp);
                         }
                     }
                 }
@@ -220,6 +234,53 @@ namespace UBeat.Crm.CoreApi.Services.Models
 
             var sql = string.Format("({0}) AND ({1})", functionRuleSql, roleRuleSqlString);
 
+            if (AccountUserInfo == null)
+                return null;
+            return RuleSqlHelper.FormatRuleSql(sql, AccountUserInfo.UserId, AccountUserInfo.DepartmentId);
+        }
+
+        /// <summary>
+        /// 格式化RuleSql
+        /// </summary>
+        /// <param name="routePath"></param>
+        /// <param name="entityid"></param>
+        /// <param name="deviceClassic"></param>
+        /// <returns></returns>
+        public string BasicRuleSqlFormat(string routePath, Guid entityid, DeviceClassic deviceClassic)
+        {
+            string functionRuleSql = null;
+            StringBuilder roleRuleSql = new StringBuilder();
+            if (Vocations != null && Vocations.Count > 0)
+            {
+                FunctionInfo functionInfo = null;
+                foreach (var vocation in Vocations)
+                {
+                    if (vocation.Functions != null)
+                    {
+                        if (entityid == Guid.Empty)
+                            functionInfo = vocation.Functions.Find(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(routePath)
+                            && a.DeviceType == (int)deviceClassic);
+                        else
+                            functionInfo = vocation.Functions.Find(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(routePath)
+                             && a.DeviceType == (int)deviceClassic && a.EntityId == entityid);
+
+                        if (functionInfo != null)
+                        {
+                            string temp = string.Empty;
+                            if (functionInfo.BasicRule != null && !string.IsNullOrEmpty(functionInfo.BasicRule.Rulesql))
+                                temp = functionInfo.BasicRule.Rulesql;
+                            else temp = "1=1";
+                            if (string.IsNullOrEmpty(functionRuleSql))
+                                functionRuleSql = temp;
+                            else
+                                functionRuleSql = string.Format("{0} OR {1}", functionRuleSql, temp);
+                        }
+                    }
+                }
+            }
+            functionRuleSql = string.IsNullOrEmpty(functionRuleSql) ? "1=1" : string.Format("({0})", functionRuleSql);
+            var sql = string.Format("({0})", functionRuleSql);
+        
             if (AccountUserInfo == null)
                 return null;
             return RuleSqlHelper.FormatRuleSql(sql, AccountUserInfo.UserId, AccountUserInfo.DepartmentId);

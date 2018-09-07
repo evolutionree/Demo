@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using NLog;
 using Npgsql;
 using UBeat.Crm.CoreApi.Core.Utility;
@@ -205,10 +206,9 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                     var resultsReference = resultsReferences.FirstOrDefault();
                     var resultSetName = resultsReference.Values.FirstOrDefault();
                     var resultSetReferenceCommand = string.Format("FETCH ALL IN \"{0}\";", resultSetName);
-
-                    result =
-                        conn.Query<TDataType>(resultSetReferenceCommand, null, commandType: CommandType.Text,
-                            transaction: tran).ToList();
+                   var tmp = conn.Query(resultSetReferenceCommand, null, commandType: CommandType.Text,
+                           transaction: tran).ToList();
+                    result = JsonConvert.DeserializeObject<List<TDataType>>(JsonConvert.SerializeObject(tmp));
                     tran.Commit();
                 }
                 catch (Exception ex)

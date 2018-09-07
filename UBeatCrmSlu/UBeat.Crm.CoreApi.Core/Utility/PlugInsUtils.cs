@@ -6,6 +6,7 @@ using System.Text;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.Loader;
+using UBeat.Crm.CoreApi.Utility;
 
 namespace UBeat.Crm.CoreApi.Core.Utility
 {
@@ -17,7 +18,7 @@ namespace UBeat.Crm.CoreApi.Core.Utility
         private PlugInsUtils() {
             init();
         }
-        public System.Type getTypeWithName(string typename) {
+        public System.Type getTypeWithName(string typename,bool isrec = true) {
             try
             {
 
@@ -28,6 +29,8 @@ namespace UBeat.Crm.CoreApi.Core.Utility
                 }
             }catch(Exception ex){
             }
+            if (isrec)
+                return AssemblyPluginUtils.getInstance().getUKType(typename, false);
             return null;
         }
 

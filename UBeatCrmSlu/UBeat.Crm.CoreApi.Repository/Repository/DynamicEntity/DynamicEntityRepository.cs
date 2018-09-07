@@ -44,16 +44,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             var procName =
               "SELECT crm_func_entity_protocol_type_fields(@typeId,@operateType,@userNo)";
 
-            var param = new
+            var param = new DbParameter[]
             {
-                TypeId = typeId,
-                OperateType = operateType,
-                UserNo = userNumber
+                new NpgsqlParameter("typeId",typeId),
+                new NpgsqlParameter("operateType",operateType),
+                new NpgsqlParameter("userNo",userNumber)
             };
-
-            var result = DataBaseHelper.QueryStoredProcCursor<DynamicEntityDataFieldMapper>(procName, param, CommandType.Text);
-
-            return result;
+            var result = ExecuteQueryRefCursor<DynamicEntityDataFieldMapper>(procName, param, null, CommandType.Text);
+            return result["field"];
         }
 
         public OperateResult DynamicAdd(DbTransaction tran, Guid typeId, Dictionary<string, object> fieldData, Dictionary<string, object> extraData, int userNumber)
@@ -736,7 +734,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             param.Add("srcsql", entity.SrcSql);
             param.Add("srctitle", entity.SrcTitle);
             param.Add("userno", userNumber);
-            param.Add("reltablanguage", entity.RelTabLanguage);
+            param.Add("reltablanguage", JsonConvert.SerializeObject(entity.RelName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -978,7 +976,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             param.Add("srcsql", entity.SrcSql);
             param.Add("srctitle", entity.SrcTitle);
             param.Add("userno", userNumber);
-            param.Add("reltablanguage", entity.RelTabLanguage);
+            param.Add("reltablanguage", JsonConvert.SerializeObject(entity.RelName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -1070,16 +1068,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
             var procName = "SELECT crm_func_entity_protocol_type_fields_web(@typeId,@operateType,@userNo)";
 
-            var param = new
-            {
-                TypeId = typeId,
-                OperateType = operateType,
-                UserNo = userNumber
-            };
+            //var param = new
+            //{
+            //    TypeId = typeId,
+            //    OperateType = operateType,
+            //    UserNo = userNumber
+            //};
 
-            var result = DataBaseHelper.QueryStoredProcCursor<DynamicEntityWebFieldMapper>(procName, param, CommandType.Text);
+            // var result = DataBaseHelper.QueryStoredProcCursor<DynamicEntityWebFieldMapper>(procName, param, CommandType.Text);
+            Dictionary<string, List<DynamicEntityWebFieldMapper>> result = ExecuteQueryRefCursor<DynamicEntityWebFieldMapper>(procName, new DbParameter[] {
+                new Npgsql.NpgsqlParameter("@typeId",typeId),
+                new Npgsql.NpgsqlParameter("@operateType",operateType),
+                new Npgsql.NpgsqlParameter("@userNo",userNumber)
 
-            return result;
+            }, null, CommandType.Text);
+
+            return result["field"];
         }
 
         public List<DynamicEntityWebFieldMapper> GetWebDynamicListFields(Guid typeId, int operateType, int userNumber)
@@ -1545,11 +1549,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 	                        con.functype,
 	                        fie.fieldid,
 	                        fie.displayname,
-	                        fie.fieldname
+	                        fie.fieldname,
+                            fie.fieldlabel_lang,
+                            fie.displayname_lang
                         FROM
 	                        crm_sys_entity_condition AS con
                         RIGHT OUTER  JOIN crm_sys_entity_fields AS fie ON con.fieldid = fie.fieldid
-                        WHERE fie.entityid = @entityid
+                        WHERE fie.entityid = @entityid and fie.recstatus =1 
                         ORDER BY fie.recorder ";
             #endregion
             var data = ExecuteQuery(sql, new DbParameter[] { new Npgsql.NpgsqlParameter("@entityid", entity.EntityId) }, tran);

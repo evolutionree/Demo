@@ -19,5 +19,10 @@
         /// </summary>
         public string SysMark { get; set; }
 
+        /// <summary>
+        /// 当前session的语言
+        /// </summary>
+        public string UserLanguage { get; set; }
+
     }
 }

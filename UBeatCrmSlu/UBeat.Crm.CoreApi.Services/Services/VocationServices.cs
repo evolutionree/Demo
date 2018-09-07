@@ -13,6 +13,7 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models.Rule;
 using UBeat.Crm.CoreApi.DomainModel.Version;
 using AutoMapper;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -37,10 +38,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>
         public OutputResult<object> AddVocation(VocationSaveModel body, int userNumber)
         {
+            string VocationName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(body.VocationName,body.VocationName_Lang, out VocationName);
             var crmData = new VocationAdd()
             {
-                VocationName = body.VocationName,
-                Description = body.Description
+                VocationName = VocationName,
+                Description = body.Description,
+                VocationName_Lang = body.VocationName_Lang
 
             };
 
@@ -77,12 +81,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>
         public OutputResult<object> EditVocation(VocationSaveModel body, int userNumber)
         {
+            string vocationName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(body.VocationName, body.VocationName_Lang, out vocationName);
             var crmData = new VocationEdit()
             {
                 VocationId = body.VocationId.Value,
-                VocationName = body.VocationName,
+                VocationName = vocationName,
                 Description = body.Description,
-                VocationLanguage = body.VocationLanguage
+                VocationName_Lang = body.VocationName_Lang
             };
 
             if (!crmData.IsValid())

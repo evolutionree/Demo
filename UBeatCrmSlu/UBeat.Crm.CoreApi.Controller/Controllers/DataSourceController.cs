@@ -184,6 +184,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> SaveDictionary([FromBody]SaveDictionaryModel body)
         {
             if (body == null || string.IsNullOrEmpty(body.DicTypeId)) return ResponseError<object>("参数格式错误");
+            if (body.DataVal_Lang == null) return ResponseError<object>("请完善多语言");
             return _dataSourceServices.SaveDictionary(body, UserId);
         }
 

@@ -18,6 +18,7 @@ using UBeat.Crm.CoreApi.DomainMapper.Rule;
 using UBeat.Crm.CoreApi.Services.Models.Excels;
 using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
 using Microsoft.Extensions.Caching.Memory;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -218,15 +219,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			{
 				body.Id = Guid.Empty;
 			}
-
+            string tmpName = MultiLanguageUtils.GetDefaultLanguageValue(body.NormTypeName_Lang);
+            if (tmpName != null) body.Name = tmpName;
+            string name = body.Name;
             var crmData = new SalesTargetNormTypeMapper()
             {
                 Id = body.Id,
-                Name = body.Name,
+                Name = name,
                 EntityId = Guid.Empty,
                 FieldName = string.Empty,
                 CaculateType = 0,
-                RecLanguage = body.RecLanguage
+                NormTypeName_Lang = body.NormTypeName_Lang
             };
 
 			if (!crmData.IsValid())

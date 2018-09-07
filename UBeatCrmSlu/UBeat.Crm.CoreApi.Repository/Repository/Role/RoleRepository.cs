@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Newtonsoft.Json;
 using Npgsql;
 using System;
 using System.Collections.Generic;
@@ -32,13 +33,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
         public OperateResult InsertRoleGroup(SaveRoleGroupMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_role_group_add(@groupname, @grouptype, @userno,@grouplanguage::jsonb)
+                SELECT * FROM crm_func_role_group_add(@groupname, @grouptype, @userno,@rolegroupname_lang::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("groupname", entity.GroupName);
             param.Add("grouptype", entity.GroupType);
             param.Add("userno", userNumber);
-            param.Add("grouplanguage", entity.GroupLanguage);
+            param.Add("rolegroupname_lang", JsonConvert.SerializeObject(entity.GroupName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -47,13 +48,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
         public OperateResult UpdateRoleGroup(SaveRoleGroupMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_role_group_edit(@rolegroupid, @groupname, @userno,@grouplanguage::jsonb)
+                SELECT * FROM crm_func_role_group_edit(@rolegroupid, @groupname, @userno,@groupname_lang::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("rolegroupid", entity.RoleGroupId);
             param.Add("groupname", entity.GroupName);
             param.Add("userno", userNumber);
-            param.Add("grouplanguage", entity.GroupLanguage);
+            param.Add("groupname_lang", JsonConvert.SerializeObject( entity.GroupName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -103,7 +104,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
         public OperateResult InsertRole(RoleMapper role, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_role_add(@rolegroupid,@rolename, @roletype,@rolepriority,@roleremark, @userno,@rolelanguage::jsonb)
+                SELECT * FROM crm_func_role_add(@rolegroupid,@rolename, @roletype,@rolepriority,@roleremark, @userno,@rolename_lang::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("rolegroupid", role.RoleGroupId);
@@ -112,14 +113,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
             param.Add("rolepriority", role.RolePriority);
             param.Add("roleremark", role.RoleRemark);
             param.Add("userno", userNumber);
-            param.Add("rolelanguage", role.RoleLanguage);
+            param.Add("rolename_lang",JsonConvert.SerializeObject( role.RoleName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
         public OperateResult UpdateRole(RoleMapper role, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_role_edit(@rolegroupid,@roleid,@rolename, @roletype,@rolepriority,@roleremark, @userno,@rolelanguage::jsonb)
+                SELECT * FROM crm_func_role_edit(@rolegroupid,@roleid,@rolename, @roletype,@rolepriority,@roleremark, @userno,@rolename_lang::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("rolegroupid", role.RoleGroupId);
@@ -129,7 +130,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
             param.Add("rolepriority", role.RolePriority);
             param.Add("roleremark", role.RoleRemark);
             param.Add("userno", userNumber);
-            param.Add("rolelanguage", role.RoleLanguage);
+            param.Add("rolename_lang", JsonConvert.SerializeObject(role.RoleName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -137,12 +138,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
         public OperateResult CopyRole(RoleCopyMapper roleCopy, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_role_copy(@roleid,@rolegroupid,@rolename,@rolepriority, @roletype,@roleremark, @userno)
+                SELECT * FROM crm_func_role_copy(@roleid,@rolegroupid,@rolename,@rolename_lang,@rolepriority, @roletype,@roleremark, @userno)
             ";
             var param = new DynamicParameters();
             param.Add("roleid", roleCopy.RoleId);
             param.Add("rolegroupid", roleCopy.RoleGroupId);
             param.Add("rolename", roleCopy.RoleName);
+            param.Add("rolename_lang", JsonConvert.SerializeObject(roleCopy.RoleName_Lang));
             param.Add("roletype", roleCopy.RoleType);
             param.Add("rolepriority", roleCopy.RolePriority);
             param.Add("roleremark", roleCopy.RoleRemark);
@@ -266,7 +268,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
                 try
                 {
                     var role_sql = string.Format(@"
-                                    SELECT r.roleid,r.rolename,r.roletype,r.rolepriority,r.roleremark,g.rolegroupid,g.rolegroupname,g.grouptype FROM 
+                                    SELECT r.roleid,r.rolename,r.rolename_lang,r.roletype,r.rolepriority,r.roleremark,g.rolegroupid,g.rolegroupname,g.grouptype FROM 
                                     crm_sys_role AS r
                                     INNER JOIN crm_sys_userinfo_role_relate AS u ON r.roleid=u.roleid
                                     LEFT JOIN crm_sys_role_group_relate AS gr ON gr.roleid=r.roleid

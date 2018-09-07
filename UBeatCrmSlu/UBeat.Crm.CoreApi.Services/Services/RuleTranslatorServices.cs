@@ -63,7 +63,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 t.RuleId,
                 t.RuleName,
                 t.RuleSet,
-                t.MenuName
+                t.MenuName,
+                t.MenuName_Lang,
             }).Select(group => new RuleInfoModel
             {
                 RuleId = group.Key.RuleId,
@@ -84,7 +85,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 RuleSet = new RuleSetInfoModel
                 {
                     RuleSet = group.Key.RuleSet
-                }
+                },
+                MenuName_Lang=group.Key.MenuName_Lang
             }).ToList();
             List<RuleInfoModel> tmp = (List<RuleInfoModel>)obj;
             foreach (RuleInfoModel i in tmp) {
@@ -134,6 +136,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
 
             var ruleSetEntity = mapper.Map<RuleSetModel, RuleSetMapper>(entityModel.RuleSet);
+            
             if (ruleSetEntity == null || !ruleSetEntity.IsValid())
             {
                 return HandleValid(ruleSetEntity);
@@ -231,6 +234,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var ruleItems = entityModel.RuleItems.ToList();
             entityModel.RuleSet.RuleFormat = TranslateRuleSet(entityModel.RuleSet.RuleSet, ref ruleItems);
             var mapperEntity = mapper.Map<RuleModel, RuleMapper>(entityModel);
+            string menuname = "", rulename = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(mapperEntity.menuname, mapperEntity.menuname_lang, out menuname);
+            if (menuname != null) mapperEntity.menuname = menuname;
+            MultiLanguageUtils.GetDefaultLanguageValue(mapperEntity.rulename, mapperEntity.menuname_lang, out rulename);
+            if (rulename != null) mapperEntity.rulename = rulename;
             if (mapperEntity == null || !mapperEntity.IsValid())
             {
                 return HandleValid(mapperEntity);
@@ -1285,6 +1293,174 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
+        public OutputResult<object> SaveRuleForFunction(FuncRuleAddModel entityModel, int userId)
+        {
+
+            List<EntityFieldProMapper> fields = _entityProRepository.FieldQuery(entityModel.EntityId.ToString(), userId);
+            foreach (var entity in entityModel.RuleItems)
+            {
+                switch (entity.RuleType)
+                {
+                    case 0:
+                    case 1:
+                        {
+                            var entityField = fields.SingleOrDefault(t => t.FieldId == entity.FieldId);
+                            if (entityField.ControlType != entity.ControlType) throw new Exception("配置字段类型不匹配");
+                            entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField);
+                            break;
+                        }
+                    case 2:
+                        {
+                            var data = JObject.Parse(entity.RuleData);
+                            entity.RuleSql = string.Format(@"({0})", data["dataVal"].ToString());
+                            break;
+                        }
+                    default: throw new Exception("尚未实现的规则类型");
+                }
+                entity.Relation.ParamIndex = -1;
+            }
+            var ruleItemList = entityModel.RuleItems.ToList();
+            entityModel.RuleSet.RuleFormat = TranslateRuleSet(entityModel.RuleSet.RuleSet, ref ruleItemList);
+
+
+            var serializerSettings = new JsonSerializerSettings()
+            {
+                ContractResolver = new LowercaseContractResolver()
+            };
+
+
+            OperateResult result = new OperateResult();
+
+            if (entityModel.Rule.RuleId.HasValue)
+            {
+                List<FunctionRuleEdit> lst = new List<FunctionRuleEdit>();
+
+                foreach (var tmp in entityModel.RuleItems)
+                {
+                    tmp.ItemId = Guid.NewGuid().ToString();
+                    tmp.Relation.ItemId = tmp.ItemId;
+                }
+                var crmData = new FunctionRuleEdit()
+                {
+                    FunctionId = entityModel.FunctionId,
+                    VocationId = entityModel.VocationId,
+                    Rule = JsonConvert.SerializeObject(entityModel.Rule, serializerSettings),
+                    RuleItem = JsonConvert.SerializeObject(entityModel.RuleItems, serializerSettings),
+                    RuleSet = JsonConvert.SerializeObject(entityModel.RuleSet, serializerSettings),
+                    RuleRelation = JsonConvert.SerializeObject(entityModel.RuleItems.Select(t => t.Relation), serializerSettings)
+                };
+
+                lst.Add(crmData);
+                if (entityModel.SyncDevice == 1)
+                {
+                    foreach (var tmp in entityModel.RuleItems)
+                    {
+                        tmp.ItemId = Guid.NewGuid().ToString();
+                        tmp.Relation.ItemId = tmp.ItemId;
+                    }
+
+                    var dyn = _vocationRepository.GetFunctionRule(entityModel.VocationId, entityModel.EntityId, entityModel.FunctionId);//查询web和mob对应的节点的 例如web端的新增和
+                    if (dyn == null) throw new Exception(DeviceClassic.ToString() + "缺少对应的职能节点");
+                    if (dyn.funcid == null) throw new Exception("职能Id不能为空");
+                    if (dyn.ruleid == null)
+                    {
+                        crmData = new FunctionRuleEdit()
+                        {
+                            FunctionId = dyn.funcid,
+                            VocationId = entityModel.VocationId,
+                            Rule = JsonConvert.SerializeObject(entityModel.Rule, serializerSettings),
+                            RuleItem = JsonConvert.SerializeObject(entityModel.RuleItems, serializerSettings),
+                            RuleSet = JsonConvert.SerializeObject(entityModel.RuleSet, serializerSettings),
+                            RuleRelation = JsonConvert.SerializeObject(entityModel.RuleItems.Select(t => t.Relation), serializerSettings),
+                            IsAdd = true
+                        };
+                    }
+                    else
+                    {
+                        entityModel.Rule.RuleId = dyn.ruleid;
+                        crmData = new FunctionRuleEdit()
+                        {
+                            FunctionId = dyn.funcid,
+                            VocationId = entityModel.VocationId,
+                            Rule = JsonConvert.SerializeObject(entityModel.Rule, serializerSettings),
+                            RuleItem = JsonConvert.SerializeObject(entityModel.RuleItems, serializerSettings),
+                            RuleSet = JsonConvert.SerializeObject(entityModel.RuleSet, serializerSettings),
+                            RuleRelation = JsonConvert.SerializeObject(entityModel.RuleItems.Select(t => t.Relation), serializerSettings),
+                            IsAdd = false
+                        };
+                    }
+                    lst.Add(crmData);
+                }
+                result = _vocationRepository.EditFuncRule(lst, userId);
+
+            }
+            else
+            {
+                List<FunctionRuleAdd> lst = new List<FunctionRuleAdd>();
+
+                foreach (var tmp in entityModel.RuleItems)
+                {
+                    tmp.ItemId = Guid.NewGuid().ToString();
+                    tmp.Relation.ItemId = tmp.ItemId;
+                }
+                var crmData = new FunctionRuleAdd()
+                {
+                    VocationId = entityModel.VocationId,
+                    FunctionId = entityModel.FunctionId,
+                    Rule = JsonConvert.SerializeObject(entityModel.Rule, serializerSettings),
+                    RuleItem = JsonConvert.SerializeObject(entityModel.RuleItems, serializerSettings),
+                    RuleSet = JsonConvert.SerializeObject(entityModel.RuleSet, serializerSettings),
+                    RuleRelation = JsonConvert.SerializeObject(entityModel.RuleItems.Select(t => t.Relation), serializerSettings),
+                    IsAdd = true
+                };
+                lst.Add(crmData);
+                if (entityModel.SyncDevice == 1)
+                {
+                    foreach (var tmp in entityModel.RuleItems)
+                    {
+                        tmp.ItemId = Guid.NewGuid().ToString();
+                        tmp.Relation.ItemId = tmp.ItemId;
+                    }
+                    var dyn = _vocationRepository.GetFunctionRule(entityModel.VocationId, entityModel.EntityId, entityModel.FunctionId);
+                    if (dyn == null) throw new Exception(DeviceClassic.ToString() + "缺少对应的职能节点");
+                    if (dyn.funcid == null) throw new Exception("职能Id不能为空");
+                    if (dyn.ruleid == null)
+                    {
+                        crmData = new FunctionRuleAdd()
+                        {
+                            VocationId = entityModel.VocationId,
+                            FunctionId = dyn.funcid,
+                            Rule = JsonConvert.SerializeObject(entityModel.Rule, serializerSettings),
+                            RuleItem = JsonConvert.SerializeObject(entityModel.RuleItems, serializerSettings),
+                            RuleSet = JsonConvert.SerializeObject(entityModel.RuleSet, serializerSettings),
+                            RuleRelation = JsonConvert.SerializeObject(entityModel.RuleItems.Select(t => t.Relation), serializerSettings),
+                            IsAdd = true
+                        };
+                    }
+                    else
+                    {
+                        entityModel.Rule.RuleId = dyn.ruleid;
+                        crmData = new FunctionRuleAdd()
+                        {
+                            VocationId = entityModel.VocationId,
+                            FunctionId = dyn.funcid,
+                            Rule = JsonConvert.SerializeObject(entityModel.Rule, serializerSettings),
+                            RuleItem = JsonConvert.SerializeObject(entityModel.RuleItems, serializerSettings),
+                            RuleSet = JsonConvert.SerializeObject(entityModel.RuleSet, serializerSettings),
+                            RuleRelation = JsonConvert.SerializeObject(entityModel.RuleItems.Select(t => t.Relation), serializerSettings),
+                            IsAdd = false
+                        };
+                    }
+                    lst.Add(crmData);
+                }
+                result = _vocationRepository.AddFuncRule(lst, userId);
+                //return HandleResult(result);
+            }
+            IncreaseDataVersion(DataVersionType.EntityData);
+            return HandleResult(result);
+
+
+        }
 
 
         /// <summary>

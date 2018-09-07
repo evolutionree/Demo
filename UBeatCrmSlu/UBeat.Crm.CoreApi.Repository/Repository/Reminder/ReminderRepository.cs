@@ -6,6 +6,7 @@ using UBeat.Crm.CoreApi.DomainModel.Reminder;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
 {
@@ -305,7 +306,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                                 recupdator=@recupdator,
                                 recupdated=now(),
                                 recversion=nextval('crm_sys_reminder_version_id_sequence'::regclass),
-                                reminderlanguage=@reminderlanguage::jsonb
+                                remindername_lang=@remindername_lang::jsonb
                             WHERE recid=@reminderid; ";
                 }
                 else
@@ -320,15 +321,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                                 remark=@remark,
                                 recupdator=@recupdator,
                                 recupdated=now(),
-                                reminderlanguage=@reminderlanguage::jsonb
+                                remindername_lang=@remindername_lang::jsonb
                             WHERE recid=@reminderid; ";
                 }
 
             }
             else
             {
-                strSql = @"INSERT INTO crm_sys_reminder(recid,remindername,entityid,isrepeat,repeattype,cronstring,recstatus,remark,reccreator,recupdator,rectype,reminderlanguage) 
-                           VALUES(@reminderid,@remindername,@entityid,@isrepeat,@repeattype,@cronstring,@recstatus,@remark,@reccreator,@recupdator,@rectype,@reminderlanguage::jsonb); ";
+                strSql = @"INSERT INTO crm_sys_reminder(recid,remindername,entityid,isrepeat,repeattype,cronstring,recstatus,remark,reccreator,recupdator,rectype,remindername_lang) 
+                           VALUES(@reminderid,@remindername,@entityid,@isrepeat,@repeattype,@cronstring,@recstatus,@remark,@reccreator,@recupdator,@rectype,@remindername_lang::jsonb); ";
             }
 
 
@@ -352,7 +353,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
                 reccreator = usernumber,
                 recupdator = usernumber,
                 rectype = data.RecType,
-                reminderlanguage = data.ReminderLanguage
+                remindername_lang = JsonConvert.SerializeObject( data.ReminderName_Lang)
             };
 
             bool isSuccess = false;

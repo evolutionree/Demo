@@ -168,7 +168,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string Remark { get; set; }
         public Guid EntityId { get; set; }
         public int SkipFlag { get; set; }
-        public string FlowLanguage { get; set; }
+        public Dictionary<string, string> FlowName_Lang { get; set; }
     }
 
     public class WorkFlowUpdateModel
@@ -180,7 +180,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public int ExpireDay { get; set; }
         public string Remark { get; set; }
         public int SkipFlag { get; set; }
-        public string FlowLanguage { get; set; }
+        public Dictionary<string,string> FlowName_Lang { get; set; }
     }
 
     public class WorkFLowDeleteModel
@@ -219,5 +219,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public RuleContent Rule { get; set; }
         public ICollection<RuleItemModel> RuleItems { get; set; }
         public RuleSetModel RuleSet { get; set; }
+    }
+    public class WorkflowIdByEntityIdParamInfo
+    {
+        public Guid EntityId { get; set; }
     }
 }

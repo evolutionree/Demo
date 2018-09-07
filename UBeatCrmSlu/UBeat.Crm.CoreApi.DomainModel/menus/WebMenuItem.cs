@@ -10,6 +10,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.menus
         public Guid Id { get; set; }
         public int Index { get; set; }
         public string Name { get; set; }
+        public Dictionary<string, string> Name_Lang { get; set; }
         public string Icon { get; set; }
         public string path { get; set; }
         public string FuncID { get; set; }

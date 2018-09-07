@@ -55,7 +55,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public Guid RelFieldId { get; set; }
 
-        public string EntityLanguage { get; set; }
+        public Dictionary<string,string> EntityName_Lang { get; set; }
 
         protected override IValidator GetValidator()
         {
@@ -142,8 +142,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public int RecOrder { get; set; }
 
-        public string DispayLanguage { get; set; }
-        public string FieldLanguage { get; set; }
+        public Dictionary<string, string> DisplayName_Lang { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
 
 
         [JsonIgnore]
@@ -161,6 +161,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
                 RuleFor(d => d.FieldName).NotEmpty().WithMessage("字段列名不能为空");
             }
         }
+    }
+    public class EntityFieldLanguage
+    {
+        public Dictionary<string,string> DisplayName_Lang { get; set; }
+        public Dictionary<string, string> FieldLabel_Lang { get; set; }
     }
 
     public class DeleteEntityDataMapper : BaseEntity
@@ -285,7 +290,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public int RecStatus { get; set; }
 
-        public string CategoryLanguage { get; set; }
+        public Dictionary<string,string> CategoryName_Lang { get; set; }
         protected override IValidator GetValidator()
         {
             return new SaveEntityTypeMapperValidator();
@@ -633,4 +638,5 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         }
 
     }
+    
 }

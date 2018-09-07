@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using UBeat.Crm.CoreApi.Services.Models.Rule;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -500,18 +501,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> SaveReminder(ReminderSaveModel body, string enterpriseNo, int usernumber)
         {
+            string reminderName = body.ReminderName;
+            string tmp = MultiLanguageUtils.GetDefaultLanguageValue(body.ReminderName_Lang);
+            if (tmp != null) reminderName = tmp;
             var crmData = new ReminderSaveMapper()
             {
                 ReminderId = body.ReminderId,
                 RecType = body.RecType,
-                ReminderName = body.ReminderName,
+                ReminderName = reminderName,
                 EndityId = body.EntityId,
                 IsRepeat = body.IsRepeat,
                 RecStatus = body.RecStatus,
                 RepeatType = body.RepeatType,
                 CronString = body.CronString,
                 Remark = body.Remark,
-                ReminderLanguage = body.ReminderLanguage
+                ReminderName_Lang = body.ReminderName_Lang
             };
 
 

@@ -170,13 +170,22 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 sysmark = "UnKnown";
             }
+            string lang = MultiLanguageUtils.DefaultLanguage;
+            if (Request.Headers.ContainsKey("language")) {
+                lang = Request.Headers["language"];
+            }
+            if (MultiLanguageUtils.IsSupportLanguage(lang) == false) {
+                lang = MultiLanguageUtils.DefaultLanguage;
+            }
+            
 
             var analyseHeader = new AnalyseHeader
             {
                 Device = device,
                 DeviceId = deviceId,
                 VerNum = vernum,
-                SysMark = sysmark
+                SysMark = sysmark,
+                UserLanguage = lang
             };
 
 

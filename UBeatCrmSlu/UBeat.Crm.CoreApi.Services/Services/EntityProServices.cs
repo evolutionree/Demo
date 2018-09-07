@@ -53,6 +53,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
+            string EntityName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.EntityName, entity.EntityName_Lang, out EntityName);
+            if (EntityName != null) entity.EntityName = EntityName;
             OperateResult newEntity = _entityProRepository.InsertEntityPro(entity, userNumber);
             if (newEntity.Flag == 0)
                 return HandleResult(newEntity);
@@ -93,6 +96,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);
+            string EntityName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.EntityName, entity.EntityName_Lang, out EntityName);
+            if (EntityName != null) entity.EntityName = EntityName;
             var result = HandleResult(_entityProRepository.UpdateEntityPro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             IncreaseDataVersion(DataVersionType.PowerData);
@@ -159,7 +165,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "【字段表列名】不能是保留的关键字", -1);
             }
             var entity = _mapper.Map<EntityFieldProModel, EntityFieldProSaveMapper>(entityModel);
-
+            var data = JsonConvert.DeserializeObject<EntityFieldLanguage>(entity.FieldConfig);
+            entity.FieldLabel_Lang = data.FieldLabel_Lang;
+            entity.DisplayName_Lang = data.DisplayName_Lang;
+            string DisplayName = "", FieldLabel = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DisplayName_Lang, out DisplayName);
+            if (DisplayName != null) entity.DisplayName = DisplayName;
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldLabel, entity.FieldLabel_Lang, out FieldLabel);
+            if (FieldLabel != null) entity.FieldLabel = FieldLabel;
             var result = HandleResult(_entityProRepository.InsertEntityField(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
@@ -186,6 +199,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityField(EntityFieldProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityFieldProModel, EntityFieldProSaveMapper>(entityModel);
+            var data = JsonConvert.DeserializeObject<EntityFieldLanguage>(entity.FieldConfig);
+            entity.FieldLabel_Lang = data.FieldLabel_Lang;
+            entity.DisplayName_Lang = data.DisplayName_Lang;
+            string DisplayName = "", FieldLabel = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DisplayName_Lang, out DisplayName);
+            if (DisplayName != null) entity.DisplayName = DisplayName;
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.FieldLabel, entity.FieldLabel_Lang, out FieldLabel);
+            if (FieldLabel != null) entity.FieldLabel = FieldLabel;
             var result = HandleResult(_entityProRepository.UpdateEntityField(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
@@ -256,6 +277,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> InsertEntityTypePro(EntityTypeModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityTypeModel, SaveEntityTypeMapper>(entityModel);
+            string CategoryName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.CategoryName, entity.CategoryName_Lang, out CategoryName);
+            if (CategoryName != null) entity.CategoryName = CategoryName;
             var result = HandleResult(_entityProRepository.InsertEntityTypePro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
@@ -264,6 +288,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> UpdateEntityTypePro(EntityTypeModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityTypeModel, SaveEntityTypeMapper>(entityModel);
+            string CategoryName = "";
+            MultiLanguageUtils.GetDefaultLanguageValue(entity.CategoryName, entity.CategoryName_Lang, out CategoryName);
+            if (CategoryName != null) entity.CategoryName = CategoryName;
             var result = HandleResult(_entityProRepository.UpdateEntityTypePro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
@@ -1203,8 +1230,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         WebFuncId = webFuncid,
                         MobileFuncId = mobileFuncid,
                         FuncBtnLanguage = dynamicModel.FuncBtnLanguage,
-                        TitleLanguage= dynamicModel.TitleLanguage
+                        Title_Lang = dynamicModel.Title_Lang
+
                     };
+                    string Title = "";
+                    MultiLanguageUtils.GetDefaultLanguageValue(model.Title, model.Title_Lang, out Title);
+                    if (Title != null) model.Title = Title;
                     info.FuncBtns.Add(model);
                     if (_entityProRepository.SaveFunctionJson(dynamicModel.EntityId, info, userNumber, tran))
                     {
@@ -1251,7 +1282,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                     model.Name = dynamicModel.Name;
-                    model.Title = dynamicModel.Title;
                     model.ButtonCode = dynamicModel.ButtonCode;
                     model.Icon = dynamicModel.Icon;
                     model.DisplayPosition = dynamicModel.DisplayPosition;
@@ -1263,7 +1293,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     model.WebFuncId = webFuncid;
                     model.MobileFuncId = mobileFuncid;
                     model.FuncBtnLanguage = dynamicModel.FuncBtnLanguage;
-                    model.TitleLanguage = dynamicModel.TitleLanguage;
+                    model.Title_Lang = dynamicModel.Title_Lang;
+                    model.Title = dynamicModel.Title;
+                    string Title = "";
+                    MultiLanguageUtils.GetDefaultLanguageValue(model.Title, model.Title_Lang, out Title);
+                    if (Title != null) model.Title = Title;
                     if (_entityProRepository.SaveFunctionJson(dynamicModel.EntityId, info, userNumber, tran))
                     {
                         tran.Commit();
