@@ -17,6 +17,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String RightItems { get; set; }
         public List<DesktopComponentMapper> LeftDesktopComponents { get; set; }
         public List<DesktopComponentMapper> RightDesktopComponents { get; set; }
+        public String VocationsId { get; set; }
         public Guid BaseDeskId { get; set; }
         public String Description { get; set; }
         public int Status { get; set; }
@@ -241,5 +242,10 @@ namespace UBeat.Crm.CoreApi.Desktop
         public Guid EntityId { get; set; }
 
     }
+    public class ComToDesktop
+    {
+        public Guid DesktopId { get; set; }
 
+        public IList<Guid> ComsId { get; set; }
+    }
 }

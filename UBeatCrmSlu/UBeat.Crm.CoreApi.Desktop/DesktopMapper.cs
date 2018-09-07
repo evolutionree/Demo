@@ -24,7 +24,7 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         public List<DesktopComponentMapper> LeftDesktopComponents { get; set; }
         public List<DesktopComponentMapper> RightDesktopComponents { get; set; }
-
+        public String VocationsId { get; set; }
         protected override IValidator GetValidator()
         {
             return new DesktopMapperValidator();
@@ -76,7 +76,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         {
             public SearchDesktopMapperValidator()
             {
-                RuleFor(d =>d).NotNull().WithMessage("参数不能为空");
+                RuleFor(d => d).NotNull().WithMessage("参数不能为空");
 
             }
         }
@@ -205,6 +205,26 @@ namespace UBeat.Crm.CoreApi.Desktop
         public int IsChecked { get; set; }
     }
 
+    public class ComToDesktopMapper : BaseEntity
+    {
+        public Guid DesktopId { get; set; }
+
+        public IList<Guid> LeftItems { get; set; }
+        public IList<Guid> RightItems { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new ComToDesktopMapperValidator();
+        }
+
+        class ComToDesktopMapperValidator : AbstractValidator<ComToDesktopMapper>
+        {
+            public ComToDesktopMapperValidator()
+            {
+                RuleFor(d => d.DesktopId).Must(t => t != null || t != Guid.Empty).WithMessage("控制台Id不能为空");
+                RuleFor(d => d).Must(t => t.LeftItems.Count > 0 || t.RightItems.Count > 0).WithMessage("组件Id不能为空");
+            }
+        }
+    }
 
     public class DynamicListRequestMapper : BaseEntity
     {
@@ -247,6 +267,5 @@ namespace UBeat.Crm.CoreApi.Desktop
 
             }
         }
-
     }
 }

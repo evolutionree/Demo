@@ -123,7 +123,13 @@ namespace UBeat.Crm.CoreApi.Desktop
 
             }, model, userId);
         }
+        public OutputResult<object> AssignComsToDesktop(ComToDesktop model, int userId)
+        {
+            var mapper = _mapper.Map<ComToDesktop, ComToDesktopMapper>(model);
 
+            var result = _desktopRepository.AssignComsToDesktop(mapper, userId);
+            return new OutputResult<object>(result);
+        }
         public OutputResult<object> SaveDesktopRoleRelation(IList<DesktopRoleRelation> models, int userId)
         {
             List<DesktopRoleRelationMapper> desktopRoleRelations = new List<DesktopRoleRelationMapper>();

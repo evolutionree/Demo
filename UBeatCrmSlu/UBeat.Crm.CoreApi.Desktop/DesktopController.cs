@@ -90,6 +90,13 @@ namespace UBeat.Crm.CoreApi.Desktop
             return _desktopServices.EnableDesktop(model, UserId);
         }
         [HttpPost]
+        [Route("assigncomstodesktop")]
+        public dynamic AssignComsToDesktop([FromBody]ComToDesktop model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.AssignComsToDesktop(model, UserId);
+        }
+        [HttpPost]
         [Route("savedesktoprolerelate")]
         public dynamic SaveDesktopRoleRelation([FromBody]IList<DesktopRoleRelation> models)
         {

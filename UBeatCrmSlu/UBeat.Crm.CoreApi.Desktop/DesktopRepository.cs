@@ -26,15 +26,28 @@ namespace UBeat.Crm.CoreApi.Desktop
         public OperateResult SaveDesktop(DesktopMapper mapper, IDbTransaction trans = null)
         {
             var sqlDel = @"delete from crm_sys_desktop where desktopid=@desktopid;";
-            var sql = @"insert into crm_sys_desktop (desktopname,basedeskid,description) values (@desktopname,@basedeskid,@description)";
+            var sql = @"insert into crm_sys_desktop (desktopname,desktoptype,basedeskid,description) values (@desktopname,@desktoptype,@basedeskid,@description) returning desktopid";
             var param = new DynamicParameters();
             param.Add("desktopid", mapper.DesktopId);
             param.Add("desktopname", mapper.DesktopName);
+            param.Add("desktoptype", mapper.DesktopType);
             param.Add("basedeskid", mapper.BaseDeskId);
             param.Add("description", mapper.Description);
             DataBaseHelper.ExecuteNonQuery(sqlDel, trans.Connection, trans, param);
-            var result = DataBaseHelper.ExecuteNonQuery(sql, trans.Connection, trans, param);
-            if (result > 0)
+            var result = DataBaseHelper.ExecuteScalar<Guid>(sql, trans.Connection, trans, param);
+            List<DesktopRoleRelationMapper> relations = new List<DesktopRoleRelationMapper>();
+            var ids = mapper.VocationsId.Split(",");
+            foreach (var tmp in ids)
+            {
+                DesktopRoleRelationMapper relation = new DesktopRoleRelationMapper
+                {
+                    DesktopId = result,
+                    RoleId = Guid.Parse(tmp)
+                };
+                relations.Add(relation);
+            }
+            SaveDesktopRoleRelation(relations, trans);
+            if (result != Guid.Empty)
             {
                 return new OperateResult
                 {
@@ -61,9 +74,9 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
         public IList<DesktopsMapper> GetDesktops(SearchDesktopMapper mapper, int userId)
         {
-            var sql = @"select *,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.rolename))),',') FROM crm_sys_desktop_role_relation relate
-  INNER JOIN crm_sys_role ro1 ON ro1.roleid=relate.roleid where desktopid=de1.desktopid ) as rolesname,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.roleid))),',') FROM crm_sys_desktop_role_relation relate
-  INNER JOIN crm_sys_role ro1 ON ro1.roleid=relate.roleid where desktopid=de1.desktopid ) as rolesid from crm_sys_desktop  de1
+            var sql = @"select *,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.vocationname))),',') FROM crm_sys_desktop_role_relation relate
+  INNER JOIN crm_sys_vocation ro1 ON ro1.vocationid=relate.roleid where desktopid=de1.desktopid ) as rolesname,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.vocationid))),',') FROM crm_sys_desktop_role_relation relate
+  INNER JOIN crm_sys_vocation ro1 ON ro1.vocationid=relate.roleid where desktopid=de1.desktopid ) as rolesid from crm_sys_desktop  de1
  where de1.status=@status {0}";
             var param = new DynamicParameters();
             param.Add("status", mapper.Status);
@@ -102,7 +115,30 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
         }
 
-
+        public OperateResult AssignComsToDesktop(ComToDesktopMapper mapper, int userId)
+        {
+            var sql = @"update crm_sys_desktop leftitems=@leftitems,rightitems=@rightitems where desktopid=@desktopid";
+            var param = new DynamicParameters();
+            param.Add("desktopid", mapper.DesktopId);
+            param.Add("leftitems", String.Join(",", mapper.LeftItems.Cast<String>().ToList().ToArray()));
+            param.Add("rightitems", String.Join(",", mapper.RightItems.Cast<String>().ToList().ToArray()));
+            var result = DataBaseHelper.ExecuteNonQuery(sql, param);
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "保存成功"
+                };
+            }
+            else
+            {
+                return new OperateResult
+                {
+                    Msg = "保存成功"
+                };
+            }
+        }
 
 
         public OperateResult SaveDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null)
@@ -218,10 +254,12 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
         public IList<RoleRelationMapper> GetRoles(Guid desktopId, int userId)
         {
-            var sql = @"select * from 
-(select '00000000-0000-0000-0000-000000000001'::uuid as roleid,'全局角色' as rolename,now() as reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid='00000000-0000-0000-0000-000000000001' and desktopid=@desktopid limit 1 ) as ischecked
-UNION
-select roleid,rolename,reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid=tmprole.roleid and  desktopid=@desktopid limit 1 ) as ischecked from crm_sys_role as tmprole where recstatus=1 ) as tmp ORDER BY  reccreated DESC;";
+//            select* from
+// (select '00000000-0000-0000-0000-000000000001'::uuid as roleid,'全局角色' as rolename,now() as reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid = '00000000-0000-0000-0000-000000000001' and desktopid = @desktopid limit 1 ) as ischecked
+//UNION
+            var sql = @"
+select vocationid ,vocationname,reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid=tmprole.vocationid and  desktopid=@desktopid limit 1 )
+ as ischecked from crm_sys_vocation as tmprole where recstatus=1 ) as tmp ORDER BY  reccreated DESC;";
             var param = new DynamicParameters();
             param.Add("userid", userId);
             param.Add("desktopid", desktopId);

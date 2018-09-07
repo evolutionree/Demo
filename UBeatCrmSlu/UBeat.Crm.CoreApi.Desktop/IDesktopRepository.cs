@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         OperateResult SaveDesktop(DesktopMapper mapper, IDbTransaction trans = null);
 
         OperateResult EnableDesktop(DesktopMapper mapper, IDbTransaction trans = null);
-
+        OperateResult AssignComsToDesktop(ComToDesktopMapper mapper, int userId);
         DesktopMapper GetDesktopDetail(Guid desktopId);
 
         OperateResult SaveDesktopRoleRelation(List<DesktopRoleRelationMapper> mapper, IDbTransaction trans = null);
