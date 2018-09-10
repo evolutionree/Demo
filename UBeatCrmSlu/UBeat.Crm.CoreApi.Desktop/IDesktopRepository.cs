@@ -12,7 +12,7 @@ namespace UBeat.Crm.CoreApi.Desktop
         DesktopMapper GetDesktop(int userId);
         IList<DesktopsMapper> GetDesktops(SearchDesktopMapper mapper,int userId);
         OperateResult SaveDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
-
+        OperateResult SaveActualDesktopComponent(ActualDesktopComponentMapper mapper, IDbTransaction trans = null);
         OperateResult EnableDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null);
 
         DesktopComponentMapper GetDesktopComponentDetail(Guid dsComponetId);
@@ -21,7 +21,10 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         OperateResult EnableDesktop(DesktopMapper mapper, IDbTransaction trans = null);
         OperateResult AssignComsToDesktop(ComToDesktopMapper mapper, int userId);
-        DesktopMapper GetDesktopDetail(Guid desktopId);
+        OperateResult AssignComsToDesktop(ActualDesktopRelateToComMapper mapper, int userId, IDbTransaction dbTrans = null);
+        ActualDesktopComMapper GetActualDesktopCom(Guid desktopId, int userId);
+
+            DesktopMapper GetDesktopDetail(Guid desktopId);
 
         OperateResult SaveDesktopRoleRelation(List<DesktopRoleRelationMapper> mapper, IDbTransaction trans = null);
 

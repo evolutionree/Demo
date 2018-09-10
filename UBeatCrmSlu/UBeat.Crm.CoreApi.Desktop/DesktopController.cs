@@ -54,6 +54,13 @@ namespace UBeat.Crm.CoreApi.Desktop
             return _desktopServices.SaveDesktopComponent(model, UserId);
         }
         [HttpPost]
+        [Route("saveactualdesktopcom")]
+        public dynamic SaveActualDesktopComponent([FromBody]ActualDesktopRelateToCom model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.SaveActualDesktopComponent(model, UserId);
+        }
+        [HttpPost]
         [Route("savedesktop")]
         public dynamic SaveDesktop([FromBody]Desktop model)
         {
@@ -74,6 +81,13 @@ namespace UBeat.Crm.CoreApi.Desktop
         {
             if (model == null) return ResponseError<object>("参数格式错误");
             return _desktopServices.GetDesktopComponentDetail(model);
+        }
+        [HttpPost]
+        [Route("getactualdesktopcom")]
+        public dynamic GetActualDesktopCom([FromBody]DesktopRelation model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _desktopServices.GetActualDesktopCom(model,UserId);
         }
         [HttpPost]
         [Route("getdesktopdetail")]

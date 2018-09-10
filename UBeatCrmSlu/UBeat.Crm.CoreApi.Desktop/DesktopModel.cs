@@ -248,4 +248,32 @@ namespace UBeat.Crm.CoreApi.Desktop
 
         public IList<Guid> ComsId { get; set; }
     }
+
+    public class ActualDesktopRelateToCom
+    {
+        public Guid DesktopId { get; set; }
+
+        public IList<ActualDesktopComponent> ComItems { get; set; }
+    }
+
+    public class ActualDesktopComponent
+    {
+        public Guid DsComponetId { get; set; }
+
+        public String ComName { get; set; }
+
+        public int ComType { get; set; }
+
+        public Decimal ComWidth { get; set; }
+
+        public int ComHeightType { get; set; }
+        public Decimal MinComHeight { get; set; }
+        public Decimal MaxComHeight { get; set; }
+        public String ComUrl { get; set; }
+        public String ComArgs { get; set; }
+        public String ComDesciption { get; set; }
+        public String Postion { get; set; }
+        public int Status { get; set; }
+ 
+    }
 }

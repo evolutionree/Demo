@@ -18,6 +18,10 @@ namespace UBeat.Crm.CoreApi.Desktop
             CreateMap<SearchDesktop, SearchDesktopMapper>();
             CreateMap<SearchDesktopComponent, SearchDesktopComponentMapper>();
             CreateMap<ComToDesktop, ComToDesktopMapper>();
+            CreateMap<ActualDesktopComponent, ActualDesktopComponentMapper>();
+
+            CreateMap<ActualDesktopRelateToCom, ActualDesktopRelateToComMapper>();
+
         }
     }
 }

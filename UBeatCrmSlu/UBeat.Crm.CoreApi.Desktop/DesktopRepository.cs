@@ -36,17 +36,20 @@ namespace UBeat.Crm.CoreApi.Desktop
             DataBaseHelper.ExecuteNonQuery(sqlDel, trans.Connection, trans, param);
             var result = DataBaseHelper.ExecuteScalar<Guid>(sql, trans.Connection, trans, param);
             List<DesktopRoleRelationMapper> relations = new List<DesktopRoleRelationMapper>();
-            var ids = mapper.VocationsId.Split(",");
-            foreach (var tmp in ids)
+            if (!String.IsNullOrEmpty(mapper.VocationsId))
             {
-                DesktopRoleRelationMapper relation = new DesktopRoleRelationMapper
+                var ids = mapper.VocationsId.Split(",");
+                foreach (var tmp in ids)
                 {
-                    DesktopId = result,
-                    RoleId = Guid.Parse(tmp)
-                };
-                relations.Add(relation);
+                    DesktopRoleRelationMapper relation = new DesktopRoleRelationMapper
+                    {
+                        DesktopId = result,
+                        RoleId = Guid.Parse(tmp)
+                    };
+                    relations.Add(relation);
+                }
+                SaveDesktopRoleRelation(relations, trans);
             }
-            SaveDesktopRoleRelation(relations, trans);
             if (result != Guid.Empty)
             {
                 return new OperateResult
@@ -140,6 +143,50 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
         }
 
+        public OperateResult AssignComsToDesktop(ActualDesktopRelateToComMapper mapper, int userId, IDbTransaction dbTrans = null)
+        {
+            var sqlDel = @"delete from crm_sys_desktop_com_relation where   desktopid=@desktopid;";
+            var sql = @"insert into crm_sys_desktop_com_relation(comid,desktopid) values (@comid,@desktopid)";
+            var param = new DynamicParameters();
+            param.Add("desktopid", mapper.DesktopId);
+            int result = 0;
+            DataBaseHelper.ExecuteNonQuery(sqlDel, dbTrans.Connection, dbTrans, param);
+            foreach (var tmp in mapper.ComItems)
+            {
+                var args = new DynamicParameters();
+                args.Add("desktopid", mapper.DesktopId);
+                args.Add("comid", tmp.DsComponetId);
+                result = DataBaseHelper.ExecuteNonQuery(sql, dbTrans.Connection, dbTrans, args);
+            }
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "保存成功"
+                };
+            }
+            else
+            {
+                return new OperateResult
+                {
+                    Msg = "保存成功"
+                };
+            }
+        }
+
+        public ActualDesktopComMapper GetActualDesktopCom(Guid desktopId, int userId)
+        {
+            var sql = @"select * from crm_sys_desktop where desktopid=@desktopid and status=@status limit 1;";
+            var param = new DynamicParameters();
+            param.Add("desktopid", desktopId);
+            param.Add("status", 1);
+            var result = DataBaseHelper.QuerySingle<ActualDesktopComMapper>(sql, param);
+            result.ComItems = DataBaseHelper.Query<ActualDesktopComponentMapper>("select * from crm_sys_desktop_component_actual where dscomponetid in (select comid from crm_sys_desktop_com_relation where desktopid=@desktopid);", param);
+            return result;
+
+        }
+
 
         public OperateResult SaveDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null)
         {
@@ -176,6 +223,42 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
         }
 
+
+        public OperateResult SaveActualDesktopComponent(ActualDesktopComponentMapper mapper, IDbTransaction trans = null)
+        {
+            var sqlDel = @"delete from crm_sys_desktop_component_actual where dscomponetid=@dscomponetid;";
+            var sql = @"insert into crm_sys_desktop_component_actual (dscomponetid,comname,comtype,comwidth, comheighttype,mincomheight,maxcomheight,comurl,comargs,comdesciption,postion) values (@dscomponetid,@comname,@comtype,@comwidth, @comheighttype,@mincomheight,@maxcomheight,@comurl,@comargs,@comdesciption,@postion::jsonb) returning dscomponetid";
+            var param = new DynamicParameters();
+            param.Add("dscomponetid", mapper.DsComponetId);
+            param.Add("comname", mapper.ComName);
+            param.Add("comtype", mapper.ComType);
+            param.Add("comwidth", mapper.ComWidth);
+            param.Add("comheighttype", mapper.ComHeightType);
+            param.Add("mincomheight", mapper.MinComHeight);
+            param.Add("maxcomheight", mapper.MaxComHeight);
+            param.Add("comurl", mapper.ComUrl);
+            param.Add("comargs", mapper.ComArgs);
+            param.Add("comdesciption", mapper.ComDesciption);
+            param.Add("postion", mapper.Postion);
+            DataBaseHelper.ExecuteNonQuery(sqlDel, trans.Connection, trans, param);
+            var result = DataBaseHelper.ExecuteNonQuery(sql, trans.Connection, trans, param);
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "保存成功",
+                    Id = result.ToString()
+                };
+            }
+            else
+            {
+                return new OperateResult
+                {
+                    Msg = "保存成功"
+                };
+            }
+        }
         public OperateResult EnableDesktopComponent(DesktopComponentMapper mapper, IDbTransaction trans = null)
         {
             var sql = @"update crm_sys_desktop_component set status=@status where  dscomponetid=@dscomponetid;";
@@ -254,9 +337,9 @@ namespace UBeat.Crm.CoreApi.Desktop
         }
         public IList<RoleRelationMapper> GetRoles(Guid desktopId, int userId)
         {
-//            select* from
-// (select '00000000-0000-0000-0000-000000000001'::uuid as roleid,'全局角色' as rolename,now() as reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid = '00000000-0000-0000-0000-000000000001' and desktopid = @desktopid limit 1 ) as ischecked
-//UNION
+            //            select* from
+            // (select '00000000-0000-0000-0000-000000000001'::uuid as roleid,'全局角色' as rolename,now() as reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid = '00000000-0000-0000-0000-000000000001' and desktopid = @desktopid limit 1 ) as ischecked
+            //UNION
             var sql = @"
 select vocationid ,vocationname,reccreated,(SELECT count(1) FROM crm_sys_desktop_role_relation where roleid=tmprole.vocationid and  desktopid=@desktopid limit 1 )
  as ischecked from crm_sys_vocation as tmprole where recstatus=1 ) as tmp ORDER BY  reccreated DESC;";

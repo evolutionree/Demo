@@ -268,4 +268,59 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
         }
     }
+    public class ActualDesktopComponentMapper
+    {
+        public Guid DsComponetId { get; set; }
+
+        public String ComName { get; set; }
+
+        public int ComType { get; set; }
+
+        public Decimal ComWidth { get; set; }
+
+        public int ComHeightType { get; set; }
+        public Decimal MinComHeight { get; set; }
+        public Decimal MaxComHeight { get; set; }
+        public String ComUrl { get; set; }
+        public String ComArgs { get; set; }
+        public String ComDesciption { get; set; }
+        public String Postion { get; set; }
+        public int Status { get; set; }
+
+    }
+
+    public class ActualDesktopRelateToComMapper : BaseEntity
+    {
+        public Guid DesktopId { get; set; }
+
+        public IList<ActualDesktopComponentMapper> ComItems { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new ActualDesktopRelateToComMapperValidator();
+        }
+
+        class ActualDesktopRelateToComMapperValidator : AbstractValidator<ActualDesktopRelateToComMapper>
+        {
+            public ActualDesktopRelateToComMapperValidator()
+            {
+                RuleFor(d => d.DesktopId).Must(t => t != null || t != Guid.Empty).WithMessage("控制台Id不能为空");
+            }
+        }
+    }
+    public class ActualDesktopComMapper
+    {
+        public Guid DesktopId { get; set; }
+
+        public String DesktopName { get; set; }
+
+        public int DesktopType { get; set; }
+        public String LeftItems { get; set; }
+        public String RightItems { get; set; }
+
+        public Guid BaseDeskId { get; set; }
+        public String Description { get; set; }
+        public int Status { get; set; }
+
+        public IList<ActualDesktopComponentMapper> ComItems { get; set; }
+    }
 }

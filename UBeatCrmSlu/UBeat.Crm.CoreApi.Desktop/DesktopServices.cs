@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -59,7 +60,33 @@ namespace UBeat.Crm.CoreApi.Desktop
 
             }, model, userId);
         }
+        public OutputResult<object> SaveActualDesktopComponent(ActualDesktopRelateToCom model, int userId)
+        {
+            var mapper = _mapper.Map<ActualDesktopRelateToCom, ActualDesktopRelateToComMapper>(model);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
 
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                OperateResult result = null;
+                foreach (var tmp in mapper.ComItems)
+                {
+                    result = _desktopRepository.SaveActualDesktopComponent(tmp, transaction);
+                }
+                _desktopRepository.AssignComsToDesktop(mapper, userId, transaction);
+                if (result == null)
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 0
+                    };
+                }
+                return new OutputResult<object>(result);
+
+            }, model, userId);
+        }
         public OutputResult<object> SaveDesktop(Desktop model, int userId)
         {
             var mapper = _mapper.Map<Desktop, DesktopMapper>(model);
@@ -91,7 +118,6 @@ namespace UBeat.Crm.CoreApi.Desktop
 
             }, model, userId);
         }
-
         public OutputResult<object> GetDesktopComponentDetail(DesktopComponent model)
         {
             if (model.DsComponetId == null || model.DsComponetId == Guid.Empty)
@@ -100,6 +126,15 @@ namespace UBeat.Crm.CoreApi.Desktop
             }
 
             return new OutputResult<object>(_desktopRepository.GetDesktopComponentDetail(model.DsComponetId));
+        }
+        public OutputResult<object> GetActualDesktopCom(DesktopRelation model,int userId)
+        {
+            if (model.DesktopId == null || model.DesktopId == Guid.Empty)
+            {
+                return new OutputResult<object>(model, "工作台组件Id不能为空", status: 1);
+            }
+
+            return new OutputResult<object>(_desktopRepository.GetActualDesktopCom(model.DesktopId, userId));
         }
         public OutputResult<object> GetDesktopDetail(Desktop model)
         {
