@@ -78,8 +78,8 @@ namespace UBeat.Crm.CoreApi.Desktop
         public IList<DesktopsMapper> GetDesktops(SearchDesktopMapper mapper, int userId)
         {
             var sql = @"select *,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.vocationname))),',') FROM crm_sys_desktop_role_relation relate
-  INNER JOIN crm_sys_vocation ro1 ON ro1.vocationid=relate.roleid where desktopid=de1.desktopid ) as rolesname,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.vocationid))),',') FROM crm_sys_desktop_role_relation relate
-  INNER JOIN crm_sys_vocation ro1 ON ro1.vocationid=relate.roleid where desktopid=de1.desktopid ) as rolesid from crm_sys_desktop  de1
+  INNER JOIN crm_sys_vocation ro1 ON ro1.vocationid=relate.roleid where desktopid=de1.desktopid ) as vocationsname,(SELECT array_to_string(ARRAY(SELECT unnest(array_agg(ro1.vocationid))),',') FROM crm_sys_desktop_role_relation relate
+  INNER JOIN crm_sys_vocation ro1 ON ro1.vocationid=relate.roleid where desktopid=de1.desktopid ) as vocationsid from crm_sys_desktop  de1
  where de1.status=@status {0}";
             var param = new DynamicParameters();
             param.Add("status", mapper.Status);

@@ -54,9 +54,9 @@ namespace UBeat.Crm.CoreApi.Desktop
         public String Description { get; set; }
         public int Status { get; set; }
 
-        public String RolesName { get; set; }
+        public String VocationsName { get; set; }
 
-        public String RolesId { get; set; }
+        public String VocationsId { get; set; }
 
     }
 
