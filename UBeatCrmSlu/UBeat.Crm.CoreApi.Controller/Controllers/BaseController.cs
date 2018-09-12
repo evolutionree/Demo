@@ -413,6 +413,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                 {
                     if (DateTime.UtcNow + loginSession.Expiration - loginSession.Sessions[deviceId].Expiration > new TimeSpan(0, 5, 0))
                     {
+                        if (apiUrl.ToLower() == "api/notify/unreadcount")
+                            return;
                         //时间超过一分钟才更新缓存，否则不更新缓存
                         loginSession.Sessions[deviceId].Expiration = DateTime.UtcNow + loginSession.Expiration;
                         CacheService.Repository.Replace(sessionKey, loginSession, loginSession.Expiration);
@@ -424,6 +426,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                 {
                     if (DateTime.UtcNow + loginSession.Expiration - loginSession.Sessions[deviceId].Expiration > new TimeSpan(0, 5, 0))
                     {
+                        if (apiUrl.ToLower() == "api/notify/unreadcount")
+                            return;
                         //时间超过一分钟才更新缓存，否则不更新缓存
                         loginSession.Sessions[deviceId].Expiration = DateTime.UtcNow + loginSession.Expiration;
                         CacheService.Repository.Replace(sessionKey, loginSession, loginSession.Expiration);
