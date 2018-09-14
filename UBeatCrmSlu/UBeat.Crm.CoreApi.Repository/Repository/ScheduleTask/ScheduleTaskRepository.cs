@@ -19,15 +19,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
         public ScheduleTaskCountMapper GetScheduleTaskCount(ScheduleTaskListMapper mapper, int userId, DbTransaction trans = null)
         {
             var sql = @"select to_char(daytime::date, 'yyyy-MM-dd') as daytime,COALESCE(tmp.unfinishedschedule,0) as unfinishedschedule,COALESCE(tmp1.unfinishedtask,0) as unfinishedtask  from generate_series((@starttime::date),
-            (@endtime::date),'1 day'
+            (@endtimetmp::date),'1 day'
             ) s(daytime) LEFT JOIN (select generate_series((starttime::date),
 (endtime::date),'1 day'
-) as datetime,count(1) as unfinishedschedule from crm_sys_schedule  where {0} and recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime) {1}
+) as datetime,count(1) as unfinishedschedule from crm_sys_schedule  where {0} and recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime) AND starttime is not null AND endtime is not null {1}
             GROUP BY datetime
             ) as tmp ON tmp.datetime::date=daytime
 LEFT JOIN(
-SELECT count(1) as unfinishedtask,to_char(endtime, 'yyyy-MM-dd')::date as datetime from crm_sys_task where {0} and recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime) {1}
-GROUP BY endtime
+SELECT count(1) as unfinishedtask,to_char(endtime, 'yyyy-MM-dd')::date as datetime from crm_sys_task where {0} and endtime >=@starttime and endtime<=@endtime {1}
+GROUP BY datetime
 ) as tmp1 ON tmp.datetime::date=daytime ";
 
             String scheduleCondition = String.Empty;
@@ -57,8 +57,9 @@ GROUP BY endtime
             var param = new DynamicParameters();
             param.Add("userids", mapper.UserIds);
             param.Add("starttime", mapper.DateFrom);
-            param.Add("endtime", mapper.DateTo);
+            param.Add("endtime", mapper.DateTo.Value.AddDays(1));
             param.Add("affairstatus", mapper.AffairStatus);
+            param.Add("endtimetmp", mapper.DateTo);
             var unCount = DataBaseHelper.Query<Count>(sql, param);
             ScheduleTaskCountMapper result = new ScheduleTaskCountMapper();
             result.UnCount = unCount;
