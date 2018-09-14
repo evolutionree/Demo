@@ -18,26 +18,50 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
 
         public ScheduleTaskCountMapper GetScheduleTaskCount(ScheduleTaskListMapper mapper, int userId, DbTransaction trans = null)
         {
-            var sqlSchedule = @"select count(1) from crm_sys_schedule where  affaristatus=@affaristatus and starttime>=@starttime and endtime <=@endtime {0}";
-            var sqlTask = @"select count(1) from crm_sys_task where recid in (select (relatedentity->>'id')::uuid from crm_sys_schedule where    affaristatus=@affaristatus and starttime>=@starttime and endtime <=@endtime  {0})";
+            var sql = @"select to_char(daytime::date, 'yyyy-MM-dd') as daytime,COALESCE(tmp.unfinishedschedule,0) as unfinishedschedule,COALESCE(tmp1.unfinishedtask,0) as unfinishedtask  from generate_series((@starttime::date),
+            (@endtime::date),'1 day'
+            ) s(daytime) LEFT JOIN (select generate_series((starttime::date),
+(endtime::date),'1 day'
+) as datetime,count(1) as unfinishedschedule from crm_sys_schedule  where {0} and  reccreated >=@starttime and reccreated<=@endtime {1}
+            GROUP BY datetime
+            ) as tmp ON tmp.datetime::date=daytime
+LEFT JOIN(
+SELECT count(1) as unfinishedtask,to_char(endtime, 'yyyy-MM-dd')::date as datetime from crm_sys_task where {0} and reccreated >=@starttime and reccreated<=@endtime {1}
+GROUP BY endtime
+) as tmp1 ON tmp.datetime::date=daytime ";
+
             String scheduleCondition = String.Empty;
+            String statusCondition = String.Empty;
+            if (mapper.AffairStatus == 1)
+            {
+                statusCondition = " now() <=endtime ";
+            }
+            else if (mapper.AffairStatus == 2)
+            {
+                statusCondition = " now() >endtime ";
+            }
+            else
+            {
+                statusCondition = "1=1";
+            }
+
             if (!string.IsNullOrEmpty(mapper.UserType) && mapper.UserType == "subordinate")
             {
                 scheduleCondition = " and recmanager in (SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN (SELECT deptid FROM crm_func_department_tree((select deptid from crm_sys_account_userinfo_relate where userid=@userid), 1)) )";
             }
             else if (!string.IsNullOrEmpty(mapper.UserIds))
             {
-                scheduleCondition = " and recmanager in (select regexp_split_to_table('@userids',',')::int4 )";
+                scheduleCondition = " and recmanager in (select regexp_split_to_table(@userids::text,',')::int4 )";
             }
+            sql = string.Format(sql, statusCondition,scheduleCondition);
             var param = new DynamicParameters();
             param.Add("userids", mapper.UserIds);
             param.Add("starttime", mapper.DateFrom);
             param.Add("endtime", mapper.DateTo);
-            var unFinishedSchedule = DataBaseHelper.ExecuteScalar<int>(sqlSchedule, param);
-            var unFinishedTask = DataBaseHelper.ExecuteScalar<int>(sqlTask, param);
+            param.Add("affairstatus", mapper.AffairStatus);
+            var unCount = DataBaseHelper.Query<Count>(sql, param);
             ScheduleTaskCountMapper result = new ScheduleTaskCountMapper();
-            result.UnFinishedSchedule = unFinishedSchedule;
-            result.UnFinishedTask = unFinishedTask;
+            result.UnCount = unCount;
             return result;
         }
 
@@ -237,7 +261,7 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
             return result;
         }
 
-        public OperateResult DelayScheduleDay(DelayScheduleMapper mapper,int userId,DbTransaction trans=null)
+        public OperateResult DelayScheduleDay(DelayScheduleMapper mapper, int userId, DbTransaction trans = null)
         {
             var sql = @"update crm_sys_schedule set   starttime=@starttime,endtime=@endtime where recid=@recid;";
             var param = new DynamicParameters();
