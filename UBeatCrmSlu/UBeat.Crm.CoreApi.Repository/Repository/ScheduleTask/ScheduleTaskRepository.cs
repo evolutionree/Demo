@@ -22,21 +22,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
             (@endtime::date),'1 day'
             ) s(daytime) LEFT JOIN (select generate_series((starttime::date),
 (endtime::date),'1 day'
-) as datetime,count(1) as unfinishedschedule from crm_sys_schedule  where {0} and  reccreated >=@starttime and reccreated<=@endtime {1}
+) as datetime,count(1) as unfinishedschedule from crm_sys_schedule  where {0} and recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime) {1}
             GROUP BY datetime
             ) as tmp ON tmp.datetime::date=daytime
 LEFT JOIN(
-SELECT count(1) as unfinishedtask,to_char(endtime, 'yyyy-MM-dd')::date as datetime from crm_sys_task where {0} and reccreated >=@starttime and reccreated<=@endtime {1}
+SELECT count(1) as unfinishedtask,to_char(endtime, 'yyyy-MM-dd')::date as datetime from crm_sys_task where {0} and recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime) {1}
 GROUP BY endtime
 ) as tmp1 ON tmp.datetime::date=daytime ";
 
             String scheduleCondition = String.Empty;
             String statusCondition = String.Empty;
-            if (mapper.AffairStatus == 1)
+            if (mapper.AffairStatus == 2)
             {
                 statusCondition = " now() <=endtime ";
             }
-            else if (mapper.AffairStatus == 2)
+            else if (mapper.AffairStatus == 1)
             {
                 statusCondition = " now() >endtime ";
             }
