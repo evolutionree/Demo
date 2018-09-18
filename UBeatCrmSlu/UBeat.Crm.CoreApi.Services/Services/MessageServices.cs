@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Npgsql;
@@ -19,6 +20,7 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository.Dynamics;
 using UBeat.Crm.CoreApi.Repository.Repository.Message;
 using UBeat.Crm.CoreApi.Repository.Repository.Notify;
+using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.Account;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Message;
@@ -26,7 +28,7 @@ using UBeat.Crm.CoreApi.Services.Models.PushService;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
-    public class MessageServices
+    public class MessageServices:BaseServices
     {
         private readonly IMessageRepository _msgRepository;
         private readonly IAccountRepository _accountRepository;
@@ -34,6 +36,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly CacheServices _cacheService;
         private readonly IDynamicRepository _dynamicRepository;
         private static NLog.ILogger _logger = NLog.LogManager.GetLogger(typeof(MessageServices).FullName);
+        private readonly IMapper _mapper;
         #region --GetDbConnect--
         private static string _connectString;
         public DbConnection GetDbConnect(string connectStr = null)
@@ -62,6 +65,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _pushServices = ServiceLocator.Current.GetInstance<PushServices>();
             _accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
             _dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicRepository>();
+            _mapper  = ServiceLocator.Current.GetInstance<IMapper>();
         }
 
 
@@ -982,13 +986,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
-        
-
-        #endregion
-
 
 
         #endregion
 
+
+
+        #endregion
+ 
+
+        public OutputResult<Object> GetDynamicsUnMsg(UnHandleMsgModel requestModel, int userId)
+        {
+            var mapper = _mapper.Map<UnHandleMsgModel, UnHandleMsgMapper>(requestModel);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
+
+            var result = _msgRepository.GetDynamicsUnMsg(mapper, userId);
+            return new OutputResult<object>(result);
+        }
+        public OutputResult<Object> GetWorkFlowsMsg(UnHandleMsgModel requestModel, int userId)
+        {
+            var mapper = _mapper.Map<UnHandleMsgModel, UnHandleMsgMapper>(requestModel);
+            if (mapper == null || !mapper.IsValid())
+            {
+                return HandleValid(mapper);
+            }
+
+            var result = _msgRepository.GetWorkFlowsMsg(mapper, userId);
+            return new OutputResult<object>(result);
+        }
     }
 }

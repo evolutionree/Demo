@@ -121,5 +121,21 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             return _notifyServices.DeleteMessage(data, UserId);
         }
+
+        [HttpPost]
+        [Route("getunmsglist")]
+        public OutputResult<object> GetDynamicsUnMsg([FromBody]UnHandleMsgModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _notifyServices.GetDynamicsUnMsg(data, UserId);
+        }
+        [HttpPost]
+        [Route("getwflist")]
+        public OutputResult<object> GetWorkFlowsMsg([FromBody]UnHandleMsgModel data = null)
+        {
+            if (data == null) return ResponseError<object>("参数格式错误");
+            return _notifyServices.GetWorkFlowsMsg(data, UserId);
+        }
+
     }
 }

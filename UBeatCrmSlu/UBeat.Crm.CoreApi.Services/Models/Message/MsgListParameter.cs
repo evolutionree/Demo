@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoMapper;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
@@ -68,5 +69,20 @@ namespace UBeat.Crm.CoreApi.Services.Models.Message
         Checked = 1, //已查
         Read = 2, //已读
         Del = 3 //删除
+    }
+
+    public class UnHandleMsgModel
+    {
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+    }
+
+    public class MsgProfile : Profile
+    {
+        public MsgProfile()
+        {
+            CreateMap<UnHandleMsgModel, UnHandleMsgMapper>();
+        }
     }
 }

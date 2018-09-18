@@ -9,4 +9,6 @@ namespace UBeat.Crm.CoreApi.Services.Models.Message
     {
         public List<MessageGroupType> MsgGroupIds { set; get; }
     }
+
+  
 }

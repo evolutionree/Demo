@@ -176,5 +176,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             MessageService.UpdateMessageStutas(paras.MsgGroupId, msgIds, readstatus, userNumber);
             return new OutputResult<object>() { Status = 0, Message = "操作成功" };
         }
+
+        public OutputResult<object> GetDynamicsUnMsg(UnHandleMsgModel data, int userNumber)
+        {
+            return MessageService.GetDynamicsUnMsg(data, userNumber);
+              
+        }
+        public OutputResult<object> GetWorkFlowsMsg(UnHandleMsgModel data, int userNumber)
+        {
+            return MessageService.GetWorkFlowsMsg(data, userNumber);
+              
+        }
     }
 }

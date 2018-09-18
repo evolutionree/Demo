@@ -88,7 +88,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
 
             var msgGroupIdSql = string.Empty;
 
-           
+
             var executeSql = @"SELECT mr.* FROM crm_sys_message_receiver AS mr
                                 INNER JOIN crm_sys_message AS m ON m.msgid= mr.msgid
                                 WHERE m.entityid=@entityid AND m.businessid=@businessid;";
@@ -101,18 +101,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
         }
 
         #region --统计未读数据--
-        public List<UnreadMessageInfo> StatisticUnreadMessage(List<MessageGroupType> msgGroupIds,int userNumber)
+        public List<UnreadMessageInfo> StatisticUnreadMessage(List<MessageGroupType> msgGroupIds, int userNumber)
         {
             List<DbParameter> dbParams = new List<DbParameter>();
 
             var msgGroupIdSql = string.Empty;
-            
+
             if (msgGroupIds != null && msgGroupIds.Count > 0)
             {
                 msgGroupIdSql = " AND m.msggroupid = ANY(@msggroupids)";
                 dbParams.Add(new NpgsqlParameter("msggroupids", msgGroupIds.Cast<int>().ToArray()));
             }
-            
+
             var executeSql = string.Format(@"SELECT m.msggroupid, COUNT(1) AS Count FROM crm_sys_message_receiver AS mr
                                 LEFT JOIN crm_sys_message AS m ON m.msgid= mr.msgid
                                 WHERE (mr.userid=@userid) AND mr.readstatus=0 {0} 
@@ -127,7 +127,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
         #endregion
 
         #region --增量获取消息列表--
-        public IncrementPageDataInfo<MessageInfo> GetMessageList(Guid entityId, Guid businessId, List<MessageGroupType> msgGroupIds,List<MessageStyleType> msgStyleType, IncrementPageParameter incrementPage, int userNumber)
+        public IncrementPageDataInfo<MessageInfo> GetMessageList(Guid entityId, Guid businessId, List<MessageGroupType> msgGroupIds, List<MessageStyleType> msgStyleType, IncrementPageParameter incrementPage, int userNumber)
         {
             List<DbParameter> dbParams = new List<DbParameter>();
 
@@ -248,7 +248,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
                                 ORDER BY m.recversion ASC ", entityIdSql, businessIdSql, msgGroupIdSql, msgStyleTypeSql);
 
             dbParams.Add(new NpgsqlParameter("userid", userNumber));
-            var result= ExecuteQueryByPaging<MessageInfo>(executeSql, dbParams.ToArray(), pageSize, pageIndex);
+            var result = ExecuteQueryByPaging<MessageInfo>(executeSql, dbParams.ToArray(), pageSize, pageIndex);
             result.DataList = result.DataList.OrderByDescending(m => m.RecCreated).ToList();
             return result;
         }
@@ -263,16 +263,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
             //插入消息信息数据
             var executeSql = @"UPDATE crm_sys_message_receiver SET readstatus=@readstatus WHERE msgid=@msgid AND userid=@userid;";
             var paramList = new List<DbParameter[]>();
-            foreach(var m in messages)
+            foreach (var m in messages)
             {
                 if (m == null)
                     continue;
-                 var param = new DbParameter[]
-                 {
+                var param = new DbParameter[]
+                {
                      new NpgsqlParameter("readstatus", m.MsgStatus),
                      new NpgsqlParameter("userid", userNumber),
                      new NpgsqlParameter("msgid", m.MsgId),
-                 };
+                };
                 paramList.Add(param);
             }
 
@@ -325,7 +325,8 @@ where userid = @userid and msgid IN (SELECT msgid from crm_sys_message where msg
             DateTime sendtime = DateTime.Now;
             //插入消息信息数据
             var executeSql = @"UPDATE crm_sys_message_receiver SET bizstatus=@bizstatus  WHERE msgid=@msgid and userid=@userid";
-            foreach (MsgWriteBackBizStatusInfo msg in messages) {
+            foreach (MsgWriteBackBizStatusInfo msg in messages)
+            {
 
                 var param = new DbParameter[]
                  {
@@ -337,9 +338,10 @@ where userid = @userid and msgid IN (SELECT msgid from crm_sys_message where msg
             }
         }
 
-        public List<MsgWriteBackBizStatusInfo> GetWorkflowMsgList(DbTransaction tran,Guid bizId, Guid caseId,int stepnum, int handlerUserId)
+        public List<MsgWriteBackBizStatusInfo> GetWorkflowMsgList(DbTransaction tran, Guid bizId, Guid caseId, int stepnum, int handlerUserId)
         {
-            try {
+            try
+            {
                 string sql = @"select a.msgid,b.userid ReceiverId,b.bizstatus 
 from crm_sys_message a 
 	inner join crm_sys_message_receiver b on a.msgid = b.msgid 
@@ -354,10 +356,42 @@ where a.msgstyletype =5 and a.businessid = @businessid
                  };
                 return ExecuteQuery<MsgWriteBackBizStatusInfo>(sql, param, tran);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return new List<MsgWriteBackBizStatusInfo>();
             }
+        }
+
+
+        public PageDataInfo<Dictionary<string, object>> GetDynamicsUnMsg(UnHandleMsgMapper msg, int userId)
+        {
+            var sql = @"select mes0.*,rec0.userid,rec0.readstatus,rec0.bizstatus from crm_sys_message mes0  LEFT JOIN crm_sys_message_receiver rec0 on mes0.msgid=rec0.msgid 
+where rec0.userid=@userid and rec0.bizstatus=0 and readstatus !=2 and mes0.msggroupid=1006  and EXISTS(select 1 from (
+select json_array_elements_text(app)::int4 as userid,msgid  from (
+   select  (msgparam->>'ApprovalUsers')::json as app,msgid as msgid from crm_sys_message  
+)as t1 )as t2 where t2.userid in (@userid))
+ ORDER BY reccreated DESC";
+
+            DbParameter[] dbParameters = new DbParameter[] {
+                new NpgsqlParameter("userid",userId)
+            };
+
+            return ExecuteQueryByPaging(sql, dbParameters, msg.PageSize, msg.PageIndex);
+        }
+        public PageDataInfo<Dictionary<string, object>> GetWorkFlowsMsg(UnHandleMsgMapper msg, int userId)
+        {
+            var sql = @"select mes0.*,rec0.userid,rec0.readstatus,rec0.bizstatus from crm_sys_message mes0  LEFT JOIN crm_sys_message_receiver rec0 on mes0.msgid=rec0.msgid 
+where rec0.userid=@userid and readstatus !=2 and mes0.msggroupid=1006  and EXISTS(select 1 from (
+select json_array_elements_text(app)::int4 as userid,msgid  from (
+   select  (msgparam->>'ApprovalUsers')::json as app,msgid as msgid from crm_sys_message  
+)as t1 )as t2 where t2.userid in (@userid))
+ ORDER BY reccreated DESC";
+
+            DbParameter[] dbParameters = new DbParameter[] {
+                new NpgsqlParameter("userid",userId)
+            };
+
+            return ExecuteQueryByPaging(sql, dbParameters, msg.PageSize, msg.PageIndex);
         }
     }
 }
