@@ -89,10 +89,10 @@ select e.*,u.usericon ,affairstatus_t.dataval as affairstatus_name, affairstatus
                                                 from crm_sys_department tmpa
 	                                                inner join crm_sys_account_userinfo_relate relate on relate.deptid = tmpa.deptid
                                                 where  relate.recstatus = 1 ) as deptgroup_t on e.recmanager = deptgroup_t.userid  left outer join crm_sys_dictionary  as remindType_t on e.remindType = remindType_t.dataid and remindType_t.dictypeid=87  left outer join crm_sys_dictionary  as repeatType_t 
-on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1 order by  e.recversion desc  limit 10 offset 0
+on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1 order by  e.recversion desc 
 ) as outersql";
 
-            return base.ExecuteQuery(sql, new DbParameter[] { new NpgsqlParameter("userid", userId) });
+            return base.ExecuteQuery(sql, new DbParameter[] { new NpgsqlParameter("userid", userId), new NpgsqlParameter("affairtype", mapper.Affairtype) });
         }
 
         public OperateResult AceptSchedule(UnConfirmScheduleStatusMapper mapper, int userId, DbTransaction trans = null)
