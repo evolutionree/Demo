@@ -27,7 +27,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
         public string responseUrl { get; set; }
         public List<string> recevier { get; set; }
         public Dictionary<string, object> extraDic { get; set; }
-
+        public String markdown { get; set; }
+        public String fileid { get; set; }
+        public String imgurl { get; set; }
+       public String single_url { get; set; }       public String single_title { get; set; }
         public Pug_inMsg()
         {
             recevier = new List<string>();

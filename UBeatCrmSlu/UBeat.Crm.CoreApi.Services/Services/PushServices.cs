@@ -200,8 +200,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
             msg.content = message;
             msg.title = title;
             msg.recevier.Add("HuangGuoChen");
-            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, msg);
+      //      MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, msg);
+            //测试代码---推送消息到企业微信
+            Pug_inMsg msg1 = new Pug_inMsg();
+            msg1.content = message;
+            msg1.title = title;
+            msg1.recevier.Add("04195655120177");
+            MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.Text, msg1);
 
+            Pug_inMsg msg2 = new Pug_inMsg();
+            msg2.content = message;
+            msg2.title = title;
+            msg2.single_url = "https://open.dingtalk.com";
+            msg2.markdown = "<div class=\"gray\">2016年9月26日</div> <div class=\"normal\">恭喜你抽中iPhone 7一台，领奖码：xxxx</div><div class=\"highlight\">请于2016年10月10日前联系行政同事领取</div>";
+            msg2.recevier.Add("04195655120177");
+            MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, msg2);
+            Pug_inMsg msg3 = new Pug_inMsg();
+            msg3.content = message;
+            msg3.title = title;
+            msg3.single_url = "https://open.dingtalk.com";
+            msg3.markdown = "<div class=\"gray\">2016年9月26日</div> <div class=\"normal\">恭喜你抽中iPhone 7一台，领奖码：xxxx</div><div class=\"highlight\">请于2016年10月10日前联系行政同事领取</div>";
+            msg3.recevier.Add("04195655120177");
+              MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.Picture, msg3);
+            Pug_inMsg msg4 = new Pug_inMsg();
+            msg4.content = message;
+            msg4.title = title;
+            msg4.single_url = "https://open.dingtalk.com";
+            msg4.markdown = "<div class=\"gray\">2016年9月26日</div> <div class=\"normal\">恭喜你抽中iPhone 7一台，领奖码：xxxx</div><div class=\"highlight\">请于2016年10月10日前联系行政同事领取</div>";
+            msg4.recevier.Add("04195655120177");
+              MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.PicText, msg4);
             //var accounts = accountsStr.Split(',');
             string androidmes = GetSimpleMessage(PushDeviceType.Android, title, message, customContent, messageType);
             string iosmes = GetSimpleMessage(PushDeviceType.IOS, null, message, customContent, messageType);
