@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -238,13 +239,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
-        
+
 
         public OutputResult<object> CalcMenuDataCount(Guid entityId, int userId)
         {
             List<EntityMenuInfo> menus = this._entityProRepository.GetEntityMenuInfoList(entityId);
             Dictionary<string, string> retData = new Dictionary<string, string>();
-            foreach (EntityMenuInfo menu in menus) {
+            foreach (EntityMenuInfo menu in menus)
+            {
                 if (menu.RecStatus != 1) continue;
                 DynamicEntityListModel dynamicModel = new DynamicEntityListModel()
                 {
@@ -255,7 +257,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ExtraData = new Dictionary<string, object>(),
                     SearchDataXOR = new Dictionary<string, object>(),
                     SearchOrder = "",
-                    PageIndex = 1 ,
+                    PageIndex = 1,
                     PageSize = 1,
                     IsAdvanceQuery = 0,
                     NeedPower = 1
@@ -282,11 +284,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                     }
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     //忽略所有错误
                 }
 
-                
+
             }
             return new OutputResult<object>(retData);
         }
@@ -448,18 +451,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     #region 把主实体的人员信息
                     detailMapper.EntityId = entityInfotemp.RelEntityId.Value;
                     detailMapper.RecId = relbussinessId;
-                    IDictionary<string, object>  Rel_detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
+                    IDictionary<string, object> Rel_detail = _dynamicEntityRepository.Detail(detailMapper, userNumber);
                     EntityMemberModel MainMembers = MessageService.GetEntityMember(Rel_detail as Dictionary<string, object>);
-                    if (MainMembers != null) {
+                    if (MainMembers != null)
+                    {
                         if (MainMembers.CopyUsers != null)
                             newMembers.CopyUsers.AddRange(MainMembers.CopyUsers);
-                        if (MainMembers.FollowUsers != null )
+                        if (MainMembers.FollowUsers != null)
                             newMembers.FollowUsers.AddRange(MainMembers.FollowUsers);
                         if (MainMembers.Members != null)
                             newMembers.Members.AddRange(MainMembers.Members);
                         if (MainMembers.ViewUsers != null)
                             newMembers.ViewUsers.AddRange(MainMembers.ViewUsers);
-                        if (MainMembers.RecManager>0)
+                        if (MainMembers.RecManager > 0)
                             newMembers.RecManager = MainMembers.RecManager;
                     }
                     #endregion
@@ -518,26 +522,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
             dynamic tmp = this._entityProRepository.GetFieldInfo(paramInfo.FieldId, userId);
             string dstEntityid = "";
             Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(tmp));
-            if (fieldInfo == null) {
+            if (fieldInfo == null)
+            {
                 throw (new Exception("字段信息不存在"));
             }
             int ControlType = int.Parse(fieldInfo["controltype"].ToString());
-            if (ControlType != 18) {
+            if (ControlType != 18)
+            {
                 throw (new Exception("目标字段必须是数据源字段"));
             }
 
-            Dictionary<string, object> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string, object>>((string )fieldInfo["fieldconfig"]);
+            Dictionary<string, object> fieldConfig = JsonConvert.DeserializeObject<Dictionary<string, object>>((string)fieldInfo["fieldconfig"]);
             Dictionary<string, object> DataSource = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(fieldConfig["dataSource"]));
-            
+
             string sourceId = DataSource["sourceId"].ToString();
             dynamic tmpsourceInfo = this._dataSourceRepository.GetDataSourceInfo(Guid.Parse(sourceId), userId);
             Dictionary<string, object> sourceInfo = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(tmpsourceInfo));
 
             string recid = paramInfo.RecId.ToString();
             dstEntityid = sourceInfo["entityid"].ToString();
-            if (!dstEntityid.Equals(paramInfo.EntityId.ToString())) {
+            if (!dstEntityid.Equals(paramInfo.EntityId.ToString()))
+            {
                 //这种情况主要是客户和客户基础资料的关系
-                if (dstEntityid.Equals("ac051b46-7a20-4848-9072-3b108f1de9b0")) {
+                if (dstEntityid.Equals("ac051b46-7a20-4848-9072-3b108f1de9b0"))
+                {
                     //这种情况要重新获取recid
                     string relrecid = this._customerRepository.getCommonIdByCustId(null, recid, userId);
                     if (relrecid != null) recid = relrecid;
@@ -557,7 +565,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 this._dynamicEntityRepository.AddPersonalWebListColumnsSetting(paramInfo.EntityId, paramInfo.ViewConfig, userId, tran);
             }
-            else {
+            else
+            {
                 this._dynamicEntityRepository.UpdatePersonalWebListColumnsSetting(Guid.Parse(detail["recid"].ToString()), paramInfo.ViewConfig, userId, tran);
 
             }
@@ -587,7 +596,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 view = Newtonsoft.Json.JsonConvert.DeserializeObject<WebListPersonalViewSettingInfo>(detail["viewconfig"].ToString());
                 return view;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 view = new WebListPersonalViewSettingInfo();
                 view.FixedColumnCount = 0;
                 view.Columns = new List<WebListPersonalViewColumnSettingInfo>();
@@ -595,8 +605,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        
-       
+
+
 
 
         /// <summary>
@@ -618,7 +628,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             #endregion
             #region  暂不检查数据权限
             #endregion 
-            Dictionary<string, object> entityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId??Guid.Empty, userId);
+            Dictionary<string, object> entityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId ?? Guid.Empty, userId);
             if (entityInfo == null || entityInfo.Count == 0) throw (new Exception("实体信息异常"));
             //
             EntityExtFunctionInfo extFuncInfo = this._dynamicEntityRepository.getExtFunctionByFunctionName(paramInfo.EntityId ?? Guid.Empty, functionname);
@@ -658,7 +668,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             try
             {
-                if (extFuncInfo.UScript == null || extFuncInfo.UScript.Length == 0) {
+                if (extFuncInfo.UScript == null || extFuncInfo.UScript.Length == 0)
+                {
                     throw (new Exception("脚本定义失败"));
                 }
                 UKJSEngineUtils utils = new UKJSEngineUtils(this._javaScriptUtilsServices);
@@ -671,7 +682,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                ukejsengin_func_entity_" + tick + "();";
                 return utils.Evaluate(jscode);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.Error("执行引擎失败：" + ex.Message);
                 throw (ex);
             }
@@ -1164,7 +1176,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //获取该实体分类的字段
             var fields = GetWebFields(dynamicModel.TypeId, (DynamicProtocolOperateType)dynamicModel.OperateType, userNumber);
             #region 需要对字段进行整理，并对数据源进行整理，增加补充entityid
-            DataSourceListMapper dsListMapper = new DataSourceListMapper() {
+            DataSourceListMapper dsListMapper = new DataSourceListMapper()
+            {
                 PageIndex = 1,
                 DatasourceName = "",
                 PageSize = 1000,
@@ -1173,7 +1186,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, List<IDictionary<string, object>>> dataSourceListDict = this._dataSourceRepository.SelectDataSource(dsListMapper, userNumber);
             List<IDictionary<string, object>> allDataSourceList = dataSourceListDict["PageData"];
             Dictionary<string, IDictionary<string, object>> allDataSourceDict = new Dictionary<string, IDictionary<string, object>>();
-            foreach (IDictionary<string, object> item in allDataSourceList) {
+            foreach (IDictionary<string, object> item in allDataSourceList)
+            {
                 string id = item["datasourceid"].ToString();
                 allDataSourceDict[id] = item;
             }
@@ -1184,17 +1198,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     try
                     {
                         DynamicProtocolFieldConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(field.FieldConfig);
-                        if (config.DataSource.SourceId != null && config.DataSource.SourceId.Length > 0) {
-                            if (allDataSourceDict.ContainsKey(config.DataSource.SourceId)) {
+                        if (config.DataSource.SourceId != null && config.DataSource.SourceId.Length > 0)
+                        {
+                            if (allDataSourceDict.ContainsKey(config.DataSource.SourceId))
+                            {
                                 IDictionary<string, object> item = allDataSourceDict[config.DataSource.SourceId];
-                                if (item.ContainsKey("entityid") && item["entityid"] != null) {
+                                if (item.ContainsKey("entityid") && item["entityid"] != null)
+                                {
                                     config.DataSource.EntityId = Guid.Parse(item["entityid"].ToString());
                                     field.FieldConfig = Newtonsoft.Json.JsonConvert.SerializeObject(config);
                                 }
                             }
                         }
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                     }
                 }
             }
@@ -1550,9 +1568,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(result);
         }
-        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber,bool CalcCountOnly = false)
+
+        private Dictionary<String, object> FormatMenuParamSql(String menuSql, DynamicEntityListMapper dynamicEntity)
+        {
+            var param = new Dictionary<String, object>();
+            foreach (var tmp in dynamicEntity.SearchData)
+            {
+                if (menuSql.IndexOf("@" + tmp.Key) > 0)
+                {
+                    param.Add(tmp.Key, tmp.Value);
+                }
+            }
+            return param;
+        }
+        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber, bool CalcCountOnly = false)
         {
             DbTransaction tran = null;
+
 
 
             #region 检查并处理有特殊列表函数的情况
@@ -1633,6 +1665,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string fromClause = " ";
             string outerSelectClause = "";
             string MainTable = (string)EntityInfo["entitytable"];
+            var param = new Dictionary<String, object>();
             #region 检查是否需要校验权限，如果需要，则检验缺陷
             if (dynamicEntity.NeedPower == 0 && (dynamicEntity.MenuId == null || dynamicEntity.MenuId.Length == 0))
             {
@@ -1696,6 +1729,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
 
                         }
+
+                        //彭小锋
+                        param = FormatMenuParamSql(MainTable, dynamicEntity);
                     }
                 }
                 #region 格式化脚本
@@ -1777,7 +1813,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         selectClause = string.Format(@"{0},{1}_t.categoryname as {1}_name", selectClause, fieldInfo.FieldName);
                         break;
                     case EntityFieldControlType.SelectMulti://4本地字典多选
-                        selectClause = string.Format(@"{0},crm_func_entity_protocol_format_dictionary({2},e.{1}) {1}_name, crm_func_entity_protocol_format_dictionary_lang({2},e.{1})::jsonb {1}_lang", selectClause, fieldInfo.FieldName,fieldNameDictType[fieldInfo.FieldName]);
+                        selectClause = string.Format(@"{0},crm_func_entity_protocol_format_dictionary({2},e.{1}) {1}_name, crm_func_entity_protocol_format_dictionary_lang({2},e.{1})::jsonb {1}_lang", selectClause, fieldInfo.FieldName, fieldNameDictType[fieldInfo.FieldName]);
                         break;
                     case EntityFieldControlType.SelectSingle://3本地字典单选
                         fromClause = string.Format(@"{0} left outer join crm_sys_dictionary  as {1}_t on e.{1} = {1}_t.dataid and {1}_t.dictypeid={2} ", fromClause, fieldInfo.FieldName, fieldNameDictType[fieldInfo.FieldName]);
@@ -1901,7 +1937,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         selectClause = string.Format(@"{0},{4} as {3}_name", selectClause, entityTable, relField.fieldname, fieldInfo.FieldName, selectField);
                         break;
                 }
-             }
+            }
             #endregion
             string WhereSQL = "1=1";
             string OrderBySQL = " e.recversion desc ";
@@ -1914,21 +1950,54 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     OrderBySQL = tmp;
                 }
             }
-            if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
+            if (isAdvanceQuery)
             {
-                WhereSQL = " e.recstatus = 1   " + dynamicEntity.SearchQuery;
+                if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
+                {
+                    WhereSQL = " e.recstatus = 1   " + dynamicEntity.SearchQuery;
+                }
             }
+            else
+                WhereSQL = " e.recstatus = 1   ";
             string innerSQL = string.Format(@"select {0} from {1}  where  {2} order by {3} limit {4} offset {5}",
                 selectClause, fromClause, WhereSQL, OrderBySQL, pageParam.PageSize, (pageParam.PageIndex - 1) * pageParam.PageSize);
-                string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
+            string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
             string CountSQL = string.Format(@"select total,(total-1)/{2}+1 as page from (select count(*)  AS total  from {0} where  {1} ) as k", fromClause, WhereSQL, pageParam.PageSize);
             List<Dictionary<string, object>> datas = null;
+
             if (CalcCountOnly)
                 datas = new List<Dictionary<string, object>>();
             else
-                datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, tran);
+            {
+                if (param.Count > 0)
+                {
+                    DbParameter[] dbParmas = new DbParameter[param.Count];
+                    int i = 0;
+                    foreach (var tmp in param)
+                    {
+                        dbParmas[i] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                        i++;
+                    }
+                    datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, dbParmas, tran);
+                }
+                else
+                    datas = this._dynamicEntityRepository.ExecuteQuery(strSQL, tran);
+            }
+            List<Dictionary<string, object>> page = new List<Dictionary<string, object>>();
+            if (param.Count > 0)
+            {
+                DbParameter[] dbParmas = new DbParameter[param.Count];
+                int i = 0;
+                foreach (var tmp in param)
+                {
+                    dbParmas[i] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                    i++;
+                }
+                page = this._dynamicEntityRepository.ExecuteQuery(CountSQL, dbParmas, tran);
+            }
+            else
+                page = this._dynamicEntityRepository.ExecuteQuery(CountSQL, tran);
 
-            List<Dictionary<string, object>> page = this._dynamicEntityRepository.ExecuteQuery(CountSQL, tran);
             Dictionary<string, List<Dictionary<string, object>>> retData = new Dictionary<string, List<Dictionary<string, object>>>();
 
             #region 数字类型整理,日期整理
@@ -2176,7 +2245,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return totalReturn;
         }
 
-        public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber, bool CalcCountOnly=false)
+        public OutputResult<object> DataList2(DynamicEntityListModel dynamicModel, bool isAdvanceQuery, int userNumber, bool CalcCountOnly = false)
         {
 
             string SpecFuncName = _dynamicEntityRepository.CheckDataListSpecFunction(dynamicModel.EntityId);
@@ -2276,9 +2345,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
 
-            if (dynamicModel.RelInfo != null 
-                && dynamicModel.RelInfo.ContainsKey("recid")  && dynamicModel.RelInfo["recid"] != null
-                 && dynamicModel.RelInfo.ContainsKey("relid") && dynamicModel.RelInfo["relid"] != null) {
+            if (dynamicModel.RelInfo != null
+                && dynamicModel.RelInfo.ContainsKey("recid") && dynamicModel.RelInfo["recid"] != null
+                 && dynamicModel.RelInfo.ContainsKey("relid") && dynamicModel.RelInfo["relid"] != null)
+            {
                 string sqlWhere = _dynamicEntityRepository.ReturnRelTabSql(Guid.Parse(dynamicModel.RelInfo["relid"].ToString()), Guid.Parse(dynamicModel.RelInfo["recid"].ToString()), userNumber);
                 if (sqlWhere != null && sqlWhere.StartsWith("and recid"))
                 {//兼容历史
@@ -2297,21 +2367,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             #region 处理字段自由过滤
-            if (dynamicModel.ColumnFilter != null && dynamicModel.ColumnFilter.Count >0) {
-                var searchFields =  GetEntityFields(dynamicEntity.EntityId, userNumber);
-                foreach (DynamicEntityFieldSearch field in searchFields) {
+            if (dynamicModel.ColumnFilter != null && dynamicModel.ColumnFilter.Count > 0)
+            {
+                var searchFields = GetEntityFields(dynamicEntity.EntityId, userNumber);
+                foreach (DynamicEntityFieldSearch field in searchFields)
+                {
                     if (field.ControlType == (int)DynamicProtocolControlType.SelectSingle
                         /*|| field.ControlType == (int)DynamicProtocolControlType.SelectMulti //暂时把多选也设置为模糊*/)
                     {
                         field.IsLike = 0;
                     }
-                    else {
+                    else
+                    {
                         field.IsLike = 1;//把除字典类型所有的字段都设成模糊搜索
                     }
-                    
+
                 }
                 Dictionary<string, object> fieldDatas = new Dictionary<string, object>();
-                foreach(string key  in dynamicModel.ColumnFilter.Keys) {
+                foreach (string key in dynamicModel.ColumnFilter.Keys)
+                {
                     DynamicEntityFieldSearch fieldInfo = searchFields.FirstOrDefault(t => t.FieldName.ToString() == key);
                     if (fieldInfo == null) continue;
                     fieldDatas.Add(fieldInfo.FieldName, dynamicModel.ColumnFilter[key]);
@@ -2320,7 +2394,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var validResults = DynamicProtocolHelper.AdvanceQuery2(searchFields, fieldDatas);
                 if (SpecFuncName != null)
                 {
-                    validResults =   DynamicProtocolHelper.AdvanceQuery(searchFields, fieldDatas);
+                    validResults = DynamicProtocolHelper.AdvanceQuery(searchFields, fieldDatas);
                 }
                 var validTips = new List<string>();
                 var data = new Dictionary<string, string>();
@@ -2341,7 +2415,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 if (data.Count > 0)
                 {
-                    dynamicEntity.SearchQuery = dynamicEntity.SearchQuery  + " AND (" + string.Join(" AND ", data.Values.ToArray())+")";
+                    dynamicEntity.SearchQuery = dynamicEntity.SearchQuery + " AND (" + string.Join(" AND ", data.Values.ToArray()) + ")";
                 }
 
             }
@@ -2370,9 +2444,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             #endregion
             #region 处理精确帅选项
-            if (dynamicModel.ExactFieldOrFilter != null) {
+            if (dynamicModel.ExactFieldOrFilter != null)
+            {
                 string tmp = " and (1<>1  ";
-                foreach(string item  in dynamicModel.ExactFieldOrFilter.Keys) {
+                foreach (string item in dynamicModel.ExactFieldOrFilter.Keys)
+                {
                     if (SpecFuncName != null)
                     {
                         tmp = tmp + string.Format("or t.{0} = '{1}' ", item, dynamicModel.ExactFieldOrFilter[item]);
@@ -2393,7 +2469,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     dynamicEntity.SearchOrder = " t.recversion desc ";
                 }
-                else {
+                else
+                {
                     dynamicEntity.SearchOrder = " e.recversion desc ";
 
                 }
@@ -2858,19 +2935,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return TransferPro_Filter_Common(paramInfo, userId);
                 }
             }
-            else {
+            else
+            {
                 throw (new Exception("参数异常"));
             }
         }
-        private OutputResult<object> TransferPro_RecIds_Scheme(EntityTransferParamInfo paramInfo, int userId) {
-            return new OutputResult<object>(null,"暂时不支持方案转移",-1);
+        private OutputResult<object> TransferPro_RecIds_Scheme(EntityTransferParamInfo paramInfo, int userId)
+        {
+            return new OutputResult<object>(null, "暂时不支持方案转移", -1);
             //string[] ids = paramInfo.RecIds.Split(',');
             //foreach (string id in ids) {
-                
+
             //}
             //return null;
         }
-        private OutputResult<object> TransferPro_RecIds_Common(EntityTransferParamInfo paramInfo, int userId) {
+        private OutputResult<object> TransferPro_RecIds_Common(EntityTransferParamInfo paramInfo, int userId)
+        {
             string[] ids = paramInfo.RecIds.Split(',');
             string entityTableName = "";
             string entityName = "";
@@ -2879,7 +2959,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(paramInfo.EntityId, userId);
             entityName = EntityInfo["entityname"].ToString();
             entityTableName = EntityInfo["entitytable"].ToString();
-            Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId,userId)));
+            Dictionary<string, object> fieldInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(this._entityProRepository.GetFieldInfo(paramInfo.FieldId, userId)));
             string FieldName = fieldInfo["fieldname"].ToString();
             bool isMultiPerson = false;
             #region 检查是否多选用户
@@ -2898,16 +2978,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             UserInfo newUserInfo = this._accountRepository.GetUserInfoById(paramInfo.NewUserId);
             if (newUserInfo == null) throw (new Exception("新的负责人不存在"));
             newUserName = newUserInfo.UserName;
-            if (paramInfo.OUserId > 0) {
+            if (paramInfo.OUserId > 0)
+            {
                 UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(paramInfo.OUserId);
-                if (oldUserInfo != null) {
+                if (oldUserInfo != null)
+                {
                     oldUserName = oldUserInfo.UserName;
                 }
             }
             List<TransferTempInfo> retList = new List<TransferTempInfo>();
-            foreach (string id in ids) {
+            foreach (string id in ids)
+            {
                 string newUserIds = "";
-                DynamicEntityDetailtMapper p = new DynamicEntityDetailtMapper() {
+                DynamicEntityDetailtMapper p = new DynamicEntityDetailtMapper()
+                {
                     EntityId = paramInfo.EntityId,
                     RecId = Guid.Parse(id),
                     NeedPower = 0
@@ -2918,7 +3002,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     needChanged = true;
                 }
-                else {
+                else
+                {
                     if (isMultiPerson)//多选的选人控件
                     {
                         if (paramInfo.OUserId > 0)
@@ -2960,33 +3045,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         else
                         {
                             //只要不存在，则新增此人
-                            bool isNeed = true; 
-                            string []oldPersons = detail[FieldName].ToString().Split(',');
-                            foreach (string person in oldPersons) {
-                                if (person == paramInfo.NewUserId.ToString()) {
+                            bool isNeed = true;
+                            string[] oldPersons = detail[FieldName].ToString().Split(',');
+                            foreach (string person in oldPersons)
+                            {
+                                if (person == paramInfo.NewUserId.ToString())
+                                {
                                     isNeed = false;
                                     break;
                                 }
                             }
                             if (isNeed) needChanged = true;
-                            if (needChanged) {
+                            if (needChanged)
+                            {
                                 newUserIds = paramInfo.NewUserId.ToString();
-                                foreach (string person in oldPersons) {
+                                foreach (string person in oldPersons)
+                                {
                                     newUserIds = newUserIds + "," + person;
                                 }
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         if (detail[FieldName].ToString().Equals(paramInfo.NewUserId.ToString()) == false)
                         {
                             needChanged = true;
                         }
                     }
-                    
-                    
+
+
                 }
-                if (needChanged) {
+                if (needChanged)
+                {
                     TransferTempInfo msg = new TransferTempInfo()
                     {
                         Message = "",
@@ -3000,11 +3091,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         IsMultiPersonField = isMultiPerson,
                         TableName = entityTableName,
                         EntityName = entityName,
-                        
+
                         EntityId = paramInfo.EntityId,
                         TypeId = detail.ContainsKey("rectype") && detail["rectype"] != null ? Guid.Parse(detail["rectype"].ToString()) : paramInfo.EntityId,
                         RecId = Guid.Parse(detail["recid"].ToString()),
-                        FieldDisplayNames =FieldName_Display,
+                        FieldDisplayNames = FieldName_Display,
                         RecName = detail["recname"] == null ? "" : detail["recname"].ToString(),
                     };
                     retList.Add(msg);
@@ -3014,7 +3105,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             TransferData(retList, userId);
             int success = 0;
             int error = 0;
-            foreach (TransferTempInfo item in retList) {
+            foreach (TransferTempInfo item in retList)
+            {
                 if (item.IsSuccess) success++;
                 else error++;
             }
@@ -3164,7 +3256,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     };
                     retList.Add(msg);
                 }
-               
+
             }
             TransferData(retList, userId);
             int success = 0;
@@ -3194,7 +3286,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 string entityName = "";
                 Dictionary<string, object> EntityInfo = this._dynamicEntityRepository.getEntityBaseInfoById(item.EntityId, userId);
                 entityName = EntityInfo["entityname"].ToString();
-                entityTableName = EntityInfo["entitytable"].ToString() ;
+                entityTableName = EntityInfo["entitytable"].ToString();
                 DynamicEntityListModel model = new DynamicEntityListModel()
                 {
                     EntityId = item.EntityId,
@@ -3257,10 +3349,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             TableName = entityTableName,
                             EntityName = entityName,
                             EntityId = item.EntityId,
-                            TypeId = rowData.ContainsKey("rectype") && rowData["rectype"]!= null ? Guid.Parse(rowData["rectype"].ToString()): item.EntityId,
+                            TypeId = rowData.ContainsKey("rectype") && rowData["rectype"] != null ? Guid.Parse(rowData["rectype"].ToString()) : item.EntityId,
                             RecId = Guid.Parse(rowData["recid"].ToString()),
-                            FieldDisplayNames = string.Join('、',displayNames.ToArray()),
-                            RecName = rowData["recname"] == null ? "": rowData["recname"].ToString(),
+                            FieldDisplayNames = string.Join('、', displayNames.ToArray()),
+                            RecName = rowData["recname"] == null ? "" : rowData["recname"].ToString(),
                         };
                         thisDealed.Add(msg);
                     }
@@ -3283,12 +3375,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             retDict.Add("detail", AllDetailDatas);
             return new OutputResult<object>(retDict);
         }
-        private void TransferData(List<TransferTempInfo> thisDealed,int userId) {
+        private void TransferData(List<TransferTempInfo> thisDealed, int userId)
+        {
             foreach (TransferTempInfo updateitem in thisDealed)
             {
                 DbTransaction tran = null;
                 bool updateSuccess = false;
-                if (updateitem.IsMultiPersonField) {
+                if (updateitem.IsMultiPersonField)
+                {
                     updateSuccess = _dynamicRepository.TransferEntityData(tran, updateitem.TableName, updateitem.FieldNames, updateitem.NewUserIds, updateitem.RecId, userId);
 
                 }
@@ -3300,20 +3394,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (updateSuccess)
                 {
                     string msgContent = "";
-                    if (updateitem.IsMultiPersonField) {
+                    if (updateitem.IsMultiPersonField)
+                    {
                         if (updateitem.OldUserId > 0)
                         {
                             msgContent = string.Format("{0} {1} 的 {2} 已经移除{3}、加入了{4}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.OldUserName, updateitem.NewUserName);
                         }
-                        else {
-                            msgContent = string.Format("{0} {1} 的 {2} 已经加入了{3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames,  updateitem.NewUserName);
+                        else
+                        {
+                            msgContent = string.Format("{0} {1} 的 {2} 已经加入了{3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.NewUserName);
                         }
                     }
                     else
                     {
                         msgContent = string.Format("{0} {1} 的 {2} 已经变更为 {3}。", updateitem.EntityName, updateitem.RecName, updateitem.FieldDisplayNames, updateitem.NewUserName);
                     }
-                     
+
                     DynamicInsertInfo dynamicInfo = new DynamicInsertInfo()
                     {
                         DynamicType = DynamicType.System,
@@ -3745,7 +3841,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> SaveRelConfig(SaveRelConfigModel entityModel, int userNumber)
         {
-            if (entityModel?.RelId == null|| entityModel.RelId== new Guid("00000000-0000-0000-0000-000000000000"))
+            if (entityModel?.RelId == null || entityModel.RelId == new Guid("00000000-0000-0000-0000-000000000000"))
             {
                 return ShowError<object>("页签id不能为空");
             }
@@ -3753,9 +3849,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var configs = entityModel.Configs;
 
             var configSets = entityModel.ConfigSets;
-            var configResult= _dynamicEntityRepository.SaveRelConfig(configs, entityModel.RelId, userNumber);
-            var setResult=_dynamicEntityRepository.SaveRelConfigSet(configSets, entityModel.RelId,userNumber);
-            if (configResult.Flag==1&& setResult.Flag==1)
+            var configResult = _dynamicEntityRepository.SaveRelConfig(configs, entityModel.RelId, userNumber);
+            var setResult = _dynamicEntityRepository.SaveRelConfigSet(configSets, entityModel.RelId, userNumber);
+            if (configResult.Flag == 1 && setResult.Flag == 1)
             {
                 return new OutputResult<object>(new OperateResult()
                 {
@@ -3773,27 +3869,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        public OutputResult<object> queryDataForDataSource(IServiceProvider serviceProvider, RelQueryDataModel queryModel, int userNum) {
+        public OutputResult<object> queryDataForDataSource(IServiceProvider serviceProvider, RelQueryDataModel queryModel, int userNum)
+        {
             int errorCode = 0;
             string errorMsg = "";
             Guid tmpEntityId = Guid.Empty;
             OutputResult<object> resujlt = ExcuteSelectAction((transaction, arg, userData) =>
             {
-                RelConfigInfo relConfigInfo=_dynamicEntityRepository.GetRelConfig(queryModel.RelId, userNum);
-                List<RelConfig> configList=relConfigInfo.Configs;
+                RelConfigInfo relConfigInfo = _dynamicEntityRepository.GetRelConfig(queryModel.RelId, userNum);
+                List<RelConfig> configList = relConfigInfo.Configs;
                 //4个统计结果
-                Dictionary<string, List<object>>  statRet = new Dictionary<string, List<object>>();
+                Dictionary<string, List<object>> statRet = new Dictionary<string, List<object>>();
                 List<object> list = new List<object>();
                 statRet.Add("data", list);
 
                 //根据条件查询结果
-                Dictionary<string, object> queryRet= new Dictionary<string, object>();
-                foreach (var config in configList) {
+                Dictionary<string, object> queryRet = new Dictionary<string, object>();
+                foreach (var config in configList)
+                {
                     //0配置1函数2服务
                     if (config.Type == 0)
                     {
                         var queryVal = _dynamicEntityRepository.queryDataForDataSource_CalcuteType(config, queryModel.RecId, userNum);
-                        queryRet.Add("q"+ config.Index, queryVal);
+                        queryRet.Add("q" + config.Index, queryVal);
                     }
                     else if (config.Type == 1)
                     {
@@ -3806,9 +3904,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         //服务没实现
                     }
                 }
-                 if(relConfigInfo.ConfigSets.Count>0)
+                if (relConfigInfo.ConfigSets.Count > 0)
                 {
-                    var configSet=relConfigInfo.ConfigSets[0];
+                    var configSet = relConfigInfo.ConfigSets[0];
                     for (int i = 0; i < 4; i++)
                     {
                         string expressionStr = GetModelValue("ConfigSet" + (i + 1), configSet);
@@ -4102,7 +4200,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     });
                 }
             }
-            else {
+            else
+            {
                 entityList.Add(new DynamicEntityCondition
                 {
                     EntityId = entity.EntityId,
@@ -4269,7 +4368,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public Guid[] RecIds { get; set; }
 
     }
-    public class TransferTempInfo {
+    public class TransferTempInfo
+    {
         public IDictionary<string, object> DetailInfo { get; set; }
         public Guid EntityId { get; set; }
         public Guid TypeId { get; set; }
@@ -4290,6 +4390,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public int OldUserId { get; set; }
         public string OldUserName { get; set; }
 
-        
+
     }
-} 
+}

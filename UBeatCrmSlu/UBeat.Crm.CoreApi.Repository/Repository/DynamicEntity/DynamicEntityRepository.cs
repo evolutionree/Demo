@@ -1344,7 +1344,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         {
             return base.ExecuteQuery(strSQL, new DbParameter[] { }, tran);
         }
-
+        public new List<Dictionary<string, object>> ExecuteQuery(string strSQL, DbParameter[] dbParams, DbTransaction tran)
+        {
+            return base.ExecuteQuery(strSQL, dbParams, tran);
+        }
 
         public OperateResult MarkRecordComplete(Guid recId, int userNumber)
         {

@@ -107,7 +107,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult FollowRecord(FollowRecordMapper entity, int userNumber);
         Dictionary<string, object> GetAllDataSourceDefine(DbTransaction tran);
         List<Dictionary<string, object>> ExecuteQuery(string strSQL, DbTransaction tran);
-
+        List<Dictionary<string, object>> ExecuteQuery(string strSQL, DbParameter[] dbParmas, DbTransaction tran);
         OperateResult MarkRecordComplete(Guid recId, int userNumber);
         EntityExtFunctionInfo getExtFunctionByFunctionName(Guid entityId, string functionname,DbTransaction tran = null);
         object  ExecuteExtFunction(EntityExtFunctionInfo funcInfo, string [] recIds, Dictionary<string, object> otherParams, int userId, DbTransaction tran = null);

@@ -18,7 +18,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
 
         public ScheduleTaskCountMapper GetScheduleTaskCount(ScheduleTaskListMapper mapper, int userId, DbTransaction trans = null)
         {
-            var sql = @"select to_char(daytime::date, 'yyyy-MM-dd') as daytime,COALESCE(tmp.unfinishedschedule,0) as unfinishedschedule,COALESCE(tmp1.unfinishedtask,0) as unfinishedtask  from generate_series((@starttime::date),
+            var sql = @"select to_char(daytime::date, 'yyyy-MM-dd') as daytime,COALESCE(tmp.unfinishedschedule,0) as unfinishedschedule,COALESCE(tmp2.unfinishedtask,0) as unfinishedtask,tmp1.schedulecount,tmp3.taskcount  from generate_series((@starttime::date),
             (@endtimetmp::date),'1 day'
             ) s(daytime) LEFT JOIN (select generate_series((starttime::date),
 (endtime::date),'1 day'
@@ -26,9 +26,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
             GROUP BY datetime
             ) as tmp ON tmp.datetime::date=daytime
 LEFT JOIN(
+    						SELECT generate_series((starttime::date),
+(endtime::date),'1 day'
+) as datetime,count(1) as schedulecount  FROM ((SELECT * FROM crm_sys_schedule AS e )) AS e
+						WHERE  
+      ((recid not in (select recid from crm_sys_schedule where  endtime<@starttime OR starttime>@endtime )) ) AND starttime is not null AND endtime is not null {1} GROUP BY datetime
+) as tmp1 ON tmp1.datetime::date=daytime
+LEFT JOIN(
 SELECT count(1) as unfinishedtask,to_char(endtime, 'yyyy-MM-dd')::date as datetime from crm_sys_task where {0} and endtime >=@starttime and endtime<=@endtime {1}
 GROUP BY datetime
-) as tmp1 ON tmp.datetime::date=daytime ";
+) as tmp2 ON tmp.datetime::date=daytime
+LEFT JOIN(
+SELECT count(1) as taskcount,to_char(endtime, 'yyyy-MM-dd')::date as datetime from crm_sys_task where  endtime >=@starttime and endtime<=@endtime {1}
+GROUP BY datetime
+) as tmp3 ON tmp.datetime::date=daytime";
 
             String scheduleCondition = String.Empty;
             String statusCondition = String.Empty;
@@ -51,15 +62,16 @@ GROUP BY datetime
             }
             else if (!string.IsNullOrEmpty(mapper.UserIds))
             {
-                scheduleCondition = " and recmanager in (select regexp_split_to_table(@userids::text,',')::int4 )";
+                scheduleCondition = " and ((@userids::text in ( select regexp_split_to_table(notConfirmParticipant::text,',')::text)) or (@userids::text in (select regexp_split_to_table(participant::text, ',')::text)))";
             }
             sql = string.Format(sql, statusCondition,scheduleCondition);
             var param = new DynamicParameters();
             param.Add("userids", mapper.UserIds);
             param.Add("starttime", mapper.DateFrom);
-            param.Add("endtime", mapper.DateTo.Value.AddDays(1));
+            param.Add("endtime", mapper.DateTo);
             param.Add("affairstatus", mapper.AffairStatus);
             param.Add("endtimetmp", mapper.DateTo);
+            param.Add("userid", mapper.DateTo);
             var unCount = DataBaseHelper.Query<Count>(sql, param);
             ScheduleTaskCountMapper result = new ScheduleTaskCountMapper();
             result.UnCount = unCount;

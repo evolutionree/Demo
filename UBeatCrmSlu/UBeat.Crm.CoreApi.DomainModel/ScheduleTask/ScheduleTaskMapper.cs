@@ -50,7 +50,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.ScheduleTask
     {
         public int UnFinishedSchedule { get; set; }
         public int UnFinishedTask { get; set; }
-
+        public int ScheduleCount { get; set; }
+        public int TaskCount { get; set; }
         public String DayTime { get; set; }
     }
     public class UnConfirmListMapper
