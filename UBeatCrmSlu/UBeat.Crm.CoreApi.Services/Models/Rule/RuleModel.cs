@@ -122,7 +122,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
         public string Rulesql { get; set; }
         public ICollection<RuleItemInfoModel> RuleItems { get; set; }
         public RuleSetInfoModel RuleSet { get; set; }
-        public Dictionary<string, string> MenuName_Lang { get; set; }
+        public string MenuName_Lang { get; set; }
     }
 
     public class RoleRuleInfoModel

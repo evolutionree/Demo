@@ -291,7 +291,7 @@ namespace UBeat.Crm.CoreApi.DomainMapper.Rule
         public int RuleType { get; set; }
         public string RuleData { get; set; }
         public string RuleSet { get; set; }
-        public Dictionary<string, string> MenuName_Lang { get; set;}
+        public string MenuName_Lang { get; set;}
     }
     public class RoleRuleQueryMapper
     {
