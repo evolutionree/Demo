@@ -370,6 +370,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         try
                         {
+                            var ddConfig = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("DingdingConfig");
+                            var wcConfig = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("WeChatConfig");
                             dynamic entityInfo = _iEntityProRepository.GetEntityInfo(msgparam.TypeId, userNumber);
                             var fields = _iEntityProRepository.FieldQuery(msgparam.EntityId.ToString(), userNumber);
                             _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
@@ -377,58 +379,65 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var users = GetUserInfoList(pushMsg.Accounts.Select(t => Convert.ToInt32(t)).ToList());
                             var currentUser = users.FirstOrDefault(t => t.UserId == userNumber);
                             List<String> ddUsers = users.Select(t => t.DDUserId).ToList();
-                            switch (configData.MsgStyleType)
+                            if (ddConfig.GetValue<Boolean>("IsSyncDingDing"))
                             {
-                                case MessageStyleType.WorkflowAudit:
-                                    packageMsg.content = msgContent;
-                                    packageMsg.title = pushMsg.Title;
-                                    packageMsg.DateTime = pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
-                                    foreach (var tmp in ddUsers)
-                                    {
-                                        packageMsg.recevier.Add(tmp);
-                                    }
-                                    packageMsg.content = packageMsg.title + " \n ## " + packageMsg.content + " \n " + packageMsg.DateTime;
-                                    MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.PicText, packageMsg);
-                                    break;
-                                case MessageStyleType.EntityOperate:
-                                    if (entityInfo.modeltype == 0)
-                                    {
-                                        packageMsg.title = "实体消息";
-                                        packageMsg.markdown = "**" + msgparam.EntityName + "  " + pushMsg.Title + "**  \r" + msgContent + " \n " + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
-                                        packageMsg.single_url = "http://www.baidu.com";
+                                switch (configData.MsgStyleType)
+                                {
+                                    case MessageStyleType.WorkflowAudit:
+                                        packageMsg.content = msgContent;
+                                        packageMsg.title = pushMsg.Title;
+                                        packageMsg.DateTime = pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
                                         foreach (var tmp in ddUsers)
                                         {
                                             packageMsg.recevier.Add(tmp);
                                         }
-                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
-                                    }
-                                    break;
-                                case MessageStyleType.EntityDynamic:
-                                    if (entityInfo.modeltype == 3)
-                                    {
-                                        packageMsg.title = "实体消息";
-                                        packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " ";
-                                        string str = String.Empty;
-                                        Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
-                                        foreach (var tmp in dicObj)
+                                        packageMsg.content = packageMsg.title + " \n ## " + packageMsg.content + " \n " + packageMsg.DateTime;
+                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.PicText, packageMsg);
+                                        break;
+                                    case MessageStyleType.EntityOperate:
+                                        if (entityInfo.modeltype == 0)
                                         {
-                                            if (tmp.Value == null) continue;
-                                            var field = fields.FirstOrDefault(t => t.FieldName == tmp.Key);
-                                            if (field == null) continue;
-                                            str += " \r• " + field.DisplayName+" ";
-                                            str+= " \r      " + tmp.Value + " ";
+                                            packageMsg.title = "实体消息";
+                                            packageMsg.markdown = "**" + msgparam.EntityName + "  " + pushMsg.Title + "**  \r" + msgContent + " \n " + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
+                                            packageMsg.single_url = "http://www.baidu.com";
+                                            foreach (var tmp in ddUsers)
+                                            {
+                                                packageMsg.recevier.Add(tmp);
+                                            }
+                                            MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
                                         }
-                                        packageMsg.markdown = packageMsg.markdown + str;
-                                        packageMsg.single_url = "http://www.baidu.com";
-                                        foreach (var tmp in ddUsers)
+                                        break;
+                                    case MessageStyleType.EntityDynamic:
+                                        if (entityInfo.modeltype == 3)
                                         {
-                                            packageMsg.recevier.Add(tmp);
+                                            packageMsg.title = "实体消息";
+                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " ";
+                                            string str = String.Empty;
+                                            Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
+                                            foreach (var tmp in dicObj)
+                                            {
+                                                if (tmp.Value == null) continue;
+                                                var field = fields.FirstOrDefault(t => t.FieldName == tmp.Key);
+                                                if (field == null) continue;
+                                                str += " \r• " + field.DisplayName + " ";
+                                                str += " \r      " + tmp.Value + " ";
+                                            }
+                                            packageMsg.markdown = packageMsg.markdown + str;
+                                            packageMsg.single_url = "http://www.baidu.com";
+                                            foreach (var tmp in ddUsers)
+                                            {
+                                                packageMsg.recevier.Add(tmp);
+                                            }
+                                            MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
                                         }
-                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
-                                    }
-                                    break;
-                                default:
-                                    break;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            if (ddConfig.GetValue<Boolean>("IsSyncWebChat"))
+                            {
+                                //Too Do
                             }
 
                         }
