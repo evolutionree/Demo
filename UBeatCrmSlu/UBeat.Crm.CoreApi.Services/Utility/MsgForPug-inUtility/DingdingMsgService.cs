@@ -226,7 +226,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             Dictionary<string, object> param = new Dictionary<string, object>();
             param.Add("msgtype", "markdown");
             param.Add("touser", string.Join("|", msg.recevier));
-            param.Add("markdown", new { title = msg.title, text= msg.imgurl?? "# 这是支持markdown的文本 \n## 标题2  \n* 列表1 \n![alt 啊](http://news.online.sh.cn/news/gb/content/attachement/jpg/site1/20180926/IMGf48e3894467148793136079.jpg)" });
+            param.Add("markdown", new { title = msg.title, text=msg.content});
+            //msg.imgurl?? "#  \n## 标题2  \n* 列表1 \n![alt 啊](http://news.online.sh.cn/news/gb/content/attachement/jpg/site1/20180926/IMGf48e3894467148793136079.jpg)"
             commonRequest.ToList().ForEach(x => param.Add(x.Key, x.Value));
 
             string realUrl = string.Format(SEND_MSG_URL, _token);

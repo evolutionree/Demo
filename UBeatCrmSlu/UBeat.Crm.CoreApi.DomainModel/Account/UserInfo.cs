@@ -17,5 +17,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
 
         public int UserSex { set; get; }
         public string NamePinyin_FistChar { get; set; }
+        public String DDUserId { get; set; }
     }
 }

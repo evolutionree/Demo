@@ -1,40 +1,37 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Dynamics;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel.Message;
-using UBeat.Crm.CoreApi.DomainModel.Notify;
+using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.IRepository;
-using UBeat.Crm.CoreApi.Repository.Repository.Dynamics;
-using UBeat.Crm.CoreApi.Repository.Repository.Message;
-using UBeat.Crm.CoreApi.Repository.Repository.Notify;
 using UBeat.Crm.CoreApi.Services.Models;
-using UBeat.Crm.CoreApi.Services.Models.Account;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Message;
 using UBeat.Crm.CoreApi.Services.Models.PushService;
+using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
-    public class MessageServices:BaseServices
+    public class MessageServices : BaseServices
     {
         private readonly IMessageRepository _msgRepository;
         private readonly IAccountRepository _accountRepository;
         private readonly PushServices _pushServices;
         private readonly CacheServices _cacheService;
         private readonly IDynamicRepository _dynamicRepository;
+        private readonly IEntityProRepository _iEntityProRepository;
         private static NLog.ILogger _logger = NLog.LogManager.GetLogger(typeof(MessageServices).FullName);
         private readonly IMapper _mapper;
         #region --GetDbConnect--
@@ -65,7 +62,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _pushServices = ServiceLocator.Current.GetInstance<PushServices>();
             _accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
             _dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicRepository>();
-            _mapper  = ServiceLocator.Current.GetInstance<IMapper>();
+            _iEntityProRepository = ServiceLocator.Current.GetInstance<IEntityProRepository>();
+            _mapper = ServiceLocator.Current.GetInstance<IMapper>();
         }
 
 
@@ -98,14 +96,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #region --同步方式写离线消息并发送消息--
 
-        public void WriteMessageWithoutTemplate(DbTransaction tran, 
-                MessageParameter msgparam, 
+        public void WriteMessageWithoutTemplate(DbTransaction tran,
+                MessageParameter msgparam,
                 int userNumber,
                 MessageGroupType grouptype,
                 MessageStyleType styletype,
                 string title,
                 string msgContent,
-                Dictionary<string, object> pushCustomContent = null, 
+                Dictionary<string, object> pushCustomContent = null,
                 int typeStatus = 0)
         {
             if (msgparam == null)
@@ -134,9 +132,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             try
             {
-                
+
                 MsgParamInfo tempData = null;
-                
+
                 if (receiverIds.Count > 0)//没有接收人，则不发消息
                 {
                     if (tempData == null)
@@ -197,12 +195,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     Accounts = receiverIds.Select(m => m.ToString()).ToList(),
                     Title = FormatMsgTemplate(msgparam.TemplateKeyValue, title),
-                    Message = FormatMsgTemplate(msgparam.TemplateKeyValue,msgContent),
+                    Message = FormatMsgTemplate(msgparam.TemplateKeyValue, msgContent),
                     SendTime = DateTime.Now.AddYears(-1).ToString(),
                     CustomContent = pushCustomContent
                 };
 
-                Task.Run(() => {
+                Task.Run(() =>
+                {
                     try
                     {
                         _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
@@ -241,7 +240,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (receiverItem.Value != null && receiverItem.Value.Count > 0 && configData.MessageUserType.Contains(receiverItem.Key))
                 {
                     receiverIds.AddRange(receiverItem.Value);
-                    if (receiverItem.Key == MessageUserType.WorkFlowCreateUser || receiverItem.Key == MessageUserType.WorkFlowCompletedApprover) {
+                    if (receiverItem.Key == MessageUserType.WorkFlowCreateUser || receiverItem.Key == MessageUserType.WorkFlowCompletedApprover)
+                    {
                         msgparam.NoticeUsers.AddRange(receiverItem.Value);
                     }
                 }
@@ -252,6 +252,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             bool msgSuccess = true;
             bool isLocalTransaction = false;
             DbConnection conn = null;
+            String msgContent = String.Empty;
             if (tran == null)
             {
                 isLocalTransaction = true;
@@ -261,10 +262,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             try
             {
-                var msgContent = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.MsgTemplate);
+                msgContent = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.MsgTemplate);
                 MsgParamInfo tempData = null;
                 //如果是动态点赞和动态评论，则先获取动态模板内容
-                if (configData.MsgStyleType == MessageStyleType.DynamicPrase)
+                // if (configData.MsgStyleType == MessageStyleType.DynamicPrase)
                 if (configData.MsgStyleType == MessageStyleType.DynamicPrase)
                 {
                     var template = _dynamicRepository.GetDynamicTemplate(msgparam.EntityId, msgparam.TypeId);
@@ -276,7 +277,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 //如果是动态消息，则先插入动态
                 //if (configData.MsgType == MessageType.DynamicMessage&& typeStatus != 1)
-                if (configData.MsgType == MessageType.DynamicMessage )
+                if (configData.MsgType == MessageType.DynamicMessage)
                 {
                     var dynamicInfo = new DynamicInsertInfo()
                     {
@@ -340,7 +341,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             catch (Exception ex)
             {
 
-                _logger.Error("WriteMessage exception:"+ex.Message);
+                _logger.Error("WriteMessage exception:" + ex.Message);
                 if (isLocalTransaction)//只有是本地事务，才需要回滚
                     tran.Rollback();
                 throw ex;
@@ -365,16 +366,78 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         CustomContent = pushCustomContent
                     };
 
-                    Task.Run(() => {
+                    Task.Run(() =>
+                    {
                         try
                         {
+                            dynamic entityInfo = _iEntityProRepository.GetEntityInfo(msgparam.TypeId, userNumber);
+                            var fields = _iEntityProRepository.FieldQuery(msgparam.EntityId.ToString(), userNumber);
                             _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
+                            Pug_inMsg packageMsg = new Pug_inMsg();
+                            var users = GetUserInfoList(pushMsg.Accounts.Select(t => Convert.ToInt32(t)).ToList());
+                            var currentUser = users.FirstOrDefault(t => t.UserId == userNumber);
+                            List<String> ddUsers = users.Select(t => t.DDUserId).ToList();
+                            switch (configData.MsgStyleType)
+                            {
+                                case MessageStyleType.WorkflowAudit:
+                                    packageMsg.content = msgContent;
+                                    packageMsg.title = pushMsg.Title;
+                                    packageMsg.DateTime = pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
+                                    foreach (var tmp in ddUsers)
+                                    {
+                                        packageMsg.recevier.Add(tmp);
+                                    }
+                                    packageMsg.content = packageMsg.title + " \n ## " + packageMsg.content + " \n " + packageMsg.DateTime;
+                                    MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.PicText, packageMsg);
+                                    break;
+                                case MessageStyleType.EntityOperate:
+                                    if (entityInfo.modeltype == 0)
+                                    {
+                                        packageMsg.title = "实体消息";
+                                        packageMsg.markdown = "**" + msgparam.EntityName + "  " + pushMsg.Title + "**  \r" + msgContent + " \n " + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
+                                        packageMsg.single_url = "http://www.baidu.com";
+                                        foreach (var tmp in ddUsers)
+                                        {
+                                            packageMsg.recevier.Add(tmp);
+                                        }
+                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
+                                    }
+                                    break;
+                                case MessageStyleType.EntityDynamic:
+                                    if (entityInfo.modeltype == 3)
+                                    {
+                                        packageMsg.title = "实体消息";
+                                        packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " ";
+                                        string str = String.Empty;
+                                        Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
+                                        foreach (var tmp in dicObj)
+                                        {
+                                            if (tmp.Value == null) continue;
+                                            var field = fields.FirstOrDefault(t => t.FieldName == tmp.Key);
+                                            if (field == null) continue;
+                                            str += " \r• " + field.DisplayName+" ";
+                                            str+= " \r      " + tmp.Value + " ";
+                                        }
+                                        packageMsg.markdown = packageMsg.markdown + str;
+                                        packageMsg.single_url = "http://www.baidu.com";
+                                        foreach (var tmp in ddUsers)
+                                        {
+                                            packageMsg.recevier.Add(tmp);
+                                        }
+                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+
                         }
-                        catch (Exception ex) {
+                        catch (Exception ex)
+                        {
                             _logger.Error("推送消息失败：" + ex.Message);
                         }
                     });
-                    
+
                 }
 
 
@@ -392,7 +455,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="caseId"></param>
         /// <param name="caseItemId"></param>
         /// <param name="handlerUserId"></param>
-        public void UpdateJointAuditMessage(DbTransaction tran, Guid businessId,Guid caseId,int stepnum,  int choiceStatus ,int handlerUserId) {
+        public void UpdateJointAuditMessage(DbTransaction tran, Guid businessId, Guid caseId, int stepnum, int choiceStatus, int handlerUserId)
+        {
 
             DbConnection conn = null;
             bool isLocalTransaction = false;
@@ -410,15 +474,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     tran.Commit();
                 }
                 //获取当前节点的消息和接收者的状态
-                List<MsgWriteBackBizStatusInfo> msglist = this._msgRepository.GetWorkflowMsgList(tran, businessId,caseId, stepnum,handlerUserId);
+                List<MsgWriteBackBizStatusInfo> msglist = this._msgRepository.GetWorkflowMsgList(tran, businessId, caseId, stepnum, handlerUserId);
                 List<MsgWriteBackBizStatusInfo> needChangedMsgList = new List<MsgWriteBackBizStatusInfo>();
-                foreach (MsgWriteBackBizStatusInfo msg in msglist) {
+                foreach (MsgWriteBackBizStatusInfo msg in msglist)
+                {
                     if (msg.BizStatus != 0) continue;
                     if (msg.ReceiverId == handlerUserId)
                     {
                         msg.BizStatus = 10 + choiceStatus;
                     }
-                    else {
+                    else
+                    {
                         msg.BizStatus = 2;
                     }
                     needChangedMsgList.Add(msg);
@@ -431,7 +497,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     tran.Rollback();
                 _logger.Error(ex.Message);
             }
-            finally {
+            finally
+            {
                 if (isLocalTransaction)
                 {
                     conn.Close();
@@ -523,7 +590,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             model.RecName = entityDataDetail.ContainsKey("recname") && entityDataDetail["recname"] != null ? entityDataDetail["recname"].ToString() : string.Empty;
 
-            model.RecCode= entityDataDetail.ContainsKey("reccode") && entityDataDetail["reccode"] != null ? entityDataDetail["reccode"].ToString() : string.Empty;
+            model.RecCode = entityDataDetail.ContainsKey("reccode") && entityDataDetail["reccode"] != null ? entityDataDetail["reccode"].ToString() : string.Empty;
             return model;
         }
 
@@ -919,8 +986,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else
                 {
                     var flowResultstemp = flowResults.Where(m => m.EntityId == entityid);
-                   
-                    if(flowResultstemp.Count()==0)
+
+                    if (flowResultstemp.Count() == 0)
                         flowResultstemp = flowResults.Where(m => m.EntityId == Guid.Empty);
 
                     if (flowResultstemp.Count() == 1)
@@ -932,7 +999,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         flowResultstemp = flowResults.Where(m => m.RelEntityId == Guid.Empty);
                     return flowResultstemp.FirstOrDefault();
                 }
-                
+
             }
 
             //1、获取funccode，entityid和relentityid完全匹配的模板
@@ -948,7 +1015,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (result == null)
                     {
                         //4.获取funccode匹配的通用模板
-                        
+
                         result = listData.Where(m => m.FuncCode == funccode && m.EntityId == Guid.Empty && m.RelEntityId == Guid.Empty && m.FlowId == Guid.Empty).FirstOrDefault();
                         if (result == null)
                         {
@@ -993,7 +1060,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         #endregion
- 
+
 
         public OutputResult<Object> GetDynamicsUnMsg(UnHandleMsgModel requestModel, int userId)
         {

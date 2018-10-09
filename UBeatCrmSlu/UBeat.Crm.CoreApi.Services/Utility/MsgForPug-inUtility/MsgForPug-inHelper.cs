@@ -74,7 +74,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             if (token == null)
             {
                 token = service.getToken();
-                _cacheService.Repository.Add(serviceTypeName, token);//, new TimeSpan(3600));
+                TimeSpan expired = new TimeSpan(0, 60, 0);
+                _cacheService.Repository.Add(serviceTypeName, token, expired);//, new TimeSpan(3600));
             }
             service.updateToken(token.ToString());
             if (string.IsNullOrEmpty(token.ToString()))

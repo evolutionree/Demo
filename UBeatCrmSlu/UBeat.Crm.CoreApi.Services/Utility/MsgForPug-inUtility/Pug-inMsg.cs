@@ -31,6 +31,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
         public String fileid { get; set; }
         public String imgurl { get; set; }
        public String single_url { get; set; }       public String single_title { get; set; }
+        public String DateTime { get; set; }
         public Pug_inMsg()
         {
             recevier = new List<string>();

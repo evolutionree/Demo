@@ -144,7 +144,10 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
 (array(select regexp_split_to_table::int4 FROM regexp_split_to_table(refuser,',') UNION select @userid), ',') where recid=@recid
  ";
             var sql = @"update crm_sys_schedule set notConfirmParticipant=array_to_string
-(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(notConfirmParticipant,',') where regexp_split_to_table::int4 not in (@userid) ), ',') where recid=@recid
+(array(select (case when regexp_split_to_table='' OR regexp_split_to_table is null THEN '0' ELSE regexp_split_to_table END)::int4
+ FROM regexp_split_to_table(notConfirmParticipant,',')
+ where (case when regexp_split_to_table='' OR regexp_split_to_table is null THEN '0' ELSE regexp_split_to_table END)::int4 not in (@userid) ), ',') where recid=
+@recid
  ";
             var sqlRejectReason = @" insert into  crm_sys_schedule_rej_reason(userid,scheduleid,recjectreason) values (@userid,@scheduleid,@recjectreason);";
             var sqlDel = @"delete from crm_sys_schedule_rej_reason where userid=@userid and scheduleid=@scheduleid";
@@ -153,7 +156,7 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
             param.Add("recid", mapper.RecId);
             param.Add("userid", userId);
             param.Add("scheduleid", mapper.RecId);
-
+            param.Add("recjectreason", mapper.RejectReason);
             var result = DataBaseHelper.ExecuteNonQuery(sqlReject, trans.Connection, trans, param);
             if (result > 0)
             {
