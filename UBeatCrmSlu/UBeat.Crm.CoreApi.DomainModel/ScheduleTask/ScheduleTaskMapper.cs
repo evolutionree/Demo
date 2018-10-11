@@ -43,7 +43,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.ScheduleTask
 
     public class ScheduleTaskCountMapper
     {
-        public   IList<Count> UnCount { get; set; }
+        public IList<Count> UnCount { get; set; }
     }
 
     public class Count
@@ -99,7 +99,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.ScheduleTask
             {
                 RuleFor(d => d.RecId).Must(t => t != Guid.Empty).WithMessage("日程Id不能为空");
                 RuleFor(d => d.AffairType).Must(t => t >= 0).WithMessage("类型不能小于0");
-                RuleFor(d => d.OperateType).Must(t => t >= 1 && t <= 2).WithMessage("操作类型必须是1或者2");
+                RuleFor(d => d.OperateType).Must(t => t == 1 || t == 2).WithMessage("操作类型必须是1或者2");
             }
         }
     }

@@ -140,7 +140,7 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
         }
         public OperateResult RejectSchedule(UnConfirmScheduleStatusMapper mapper, int userId, DbTransaction trans = null)
         {
-            var sqlReject = @"update crm_sys_schedule set participant=array_to_string
+            var sqlReject = @"update crm_sys_schedule set refuser=array_to_string
 (array(select regexp_split_to_table::int4 FROM regexp_split_to_table(refuser,',') UNION select @userid), ',') where recid=@recid
  ";
             var sql = @"update crm_sys_schedule set notConfirmParticipant=array_to_string
@@ -181,7 +181,9 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
         {
             var sql = @"delete from crm_sys_schedule where recid=@recid";
             var sqlExit = @"update crm_sys_schedule set participant=array_to_string
-(array(select regexp_split_to_table::int4 FROM regexp_split_to_table(notConfirmParticipant,',') UNION select @userid), ',') where recid=@recid";
+(array(select (case when regexp_split_to_table='' OR regexp_split_to_table is null THEN '0' ELSE regexp_split_to_table END)::int4
+ FROM regexp_split_to_table(participant,',')
+ where (case when regexp_split_to_table='' OR regexp_split_to_table is null THEN '0' ELSE regexp_split_to_table END)::int4 not in (@userid) ), ',') where recid=@recid";
             OperateResult result = null;
             var param = new DynamicParameters();
             param.Add("recid", mapper.RecId);

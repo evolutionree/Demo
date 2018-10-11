@@ -11,7 +11,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
     public class WeChatMsgService : IMSGService
     {
         private static readonly string getTokenURL = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={0}&corpsecret={1}";
-        private static readonly string snedMsgURL = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={0}";
+        private static readonly string sendMsgURL = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={0}";
         private string _token;
 
         private static readonly string AgentId;
@@ -76,7 +76,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             param.Add("text", new { content  = msg.content});
             commonRequest.ToList().ForEach(x => param.Add(x.Key, x.Value));
 
-            string realUrl = string.Format(snedMsgURL, _token);
+            string realUrl = string.Format(sendMsgURL, _token);
             string body = Newtonsoft.Json.JsonConvert.SerializeObject(param);
             var response = HttpLib.Post(realUrl, body);
             var searchResult = Newtonsoft.Json.JsonConvert.DeserializeObject(response);
@@ -106,7 +106,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             param.Add("textcard", new { title = msg.title, url = msg.responseUrl ?? "URL", description = msg.content});
             commonRequest.ToList().ForEach(x => param.Add(x.Key, x.Value));
 
-            string realUrl = string.Format(snedMsgURL, _token);
+            string realUrl = string.Format(sendMsgURL, _token);
             string body = Newtonsoft.Json.JsonConvert.SerializeObject(param);
             var response = HttpLib.Post(realUrl, body);
             var searchResult = Newtonsoft.Json.JsonConvert.DeserializeObject(response);
@@ -115,13 +115,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
 
         public bool sendPictureMessage(Pug_inMsg msg)
         {
-            string realUrl = string.Format(snedMsgURL, _token);
+            string realUrl = string.Format(sendMsgURL, _token);
             return true;
         }
 
         public bool sendPicTextMessage(Pug_inMsg msg)
         {
-            string realUrl = string.Format(snedMsgURL, _token);
+            string realUrl = string.Format(sendMsgURL, _token);
             return true;
         }
 

@@ -451,7 +451,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         }
         public List<UserInfo> GetUserInfoList(List<int> userids)
         {
-            var sql = @"SELECT userid, username,namepinyin,usericon,usersex,dduserid FROM crm_sys_userinfo WHERE userid =ANY(@userids)";
+            var sql = @"SELECT userid, username,namepinyin,usericon,usersex,dduserid,wcuserid FROM crm_sys_userinfo WHERE userid =ANY(@userids)";
 
             var param = new DbParameter[]
                     {
