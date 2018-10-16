@@ -54,5 +54,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (model == null) return ResponseError<object>("参数格式错误");
             return _scheduleTaskServices.DelayScheduleDay(model, UserId);
         }
+        [HttpPost]
+        [Route("checkauth")]
+        public dynamic CheckAuth([FromBody]CheckAuthModel model)
+        {
+            if (model == null) return ResponseError<object>("参数格式错误");
+            return _scheduleTaskServices.CheckAuth(model, UserId);
+        }
     }
 }

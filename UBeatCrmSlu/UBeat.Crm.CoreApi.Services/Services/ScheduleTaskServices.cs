@@ -77,8 +77,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return ExcuteAction((transaction, arg, userData) =>
             {
-                OperateResult result    = _iScheduleTaskRepository.DeleteOrExitSchedule(mapper, userId, transaction);
-     
+                OperateResult result = _iScheduleTaskRepository.DeleteOrExitSchedule(mapper, userId, transaction);
+
                 return new OutputResult<object>(result);
             }, model, userId);
         }
@@ -97,6 +97,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(result);
 
             }, model, userId);
+        }
+
+        public OutputResult<object> CheckAuth(CheckAuthModel model, int userId)
+        {
+            var result = _iScheduleTaskRepository.CheckAuth(model.RecId, model.UserId, userId);
+            return new OutputResult<object>(result);
         }
     }
 }

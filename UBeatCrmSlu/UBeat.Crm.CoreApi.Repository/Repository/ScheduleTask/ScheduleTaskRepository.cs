@@ -16,6 +16,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
     public class ScheduleTaskRepository : RepositoryBase, IScheduleTaskRepository
     {
 
+
+        //        public List<Dictionary<string, object>> GetOtherPeopleSchedule()
+        //        {
+        //            var sql = "Select outersql.*,crm_func_entity_protocol_format_userinfo_multi(outersql.participant) as participant_name,crm_func_entity_protocol_format_userinfo_multi(outersql.notconfirmparticipant) as notconfirmparticipant_name,crm_func_entity_protocol_format_workflow_auditstatus(outersql.recaudits) as recaudits_name,crm_func_entity_protocol_format_userinfo_multi(outersql.refuser) as refuser_name from (select e.*,u.usericon ,TO_CHAR(e.repeatenddate,'YYYY-MM-DD') repeatenddate_name,affairstatus_t.dataval as affairstatus_name, affairstatus_t.dataval_lang as affairstatus_lang,reccreator_t.username as reccreator_name,TO_CHAR(e.reccreated,'YYYY-MM-DD HH24:MI:SS') reccreated_name,recmanager_t.username as recmanager_name,recupdator_t.username as recupdator_name,TO_CHAR(e.recupdated,'YYYY-MM-DD HH24:MI:SS') recupdated_name,rectype_t.categoryname as rectype_name,TO_CHAR(e.endtime,'YYYY-MM-DD HH24:MI:SS') endtime_name,repeatend_t.dataval as repeatend_name, repeatend_t.dataval_lang as repeatend_lang,TO_CHAR(e.starttime,'YYYY-MM-DD HH24:MI:SS') starttime_name,scheduletype_t.dataval as scheduletype_name, scheduletype_t.dataval_lang as scheduletype_lang,predeptgroup_t.deptname as predeptgroup_name,affairtype_t.dataval as affairtype_name, affairtype_t.dataval_lang as affairtype_lang,deptgroup_t.deptname as deptgroup_name,remindtype_t.dataval as remindtype_name, remindtype_t.dataval_lang as remindtype_lang,e.address->>'address' as address_name,repeattype_t.dataval as repeattype_name, repeattype_t.dataval_lang as repeattype_lang from  (\n" +
+        //"						SELECT * FROM ((SELECT * FROM crm_sys_schedule AS e WHERE (1=1))) AS e\n" +
+        //"						WHERE  e.recstatus = 1\n" +
+        //"       And ((recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime)) AND (EXISTS( SELECT * FROM (select regexp_split_to_table(affairtype::text,',')::int4 AS sel ) AS t WHERE t.sel IN (1))) AND ((exists(select 1 from (select regexp_split_to_table(@userids,',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(notConfirmParticipant, ',')::text)) or exists (select 1 from (select regexp_split_to_table(@userids,',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(participant, ',')::text)))) AND (scheduletype in (select regexp_split_to_table(@scheduletype,',')::int)))) as e  LEFT JOIN crm_sys_userinfo AS u ON u.userid = e.reccreator left outer join crm_sys_dictionary  as affairstatus_t on e.affairstatus = affairstatus_t.dataid and affairstatus_t.dictypeid=152  left outer join crm_sys_userinfo  as reccreator_t on e.reccreator = reccreator_t.userid  left outer join crm_sys_userinfo  as recmanager_t on e.recmanager = recmanager_t.userid  left outer join crm_sys_userinfo  as recupdator_t on e.recupdator = recupdator_t.userid  left outer join crm_sys_entity_category  as rectype_t on e.rectype = rectype_t.categoryid  left outer join crm_sys_dictionary  as repeatend_t on e.repeatend = repeatend_t.dataid and repeatend_t.dictypeid=89  left outer join crm_sys_dictionary  as scheduletype_t on e.scheduletype = scheduletype_t.dataid and scheduletype_t.dictypeid=81  left outer join (SELECT\n" +
+        //"	                                            relate.userid,\n" +
+        //"	                                            parentdept.deptname\n" +
+        //"                                            FROM\n" +
+        //"	                                            crm_sys_department tmpa\n" +
+        //"                                            INNER JOIN crm_sys_account_userinfo_relate relate ON relate.deptid = tmpa.deptid\n" +
+        //"                                            inner join crm_sys_department parentdept on parentdept.deptid = tmpa.pdeptid\n" +
+        //"                                            WHERE\n" +
+        //"	                                            relate.recstatus = 1) as predeptgroup_t on e.recmanager = predeptgroup_t.userid  left outer join crm_sys_dictionary  as affairtype_t on e.affairtype = affairtype_t.dataid and affairtype_t.dictypeid=91  left outer join (select  relate.userid,tmpa.deptname\n" +
+        //"                                                from crm_sys_department tmpa\n" +
+        //"	                                                inner join crm_sys_account_userinfo_relate relate on relate.deptid = tmpa.deptid\n" +
+        //"                                                where  relate.recstatus = 1 ) as deptgroup_t on e.recmanager = deptgroup_t.userid  left outer join crm_sys_dictionary  as remindtype_t on e.remindtype = remindtype_t.dataid and remindtype_t.dictypeid=87  left outer join crm_sys_dictionary  as repeattype_t on e.repeattype = repeattype_t.dataid and repeattype_t.dictypeid=84   where   e.recstatus = 1    order by extract(epoch from (endtime - starttime)) DESC limit 2147483647 offset 0) as outersql";
+
+        //        }
+
         public ScheduleTaskCountMapper GetScheduleTaskCount(ScheduleTaskListMapper mapper, int userId, DbTransaction trans = null)
         {
             var sql = @"select to_char(daytime::date, 'yyyy-MM-dd') as daytime,COALESCE(tmp.unfinishedschedule,0) as unfinishedschedule,COALESCE(tmp2.unfinishedtask,0) as unfinishedtask,tmp1.schedulecount,tmp3.taskcount  from generate_series((@starttime::date),
@@ -62,9 +83,9 @@ GROUP BY datetime
             }
             else if (!string.IsNullOrEmpty(mapper.UserIds))
             {
-                scheduleCondition = " and ((@userids::text in ( select regexp_split_to_table(notConfirmParticipant::text,',')::text)) or (@userids::text in (select regexp_split_to_table(participant::text, ',')::text)))";
+                scheduleCondition = " and (exists(select 1 from (select regexp_split_to_table(@userids,',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(notConfirmParticipant, ',')::text)) or exists (select 1 from (select regexp_split_to_table(@userids,',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(participant, ',')::text)))";
             }
-            sql = string.Format(sql, statusCondition,scheduleCondition);
+            sql = string.Format(sql, statusCondition, scheduleCondition);
             var param = new DynamicParameters();
             param.Add("userids", mapper.UserIds);
             param.Add("starttime", mapper.DateFrom);
@@ -302,6 +323,73 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
                     Msg = "确认失败"
                 };
 
+        }
+
+        public List<dynamic> CheckAuth(IList<Guid> recIds, IList<int> checkUserIds, int userNumber)
+        {
+            var sql = "select \n" +
+"case WHEN tmp.recmanager=@usernum THEN \n" +
+"true\n" +
+"    WHEN privacy=1 THEN \n" +
+"(select count(1)>0 from crm_sys_schedule where recid=tmp.recid and (exists(select 1 from\n" +
+" (select regexp_split_to_table(@userids,',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(notConfirmParticipant, ',')::text))\n" +
+" or  exists(select 1 from(select regexp_split_to_table(@userids, ',')::text) as tmp where tmp.regexp_split_to_table in\n" +
+" (select regexp_split_to_table(participant, ',')::text))) or EXISTS (select 1 from(select regexp_split_to_table(@userids,',')::INT) as tmp \n" +
+"where tmp.regexp_split_to_table  in (SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN(SELECT deptid\n" +
+" FROM crm_func_department_tree((select deptid from crm_sys_account_userinfo_relate where userid = @usernum), 1)))))\n" +
+"else\n" +
+"false\n" +
+"end  as auth,\n" +
+"tmp.recid\n" +
+"from crm_sys_schedule as tmp where recid in (select regexp_split_to_table(@recids,',')::uuid)";
+            var param = new DynamicParameters();
+            param.Add("userids", String.Join(",", checkUserIds));
+            param.Add("usernum", userNumber);
+            param.Add("recids", String.Join(",", recIds));
+            return DataBaseHelper.Query<dynamic>(sql, param);
+            #region
+            /*   var sql = "select count(1) from crm_sys_schedule where recid=@recid and recmanager=@userid;";
+               var param = new DynamicParameters();
+               param.Add("userid", userNumber);
+               param.Add("recid", recid);
+               int count = DataBaseHelper.ExecuteScalar<int>(sql, param);
+               if (count == 0)
+               {
+                   sql = "SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN(SELECT deptid FROM crm_func_department_tree((select deptid from crm_sys_account_userinfo_relate where userid = @usernum), 1)) and userid=@userid limit 1";
+                   param = new DynamicParameters();
+                   param.Add("userid", checkUserId);
+                   param.Add("usernum", userNumber);
+                   int userId = DataBaseHelper.ExecuteScalar<int>(sql, param);//如果不是我下属
+                   if (userId <= 0 || userId == checkUserId)
+                   {
+                       sql = "select privacy from crm_sys_schedule where recid=@recid and recmanager=@userid;";
+                       param = new DynamicParameters();
+                       param.Add("userid", checkUserId);
+                       param.Add("recid", recid);
+                       int privacy = DataBaseHelper.ExecuteScalar<int>(sql, param);
+                       if (privacy == 1)
+                       {
+                           sql = "select count(1) from crm_sys_schedule where exists(select 1 from (select regexp_split_to_table('@userid',',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(notConfirmParticipant, ',')::text)) or exists(select 1 from(select regexp_split_to_table('@userid', ',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(participant, ',')::text)) and recid=@recid limit 1";
+                           param = new DynamicParameters();
+                           param.Add("recid", recid);
+                           param.Add("userid", userNumber);
+                           count = DataBaseHelper.ExecuteScalar<int>(sql, param);
+                           if (count <= 1)
+                           {
+                               return new OperateResult
+                               {
+                                   Msg = "没权限查看该日程"
+                               };
+                           }
+                       }
+                   }
+               }
+               return new OperateResult
+               {
+                   Flag = 1
+               };
+               */
+            #endregion
         }
     }
 }

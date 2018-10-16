@@ -20,5 +20,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult DeleteOrExitSchedule(DeleteScheduleTaskMapper mapper, int userId, DbTransaction trans = null);
 
         OperateResult DelayScheduleDay(DelayScheduleMapper mapper, int userId, DbTransaction trans = null);
+
+        List<dynamic> CheckAuth(IList<Guid> recIds, IList<int> checkUserIds, int userNumber);
     }
 }

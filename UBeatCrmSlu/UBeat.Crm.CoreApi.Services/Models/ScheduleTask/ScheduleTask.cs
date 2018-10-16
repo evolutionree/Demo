@@ -51,4 +51,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.ScheduleTask
 
         public DateTime? EndTime { get; set; }
     }
+
+    public class CheckAuthModel
+    {
+        public List<Guid> RecId { get; set; }
+        public List<int> UserId { get; set; }
     }
+}
