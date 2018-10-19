@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UBeat.Crm.CoreApi.Controlle
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UBeat.Crm.CoreApi.Desktop", "UBeat.Crm.CoreApi.Desktop\UBeat.Crm.CoreApi.Desktop.csproj", "{A0DA729A-1850-4230-B0C0-7E7307206508}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UBeat.Crm.CoreApi.DingTalk", "UBeat.Crm.CoreApi.DingTalk\UBeat.Crm.CoreApi.DingTalk.csproj", "{DA9BF775-0367-46EA-A775-A6F457CACB36}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -167,6 +169,18 @@ Global
 		{A0DA729A-1850-4230-B0C0-7E7307206508}.Release|x64.Build.0 = Release|Any CPU
 		{A0DA729A-1850-4230-B0C0-7E7307206508}.Release|x86.ActiveCfg = Release|Any CPU
 		{A0DA729A-1850-4230-B0C0-7E7307206508}.Release|x86.Build.0 = Release|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Debug|x64.Build.0 = Debug|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Debug|x86.Build.0 = Debug|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Release|x64.ActiveCfg = Release|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Release|x64.Build.0 = Release|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Release|x86.ActiveCfg = Release|Any CPU
+		{DA9BF775-0367-46EA-A775-A6F457CACB36}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

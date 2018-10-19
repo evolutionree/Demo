@@ -4362,6 +4362,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return tmp;
         }
         #endregion
+
+ 
+
     }
     public class MuleSendParamInfo
     {

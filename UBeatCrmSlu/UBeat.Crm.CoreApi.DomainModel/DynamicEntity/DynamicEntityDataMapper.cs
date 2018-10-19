@@ -110,5 +110,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public string RelateEntityId { get; set; }
         public string RelateTypeId { get; set; }
         public string EntityId { get; set; }
+
     }
 }

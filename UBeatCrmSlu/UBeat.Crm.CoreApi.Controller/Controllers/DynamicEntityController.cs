@@ -56,6 +56,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dynamicEntityServices.SelectTemporaryDetails(g, UserId);
         }
 
+
         [HttpPost]
         [Route("deletetemporarylist")]
         public OutputResult<object> DeleteTemporaryList([FromBody] DelTempListModel body)

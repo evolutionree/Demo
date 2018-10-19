@@ -1607,28 +1607,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 return false;
             }
         }
-
         public bool ExistsData(Guid CacheId, int userNumber, DbTransaction tran)
         {
-            try
+            string sql = @"select * from crm_sys_temporary_entity where cacheid= @cacheid";
+            var param = new DbParameter[]
             {
-
-                string sql = @"select * from crm_sys_temporary_entity where cacheid= @cacheid";
-                var param = new DbParameter[]
-                {
                 new NpgsqlParameter("cacheid",CacheId)
-                };
-                return this.ExecuteQuery(sql, param, tran).Count() == 0;
-            }
-            catch (Exception ex) {
-                return false;
-            }
+            };
+            return this.ExecuteQuery(sql, param, tran).Count() == 0;
         }
 
         public bool AddTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
         {
             string sql = @"insert into crm_sys_temporary_entity values 
 (@recmanager,@createdtime,@datajson::jsonb,@fieldjson::jsonb,@typeid,@cacheid,@inputjson::jsonb,@title,@fieldname,@recrelateid,@relateentityid,@relatetypeid,@entityid::uuid)";
+
+
+
             var p = new DbParameter[]
             {
                 new NpgsqlParameter("recmanager",userNumber),
@@ -1647,31 +1642,6 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             };
             return this.ExecuteNonQuery(sql, p, tran) > 0;
         }
-
-        public bool UpdateTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
-        {
-            string sql = @"update crm_sys_temporary_entity 
-set recmanager=@recmanager,datajson=@datajson::jsonb,fieldjson=@fieldjson::jsonb,inputjson=@inputjson::jsonb,typeid=@typeid::uuid,
-title=@title,fieldname=@fieldname,recrelateid=@recrelateid,relateentityid=@relateentityid,relatetypeid=@relatetypeid,createdtime=@createdtime
-where cacheid = @cacheid";
-            var p = new DbParameter[]
-            {
-                new NpgsqlParameter("recmanager",userNumber),
-                new NpgsqlParameter("datajson",data.DataJson),
-                new NpgsqlParameter("fieldjson",data.FieldJson),
-                new NpgsqlParameter("cacheid",data.CacheId),
-                new NpgsqlParameter("inputjson",data.InputJson),
-                new NpgsqlParameter("typeid",data.TypeId),
-                new NpgsqlParameter("title",data.Title),
-                new NpgsqlParameter("fieldname",data.FieldName),
-                new NpgsqlParameter("recrelateid",data.RecRelateId),
-                new NpgsqlParameter("relateentityid",data.RelateEntityId),
-                new NpgsqlParameter("relatetypeid",data.RelateTypeId),
-                new NpgsqlParameter("createdtime",DateTime.Now)
-            };
-            return this.ExecuteNonQuery(sql, p, tran) > 0;
-        }
-
         public void DeleteTemporary(Guid CacheId, int userNumber, DbTransaction tran)
         {
             string sql = @"delete from crm_sys_temporary_entity where cacheid= @cacheid";
@@ -1681,6 +1651,7 @@ where cacheid = @cacheid";
             };
             this.ExecuteNonQuery(sql, p, tran);
         }
+
 
         public List<Dictionary<string, object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran)
         {
@@ -1717,5 +1688,32 @@ where cacheid = @cacheid";
             };
             return ExecuteNonQuery(sql, p, tran) > 0;
         }
+
+
+
+        public bool UpdateTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
+        {
+            string sql = @"update crm_sys_temporary_entity 
+set recmanager=@recmanager,datajson=@datajson::jsonb,fieldjson=@fieldjson::jsonb,inputjson=@inputjson::jsonb,typeid=@typeid::uuid,
+title=@title,fieldname=@fieldname,recrelateid=@recrelateid,relateentityid=@relateentityid,relatetypeid=@relatetypeid,createdtime=@createdtime
+where cacheid = @cacheid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("recmanager",userNumber),
+                new NpgsqlParameter("datajson",data.DataJson),
+                new NpgsqlParameter("fieldjson",data.FieldJson),
+                new NpgsqlParameter("cacheid",data.CacheId),
+                new NpgsqlParameter("inputjson",data.InputJson),
+                new NpgsqlParameter("typeid",data.TypeId),
+                new NpgsqlParameter("title",data.Title),
+                new NpgsqlParameter("fieldname",data.FieldName),
+                new NpgsqlParameter("recrelateid",data.RecRelateId),
+                new NpgsqlParameter("relateentityid",data.RelateEntityId),
+                new NpgsqlParameter("relatetypeid",data.RelateTypeId),
+                new NpgsqlParameter("createdtime",DateTime.Now)
+            };
+            return this.ExecuteNonQuery(sql, p, tran) > 0;
+        }
+
     }
 }
