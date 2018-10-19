@@ -328,24 +328,24 @@ on e.repeatType = repeatType_t.dataid and repeatType_t.dictypeid=84   where  1=1
         public List<dynamic> CheckAuth(IList<Guid> recIds, IList<int> checkUserIds, int userNumber)
         {
             var sql = "select \n" +
-"case WHEN tmp.recmanager=@usernum THEN \n" +
+"case WHEN tmp1.recmanager=@userids::int4 THEN \n" +
 "true\n" +
-"    WHEN privacy=1 THEN \n" +
-"(select count(1)>0 from crm_sys_schedule where recid=tmp.recid and (exists(select 1 from\n" +
+"    WHEN tmp1.privacy=1 THEN \n" +
+"(select count(1)>0 from crm_sys_schedule where recid=tmp1.recid and (exists(select 1 from\n" +
 " (select regexp_split_to_table(@userids,',')::text) as tmp where tmp.regexp_split_to_table in (select regexp_split_to_table(notConfirmParticipant, ',')::text))\n" +
 " or  exists(select 1 from(select regexp_split_to_table(@userids, ',')::text) as tmp where tmp.regexp_split_to_table in\n" +
-" (select regexp_split_to_table(participant, ',')::text))) or EXISTS (select 1 from(select regexp_split_to_table(@userids,',')::INT) as tmp \n" +
+" (select regexp_split_to_table(participant, ',')::text))) or EXISTS (select 1 from(select regexp_split_to_table(tmp1.recmanager::text,',')::INT) as tmp \n" +
 "where tmp.regexp_split_to_table  in (SELECT userid FROM crm_sys_account_userinfo_relate WHERE recstatus = 1 AND deptid IN(SELECT deptid\n" +
 " FROM crm_func_department_tree((select deptid from crm_sys_account_userinfo_relate where userid = @usernum), 1)))))\n" +
 "else\n" +
-"false\n" +
+"true\n" +
 "end  as auth,\n" +
-"tmp.recid\n" +
-"from crm_sys_schedule as tmp where recid in (select regexp_split_to_table(@recids,',')::uuid)";
+"tmp1.recid\n" +
+"from crm_sys_schedule as tmp1 where recid in (select regexp_split_to_table(@recids,',')::uuid)";
             var param = new DynamicParameters();
-            param.Add("userids", String.Join(",", checkUserIds));
-            param.Add("usernum", userNumber);
+            param.Add("userids",userNumber.ToString());
             param.Add("recids", String.Join(",", recIds));
+            param.Add("usernum", userNumber);
             return DataBaseHelper.Query<dynamic>(sql, param);
             #region
             /*   var sql = "select count(1) from crm_sys_schedule where recid=@recid and recmanager=@userid;";
