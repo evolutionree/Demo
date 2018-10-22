@@ -980,9 +980,10 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 mobileTable.SubTitleFieldName = "";
                 mobileTable.EntityId = firstInfo.EntityId;
                 mobileTable.DetailColumns = new List<MobileTableFieldDefineInfo>();
-                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() {FieldLabel = "负责人",FieldName= "recmanager_name" });
-                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "客户名称", FieldName = "belongcustomer_name" });
-                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "金额", FieldName = "premoney" });
+                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "负责人", FieldName = "recmanager_name" });
+                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "客户名称", FieldName = "belongcustomer_name" });
+                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "金额", FieldName = "premoney" });
+
             }
             else if (firstInfo.EntityId == "239a7c69-8238-413d-b1d9-a0d51651abfa")
             {
@@ -992,9 +993,10 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 mobileTable.SubTitleFieldName = "";
                 mobileTable.EntityId = firstInfo.EntityId;
                 mobileTable.DetailColumns = new List<MobileTableFieldDefineInfo>();
-                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "合同负责人", FieldName = "recmanager_name" });
-                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "客户名称", FieldName = "customerid_name" });
-                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "合同金额", FieldName = "contractvolume" });
+                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "合同负责人", FieldName = "recmanager_name" });
+                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "客户名称", FieldName = "customerid_name" });
+                mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "合同金额", FieldName = "contractvolume" });
+
             }
             else {
                 //其他通用实体
@@ -1020,7 +1022,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                         if (item.ContainsKey("displayname")) {
                             displayname = item["displayname"].ToString();
                         }
-                        mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = displayname, FieldName = fieldname });
+                        mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = displayname, FieldName = fieldname });
                     }
                 }
             }
