@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Controller\UBeat.Crm.CoreApi.Controller.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Core\UBeat.Crm.CoreApi.Core.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.DomainModel\UBeat.Crm.CoreApi.DomainModel.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.IRepository\UBeat.Crm.CoreApi.IRepository.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Repository\UBeat.Crm.CoreApi.Repository.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Services\UBeat.Crm.CoreApi.Services.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.LicenseCore\UBeat.Crm.LicenseCore.csproj" />
+  </ItemGroup>
+
+</Project>
