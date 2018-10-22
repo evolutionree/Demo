@@ -400,9 +400,10 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             mobileTable.SubTitleFieldName = "";
             mobileTable.EntityId = Contract_EntityId;
             mobileTable.DetailColumns = new List<MobileTableFieldDefineInfo>();
-            mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "合同负责人", FieldName = "recmanager_name" });
-            mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "客户名称", FieldName = "customerid_name" });
-            mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { FieldLabel = "合同金额", FieldName = "contractvolume" });
+            mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "合同负责人", FieldName = "recmanager_name" });
+            mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "客户名称", FieldName = "customerid_name" });
+            mobileTable.DetailColumns.Add(new MobileTableFieldDefineInfo() { Title = "合同金额", FieldName = "contractvolume" });
+
 
             #endregion
             Dictionary<string, List<Dictionary<string, object>>> retData = (Dictionary<string, List<Dictionary<string, object>>>)_targetAndCompletedReportRepository.DataList(Contract_EntityId, totalSQL, " recid ", 1, 10000, userNum);

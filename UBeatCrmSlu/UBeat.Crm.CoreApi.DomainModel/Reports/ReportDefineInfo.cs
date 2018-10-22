@@ -153,7 +153,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public List<MobileTableFieldDefineInfo> DetailColumns { get; set; }
     }
     public class MobileTableFieldDefineInfo {
-        public string FieldLabel { get; set; }
+        public string Title { get; set; }
         public string FieldName { get; set; }
     }
     public class ComponentTitleInfo {

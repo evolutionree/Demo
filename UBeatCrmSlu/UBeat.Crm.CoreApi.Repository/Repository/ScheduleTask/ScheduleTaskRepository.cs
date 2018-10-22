@@ -43,7 +43,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ScheduleTask
             (@endtimetmp::date),'1 day'
             ) s(daytime) LEFT JOIN (select generate_series((starttime::date),
 (endtime::date),'1 day'
-) as datetime,count(1) as unfinishedschedule from crm_sys_schedule  where {0} and recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime) AND starttime is not null AND endtime is not null {1}
+) as datetime,count(1) as unfinishedschedule from crm_sys_schedule  where {0}  and recstatus=1 and recid not in (select recid from crm_sys_schedule where endtime<@starttime OR starttime>@endtime) AND starttime is not null AND endtime is not null {1}
             GROUP BY datetime
             ) as tmp ON tmp.datetime::date=daytime
 LEFT JOIN(
