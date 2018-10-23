@@ -165,9 +165,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "【字段表列名】不能是保留的关键字", -1);
             }
             var entity = _mapper.Map<EntityFieldProModel, EntityFieldProSaveMapper>(entityModel);
-            var data = JsonConvert.DeserializeObject<EntityFieldLanguage>(entity.FieldConfig);
-            entity.FieldLabel_Lang = data.FieldLabel_Lang;
-            entity.DisplayName_Lang = data.DisplayName_Lang;
+            //var data = JsonConvert.DeserializeObject<EntityFieldLanguage>(entity.FieldConfig);
+            //entity.FieldLabel_Lang = data.FieldLabel_Lang;
+            //entity.DisplayName_Lang = data.DisplayName_Lang;
             string DisplayName = "", FieldLabel = "";
             MultiLanguageUtils.GetDefaultLanguageValue(entity.DisplayName, entity.DisplayName_Lang, out DisplayName);
             if (DisplayName != null) entity.DisplayName = DisplayName;
