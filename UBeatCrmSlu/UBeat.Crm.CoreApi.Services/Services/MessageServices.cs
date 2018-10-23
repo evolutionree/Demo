@@ -414,14 +414,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         if (entityInfo.modeltype == 3)
                                         {
                                             packageMsg.title = "实体消息";
-                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + Convert.ToDateTime(pushMsg.SendTime).AddYears(1).ToString().Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " ";
+                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
                                             string str = String.Empty;
                                             Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
                                             foreach (var tmp in dicObj)
                                             {
                                                 if (tmp.Value == null) continue;
                                                 var field = fields.FirstOrDefault(t => t.FieldName == tmp.Key);
-                                                if (field == null) continue;
+                                                if (field == null || field.ControlType != 1012) continue;
                                                 str += " \r• " + field.DisplayName + " ";
                                                 str += " \r      " + tmp.Value + " ";
                                             }
