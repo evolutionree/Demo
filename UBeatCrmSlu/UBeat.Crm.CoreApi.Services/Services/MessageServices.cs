@@ -400,7 +400,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         {
                                             packageMsg.title = "实体消息";
                                             packageMsg.markdown = "**" + msgparam.EntityName + "  " + pushMsg.Title + "**  \r" + msgContent + " \n " + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
-                                            packageMsg.single_url = String.Format("http://code.renqiankeji.com:11666/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
+                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
                                             foreach (var tmp in ddUsers)
                                             {
                                                 packageMsg.recevier.Add(tmp);
@@ -424,7 +424,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                 str += " \r      " + tmp.Value + " ";
                                             }
                                             packageMsg.markdown = packageMsg.markdown + str;
-                                            packageMsg.single_url = String.Format("http://code.renqiankeji.com:11666/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
+                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
                                             foreach (var tmp in ddUsers)
                                             {
                                                 packageMsg.recevier.Add(tmp);

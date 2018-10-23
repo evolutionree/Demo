@@ -26,10 +26,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             IMSGService service = obj.createMsgService();
 
             var token = _cacheService.Repository.Get(serviceTypeName);
-            if (token == null||String.IsNullOrEmpty(token.ToString()))
+            if (token == null || String.IsNullOrEmpty(token.ToString()))
             {
                 token = service.getToken();
-                _cacheService.Repository.Add(serviceTypeName, token);//, new TimeSpan(3600));
+                TimeSpan expiration = DateTime.UtcNow.AddSeconds(3600) - DateTime.UtcNow;
+                _cacheService.Repository.Add(serviceTypeName, token, expiration);//, 
             }
             service.updateToken(token.ToString());
             switch (msgType)
@@ -68,11 +69,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility
             IMSGService service = obj.createMsgService();
 
             var token = _cacheService.Repository.Get(serviceTypeName);
-            if (token == null)
+            if (token == null || String.IsNullOrEmpty(token.ToString()))
             {
                 token = service.getToken();
-                TimeSpan expired = new TimeSpan(0, 60, 0);
-                _cacheService.Repository.Add(serviceTypeName, token, expired);//, new TimeSpan(3600));
+                TimeSpan expiration = DateTime.UtcNow.AddSeconds(3600) - DateTime.UtcNow;
+                _cacheService.Repository.Add(serviceTypeName, token, expiration);//, 
             }
             service.updateToken(token.ToString());
             if (string.IsNullOrEmpty(token.ToString()))
