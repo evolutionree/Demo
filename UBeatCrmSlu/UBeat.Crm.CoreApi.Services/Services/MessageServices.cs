@@ -357,12 +357,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 if (!string.IsNullOrEmpty(configData.NotifyTemplate) && msgSuccess)
                 {
+                    var date = DateTime.Now;
                     var pushMsg = new AccountsPushExtModel()
                     {
                         Accounts = receiverIds.Select(m => m.ToString()).ToList(),
                         Title = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.TitleTemplate),
                         Message = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.NotifyTemplate),
-                        SendTime = DateTime.Now.AddYears(-1).ToString(),
+                        SendTime = date.AddYears(-1).ToString(),
                         CustomContent = pushCustomContent
                     };
 
@@ -370,6 +371,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         try
                         {
+                            var tmpDate = date.ToString("yyyy-MM-dd HH:mm");
                             var ddConfig = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("DingdingConfig");
                             var wcConfig = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("WeChatConfig");
                             dynamic entityInfo = _iEntityProRepository.GetEntityInfo(msgparam.TypeId, userNumber);
@@ -387,7 +389,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     case MessageStyleType.WorkflowAudit:
                                         packageMsg.content = msgContent;
                                         packageMsg.title = pushMsg.Title;
-                                        packageMsg.DateTime = pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
+                                        packageMsg.DateTime = tmpDate;
                                         foreach (var tmp in ddUsers)
                                         {
                                             packageMsg.recevier.Add(tmp);
@@ -399,7 +401,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         if (entityInfo.modeltype == 0)
                                         {
                                             packageMsg.title = "实体消息";
-                                            packageMsg.markdown = "**" + msgparam.EntityName + "  " + pushMsg.Title + "**  \r" + msgContent + " \n " + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
+                                            packageMsg.markdown = "**" + msgparam.EntityName + "  " + pushMsg.Title + "**  \r" + msgContent + "  \r" + tmpDate;
                                             packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
                                             foreach (var tmp in ddUsers)
                                             {
@@ -412,7 +414,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         if (entityInfo.modeltype == 3)
                                         {
                                             packageMsg.title = "实体消息";
-                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " ";
+                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + Convert.ToDateTime(pushMsg.SendTime).AddYears(1).ToString().Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " ";
                                             string str = String.Empty;
                                             Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
                                             foreach (var tmp in dicObj)
@@ -444,7 +446,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     case MessageStyleType.WorkflowAudit:
                                         packageMsg.content = msgContent;
                                         packageMsg.title = pushMsg.Title;
-                                        packageMsg.DateTime = pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":"));
+                                        packageMsg.DateTime = tmpDate;
                                         foreach (var tmp in wcUsers)
                                         {
                                             packageMsg.recevier.Add(tmp);
@@ -456,7 +458,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         if (entityInfo.modeltype == 0)
                                         {
                                             packageMsg.title = msgparam.EntityName + "  " + pushMsg.Title;
-                                            packageMsg.content = msgContent + " \n " + pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " \n ";
+                                            packageMsg.content = msgContent + " \n " + tmpDate + " \n ";
                                             packageMsg.responseUrl = String.Format("http://code.renqiankeji.com:11666/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
                                             foreach (var tmp in wcUsers)
                                             {
@@ -469,7 +471,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         if (entityInfo.modeltype == 3)
                                         {
                                             packageMsg.title = currentUser.UserName + "  " + msgparam.EntityName;
-                                            packageMsg.content = pushMsg.SendTime.Substring(0, pushMsg.SendTime.LastIndexOf(":")) + " \n ";
+                                            packageMsg.content = tmpDate + " \n ";
                                             string str = String.Empty;
                                             Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
                                             foreach (var tmp in dicObj)
