@@ -434,6 +434,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
                                         }
                                         break;
+                                    case MessageStyleType.DynamicPrase:
+                                        if (msgparam.FuncCode == "EntityDynamicComment")
+                                        {
+                                            packageMsg.title = "实体评论消息";
+                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
+                                            packageMsg.markdown = packageMsg.markdown + " \r" + msgContent;
+                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.RelEntityId, msgparam.RelBusinessId);
+                                            foreach (var tmp in ddUsers)
+                                            {
+                                                packageMsg.recevier.Add(tmp);
+                                            }
+                                        
+                                        }
+                                        else {
+                                            packageMsg.title = "实体消息";
+                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
+                                            packageMsg.markdown = packageMsg.markdown + " \r" + pushMsg.Message;
+                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.RelEntityId, msgparam.RelBusinessId);
+                                            foreach (var tmp in ddUsers)
+                                            {
+                                                packageMsg.recevier.Add(tmp);
+                                            }
+                                        }
+                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
+                                        break;
+                                    case MessageStyleType.RedmindCanSkip:
+                                        packageMsg.title = "实体消息";
+                                        packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
+                                        packageMsg.markdown = packageMsg.markdown + " \r" + pushMsg.Message;
+                                        packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.RelEntityId, msgparam.RelBusinessId);
+                                        foreach (var tmp in ddUsers)
+                                        {
+                                            packageMsg.recevier.Add(tmp);
+                                        }
+                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
+                                        break;
                                     default:
                                         break;
                                 }
