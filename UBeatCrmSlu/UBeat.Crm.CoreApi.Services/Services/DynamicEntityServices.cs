@@ -1581,7 +1581,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return param;
         }
-        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber, bool CalcCountOnly = false)
+        public OutputResult<object> CommonDataList(DynamicEntityListMapper dynamicEntity, PageParam pageParam, bool isAdvanceQuery, int userNumber, bool CalcCountOnly = false, bool isColumnFilter = false)
         {
             DbTransaction tran = null;
 
@@ -1950,7 +1950,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     OrderBySQL = tmp;
                 }
             }
-            if (isAdvanceQuery)
+            if (isAdvanceQuery || isColumnFilter)
             {
                 if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
                 {
@@ -2365,10 +2365,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
             }
-
+            bool isColumnFilter = false;
             #region 处理字段自由过滤
             if (dynamicModel.ColumnFilter != null && dynamicModel.ColumnFilter.Count > 0)
             {
+
                 var searchFields = GetEntityFields(dynamicEntity.EntityId, userNumber);
                 foreach (DynamicEntityFieldSearch field in searchFields)
                 {
@@ -2416,7 +2417,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (data.Count > 0)
                 {
                     dynamicEntity.SearchQuery = dynamicEntity.SearchQuery + " AND (" + string.Join(" AND ", data.Values.ToArray()) + ")";
+                    isColumnFilter = true;
                 }
+
+
 
             }
 
@@ -2475,7 +2479,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 }
             }
-            return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber, CalcCountOnly);
+            return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber, CalcCountOnly, isColumnFilter);
         }
 
         public OutputResult<object> Detail(DynamicEntityDetailModel dynamicModel, int userNumber)
@@ -4363,7 +4367,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
 
- 
+
 
     }
     public class MuleSendParamInfo
