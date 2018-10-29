@@ -19,6 +19,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
     public class DingTalkAdressBookServices : EntityBaseServices
     {
         private readonly IDingTalkRepository _dingTalk;
+        private ILogger _logger = NLog.LogManager.GetLogger("UBeat.Crm.CoreApi.DingTalk.Services.DingTalkAdressBookServices");
         public DingTalkAdressBookServices(IDingTalkRepository dingTalk)
         {
             _dingTalk = dingTalk;
@@ -60,7 +61,9 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
             string Access_token = DingTalkTokenUtils.GetAccessToken();
             string ddUserUrl = DingTalkUrlUtils.GetUserId() + "?access_token=" + Access_token + "&code=" + code;
             string response = DingTalkHttpUtils.HttpGet(ddUserUrl);
+            _logger.Log(LogLevel.Fatal,JsonConvert.SerializeObject(response));
             var ddUserInfo = JsonConvert.DeserializeObject<DingTalkUserInfo>(response);
+            
             var userData = _dingTalk.GetUserInfoforDingding(ddUserInfo.userid);
             return userData;
         }
