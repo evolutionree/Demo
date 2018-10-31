@@ -97,6 +97,14 @@ namespace UBeat.Crm.CoreApi.DingTalk.Utils
             return _baseUrl + "user/list";
         }
 
+        public static string GetRoleList()
+        {
+            return _baseUrl + "topapi/role/list";
+        }
+        public static string GetRoleGroupList()
+        {
+            return _baseUrl + "topapi/role/list";
+        }
 
     }
 }

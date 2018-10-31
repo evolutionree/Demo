@@ -290,7 +290,21 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
 
         #endregion
 
-
+        public bool GetRoleList(int userId)
+        {
+            string accessToken = DingTalkTokenUtils.GetAccessToken();
+            var collection = DingTalkTokenUtils.GetRoleList(accessToken);
+            foreach (var tmp in collection.RoleRelations)
+            {
+                Guid groupId = _dingTalk.AddGroup(tmp.Group.GroupName, tmp.Group.GroupId, userId);
+                foreach (var tmp1 in tmp.RoleList.RoleList)
+                {
+                    Guid roleId = _dingTalk.AddRole(tmp1.RoleName, tmp1.Id, userId);
+                    _dingTalk.AddRoleGroup(groupId, roleId, tmp.Group.GroupId, tmp1.Id, userId);
+                }
+            }
+            return true;
+        }
 
 
     }

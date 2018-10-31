@@ -296,6 +296,16 @@ namespace UBeat.Crm.CoreApi.Controllers
             return new OutputResult<object>(result);
         }
 
+        [AllowAnonymous]
+        [HttpPost("getrolelist")]
+        public OutputResult<object> GetRoleList([FromBody] GetMessageModel body)
+        {
+            var result = _services.GetRoleList(UserId);
+            return new OutputResult<object>(result);
+        }
+
+
+
         public class TokenModel
         {
             public string Access_Token { get; set; }
@@ -340,7 +350,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             public string Key { get; set; }
         }
-
+        /// <summary>
+        /// SSO login 
+        /// </summary>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpPost("synchdeptwithdingtalk")]
+        public OutputResult<object> SynchDeptWithDingtalk([FromBody] H5LoginWithCodeParamInfo paramInfo)
+        {
+            _services.SynDingTalkDepartment();
+            return null;
+        }
 
         /// <summary>
         /// SSO login 

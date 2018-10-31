@@ -8,6 +8,8 @@ using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.Services.Models.Department;
+using Dapper;
+using UBeat.Crm.CoreApi.Repository.Utility;
 
 namespace UBeat.Crm.CoreApi.DingTalk.Repository
 {
@@ -268,9 +270,50 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
         }
 
 
+        public Guid AddGroup(String groupName, String dingDingGroupId, int userId)
+        {
 
+            var sql = "INSERT INTO  \"crm_sys_role_group\" (\"rolegroupname\", \"grouptype\", \"recorder\", \"reccreator\", \"recupdator\",dingdinggroupid) VALUES (@groupname, '1',(select ( max(recorder)+1) from crm_sys_role_group),  @userid, @userid,@dingdinggroupid) returning rolegroupid;";//, \"rolegroupname_lang\" '{\"cn\": \"@\", \"en\": \"fsdfdsf54\", \"tw\": \"繁体\"}'
+            var delSql = "delete from crm_sys_role_group where dingdinggroupid=@dingdinggroupid";
+            var param = new DynamicParameters();
+            param.Add("userid", userId);
+            param.Add("dingdinggroupid", dingDingGroupId);
+            param.Add("groupname", groupName);
+            DataBaseHelper.ExecuteNonQuery(delSql, param);
+            Guid id = DataBaseHelper.ExecuteScalar<Guid>(sql, param);
+            return id;
+        }
 
+        public Guid AddRole(String roleName, String dingDingRoleId, int userId)
+        {
 
+            var sql = "INSERT INTO  \"crm_sys_role\" (rolename,roletype,rolepriority,roleremark,recorder,reccreator,recupdator,dingdingroleid) VALUES (@rolename, 1,0,'',(select ( max(recorder)+1) from crm_sys_role ),@userid, @userid,@dingdingroleid) returning roleid;";//, \"rolegroupname_lang\" '{\"cn\": \"@\", \"en\": \"fsdfdsf54\", \"tw\": \"繁体\"}'
+            var delSql = "delete from crm_sys_role where dingdingroleid=@dingdingroleid";
+            var param = new DynamicParameters();
+            param.Add("userid", userId);
+            param.Add("dingdingroleid", dingDingRoleId);
+            param.Add("rolename", roleName);
+            DataBaseHelper.ExecuteNonQuery(delSql, param);
+            Guid id = DataBaseHelper.ExecuteScalar<Guid>(sql, param);
+            return id;
+        }
+
+        public bool AddRoleGroup(Guid groupId, Guid roleId, String dingDingGroupId, String dingDingRoleId, int userId)
+        {
+            var sql = "INSERT INTO  \"crm_sys_role_group_relate\" (roleid,rolegroupid,dingdingroleid,dingdinggroupid) VALUES (@roleid,@rolegroupid,@dingdingroleid,@dingdinggroupid);";//, \"rolegroupname_lang\" '{\"cn\": \"@\", \"en\": \"fsdfdsf54\", \"tw\": \"繁体\"}'
+            var delSql = "delete from crm_sys_role_group_relate where dingdinggroupid=@dingdinggroupid and dingdingroleid=@dingdingroleid";
+            var param = new DynamicParameters();
+            param.Add("roleid", roleId);
+            param.Add("rolegroupid", groupId);
+            param.Add("dingdinggroupid", dingDingGroupId);
+            param.Add("dingdingroleid", dingDingRoleId);
+            DataBaseHelper.ExecuteNonQuery(delSql, param);
+            int count = DataBaseHelper.ExecuteNonQuery(sql, param);
+            if (count > 0)
+                return true;
+            else
+                return false;
+        }
 
     }
 }

@@ -26,7 +26,13 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
         bool IsDepartmentExist(string departmentName);
 
         bool IsUserExist(int userMobile);
- 
 
+
+        Guid AddGroup(String groupName, String dingDingGroupId, int userId);
+
+
+        Guid AddRole(String roleName, String dingDingRoleId, int userId);
+
+        bool AddRoleGroup(Guid groupId, Guid roleId, String dingDingGroupId, String dingDingRoleId, int userId);
     }
 }

@@ -1,10 +1,11 @@
 ﻿
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.Text;
-
+using System.Linq;
 namespace UBeat.Crm.CoreApi.DingTalk.Utils
 {
     public class DingTalkTokenUtils
@@ -142,7 +143,47 @@ namespace UBeat.Crm.CoreApi.DingTalk.Utils
             var result = JsonConvert.DeserializeObject<GetDepartmentUserResponse>(responsestring);
             return result;
         }
+        public static DingTalkRoleRelations GetRoleList(string accessToken)
+        {
+            string requestUrl = DingTalkUrlUtils.GetRoleList();
+            string url = string.Format("{0}?access_token={1}", requestUrl, accessToken);
 
+            string responsestring = DingTalkHttpUtils.HttpGet(url);
+            JObject jo = JObject.Parse(responsestring);
+            JToken jt = jo.SelectToken("result").SelectToken("list");
+            List<JToken> lstJt = jt.ToList();
+            JArray ja = JArray.Parse(jt.ToString());
+            DingTalkRoleGroup group = new DingTalkRoleGroup();
+            DingTalkRoleRelation relation = new DingTalkRoleRelation();
+            DingTalkRole role = new DingTalkRole();
+            DingTalkRoleList roleList = new DingTalkRoleList();
+            DingTalkRoleRelations dingTalkRoleRelations = new DingTalkRoleRelations();
+            foreach (JToken tmp in jt)
+            {
+                String groupid = JObject.Parse(tmp.ToString())["groupId"].ToString();
+                group.GroupId = JObject.Parse(tmp.ToString())["groupId"].ToString();
+                group.GroupName = JObject.Parse(tmp.ToString())["name"].ToString();
+                JToken jt1 = JObject.Parse(tmp.ToString())["roles"];
+                foreach (var tmp1 in jt1)
+                {
+                    role.Id = JObject.Parse(tmp1.ToString())["id"].ToString();
+                    if (roleList.RoleList.Count > 0 && roleList.RoleList.Exists(t => t.Id == role.Id)) continue;
+                    role.Id = JObject.Parse(tmp1.ToString())["id"].ToString();
+                    role.RoleName = JObject.Parse(tmp1.ToString())["name"].ToString();
+                    roleList.RoleList.Add(role);
+                    role = new DingTalkRole();
+                 
+                }
+                relation.Group = group;
+                relation.RoleList = roleList;
+                dingTalkRoleRelations.RoleRelations.Add(relation);
+                group = new DingTalkRoleGroup();
+                relation = new DingTalkRoleRelation();
+                roleList = new DingTalkRoleList();
+            }
+        //    var result = JsonConvert.DeserializeObject<DingTalkRoleList>(responsestring);
+            return dingTalkRoleRelations;
+        }
     }
 
 
@@ -221,7 +262,37 @@ namespace UBeat.Crm.CoreApi.DingTalk.Utils
         public List<DingTalkUserinfo> userlist { get; set; }
 
     }
- 
 
+    public class DingTalkRoleGroup
+    {
+        public String GroupId { get; set; }
+        public String GroupName { get; set; }
+    }
+    public class DingTalkRoleRelation
+    {
+        public DingTalkRoleGroup Group { get; set; }
+        public DingTalkRoleList RoleList { get; set; }
+    }
+    public class DingTalkRoleRelations
+    {
+        public DingTalkRoleRelations()
+        {
+            RoleRelations = new List<DingTalkRoleRelation>();
+        }
+        public List<DingTalkRoleRelation> RoleRelations { get; set; }
+    }
+    public class DingTalkRoleList
+    {
+        public DingTalkRoleList() {
+            RoleList = new List<DingTalkRole>();
+        }
+        public List<DingTalkRole> RoleList { get; set; }
+    }
+    public class DingTalkRole
+    {
+        public String Id { get; set; }
+
+        public String RoleName { get; set; }
+    }
 
 }
