@@ -81,6 +81,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public int CssTypeId { get; set; }
         public int ViewStyleId { get; set; }
         public string ColNames { get; set; }
+        public string Columns { get; set; }
         public string Fonts { get; set; }
         public string Colors { get; set; }
         public string RuleSql { get; set; }
@@ -97,6 +98,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
                 RuleFor(d => d.DataSourceId).NotNull().WithMessage("数据源Id不能为空");
             }
         }
+    }
+    public class ColNamesObjMapper
+    {
+        public string FieldName { get; set; }
+        public string DisplayName { get; set; }
+        public string RecOrder { get; set; }
     }
 
     public class UpdateDataSourceConfigMapper : BaseEntity

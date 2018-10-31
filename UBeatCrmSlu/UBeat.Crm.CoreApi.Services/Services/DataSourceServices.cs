@@ -15,6 +15,7 @@ using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using System.Data.Common;
 using UBeat.Crm.CoreApi.Core.Utility;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -89,6 +90,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (entity == null || !entity.IsValid())
             {
                 return HandleValid(entity);
+            }
+            entity.ColNames = "";
+            if (!string.IsNullOrEmpty(entity.Columns))
+            {
+                var data = JsonConvert.DeserializeObject<List<ColNamesObjMapper>>(entity.Columns);
+                if (data.Count > 0)
+                {
+                    foreach (var obj in data)
+                    {
+                        entity.ColNames += obj.FieldName + ',';
+                    }
+                    entity.ColNames = entity.ColNames.Substring(0, entity.ColNames.Length - 1);
+                }
             }
             return HandleResult(dataSourceRepository.InsertSaveDataSourceDetail(entity, userNumber));
         }

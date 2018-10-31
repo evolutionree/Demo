@@ -54,6 +54,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public int CssTypeId { get; set; }
         public int ViewStyleId { get; set; }
         public string ColNames { get; set; }
+        public string Columns { get; set; }
         public string Fonts { get; set; }
         public string Colors { get; set; }
         public string RuleSql { get; set; }
