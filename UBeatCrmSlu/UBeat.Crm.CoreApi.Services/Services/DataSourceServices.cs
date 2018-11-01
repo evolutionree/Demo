@@ -114,6 +114,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
+            entity.ColNames = "";
+            if (!string.IsNullOrEmpty(entity.Columns))
+            {
+                var data = JsonConvert.DeserializeObject<List<ColNamesObjMapper>>(entity.Columns);
+                if (data.Count > 0)
+                {
+                    foreach (var obj in data)
+                    {
+                        entity.ColNames += obj.FieldName + ',';
+                    }
+                    entity.ColNames = entity.ColNames.Substring(0, entity.ColNames.Length - 1);
+                }
+            }
             return HandleResult(dataSourceRepository.UpdateSaveDataSourceDetail(entity, userNumber));
         }
         public OutputResult<object> DataSourceDelete(DataSrcDeleteModel dataSource, int userNumber)

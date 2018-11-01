@@ -107,7 +107,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateSaveDataSourceDetail(UpdateDataSourceConfigMapper dataSource, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_datasourcedetail_edit(@configid,@rulesql,@viewstyleid, @fieldkeys,@fonts,@colors, @userno)
+                SELECT * FROM crm_func_datasourcedetail_edit(@configid,@rulesql,@viewstyleid, @fieldkeys,@fonts,@colors, @userno,@colnamesobj::jsonb)
             ";
             var param = new DynamicParameters();
             param.Add("configid", dataSource.DataConfigId);
@@ -117,6 +117,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("fonts", dataSource.Fonts);
             param.Add("colors", dataSource.Colors);
             param.Add("userno", userNumber);
+            param.Add("colnamesobj", dataSource.Columns);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
