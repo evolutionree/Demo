@@ -247,5 +247,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dataSourceServices.DynamicDataSrcQuery(entityModel, UserId);
         }
         #endregion
+
+        [HttpPost("getfieldrelation")]
+        public OutputResult<object> GetDataSourceIsAdd([FromBody] IsAddModel body)
+        {
+            if (body == null || body.DataSourceId == Guid.Empty)
+                return ResponseError<object>("参数格式有误");
+            return _dataSourceServices.GetDataSourceIsAdd(body, UserId);
+        }
     }
 }

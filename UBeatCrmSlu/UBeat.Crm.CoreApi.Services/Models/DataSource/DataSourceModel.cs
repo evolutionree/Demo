@@ -171,4 +171,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.DataSource
         public Guid DicId { get; set; }
         public int RecOrder { get; set; }
     }
+
+    public class IsAddModel
+    {
+        public Guid DataSourceId { get; set; }
+    }
 }

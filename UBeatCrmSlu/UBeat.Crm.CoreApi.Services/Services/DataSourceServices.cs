@@ -413,5 +413,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return new OutputResult<object>(dataSourceRepository.DynamicDataSrcQuery(entity, userNumber));
         }
+
+        public OutputResult<object> GetDataSourceIsAdd(IsAddModel model, int userNumber)
+        {
+            var res = dataSourceRepository.GetDataSourceIsAdd(model.DataSourceId);
+            if (res == null)
+                return new OutputResult<object>(null, "查询出错,联系管理员", 1);
+            //获取公共缓存数据
+            var commonData = GetCommonCacheData(userNumber);
+            //获取个人用户数据
+            UserData userData = GetUserData(userNumber);
+            //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
+            if (commonData.TotalFunctions.Exists(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath)))
+            {
+                if (!userData.HasFunction("api/dynamicentity/add", Guid.Parse(res["entityid"].ToString()), DeviceClassic))
+                {
+                    return ShowError<object>("对不起，您没有该功能的权限");
+                }
+
+            }
+            return new OutputResult<object>(res);
+        }
     }
 }

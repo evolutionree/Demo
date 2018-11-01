@@ -585,5 +585,24 @@ where dicid = @dicid";
                 return 0;
             }
         }
+
+        public Dictionary<string, object> GetDataSourceIsAdd(Guid DataSourceId)
+        {
+            try
+            {
+                string sql = @"select d.entityid,e.entityname from crm_sys_entity_datasource d
+                                LEFT JOIN crm_sys_entity e on d.entityid = e.entityid
+                                where d.datasrcid =@datasrcid";
+                var p = new DbParameter[]
+                {
+                    new NpgsqlParameter("datasrcid",DataSourceId)
+                };
+                return ExecuteQuery(sql, p).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
     }
 }
