@@ -12,6 +12,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Department
         {
             CreateMap<DepartmentAddModel, DepartmentAddMapper>();
             CreateMap<DepartmentEditModel, DepartmentEditMapper>();
+            CreateMap<DepartMasterSlaveModel, DepartMasterSlave>();
         }
     }
 }

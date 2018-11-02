@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.Account;
@@ -11,7 +12,7 @@ using UBeat.Crm.CoreApi.Services.Services;
 namespace UBeat.Crm.CoreApi.Controllers
 {
     [Route("api/[controller]")]
-    public class DepartmentController:BaseController
+    public class DepartmentController : BaseController
     {
         private readonly DepartmentServices _departmentServices;
 
@@ -38,12 +39,24 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _departmentServices.DeptEdit(deptModel, UserId);
         }
         [HttpPost("listsub")]
-        public OutputResult<object> ListSubDeptsAndUsers([FromBody]DepartmentListSubDeptParamInfo paramInfo  ) {
-            if (paramInfo == null || paramInfo.DeptId == null || paramInfo.DeptId == Guid.Empty) {
+        public OutputResult<object> ListSubDeptsAndUsers([FromBody]DepartmentListSubDeptParamInfo paramInfo)
+        {
+            if (paramInfo == null || paramInfo.DeptId == null || paramInfo.DeptId == Guid.Empty)
+            {
                 return ResponseError<object>("参数异常");
             }
             return _departmentServices.ListSubDeptsAndUsers(paramInfo.DeptId, UserId);
 
+        }
+        [HttpPost("savedeptposition")]
+        [AllowAnonymous]
+        public OutputResult<object> SaveUpdateDepartmentPosition([FromBody]DepartmentPositionModel paramInfo)
+        {
+            if (paramInfo == null)
+            {
+                return ResponseError<object>("参数异常");
+            }
+            return _departmentServices.SaveUpdateDepartmentPositiont(paramInfo, UserId);
         }
     }
 }

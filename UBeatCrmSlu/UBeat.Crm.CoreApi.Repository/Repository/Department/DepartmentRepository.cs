@@ -9,6 +9,7 @@ using UBeat.Crm.CoreApi.DomainModel.Department;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using System.Linq;
+using Dapper;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.Department
 {
@@ -33,7 +34,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
             return result.FirstOrDefault();
         }
 
-    
+
         public OperateResult EditDepartment(DepartmentEditMapper deptEntity, int userNumber)
         {
             OperateResult res = new OperateResult();
@@ -83,7 +84,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                                 new NpgsqlParameter("deptid", deptEntity.DeptId),
                                 new NpgsqlParameter("pdeptid", deptEntity.PDeptId)
                             };
-                           ExecuteNonQuery(repair_sql, repairParam, tran);
+                            ExecuteNonQuery(repair_sql, repairParam, tran);
                         }
                     }
 
@@ -122,7 +123,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                 };
                 return ExecuteQuery(strSQL, p, tran);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return new List<Dictionary<string, object>>();
             }
         }
@@ -164,6 +166,53 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
             {
                 return new List<Dictionary<string, object>>();
             }
+        }
+
+
+        public OperateResult SaveUpdateDepartmentPosition(DbTransaction tran, DepartmentPosition position, int userId)
+        {
+            try
+            {
+                var sql = @"
+                SELECT * FROM crm_func_dept_change(@userid,@deptid,@userNo)
+            ";
+                var param = new DynamicParameters();
+                param.Add("userid", position.UserId);
+                param.Add("deptid", position.Departs.FirstOrDefault(t => t.IsMaster == 1).DepartId.ToString());
+                param.Add("userNo", userId);
+                var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+                if (result.Flag == 1)
+                {
+                    foreach (var tmp in position.Departs.Where(t => t.IsMaster == 0))
+                    {
+                        var delSql = @"delete from crm_sys_parttime where userid=@userid and departid=@predepartid;";
+                        sql = @"insert into crm_sys_parttime(userid,departid) values(@userid,@departid)";
+                        var positionRecord = @"insert into crm_sys_user_position_record(userid,predepartid,curdepartid) values (@userid,@predepartid,@departid)";
+                        param = new DynamicParameters();
+                        param.Add("userid", userId);
+                        param.Add("departid", tmp.DepartId);
+                        param.Add("predepartid", tmp.PreDepartId);
+                        // param.Add("type", tmp.Type);
+                        DataBaseHelper.ExecuteNonQuery(delSql, tran.Connection, tran, param);
+                        DataBaseHelper.ExecuteNonQuery(sql, tran.Connection, tran, param);
+                        if (tmp.DepartId == tmp.PreDepartId) continue;
+                        DataBaseHelper.ExecuteNonQuery(positionRecord, tran.Connection, tran, param);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new OperateResult()
+                {
+                    Msg = "分配职位失败"
+                };
+            }
+            return new OperateResult()
+            {
+                Flag = 1,
+                Msg = "分配职位成功"
+            };
+
         }
     }
 }

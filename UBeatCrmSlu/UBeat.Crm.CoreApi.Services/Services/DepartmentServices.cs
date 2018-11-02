@@ -28,15 +28,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(deptEntity);
             }
-           
+
             var entityId = Guid.Parse("3d77dfd2-60bb-4552-bb69-1c3e73cf4095");
- 
-            var res= ExcuteAction((transaction, arg, userData) =>
-            {
-                //验证通过后，插入数据
-                var result = _departmentRepository.DeptAdd(transaction, deptEntity, userNumber);
-                return HandleResult(result);
-            }, deptEntity, userNumber);
+
+            var res = ExcuteAction((transaction, arg, userData) =>
+             {
+                 //验证通过后，插入数据
+                 var result = _departmentRepository.DeptAdd(transaction, deptEntity, userNumber);
+                 return HandleResult(result);
+             }, deptEntity, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
             return res;
         }
@@ -48,13 +48,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(deptEntity);
             }
-            
-            var res= ExcuteAction((transaction, arg, userData) =>
-            {
- 
-                var result = _departmentRepository.EditDepartment(deptEntity, userNumber);
-                return HandleResult(result);
-            }, deptEntity, userNumber);
+
+            var res = ExcuteAction((transaction, arg, userData) =>
+             {
+
+                 var result = _departmentRepository.EditDepartment(deptEntity, userNumber);
+                 return HandleResult(result);
+             }, deptEntity, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
             return res;
         }
@@ -64,7 +64,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             DbTransaction tran = null;
             try
             {
-                List<Dictionary<string,object>> subDepts = this._departmentRepository.ListSubDepts(tran, deptId, userId);
+                List<Dictionary<string, object>> subDepts = this._departmentRepository.ListSubDepts(tran, deptId, userId);
                 List<Dictionary<string, object>> subUsers = this._departmentRepository.ListSubUsers(tran, deptId, userId);
                 List<Dictionary<string, object>> wantDepts = new List<Dictionary<string, object>>();
                 Dictionary<string, object> retDict = new Dictionary<string, object>();
@@ -72,9 +72,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 retDict.Add("subusers", subUsers);
                 retDict.Add("wantdepts", wantDepts);
                 return new OutputResult<object>(retDict);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 return new OutputResult<object>(null, ex.Message, -1);
             }
+        }
+
+        public OutputResult<object> SaveUpdateDepartmentPositiont(DepartmentPositionModel deptPosModel, int userNumber)
+        {
+            DepartmentPosition position = new DepartmentPosition();
+            List<DepartMasterSlave> departs = new List<DepartMasterSlave>();
+            foreach (var tmp in deptPosModel.Departs)
+            {
+                var deptEntity = _mapper.Map<DepartMasterSlaveModel, DepartMasterSlave>(tmp);
+                if (deptEntity == null || !deptEntity.IsValid())
+                {
+                    return HandleValid(deptEntity);
+                }
+                departs.Add(deptEntity);
+            }
+            position.UserId = deptPosModel.UserId;
+            position.Departs = departs;
+            if (position == null || !position.IsValid())
+            {
+                return HandleValid(position);
+            }
+            var res = ExcuteAction((transaction, arg, userData) =>
+            {
+                var result = _departmentRepository.SaveUpdateDepartmentPosition(transaction, position, userNumber);
+                return HandleResult(result);
+            }, position, userNumber);
+            IncreaseDataVersion(DataVersionType.BasicData, null);
+            return res;
         }
     }
 }
