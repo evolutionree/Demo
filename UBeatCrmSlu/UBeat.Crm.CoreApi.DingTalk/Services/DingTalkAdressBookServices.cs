@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
         public List<DingTalkDeptInfo> GetContactList()
         {
             string Access_token = DingTalkTokenUtils.GetAccessToken();
-            string url = string.Format("{0}?access_token={1}&fetch_child=true", DingTalkUrlUtils.ListDeptsUrl(), Access_token);
+            string url = string.Format("{0}?access_token={1}&fetch_child=false&id={2}", DingTalkUrlUtils.ListDeptsUrl(), Access_token,DingTalkConfig.getInstance().RootDeptId);
             string response = DingTalkHttpUtils.HttpGet(url);
             Dictionary<string, object> result = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
             if (result.ContainsKey("department") && result["department"] != null)
@@ -205,7 +205,16 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
         public void SynDingTalkDepartment()
         {
             List<DingTalkDeptInfo> dingTalkDepartment = GetContactList();
-            var rootDepartment = dingTalkDepartment.Where(x => x.ParentId == 0).FirstOrDefault();
+            DingTalkDeptInfo rootDepartment = dingTalkDepartment.Where(x => x.Id.ToString()== DingTalkConfig.getInstance().RootDeptId).FirstOrDefault();
+            if (rootDepartment == null)
+            {
+                rootDepartment = new DingTalkDeptInfo()
+                {
+                    Id = int.Parse(DingTalkConfig.getInstance().RootDeptId),
+                    Name = "金雅福集团"
+                };
+                dingTalkDepartment.Add(rootDepartment);
+            }
             rootDepartment.CRMRecId = new Guid("7f74192d-b937-403f-ac2a-8be34714278b");
 
             SynDingTalkDepartmentRecursive(dingTalkDepartment, rootDepartment.Id);
