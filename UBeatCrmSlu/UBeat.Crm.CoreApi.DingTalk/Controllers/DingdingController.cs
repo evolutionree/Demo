@@ -172,7 +172,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [HttpPost("listdepts")]
         public OutputResult<object> ListDepts()
         {
-            List<DingTalkDeptInfo> result = _services.GetContactList();
+            List<DingTalkDeptInfo> result = _services.ListDingTalkDepartments(DingTalkConfig.getInstance().RootDeptId);
             return new OutputResult<object>(result);
         }
         [AllowAnonymous]

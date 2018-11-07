@@ -24,10 +24,11 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
         {
             _dingTalk = dingTalk;
         }
-        public List<DingTalkDeptInfo> GetContactList()
+        public List<DingTalkDeptInfo> ListDingTalkDepartments(string parentid)
         {
+            
             string Access_token = DingTalkTokenUtils.GetAccessToken();
-            string url = string.Format("{0}?access_token={1}&fetch_child=false&id={2}", DingTalkUrlUtils.ListDeptsUrl(), Access_token,DingTalkConfig.getInstance().RootDeptId);
+            string url = string.Format("{0}?access_token={1}&fetch_child=false&id={2}", DingTalkUrlUtils.ListDeptsUrl(), Access_token, parentid);
             string response = DingTalkHttpUtils.HttpGet(url);
             Dictionary<string, object> result = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
             if (result.ContainsKey("department") && result["department"] != null)
@@ -130,7 +131,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
         }
         public void SynchDeptWithDingtalk()
         {
-            List<DingTalkDeptInfo> ListOfDepts = this.GetContactList();
+            List<DingTalkDeptInfo> ListOfDepts = this.ListDingTalkDepartments(DingTalkConfig.getInstance().RootDeptId);
             if (ListOfDepts == null || ListOfDepts.Count == 0) return;
             DingTalkDeptInfo RootDept = null;
             Dictionary<long, DingTalkDeptInfo> allDept = new Dictionary<long, DingTalkDeptInfo>();
@@ -204,7 +205,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
 
         public void SynDingTalkDepartment()
         {
-            List<DingTalkDeptInfo> dingTalkDepartment = GetContactList();
+            List<DingTalkDeptInfo> dingTalkDepartment = ListDingTalkDepartments(DingTalkConfig.getInstance().RootDeptId);
             DingTalkDeptInfo rootDepartment = dingTalkDepartment.Where(x => x.Id.ToString()== DingTalkConfig.getInstance().RootDeptId).FirstOrDefault();
             if (rootDepartment == null)
             {
@@ -217,23 +218,22 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
             }
             rootDepartment.CRMRecId = new Guid("7f74192d-b937-403f-ac2a-8be34714278b");
 
-            SynDingTalkDepartmentRecursive(dingTalkDepartment, rootDepartment.Id);
+            SynDingTalkDepartmentRecursive(dingTalkDepartment, rootDepartment.CRMRecId);
         }
 
 
 
-        public void SynDingTalkDepartmentRecursive(List<DingTalkDeptInfo> departmentList, long departmentId)
+        public void SynDingTalkDepartmentRecursive(List<DingTalkDeptInfo> subDepartments, Guid parentId)
         {
-            var subDepartments = departmentList.Where(x => x.ParentId == departmentId);
-            var parentDepartment = departmentList.Where(x => x.Id == departmentId).FirstOrDefault();
             foreach (var item in subDepartments)
             {
-                SynDepartment(item, parentDepartment.CRMRecId);
-                SynDingTalkDepartmentRecursive(departmentList, item.Id);
+                Guid  deptid = SynDepartment(item, parentId);
+                List < DingTalkDeptInfo > sub   = this.ListDingTalkDepartments(item.Id.ToString());
+                SynDingTalkDepartmentRecursive(sub, deptid);
             }
         }
 
-        public void SynDepartment(DingTalkDeptInfo subItem, Guid topCrmDepartmentId)
+        public Guid SynDepartment(DingTalkDeptInfo subItem, Guid topCrmDepartmentId)
         {
             int administartorUserId = 1;
             int userNumber = 1;
@@ -253,6 +253,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
                         SynUser(userItem, departmentId, userNumber);
                     }
                 }
+                return departmentId;
             }
             else
             {
@@ -263,6 +264,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
                 {
                     SynUser(userItem, _departmentId, userNumber);
                 }
+                return _departmentId;
             }
         }
 
