@@ -48,7 +48,6 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _departmentServices.ListSubDeptsAndUsers(paramInfo.DeptId, UserId);
 
         }
-        [HttpPost("savedeptposition")]
         [AllowAnonymous]
         public OutputResult<object> SaveUpdateDepartmentPosition([FromBody]DepartmentPositionModel paramInfo)
         {
@@ -57,6 +56,16 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("参数异常");
             }
             return _departmentServices.SaveUpdateDepartmentPositiont(paramInfo, UserId);
+        }
+        [HttpPost("savedeptposition")]
+        [AllowAnonymous]
+        public OutputResult<object> AssignDepartTime([FromBody]DepartPositionModel paramInfo)
+        {
+            if (paramInfo == null)
+            {
+                return ResponseError<object>("参数异常");
+            }
+            return _departmentServices.AssignDepartTime(paramInfo, UserId);
         }
     }
 }

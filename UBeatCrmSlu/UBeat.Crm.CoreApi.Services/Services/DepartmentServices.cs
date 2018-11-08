@@ -106,5 +106,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IncreaseDataVersion(DataVersionType.BasicData, null);
             return res;
         }
+
+        public OutputResult<object> AssignDepartTime(DepartPositionModel departPositionModel, int userNumber)
+        {
+            var deptEntity = _mapper.Map<DepartPositionModel, DepartPosition>(departPositionModel);
+            if (deptEntity == null || !deptEntity.IsValid())
+            {
+                return HandleValid(deptEntity);
+            }
+            var result = _departmentRepository.AssignDepartTime(deptEntity, userNumber);
+            return HandleResult(result);
+        }
     }
 }

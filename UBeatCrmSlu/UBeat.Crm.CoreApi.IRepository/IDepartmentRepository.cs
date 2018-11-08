@@ -15,5 +15,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<Dictionary<string, object>> ListSubDepts(DbTransaction tran, Guid deptId, int userId);
         List<Dictionary<string, object>> ListSubUsers(DbTransaction tran, Guid deptId, int userId);
         OperateResult SaveUpdateDepartmentPosition(DbTransaction tran, DepartmentPosition position, int userId);
+
+
+        OperateResult AssignDepartTime(DepartPosition position, int userId);
     }
 }

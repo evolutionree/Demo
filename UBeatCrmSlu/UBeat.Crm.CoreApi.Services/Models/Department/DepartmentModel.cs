@@ -40,5 +40,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.Department
 
         public List<DepartMasterSlaveModel> Departs { get; set; }
     }
- 
+    public class DepartPositionModel
+    {
+        public int UserId { get; set; }
+
+        public Guid DepartId { get; set; }
+
+        public int Type { get; set; }
+    }
 }

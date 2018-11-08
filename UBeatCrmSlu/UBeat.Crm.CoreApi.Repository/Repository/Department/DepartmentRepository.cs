@@ -192,7 +192,6 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         param.Add("userid", userId);
                         param.Add("departid", tmp.DepartId);
                         param.Add("predepartid", tmp.PreDepartId);
-                        // param.Add("type", tmp.Type);
                         DataBaseHelper.ExecuteNonQuery(delSql, tran.Connection, tran, param);
                         DataBaseHelper.ExecuteNonQuery(sql, tran.Connection, tran, param);
                         if (tmp.DepartId == tmp.PreDepartId) continue;
@@ -213,6 +212,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                 Msg = "分配职位成功"
             };
 
+        }
+
+        public OperateResult AssignDepartTime(DepartPosition position, int userId)
+        {
+            var sql = @"update crm_sys_parttime set type=@type where userid=@userid and departid=@departid";
+            var param = new DynamicParameters();
+            param.Add("userid", position.UserId);
+            param.Add("type", position.Type);
+            param.Add("departid", position.DepartId);
+
+            int count = DataBaseHelper.ExecuteNonQuery(sql, param);
+            if (count >= 0)
+                return new OperateResult
+                {
+                    Flag = 1
+                };
+            else
+                return new OperateResult
+                {
+                    Flag = 0
+                };
         }
     }
 }

@@ -121,4 +121,25 @@ namespace UBeat.Crm.CoreApi.DomainModel.Department
             }
         }
     }
+
+    public class DepartPosition:BaseEntity
+    {
+        public int UserId { get; set; }
+
+        public Guid DepartId { get; set; }
+
+        public int Type { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new DepartPositionValidator();
+        }
+        class DepartPositionValidator : AbstractValidator<DepartPosition>
+        {
+            public DepartPositionValidator()
+            {
+                RuleFor(d =>d.DepartId).NotNull().WithMessage("部门不能为空");
+            }
+        }
+    }
 }
