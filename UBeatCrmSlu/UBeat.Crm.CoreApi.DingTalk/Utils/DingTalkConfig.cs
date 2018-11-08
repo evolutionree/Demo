@@ -29,6 +29,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Utils
         public string AppSecret { get; set; }
 
         public string AGENTId { get; set; }
+        public string RootDeptId { get; set; }
         static IConfigurationSection config;
 
         private static DingTalkConfig instance = null;
@@ -41,9 +42,10 @@ namespace UBeat.Crm.CoreApi.DingTalk.Utils
                 AGENTId = config.GetValue<string>("AgentId"),
                 CorpSecret = config.GetValue<string>("CorpSecret"),
                 CorpId = config.GetValue<string>("CorpId"),
-                SSOCorpSecret = "9Shab6LrfXPP_gaPpFx_jNbqTsjj2Ii-jt1BaL4nGSUskwjWNyA7Mu90sO_n9fU_",
-                AppId = "dingoakvipp0zjcxb5mm2q",
-                AppSecret = "OFS2koE1MpdJdzd54kt1RRimwpnDVm7kLYv9OPU5Rz6fBQvvyQHPcNHd5CsHSOB-",
+                RootDeptId = config.GetValue<string>("RootDeptId"),
+                //SSOCorpSecret = "9Shab6LrfXPP_gaPpFx_jNbqTsjj2Ii-jt1BaL4nGSUskwjWNyA7Mu90sO_n9fU_",
+                //AppId = "dingoakvipp0zjcxb5mm2q",
+                //AppSecret = "OFS2koE1MpdJdzd54kt1RRimwpnDVm7kLYv9OPU5Rz6fBQvvyQHPcNHd5CsHSOB-",
             };
             return instance;
         }

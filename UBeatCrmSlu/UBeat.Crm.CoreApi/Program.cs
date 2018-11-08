@@ -37,8 +37,8 @@ namespace UBeat.Crm.CoreApi
                 .UseStartup<Startup>()
                 .Build();
 
-            //ServerFingerPrintUtils.getInstance().checkAndAddFingerPrint();//检查服务器指纹
-            //StartScheduler();//启动主Scheler
+            ServerFingerPrintUtils.getInstance().checkAndAddFingerPrint();//检查服务器指纹
+            StartScheduler();//启动主Scheler
 
             host.Run();
         }
@@ -90,7 +90,6 @@ namespace UBeat.Crm.CoreApi
             var mainScheduleJob = JobBuilder.Create<MainSchedulerJobImp>()
                 .WithIdentity("MainScheduleJob")
                 .Build();
-            MainSchedulerJobImp.instance =(MainSchedulerJobImp) mainScheduleJob;
             var mainScheduleTrigger = TriggerBuilder.Create()
                 .WithIdentity("MainScheduleCron")
                 .StartNow()

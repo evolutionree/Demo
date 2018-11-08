@@ -307,7 +307,7 @@ where  triggerid = @triggerid
                 };
                 ExecuteNonQuery(strSQL, p, tran);
 
-                strSQL = @"update  crm_sys_qrtz_triggerdefine set isbusy = 0 and runningserver = null 
+                strSQL = @"update  crm_sys_qrtz_triggerdefine set inbusy = 0 , runningserver = null 
                         where recid = @recid ";
                 p = new DbParameter[] {
                     new Npgsql.NpgsqlParameter("@recid",triggerid)

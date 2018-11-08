@@ -10,6 +10,7 @@ using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.Services.Models.Department;
 using Dapper;
 using UBeat.Crm.CoreApi.Repository.Utility;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.DingTalk.Repository
 {
@@ -110,8 +111,9 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
                    new NpgsqlParameter("dingTalkNick",dingTalkNick),
                    new NpgsqlParameter("UserNo",userNumber)
             };
-            var result = ExecuteNonQuery(strSql, param);
-            return result;
+            var result = ExecuteQuery(strSql, param);
+            Console.Out.WriteLine(JsonConvert.SerializeObject(result));
+            return 1;
         }
 
 
