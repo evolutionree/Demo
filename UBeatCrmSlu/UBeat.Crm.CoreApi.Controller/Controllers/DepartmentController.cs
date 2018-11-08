@@ -48,6 +48,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _departmentServices.ListSubDeptsAndUsers(paramInfo.DeptId, UserId);
 
         }
+        [HttpPost("savedeptposition")]
         [AllowAnonymous]
         public OutputResult<object> SaveUpdateDepartmentPosition([FromBody]DepartmentPositionModel paramInfo)
         {
@@ -57,7 +58,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             return _departmentServices.SaveUpdateDepartmentPositiont(paramInfo, UserId);
         }
-        [HttpPost("savedeptposition")]
+        [HttpPost("assigndeparttime")]
         [AllowAnonymous]
         public OutputResult<object> AssignDepartTime([FromBody]DepartPositionModel paramInfo)
         {
