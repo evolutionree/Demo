@@ -1656,9 +1656,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public List<Dictionary<string, object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran)
         {
 
-            string sql = @"select e.entityname,te.* from crm_sys_temporary_entity as te 
+            string sql = sql = @"select c.categoryname,e.entityname,te.* from crm_sys_temporary_entity as te 
                                 left JOIN crm_sys_entity as e
-                                on te.typeid=e.entityid where te.recmanager=@userid ";
+                                on te.entityid=e.entityid
+                                left JOIN crm_sys_entity_category as c 
+                                on te.typeid = c.categoryid
+                                where te.recmanager=@userid";
             DbParameter[] p;
             if (cacheId != Guid.Empty)
             {
