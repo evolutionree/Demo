@@ -1959,6 +1959,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
                 WhereSQL = " e.recstatus = 1   ";
+            if (dynamicEntity.SearchData.Count() > 0)
+                WhereSQL += " and e." + dynamicEntity.SearchData.Keys.FirstOrDefault() + "  like '%" + dynamicEntity.SearchData.Values.FirstOrDefault() + "%'";
             string innerSQL = string.Format(@"select {0} from {1}  where  {2} order by {3} limit {4} offset {5}",
                 selectClause, fromClause, WhereSQL, OrderBySQL, pageParam.PageSize, (pageParam.PageIndex - 1) * pageParam.PageSize);
             string strSQL = string.Format(@"Select {0} from ({1}) as outersql", outerSelectClause, innerSQL);
