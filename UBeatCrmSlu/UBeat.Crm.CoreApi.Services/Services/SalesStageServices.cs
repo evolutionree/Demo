@@ -13,17 +13,19 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.SalesStage;
-
+using UBeat.Crm.CoreApi.Services.Utility;
+using System.Linq;
 namespace UBeat.Crm.CoreApi.Services.Services
 {
-    public class SalesStageServices : BaseServices
+    public class SalesStageServices : BasicBaseServices
     {
         private readonly ISalesStageRepository _salesStageRepository;
         private readonly IMapper _mapper;
         private IDynamicEntityRepository _dynamicEntityRepository;
+
         private IWorkFlowRepository _workFlowRepository;
         private Guid oppEntityId = Guid.Parse("2c63b681-1de9-41b7-9f98-4cf26fd37ef1");
-        public SalesStageServices(IMapper mapper, ISalesStageRepository salesStageRepository, 
+        public SalesStageServices(IMapper mapper, ISalesStageRepository salesStageRepository,
             IDynamicEntityRepository dynamicEntityRepository,
             IWorkFlowRepository workFlowRepository)
         {
@@ -41,13 +43,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(entity);
             }
             Dictionary<string, List<IDictionary<string, object>>> salestages = _salesStageRepository.SalesStageQuery(entity, userNumber);
-            int  highSetting = _salesStageRepository.GetHighSetting(entity.SalesstageTypeId, userNumber);
+            int highSetting = _salesStageRepository.GetHighSetting(entity.SalesstageTypeId, userNumber);
             Dictionary<string, object> retData = new Dictionary<string, object>();
-            foreach (string key in salestages.Keys) {
+            foreach (string key in salestages.Keys)
+            {
                 retData.Add(key, salestages[key]);
             }
             retData.Add("highSetting", highSetting);
-            
+
             return new OutputResult<object>(retData);
         }
         public OutputResult<object> InsertSalesStage(SaveSalesStageModel entityModel, int userNumber)
@@ -60,7 +63,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.InsertSalesStage(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.InsertSalesStage(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -74,7 +77,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.UpdateSalesStage(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.UpdateSalesStage(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -96,10 +99,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 operateName = "禁用";
             }
-            else {
+            else
+            {
                 operateName = "删除";
             }
-            if (entity.RecStatus == 0 ||entity.RecStatus == 2)
+            if (entity.RecStatus == 0 || entity.RecStatus == 2)
             {
                 int totalCount = this._salesStageRepository.checkHasOppInStageID(entity.SalesStageId, userNumber, null);
                 if (totalCount > 0)
@@ -114,7 +118,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (totalCount > 0)
                 {
                     OperateResult r = new OperateResult();
-                    r.Msg = string.Format("有{0}个推进流程处于当前阶段，无法{1}当前销售阶段", totalCount,operateName);
+                    r.Msg = string.Format("有{0}个推进流程处于当前阶段，无法{1}当前销售阶段", totalCount, operateName);
                     r.Codes = "-1";
                     return HandleResult(r);
                 }
@@ -126,8 +130,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return HandleResult(r);
                 }
             }
-            
-            var res= HandleResult(_salesStageRepository.DisabledSalesStage(entity, userNumber));
+
+            var res = HandleResult(_salesStageRepository.DisabledSalesStage(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -138,7 +142,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.OrderBySalesStage(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.OrderBySalesStage(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -149,9 +153,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.OpentHighSetting(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.OpentHighSetting(entity, userNumber));
             //校验赢单和输单的的表单配置的合理性
-            _salesStageRepository.CheckSaleStageDynamicFormSetting(entity.TypeId, userNumber,null);
+            _salesStageRepository.CheckSaleStageDynamicFormSetting(entity.TypeId, userNumber, null);
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -176,7 +180,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.InsertSalesStageEventSetting(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.InsertSalesStageEventSetting(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -200,7 +204,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.DisabledSalesStageEventSetting(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.DisabledSalesStageEventSetting(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -212,7 +216,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.InsertSalesStageDynEntitySetting(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.InsertSalesStageDynEntitySetting(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -223,7 +227,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var res= HandleResult(_salesStageRepository.DeleteSalesStageDynEntitySetting(entity, userNumber));
+            var res = HandleResult(_salesStageRepository.DeleteSalesStageDynEntitySetting(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             return res;
         }
@@ -256,7 +260,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-           
+
             var result = _salesStageRepository.SaveSalesStageOppInfoSetting(entity, userNumber);
             IncreaseDataVersion(DataVersionType.EntityData);
             return new OutputResult<object>(result);
@@ -273,19 +277,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(entity);
             }
             Dictionary<string, List<IDictionary<string, object>>> result = _salesStageRepository.SalesStageStepInfoQuery(entity, userNumber);
-            if (result != null && result.ContainsKey("EventSet") && result["EventSet"] != null) {
+            if (result != null && result.ContainsKey("EventSet") && result["EventSet"] != null)
+            {
                 List<IDictionary<string, object>> list = result["EventSet"];
-                foreach(IDictionary <string, object> item in list){
-                    if (item.ContainsKey("fileid") && item["fileid"] != null) {
+                foreach (IDictionary<string, object> item in list)
+                {
+                    if (item.ContainsKey("fileid") && item["fileid"] != null)
+                    {
                         string tmp = item["fileid"].ToString();
                         try
                         {
                             List<Dictionary<string, object>> rr = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(tmp);
-                            if (rr != null) {
+                            if (rr != null)
+                            {
                                 item.Add("files", rr);
                             }
-                        }   
-                        catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
 
                         }
                     }
@@ -311,11 +320,88 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
+            var splits = entity.SalesStageIds.Split(",");
+            int index = 0;
+            foreach (var tmp in splits)
+            {
+                if (tmp == entity.SalesStageId)
+                {
+                    index++;
+                }
+            }
+            String id = String.Empty;
+            if (index == 0)
+                id = entity.SalesStageId;
+            else
+                id = splits[--index];
+            var salesStageFields = _salesStageRepository.SalesStageSettingQuery(new SalesStageSetLstMapper
+            {
+                SalesStageId = id
+            }, userNumber);
+
+            if (salesStageFields != null && salesStageFields["SalesStageOppInfo"] != null)
+            {
+                var infoFields = salesStageFields["SalesStageOppInfo"];
+                //获取该实体分类的字段
+                List<DynamicEntityDataFieldMapper> dynamicEntityDataFieldMappers = new List<DynamicEntityDataFieldMapper>();
+                var fields = _dynamicEntityRepository.GetTypeFields(Guid.Parse(entity.TypeId), (int)DynamicProtocolOperateType.Edit, userNumber);
+                var detail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
+                {
+                    EntityId = Guid.Parse(entityModel.TypeId),
+                    RecId = Guid.Parse(entityModel.RecId),
+                    NeedPower = 0
+                }, userNumber);
+                var dic = new Dictionary<String, Object>();
+                foreach (var tmp in fields)
+                {
+                    var tmp1 = infoFields.FirstOrDefault(t => t["fieldid"].ToString() == tmp.FieldId.ToString());
+                    if (tmp1 != null)
+                    {
+                        dynamicEntityDataFieldMappers.Add(tmp);
+                        if (detail.Keys.Contains(tmp.FieldName))
+                        {
+                            dic.Add(tmp.FieldName, detail[tmp.FieldName]);
+                        }
+                    }
+                }
+
+                if (fields.Count == 0)
+                {
+                    return ShowError<object>("该实体分类没有配置相应字段");
+                }
+
+                var isMobile = header.Device.ToLower().Contains("android")
+                      || header.Device.ToLower().Contains("ios");
+
+                //验证字段
+                var validResults = DynamicProtocolHelper.ValidData(dynamicEntityDataFieldMappers, dic, DynamicProtocolOperateType.Edit, isMobile);
+                var data = new Dictionary<string, object>();
+                var validTips = new List<string>();
+                foreach (DynamicProtocolValidResult validResult in validResults.Values)
+                {
+                    if (!validResult.IsValid)
+                    {
+                        validTips.Add(validResult.Tips);
+                    }
+                    data.Add(validResult.FieldName, validResult.FieldData);
+                }
+
+                if (validTips.Count > 0)
+                {
+                    return ShowError<object>("阶段推进失败，请完善阶段信息，具体异常:【" + string.Join(";", validTips) + "】");
+                }
+
+                if (data.Count == 0)
+                {
+                    return ShowError<object>("阶段推进缺少关键信息,请检查阶段配置");
+                }
+            }
             //检查权限
             List<Guid> ids1 = new List<Guid>();
 
             ids1.Add(Guid.Parse(entity.RecId));
-            if (this.GetUserData(userNumber, false).HasFunction("api/dynamicentity/salestagepush_notimple", oppEntityId, this.DeviceClassic) == false) {
+            if (this.GetUserData(userNumber, false).HasFunction("api/dynamicentity/salestagepush_notimple", oppEntityId, this.DeviceClassic) == false)
+            {
                 OperateResult r = new OperateResult();
                 r.Msg = "您没权限推进该商机";
                 r.Codes = "-1";
@@ -375,10 +461,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             //这里要检查是否有工作流
             List<string> ids = _salesStageRepository.queryDynamicRecIdsFromOppId(entity.RecId, userNumber, null);
-            if (ids != null && ids.Count > 0) {
+            if (ids != null && ids.Count > 0)
+            {
                 List<WorkFlowCaseInfo> workflows = _workFlowRepository.getWorkFlowCaseListByRecIds(null, ids, userNumber);
-                foreach (WorkFlowCaseInfo item in workflows) {
-                    if (item.AuditStatus == AuditStatusType.Approving) {
+                foreach (WorkFlowCaseInfo item in workflows)
+                {
+                    if (item.AuditStatus == AuditStatusType.Approving)
+                    {
                         OperateResult r = new OperateResult();
                         r.Codes = "-1";
                         r.Msg = "阶段推进流程审批中,不能退回";
@@ -410,7 +499,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             //验证通过后，插入数据
-            var result = _dynamicEntityRepository.DynamicEdit(null,dynamicEntity.TypeId, dynamicEntity.RecId, dynamicEntity.FieldData, userNumber);
+            var result = _dynamicEntityRepository.DynamicEdit(null, dynamicEntity.TypeId, dynamicEntity.RecId, dynamicEntity.FieldData, userNumber);
 
             return HandleResult(result);
         }
@@ -442,7 +531,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = _salesStageRepository.ReturnSalesStageDynentityId(recId, salesStageId, userNumber);
             return result;
         }
- 
+
         public OutputResult<object> SalesStageRestart(SalesStageRestartModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<SalesStageRestartModel, SalesStageRestartMapper>(entityModel);
@@ -452,7 +541,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             //先检查权限
             List<Guid> ids = new List<Guid>();
-            
+
             ids.Add(Guid.Parse(entity.RecId));
             if (this.GetUserData(userNumber, false).HasFunction("api/dynamicentity/salestagepush_notimple", oppEntityId, this.DeviceClassic) == false)
             {
@@ -461,7 +550,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 r.Codes = "-1";
                 return HandleResult(r);
             }
-            if (this.GetUserData(userNumber, false).HasDataAccess(null, "api/dynamicentity/salestagepush_notimple", oppEntityId, this.DeviceClassic, ids) == false) {
+            if (this.GetUserData(userNumber, false).HasDataAccess(null, "api/dynamicentity/salestagepush_notimple", oppEntityId, this.DeviceClassic, ids) == false)
+            {
                 OperateResult r = new OperateResult();
                 r.Msg = "您没权限重启该商机";
                 r.Codes = "-1";
@@ -475,6 +565,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = _salesStageRepository.ReturnEntityId(typeId, userNumber);
             return result;
         }
-        
+
     }
 }

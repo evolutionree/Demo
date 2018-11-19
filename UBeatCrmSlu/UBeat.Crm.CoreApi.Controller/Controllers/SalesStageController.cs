@@ -187,7 +187,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> CheckAllowPushSalesStage([FromBody]SaveSalesStageStepInfoModel entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-
+            
+            _salesStageServices.header = GetAnalyseHeader();
             return _salesStageServices.CheckAllowPushSalesStage(entityModel, UserId);
         }
 
@@ -249,6 +250,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 if (entityModel.Info != null && entityModel.Info.TypeId != Guid.Empty)
                 {
                     entityModel.Info.RecId = Guid.Parse(entityModel.RecId);
+                    _salesStageServices.header = header;
                     result = _salesStageServices.SaveSalesStageInfo(entityModel.Info, UserId);
                 }
                 if (entityModel.DynEntity != null && entityModel.DynEntity.TypeId != Guid.Empty)
