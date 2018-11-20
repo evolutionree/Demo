@@ -274,8 +274,8 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
 
         public void SynUser(DingTalkUserinfo userItem, Guid departmentId, int userNumber)
         {
-            bool isUserExist = _dingTalk.IsUserExist(userItem.mobile);
-            if (!isUserExist)
+            Dictionary<string, object> curUser = _dingTalk.IsUserExist(userItem.mobile);
+            if (curUser == null)
             {
                 AccountUserRegistMapper _account = new AccountUserRegistMapper()
                 {
@@ -298,9 +298,26 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
                     NextMustChangePwd = 1
                 };
 
-                _dingTalk.UserAdd(_account, userItem.userid, userItem.name, userNumber);
+                _dingTalk.UserAdd(_account, userItem.userid, userItem.name, userItem.dingId, userNumber);
 
             }
+            else
+            {
+                //更改模式
+                if (curUser["username"].ToString() != userItem.name)
+                {
+                    //写日志
+                }
+                else
+                {
+                    if (curUser["dduserid"] == null || curUser["dduserid"].ToString().Length == 0
+                        || curUser["dingid"] == null || curUser["dingid"].ToString().Length == 0)
+                    {
+                        _dingTalk.UpdateDingInfo(int.Parse(curUser["userid"].ToString()), userItem.userid, userItem.dingId);
+                    }
+                }
+            }
+
         }
 
 

@@ -15,11 +15,12 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
 
         int DepartmentAdd(Guid departmentId, string departmentName, int ogLevel, int userNumber, long dingtalkId, long dingtalkParentId);
 
-        int UserAdd(AccountUserRegistMapper registEntity, string dingTalkUserID, string dingTalkNick, int userNumber);
+        int UserAdd(AccountUserRegistMapper registEntity, string dingTalkUserID, string dingTalkNick, string dingid, int userNumber);
+
 
         bool IsDepartmentExist(string departmentName, long dtDepartmetnId);
 
-        bool IsUserExist(string userMobile);
+        Dictionary<string, object> IsUserExist(string userMobile);
 
         Guid GetDepartmentId(string departmentName, long dingTalkId);
 
@@ -34,5 +35,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
         Guid AddRole(String roleName, String dingDingRoleId, int userId);
 
         bool AddRoleGroup(Guid groupId, Guid roleId, String dingDingGroupId, String dingDingRoleId, int userId);
+        void UpdateDingInfo(int userid, string dduserid, string dingId);
+
     }
 }
