@@ -214,15 +214,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
 
         }
 
-        public OperateResult AssignDepartTime(DepartPosition position, int userId)
+        public OperateResult AssignDepartTime(List<DepartPosition> position, int userId)
         {
-            var sql = @"update crm_sys_parttime set type=@type where userid=@userid and departid=@departid";
-            var param = new DynamicParameters();
-            param.Add("userid", position.UserId);
-            param.Add("type", position.Type);
-            param.Add("departid", position.DepartId);
-
-            int count = DataBaseHelper.ExecuteNonQuery(sql, param);
+            int count = 0;
+            foreach (var tmp in position)
+            {
+                var sql = @"update crm_sys_parttime set type=@type where userid=@userid and departid=@departid";
+                var param = new DynamicParameters();
+                param.Add("userid", tmp.UserId);
+                param.Add("type", tmp.Type);
+                param.Add("departid", tmp.DepartId);
+                count = DataBaseHelper.ExecuteNonQuery(sql, param);
+            }
             if (count >= 0)
                 return new OperateResult
                 {
@@ -233,6 +236,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                 {
                     Flag = 0
                 };
+        }
+
+        public List<DepartListMapper> GetDeparts(int userId, int userNum)
+        {
+            var sql = @"
+select d.deptid as departid,1 ismaster from crm_sys_department d INNER JOIN crm_sys_account_userinfo_relate re on re.deptid=d.deptid where userid=@userid and re.recstatus=1
+
+UNION
+
+SELECT departid,0 ismaster  from crm_sys_parttime pa where userid=@userid";
+            var param = new DynamicParameters();
+            param.Add("userid", userId);
+
+            return DataBaseHelper.Query<DepartListMapper>(sql, param);
         }
     }
 }

@@ -122,7 +122,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Department
         }
     }
 
-    public class DepartPosition:BaseEntity
+    public class DepartPosition : BaseEntity
     {
         public int UserId { get; set; }
 
@@ -138,8 +138,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.Department
         {
             public DepartPositionValidator()
             {
-                RuleFor(d =>d.DepartId).NotNull().WithMessage("部门不能为空");
+                RuleFor(d => d.DepartId).NotNull().WithMessage("部门不能为空");
             }
         }
+    }
+
+    public class DepartListMapper
+    {
+        public Guid DepartId { get; set; }
+        public int IsMaster { get; set; }
     }
 }

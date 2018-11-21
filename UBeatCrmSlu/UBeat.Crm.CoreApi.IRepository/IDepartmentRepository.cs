@@ -17,6 +17,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult SaveUpdateDepartmentPosition(DbTransaction tran, DepartmentPosition position, int userId);
 
 
-        OperateResult AssignDepartTime(DepartPosition position, int userId);
+        OperateResult AssignDepartTime(List<DepartPosition> position, int userId);
+        List<DepartListMapper> GetDeparts(int userId, int userNum);
     }
 }
