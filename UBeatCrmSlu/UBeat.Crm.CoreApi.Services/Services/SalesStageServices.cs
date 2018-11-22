@@ -375,7 +375,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 //验证字段
                 var validResults = DynamicProtocolHelper.ValidData(dynamicEntityDataFieldMappers, dic, DynamicProtocolOperateType.Edit, isMobile);
-                var data = new Dictionary<string, object>();
                 var validTips = new List<string>();
                 foreach (DynamicProtocolValidResult validResult in validResults.Values)
                 {
@@ -383,17 +382,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         validTips.Add(validResult.Tips);
                     }
-                    data.Add(validResult.FieldName, validResult.FieldData);
                 }
 
                 if (validTips.Count > 0)
                 {
                     return ShowError<object>("阶段推进失败，请完善阶段信息，具体异常:【" + string.Join(";", validTips) + "】");
-                }
-
-                if (data.Count == 0)
-                {
-                    return ShowError<object>("阶段推进缺少关键信息,请检查阶段配置");
                 }
             }
             //检查权限
