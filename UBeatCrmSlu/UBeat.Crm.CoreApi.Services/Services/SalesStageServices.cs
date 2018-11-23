@@ -321,7 +321,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(entity);
             }
             var splits = entity.SalesStageIds.Split(",");
-            String id = splits[splits.Length - 1 - 1];
+            String id = String.Empty;
+            if (splits.Length == 1)
+                id = splits[splits.Length - 1];
+            else
+                id = splits[splits.Length - 1 - 1];
             var salesStageFields = _salesStageRepository.SalesStageSettingQuery(new SalesStageSetLstMapper
             {
                 SalesStageId = id
