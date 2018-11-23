@@ -321,19 +321,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(entity);
             }
             var splits = entity.SalesStageIds.Split(",");
-            int index = 0;
-            foreach (var tmp in splits)
-            {
-                if (tmp == entity.SalesStageId)
-                {
-                    index++;
-                }
-            }
-            String id = String.Empty;
-            if (index == 0)
-                id = entity.SalesStageId;
-            else
-                id = splits[--index];
+            String id = splits[splits.Length - 1 - 1];
             var salesStageFields = _salesStageRepository.SalesStageSettingQuery(new SalesStageSetLstMapper
             {
                 SalesStageId = id
@@ -372,7 +360,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 var isMobile = header.Device.ToLower().Contains("android")
                       || header.Device.ToLower().Contains("ios");
-
+                foreach (var tmp in dynamicEntityDataFieldMappers)
+                {
+                    tmp.IsRequire = true;
+                }
                 //验证字段
                 var validResults = DynamicProtocolHelper.ValidData(dynamicEntityDataFieldMappers, dic, DynamicProtocolOperateType.Edit, isMobile);
                 var validTips = new List<string>();
