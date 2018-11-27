@@ -107,15 +107,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return res;
         }
 
-        public OutputResult<object> AssignDepartTime(DepartPositionModel departPositionModel, int userNumber)
+        public OutputResult<object> AssignDepartTime(List<DepartPositionModel> departPositionModel, int userNumber)
         {
-            var deptEntity = _mapper.Map<DepartPositionModel, DepartPosition>(departPositionModel);
-            if (deptEntity == null || !deptEntity.IsValid())
+            List<DepartPosition> mappers = new List<DepartPosition>();
+            foreach (var tmp in departPositionModel)
             {
-                return HandleValid(deptEntity);
+                var deptEntity = _mapper.Map<DepartPositionModel, DepartPosition>(tmp);
+                if (deptEntity == null || !deptEntity.IsValid())
+                {
+                    return HandleValid(deptEntity);
+                }
+                mappers.Add(deptEntity);
             }
-            var result = _departmentRepository.AssignDepartTime(deptEntity, userNumber);
+            var result = _departmentRepository.AssignDepartTime(mappers, userNumber);
             return HandleResult(result);
+        }
+        public OutputResult<object> GetDeparts(DepartPositionModel departPositionModel, int userNumber)
+        {
+            var result = _departmentRepository.GetDeparts(departPositionModel.UserId, userNumber);
+            return new OutputResult<object>(result);
         }
     }
 }

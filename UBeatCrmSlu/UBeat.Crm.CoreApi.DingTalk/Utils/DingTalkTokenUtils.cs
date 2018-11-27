@@ -254,6 +254,8 @@ namespace UBeat.Crm.CoreApi.DingTalk.Utils
         public string userid { get; set; }
         public string name { get; set; }
         public string email { get; set; }
+        public string dingId { get; set; }
+
     }
 
 

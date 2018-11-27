@@ -26,7 +26,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
         }
         public List<DingTalkDeptInfo> ListDingTalkDepartments(string parentid)
         {
-            
+
             string Access_token = DingTalkTokenUtils.GetAccessToken();
             string url = string.Format("{0}?access_token={1}&fetch_child=false&id={2}", DingTalkUrlUtils.ListDeptsUrl(), Access_token, parentid);
             string response = DingTalkHttpUtils.HttpGet(url);
@@ -62,9 +62,9 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
             string Access_token = DingTalkTokenUtils.GetAccessToken();
             string ddUserUrl = DingTalkUrlUtils.GetUserId() + "?access_token=" + Access_token + "&code=" + code;
             string response = DingTalkHttpUtils.HttpGet(ddUserUrl);
-            _logger.Log(LogLevel.Fatal,JsonConvert.SerializeObject(response));
+            _logger.Log(LogLevel.Fatal, JsonConvert.SerializeObject(response));
             var ddUserInfo = JsonConvert.DeserializeObject<DingTalkUserInfo>(response);
-            
+
             var userData = _dingTalk.GetUserInfoforDingding(ddUserInfo.userid);
             return userData;
         }
@@ -205,20 +205,23 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
 
         public void SynDingTalkDepartment()
         {
-            List<DingTalkDeptInfo> dingTalkDepartment = ListDingTalkDepartments(DingTalkConfig.getInstance().RootDeptId);
-            DingTalkDeptInfo rootDepartment = dingTalkDepartment.Where(x => x.Id.ToString()== DingTalkConfig.getInstance().RootDeptId).FirstOrDefault();
-            if (rootDepartment == null)
+            foreach (var tmp in DingTalkConfig.getInstance().mapperDeptIds)
             {
-                rootDepartment = new DingTalkDeptInfo()
+                List<DingTalkDeptInfo> dingTalkDepartment = ListDingTalkDepartments(tmp.DingDingDeptId);
+                DingTalkDeptInfo rootDepartment = dingTalkDepartment.Where(x => x.Id.ToString() == tmp.DingDingDeptId).FirstOrDefault();
+                if (rootDepartment == null)
                 {
-                    Id = int.Parse(DingTalkConfig.getInstance().RootDeptId),
-                    Name = "金雅福集团"
-                };
-                dingTalkDepartment.Add(rootDepartment);
-            }
-            rootDepartment.CRMRecId = new Guid("7f74192d-b937-403f-ac2a-8be34714278b");
+                    rootDepartment = new DingTalkDeptInfo()
+                    {
+                        Id = int.Parse(tmp.DingDingDeptId),
+                        Name = "金雅福集团"
+                    };
+                    dingTalkDepartment.Add(rootDepartment);
+                }
+                rootDepartment.CRMRecId = new Guid(tmp.CrmDeptId);
 
-            SynDingTalkDepartmentRecursive(dingTalkDepartment, rootDepartment.CRMRecId);
+                SynDingTalkDepartmentRecursive(dingTalkDepartment, rootDepartment.CRMRecId);
+            }
         }
 
 
@@ -227,8 +230,8 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
         {
             foreach (var item in subDepartments)
             {
-                Guid  deptid = SynDepartment(item, parentId);
-                List < DingTalkDeptInfo > sub   = this.ListDingTalkDepartments(item.Id.ToString());
+                Guid deptid = SynDepartment(item, parentId);
+                List<DingTalkDeptInfo> sub = this.ListDingTalkDepartments(item.Id.ToString());
                 SynDingTalkDepartmentRecursive(sub, deptid);
             }
         }
@@ -271,8 +274,8 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
 
         public void SynUser(DingTalkUserinfo userItem, Guid departmentId, int userNumber)
         {
-            bool isUserExist = _dingTalk.IsUserExist(userItem.mobile);
-            if (!isUserExist)
+            Dictionary<string, object> curUser = _dingTalk.IsUserExist(userItem.mobile);
+            if (curUser == null)
             {
                 AccountUserRegistMapper _account = new AccountUserRegistMapper()
                 {
@@ -295,9 +298,26 @@ namespace UBeat.Crm.CoreApi.DingTalk.Services
                     NextMustChangePwd = 1
                 };
 
-                _dingTalk.UserAdd(_account, userItem.userid, userItem.name, userNumber);
+                _dingTalk.UserAdd(_account, userItem.userid, userItem.name, userItem.dingId, userNumber);
 
             }
+            else
+            {
+                //更改模式
+                if (curUser["username"].ToString() != userItem.name)
+                {
+                    //写日志
+                }
+                else
+                {
+                    if (curUser["dduserid"] == null || curUser["dduserid"].ToString().Length == 0
+                        || curUser["dingid"] == null || curUser["dingid"].ToString().Length == 0)
+                    {
+                        _dingTalk.UpdateDingInfo(int.Parse(curUser["userid"].ToString()), userItem.userid, userItem.dingId);
+                    }
+                }
+            }
+
         }
 
 

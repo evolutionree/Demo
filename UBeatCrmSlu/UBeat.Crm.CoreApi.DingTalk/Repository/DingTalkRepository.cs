@@ -79,12 +79,13 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
 
 
 
-        public int UserAdd(AccountUserRegistMapper registEntity, string dingTalkUserID, string dingTalkNick, int userNumber)
+        public int UserAdd(AccountUserRegistMapper registEntity, string dingTalkUserID, string dingTalkNick, string dingid, int userNumber)
         {
             var strSql = @" SELECT * FROM crm_func_account_userinfo_add_dingtalk(@accountName, @accountPwd, @accessType, @userName,  @userIcon, 
                                                                      @userPhone, @userJob, @deptid,@namepinyin, @email,
                                                                      @joineddate,@birthday,@remark,@sex,@tel, 
-                                                                     @status,@workCode,@NextMustChangePwd,@dingTalkUserID,@dingTalkNick,@userNo) ";
+                                                                     @status,@workCode,@NextMustChangePwd,@dingTalkUserID,@dingTalkNick,@dingid,@userNo) ";
+
             //pwd salt security
             var securityPwd = "eddb1beeab2bcb5bdafacc05536eca920858a6c8adfb254ca3f0e99600a55757";
             var param = new DbParameter[]
@@ -109,7 +110,9 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
                    new NpgsqlParameter("NextMustChangePwd",registEntity.NextMustChangePwd),
                    new NpgsqlParameter("dingTalkUserID",dingTalkUserID),
                    new NpgsqlParameter("dingTalkNick",dingTalkNick),
-                   new NpgsqlParameter("UserNo",userNumber)
+                   new NpgsqlParameter("UserNo",userNumber),
+                   new NpgsqlParameter("dingid",dingid)
+
             };
             var result = ExecuteQuery(strSql, param);
             Console.Out.WriteLine(JsonConvert.SerializeObject(result));
@@ -143,10 +146,10 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
 
         }
 
-        public bool IsUserExist(string userMobile)
+        public Dictionary<string, object> IsUserExist(string userMobile)
         {
 
-            string strSql = @"  select count(1) 
+            string strSql = @"  select *  
                                 from crm_sys_userinfo 
                                 where userphone=@userphone ";
 
@@ -155,17 +158,7 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
                    new NpgsqlParameter("@userphone",userMobile)
               };
 
-            var result = DBHelper.ExecuteScalar("", strSql, param, System.Data.CommandType.Text);
-            var count = long.Parse(result.ToString());
-            if (count > 0)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-
+            return ExecuteQuery(strSql, param, null).FirstOrDefault();
         }
 
         public Guid GetDepartmentId(string departmentName, long dingTalkId)
@@ -315,6 +308,22 @@ namespace UBeat.Crm.CoreApi.DingTalk.Repository
                 return true;
             else
                 return false;
+        }
+        public void UpdateDingInfo(int userid, string dduserid, string dingId)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_userinfo set dduserid =@dduserid ,dingid = @dingid where userid = @userid ";
+                DbParameter[] p = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("@dduserid",dduserid),
+                    new NpgsqlParameter("@dingid",dingId),
+                    new NpgsqlParameter("@userid",userid)
+                };
+                ExecuteNonQuery(strSQL, p);
+            }
+            catch (Exception ex)
+            {
+            }
         }
 
     }
