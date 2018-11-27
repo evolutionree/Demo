@@ -331,7 +331,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 SalesStageId = id
             }, userNumber);
 
-            if (salesStageFields != null && salesStageFields["SalesStageOppInfo"] != null)
+            if (salesStageFields != null && salesStageFields["SalesStageOppInfo"] != null && entity.SalesStageFlag == 0)
             {
                 var infoFields = salesStageFields["SalesStageOppInfo"];
                 //获取该实体分类的字段
