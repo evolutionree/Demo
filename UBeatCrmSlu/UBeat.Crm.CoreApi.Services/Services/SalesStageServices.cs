@@ -320,68 +320,71 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(entity);
             }
-            var splits = entity.SalesStageIds.Split(",");
-            String id = String.Empty;
-            if (splits.Length == 1)
-                id = splits[splits.Length - 1];
-            else
-                id = splits[splits.Length - 1 - 1];
-            var salesStageFields = _salesStageRepository.SalesStageSettingQuery(new SalesStageSetLstMapper
+            if (entity.SalesStageFlag == 0)
             {
-                SalesStageId = id
-            }, userNumber);
-
-            if (salesStageFields != null && salesStageFields["SalesStageOppInfo"] != null && entity.SalesStageFlag == 0)
-            {
-                var infoFields = salesStageFields["SalesStageOppInfo"];
-                //获取该实体分类的字段
-                List<DynamicEntityDataFieldMapper> dynamicEntityDataFieldMappers = new List<DynamicEntityDataFieldMapper>();
-                var fields = _dynamicEntityRepository.GetTypeFields(Guid.Parse(entity.TypeId), (int)DynamicProtocolOperateType.Edit, userNumber);
-                var detail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
+                var splits = entity.SalesStageIds.Split(",");
+                String id = String.Empty;
+                if (splits.Length == 1)
+                    id = splits[splits.Length - 1];
+                else
+                    id = splits[splits.Length - 1 - 1];
+                var salesStageFields = _salesStageRepository.SalesStageSettingQuery(new SalesStageSetLstMapper
                 {
-                    EntityId = Guid.Parse(entityModel.TypeId),
-                    RecId = Guid.Parse(entityModel.RecId),
-                    NeedPower = 0
+                    SalesStageId = id
                 }, userNumber);
-                var dic = new Dictionary<String, Object>();
-                foreach (var tmp in fields)
+
+                if (salesStageFields != null && salesStageFields["SalesStageOppInfo"] != null)
                 {
-                    var tmp1 = infoFields.FirstOrDefault(t => t["fieldid"].ToString() == tmp.FieldId.ToString());
-                    if (tmp1 != null)
+                    var infoFields = salesStageFields["SalesStageOppInfo"];
+                    //获取该实体分类的字段
+                    List<DynamicEntityDataFieldMapper> dynamicEntityDataFieldMappers = new List<DynamicEntityDataFieldMapper>();
+                    var fields = _dynamicEntityRepository.GetTypeFields(Guid.Parse(entity.TypeId), (int)DynamicProtocolOperateType.Edit, userNumber);
+                    var detail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
                     {
-                        dynamicEntityDataFieldMappers.Add(tmp);
-                        if (detail.Keys.Contains(tmp.FieldName))
+                        EntityId = Guid.Parse(entityModel.TypeId),
+                        RecId = Guid.Parse(entityModel.RecId),
+                        NeedPower = 0
+                    }, userNumber);
+                    var dic = new Dictionary<String, Object>();
+                    foreach (var tmp in fields)
+                    {
+                        var tmp1 = infoFields.FirstOrDefault(t => t["fieldid"].ToString() == tmp.FieldId.ToString());
+                        if (tmp1 != null)
                         {
-                            dic.Add(tmp.FieldName, detail[tmp.FieldName]);
+                            dynamicEntityDataFieldMappers.Add(tmp);
+                            if (detail.Keys.Contains(tmp.FieldName))
+                            {
+                                dic.Add(tmp.FieldName, detail[tmp.FieldName]);
+                            }
                         }
                     }
-                }
 
-                if (fields.Count == 0)
-                {
-                    return ShowError<object>("该实体分类没有配置相应字段");
-                }
-
-                var isMobile = header.Device.ToLower().Contains("android")
-                      || header.Device.ToLower().Contains("ios");
-                foreach (var tmp in dynamicEntityDataFieldMappers)
-                {
-                    tmp.IsRequire = true;
-                }
-                //验证字段
-                var validResults = DynamicProtocolHelper.ValidData(dynamicEntityDataFieldMappers, dic, DynamicProtocolOperateType.Edit, isMobile);
-                var validTips = new List<string>();
-                foreach (DynamicProtocolValidResult validResult in validResults.Values)
-                {
-                    if (!validResult.IsValid)
+                    if (fields.Count == 0)
                     {
-                        validTips.Add(validResult.Tips);
+                        return ShowError<object>("该实体分类没有配置相应字段");
                     }
-                }
 
-                if (validTips.Count > 0)
-                {
-                    return ShowError<object>("阶段推进失败，请完善阶段信息，具体异常:【" + string.Join(";", validTips) + "】");
+                    var isMobile = header.Device.ToLower().Contains("android")
+                          || header.Device.ToLower().Contains("ios");
+                    foreach (var tmp in dynamicEntityDataFieldMappers)
+                    {
+                        tmp.IsRequire = true;
+                    }
+                    //验证字段
+                    var validResults = DynamicProtocolHelper.ValidData(dynamicEntityDataFieldMappers, dic, DynamicProtocolOperateType.Edit, isMobile);
+                    var validTips = new List<string>();
+                    foreach (DynamicProtocolValidResult validResult in validResults.Values)
+                    {
+                        if (!validResult.IsValid)
+                        {
+                            validTips.Add(validResult.Tips);
+                        }
+                    }
+
+                    if (validTips.Count > 0)
+                    {
+                        return ShowError<object>("阶段推进失败，请完善阶段信息，具体异常:【" + string.Join(";", validTips) + "】");
+                    }
                 }
             }
             //检查权限
