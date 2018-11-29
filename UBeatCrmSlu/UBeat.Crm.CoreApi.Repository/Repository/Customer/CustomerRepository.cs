@@ -331,6 +331,16 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
             return ExecuteQuery(sql, param, tran);
         }
 
+        public bool DistributionCustomer(List<string> recids, int userid, int currentUserid, DbTransaction tran)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (var id in recids)
+            {
+                var sql = string.Format("update crm_sys_customer set recmanager = {0}, followstatus = 3 where recid = '{1}'::uuid ; \n", userid, id);
+                sb.Append(sql);
+            }
+            return ExecuteNonQuery(sb.ToString(), new DbParameter[] { }, tran) > 0;
+        }
 
     }
 }

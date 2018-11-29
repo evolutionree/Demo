@@ -463,5 +463,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(result);
             }, userNumber, userNumber);
         }
+
+        #region 客户分配
+        public OutputResult<object> DistributionCustomer(DistributionCustomerParam entity, int userid)
+        {
+            DbTransaction tran = null;
+            var result = _customerRepository.DistributionCustomer(entity.Recids, entity.UserId, userid, tran);
+            if (result)
+                return new OutputResult<object>(null, "分配成功");
+            else
+                return new OutputResult<object>(null, "分配失败", 1);
+        }
+        #endregion
     }
 }

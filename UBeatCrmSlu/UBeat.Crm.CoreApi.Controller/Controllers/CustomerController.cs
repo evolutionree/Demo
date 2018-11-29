@@ -56,5 +56,16 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _customerServices.SelectDaily(UserId);
         }
         #endregion
+
+
+        #region 分配客户
+        [HttpPost]
+        [Route("distribution")]
+        public OutputResult<object> DistributionCustomer([FromBody] DistributionCustomerParam entity)
+        {
+            if (entity == null) return ResponseError<object>("参数格式错误");
+            return _customerServices.DistributionCustomer(entity, UserId);
+        }
+        #endregion
     }
 }
