@@ -1950,15 +1950,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     OrderBySQL = tmp;
                 }
             }
-            if (isAdvanceQuery || isColumnFilter)
-            {
+            //if (isAdvanceQuery || isColumnFilter)
+            //{
                 if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
                 {
                     WhereSQL = " e.recstatus = 1   " + dynamicEntity.SearchQuery;
                 }
-            }
-            else
-                WhereSQL = " e.recstatus = 1   ";
+            //}
+            //else
+            //    WhereSQL = " e.recstatus = 1   ";
             if (dynamicEntity.SearchData.Count() > 0)
                 WhereSQL += " and e." + dynamicEntity.SearchData.Keys.FirstOrDefault() + "  like '%" + dynamicEntity.SearchData.Values.FirstOrDefault() + "%'";
             string innerSQL = string.Format(@"select {0} from {1}  where  {2} order by {3} limit {4} offset {5}",
