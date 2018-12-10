@@ -271,7 +271,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                  if(editEntity.AccessType != "99")//如果是变成不可登录，则不检查
                  {
                      int count = _accountRepository.GetLicenseUserCount();//更新完后检查
-                     if (count >= Convert.ToInt32(LicenseInstance.Instance.LimitPersonNum))
+                     if (count > Convert.ToInt32(LicenseInstance.Instance.LimitPersonNum))
                      {
                          throw (new Exception("注册用户人数已经超过项目许可注册人数,请联系生产商"));
                      }
