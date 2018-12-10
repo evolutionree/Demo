@@ -448,7 +448,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format(" {0}_t.username  ilike '%{1}%'", columnKey, dataStr);
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, tablealias: "e"), dataStr);
                                 }
                                 break;
                             }
@@ -483,8 +483,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 {
                                     string[] values = dataStr.Split(",");
                                     bool hasNull = false;
-                                    for (int i = 0; i < values.Length; i++) {
-                                        if (values[i] == "isnull") {
+                                    for (int i = 0; i < values.Length; i++)
+                                    {
+                                        if (values[i] == "isnull")
+                                        {
                                             values[i] = "0";
                                             hasNull = true;
                                         }
@@ -497,7 +499,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                     {
                                         string tmp = string.Join(',', values);
                                         result.FieldData = string.Format("e.{0} in ({1})", columnKey, tmp);
-                                        if (hasNull) {
+                                        if (hasNull)
+                                        {
                                             result.FieldData = "(" + result.FieldData + " or " + string.Format("e.{0} is null )", columnKey);
                                         }
                                     }
@@ -674,7 +677,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 {
                     result.FieldData = string.Format("t.{0} is null", columnKey, dataStr);
                 }
-                else {
+                else
+                {
                     switch ((DynamicProtocolControlType)field.NewType)
                     {
                         case DynamicProtocolControlType.RecOnlive:
@@ -961,7 +965,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                     }
                 }
-                
+
 
                 result.IsValid = true;
                 validResultDic.Add(field.FieldName, result);
@@ -1142,7 +1146,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     case DynamicProtocolControlType.Product:
                     case DynamicProtocolControlType.ProductSet:
                         {
-                            result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field,"e"), dataStr);
+                            result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
                             break;
                         }
                     case DynamicProtocolControlType.QuoteControl:
@@ -1157,7 +1161,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                             else
                             {
-                                result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field,"t"), dataStr);
+                                result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field, "t"), dataStr);
                             }
                             break;
                         }
