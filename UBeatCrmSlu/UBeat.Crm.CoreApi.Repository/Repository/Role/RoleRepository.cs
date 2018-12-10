@@ -138,7 +138,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Role
         public OperateResult CopyRole(RoleCopyMapper roleCopy, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_role_copy(@roleid,@rolegroupid,@rolename,@rolename_lang,@rolepriority, @roletype,@roleremark, @userno)
+                SELECT * FROM crm_func_role_copy(@roleid,@rolegroupid,@rolename,@rolename_lang::jsonb,@rolepriority, @roletype,@roleremark, @userno)
             ";
             var param = new DynamicParameters();
             param.Add("roleid", roleCopy.RoleId);
