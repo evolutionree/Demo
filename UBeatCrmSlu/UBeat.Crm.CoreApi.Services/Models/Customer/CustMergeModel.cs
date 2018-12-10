@@ -26,4 +26,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Customer
         public int PageSize { get; set; }
 
     }
+
+    public class DistributionCustomerParam
+    {
+        public int UserId { get; set; }
+        public List<string> Recids { get; set; }
+    }
 }
