@@ -37,16 +37,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private JavaScriptUtilsServices _javaScriptUtilsServices;
         //
         FileServices _fileServices;
-        public PrintFormServices(IPrintFormRepository repository, IAccountRepository accountRepository, 
+        public PrintFormServices(IPrintFormRepository repository, IAccountRepository accountRepository,
             IEntityProRepository entityProRepository, DynamicEntityServices entityServices,
-           JavaScriptUtilsServices javaScriptUtilsServices )
+           JavaScriptUtilsServices javaScriptUtilsServices)
         {
             _repository = repository;
             _fileServices = new FileServices();
             _accountRepository = accountRepository;
             _entityProRepository = entityProRepository;
             _entityServices = entityServices;
-            _javaScriptUtilsServices =javaScriptUtilsServices;
+            _javaScriptUtilsServices = javaScriptUtilsServices;
         }
 
         #region ---套打模板管理---
@@ -91,7 +91,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("参数不可为空");
             if (data.RecIds == null || data.RecIds.Count == 0)
                 throw new Exception("参数recids不可为空");
-           
+
             _repository.DeleteTemplates(data.RecIds, usernumber);
             return new OutputResult<object>("OK");
         }
@@ -140,7 +140,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (data == null)
                 throw new Exception("参数不可为空");
             return new OutputResult<object>(_repository.GetRecDataTemplateList(data.EntityId, data.RecId, userNumber));
-        } 
+        }
         #endregion
 
         #region --生成打印文档--
@@ -153,7 +153,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("输出模板不正确，请重新选择模板");
             if (!templateInfo.FileId.HasValue || templateInfo.FileId.Value == Guid.Empty)
                 throw new Exception("未上传输出模板文件，请先上传输出模板文件");
-
+            var asd = _fileServices.DownloadFile(null, templateInfo.FileId.ToString());
             var fileData = _fileServices.GetFileData(null, templateInfo.FileId.ToString());
             if (fileData == null)
             {
@@ -163,10 +163,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var excelData = ExcelHelper.ReadExcel(fileStream);
             if (excelData == null || excelData.Sheets == null || excelData.Sheets.Count == 0)
                 throw new Exception("输出模板文件解析错误，请检查模板文件格式并上传Office 2007以上版本模板文件");
-            
+
             IDictionary<string, object> detailData = GetDetailData(data.EntityId, data.RecId, templateInfo, usernumber);
             #region 处理UScript
-            
+
             if (templateInfo.ExtJs != null && templateInfo.ExtJs.Length > 0)
             {
                 UKJSEngineUtils uscript = new UKJSEngineUtils(this._javaScriptUtilsServices);
@@ -217,7 +217,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int isgenpdf = 0;
             string Pdfpath = "";
             IEnumerator<IConfigurationSection> it = config.GetSection("pdfgenerator").GetChildren().GetEnumerator();
-            while (it.MoveNext()) {
+            while (it.MoveNext())
+            {
                 IConfigurationSection item = it.Current;
                 if (item.Key.Equals("isgenpdf") && item.Value != null)
                 {
@@ -227,16 +228,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         isgenpdf = tmp;
                     }
                 }
-                else if (item.Key.Equals("jarfilepath") && item.Value != null) {
+                else if (item.Key.Equals("jarfilepath") && item.Value != null)
+                {
                     Pdfpath = item.Value;
                 }
             }
-            if (isgenpdf == 1 && Pdfpath != null && Pdfpath.Length > 0) {
+            if (isgenpdf == 1 && Pdfpath != null && Pdfpath.Length > 0)
+            {
                 string pdfFilePath = Path.Combine(tmppath, fileID + ".pdf");
                 string executePDF = "  -jar " + Pdfpath + " " + fileFullPath + " " + pdfFilePath;
                 Process process = new Process();
                 process.StartInfo.FileName = "java";
-                process.StartInfo.Arguments = executePDF ;
+                process.StartInfo.Arguments = executePDF;
                 Console.WriteLine(executePDF);
                 process.StartInfo.CreateNoWindow = true; // 获取或设置指示是否在新窗口中启动该进程的值（不想弹出powershell窗口看执行过程的话，就=true）
                 process.StartInfo.ErrorDialog = false; // 该值指示不能启动进程时是否向用户显示错误对话框
@@ -246,12 +249,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 process.Close();
                 return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.pdf", templateInfo.TemplateName) });
             }
-            else{
+            else
+            {
 
                 return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName) });
             }
             #endregion 
-        } 
+        }
         #endregion
 
         #region --获取实体详情数据--
@@ -757,9 +761,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return formula;
 
-        } 
+        }
         #endregion
-        
+
         #endregion
 
         #region --处理IF代码块的逻辑--
@@ -911,11 +915,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 newRows.Add(rowItemTemp);
                             }
                         }
-                        //遍历了所有表格控件的行数据后，把原有excel模板中的模板行标记为deleted状态
-                        foreach (var rowItem in templateRows)
-                        {
-                            rowItem.RowStatus = RowStatus.Deleted;
-                        }
+                    }
+                    //遍历了所有表格控件的行数据后，把原有excel模板中的模板行标记为deleted状态
+                    foreach (var rowItem in templateRows)
+                    {
+                        rowItem.RowStatus = RowStatus.Deleted;
                     }
                 }
 
@@ -926,7 +930,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
 
-        
+
 
         public void TetSaveDoc(string myname)
         {
