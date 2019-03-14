@@ -18,6 +18,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public string EntityName { get; set; }
 
         public int TypeId { get; set; }
+        /// <summary>
+        /// 类型列表，typeid字段主要兼容原来的接口
+        /// </summary>
+        public string TypeIds { get; set; }
+
     }
     public class EntityProInfoModel
     {

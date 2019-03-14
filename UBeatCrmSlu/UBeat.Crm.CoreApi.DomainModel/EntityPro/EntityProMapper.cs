@@ -19,6 +19,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string EntityName { get; set; }
 
         public int TypeId { get; set; }
+        /// <summary>
+        /// 实体类型ids，typeid主要兼容原接口，建议传入-1
+        /// </summary>
+        public string TypeIds { get; set; }
+
     }
 
     public class EntityProInfoMapper : BaseEntity

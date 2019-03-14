@@ -27,20 +27,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public Dictionary<string, List<IDictionary<string, object>>> EntityProQuery(EntityProQueryMapper crmEntityQuery, int userNumber)
         {
             var procName =
-                "SELECT crm_func_entity_list(@entityname, @typeid,@status, @pageindex, @pagesize, @userno)";
+                "SELECT crm_func_entity_list(@entityname, @typeids,@status, @pageindex, @pagesize, @userno)";
 
             var dataNames = new List<string> { "PageData", "PageCount" };
+            string typeids = crmEntityQuery.TypeIds;
+            if (crmEntityQuery.TypeId >= 0) {
+                //兼容旧接口
+                typeids = crmEntityQuery.TypeId.ToString();
+            }
+            if (typeids != null && typeids.IndexOf("'") >= 0) throw (new Exception("参数异常"));
             var param = new
             {
                 EntityName = crmEntityQuery.EntityName,
-                TypeId = crmEntityQuery.TypeId,
+                TypeIds = typeids,
                 Status = crmEntityQuery.Status,
                 PageIndex = crmEntityQuery.PageIndex,
                 PageSize = crmEntityQuery.PageSize,
                 UserNo = userNumber
             };
-
-            var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
+            Dictionary<string, List<IDictionary<string, object>>> result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
+            
             return result;
         }
         public Dictionary<string, List<IDictionary<string, object>>> EntityProInfoQuery(EntityProInfoMapper entity, int userNumber)
