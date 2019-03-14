@@ -60,6 +60,28 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (data == null) return ResponseError<object>("参数格式错误");
             return _printFormServices.GetTemplateList(data, UserId);
         }
+        /// <summary>
+        /// 根据某个模板的数据源Script
+        /// </summary>
+        /// <param name="paramInfo"></param>
+        /// <returns></returns>
+        [HttpPost("updateucode")]
+        public OutputResult<object> UpdateTemplateUCode([FromBody] UpdateTemplateUCodeParamInfo paramInfo = null)
+        {
+            if (paramInfo == null) return ResponseError<object>("参数异常");
+            if (paramInfo.RecId.Equals(Guid.Empty)) return ResponseError<object>("参数异常(code=2)");
+            try
+            {
+                this._printFormServices.SaveUCoce(paramInfo, UserId);
+                return new OutputResult<object>("保存成功");
+            }
+            catch (Exception ex)
+            {
+
+                return ResponseError<object>("保存失败:" + ex.Message);
+            }
+
+        }
         #endregion
 
         #region ---获取某条数据拥有的模板列表---

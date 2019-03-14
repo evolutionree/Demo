@@ -24,6 +24,12 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// 获取某条记录可以关联的所有模板文件
         /// </summary>
         List<CrmSysEntityPrintTemplate> GetRecDataTemplateList(Guid entityid, Guid businessid, int userno, DbTransaction tran = null);
-
+        /// <summary>
+        /// 更新数据源Ucode
+        /// </summary>
+        /// <param name="recId"></param>
+        /// <param name="uCode"></param>
+        /// <param name="userId"></param>
+        void SaveUCode(Guid recId, string uCode, int userId);
     }
 }

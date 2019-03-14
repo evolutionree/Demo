@@ -73,6 +73,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             };
             return new OutputResult<object>(_repository.InsertTemplate(model));
         }
+        public void SaveUCoce(UpdateTemplateUCodeParamInfo paramInfo, int userId)
+        {
+            this._repository.SaveUCode(paramInfo.RecId, paramInfo.UCode, userId);
+        }
+
 
         public OutputResult<object> SetTemplatesStatus(TemplatesStatusModel data, int usernumber)
         {

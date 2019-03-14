@@ -123,4 +123,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
         public string Description { set; get; }
        
     }
+    public class UpdateTemplateUCodeParamInfo
+    {
+        public Guid RecId { get; set; }
+        public string UCode { get; set; }
+    }
 }

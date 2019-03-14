@@ -112,7 +112,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
                 var rowscount = ExecuteNonQuery(sql, param, tran);
             }
         }
-
+        /// <summary>
+        /// 更新数据源Ucode
+        /// </summary>
+        /// <param name="recId"></param>
+        /// <param name="uCode"></param>
+        /// <param name="userId"></param>
+        public void SaveUCode(Guid recId, string uCode, int userId)
+        {
+            var sql = @"UPDATE crm_sys_entity_print_template 
+                        SET extjs = @extjs 
+                        WHERE recid = @recid";
+            var param = new DbParameter[]
+               {
+                    new NpgsqlParameter("extjs",uCode),
+                    new NpgsqlParameter("recid",recId),
+               };
+            ExecuteNonQuery(sql, param, null);
+        }
         public CrmSysEntityPrintTemplate GetTemplateInfo(Guid recid, DbTransaction tran = null)
         {
             string sql = @"SELECT * FROM crm_sys_entity_print_template WHERE recid=@recid ";
