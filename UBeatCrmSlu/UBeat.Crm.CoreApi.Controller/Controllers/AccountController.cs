@@ -727,7 +727,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             this._accountServices.SetPasswordInvalid(UserList, UserId);
             return new OutputResult<object>("完成");
-            return null;
+        }
+        #endregion
+        #region PaaS平台权限判断
+        [HttpPost("haspaaspermission")]
+        public OutputResult<object> HasPaasPermission()
+        {
+            return new OutputResult<object>(true);
         }
         #endregion
     }
