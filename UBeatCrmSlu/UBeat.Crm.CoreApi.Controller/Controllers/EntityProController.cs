@@ -168,6 +168,27 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _entityProService.UpdateEntityFieldFilterJS(fieldfilterJS, UserId);
         }
+        [HttpPost]
+        [Route("updateentityfieldname")]
+        public OutputResult<object> UpdateFieldDisplayName([FromBody]EntityFieldUpdateDisplayNameParamInfo paramInfo = null) {
+            if (paramInfo == null || paramInfo.FieldId == Guid.Empty)
+            {
+                return ResponseError<object>("参数异常");
+            }
+            else if (paramInfo.DisplayName_Lang == null || paramInfo.DisplayName_Lang.ContainsKey("cn") == false
+               || paramInfo.DisplayName_Lang["cn"] == null
+               || paramInfo.DisplayName_Lang["cn"].Length == 0) {
+                return ResponseError<object>("字段显示名称不能为空");
+            }
+            try
+            {
+                this._entityProService.UpdateFieldName(paramInfo.FieldId, paramInfo.DisplayName_Lang, UserId);
+                return new OutputResult<object>("成功");
+            }
+            catch (Exception ex) {
+                return ResponseError<object>("更新异常:" + ex.Message);
+            }
+        }
 
         [HttpPost]
         [Route("disabledentityfield")]

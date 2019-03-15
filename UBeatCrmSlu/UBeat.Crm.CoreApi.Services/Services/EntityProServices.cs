@@ -177,6 +177,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IncreaseDataVersion(DataVersionType.EntityData);
             return result;
         }
+
+        public void UpdateFieldName(Guid fieldId, Dictionary<string, string> displayName_Lang, int userId)
+        {
+            DbTransaction tran = null;
+            this._entityProRepository.UpdateEntityFieldName(tran, fieldId, displayName_Lang, userId);
+        }
+
         private bool checkIsKeyFieldName(EntityFieldProModel fieldInfo)
         {
             if (KeyFieldNameList().ContainsKey(fieldInfo.FieldName.ToLower()))

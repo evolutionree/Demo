@@ -1863,7 +1863,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 ExecuteNonQuery(strSQL, p, tran);
 
             }
-            catch (Exception ex) { }
+            catch (Exception ex) { throw (ex); }
         }
 
         public Dictionary<string, object> GetFieldInfoByDisplayName(DbTransaction tran, string displayName, Guid entityId, int userId)
@@ -1898,6 +1898,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     new Npgsql.NpgsqlParameter("@entityid",entityId)
                 };
                 ExecuteNonQuery(strSQL, p, tran);
+            }
+            catch (Exception ex) {
+                throw (ex);
+            }
+        }
+
+        public void UpdateEntityFieldName(DbTransaction tran, Guid fieldId, Dictionary<string, string> displayName_Lang, int userId)
+        {
+            try
+            {
+                string strSQL = "update crm_sys_entity_fields set displayname=@displayname,displayname_lang=@displayname_lang::jsonb," +
+                    "                   fieldlabel=@displayname ,fieldlabel_lang=@displayname_lang::jsonb where fieldid=@fieldid";
+                string displayname = displayName_Lang["cn"];
+                DbParameter[] p = new DbParameter[] {
+                    new NpgsqlParameter("@fieldid",fieldId),
+                    new NpgsqlParameter("@displayname",displayname),
+                    new NpgsqlParameter("@displayname_lang",JsonConvert.SerializeObject(displayName_Lang))
+                };
+                ExecuteNonQuery(strSQL, p, tran);
+
             }
             catch (Exception ex) {
                 throw (ex);

@@ -95,6 +95,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public string FilterJS { get; set; }
     }
 
+    /// <summary>
+    /// 快速修改字段名称
+    /// </summary>
+    public class  EntityFieldUpdateDisplayNameParamInfo {
+        public Guid FieldId { get; set; }
+        public Dictionary<string, string> DisplayName_Lang { get; set; }
+    }
     public class DeleteEntityDataModel
     {
         public string EntityId { get; set; }
