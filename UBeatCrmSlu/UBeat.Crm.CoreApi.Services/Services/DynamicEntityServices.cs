@@ -1677,10 +1677,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     string sql = string.Format("Select crm_func_role_rule_fetch_sql('{0}',{1}) as sql  ", dynamicEntity.EntityId.ToString(), userNumber);
                     MainTable = (string)this._dynamicEntityRepository.ExecuteQuery(sql, tran).FirstOrDefault()["sql"];
+                    MainTable = MainTable + " " + dynamicEntity.RelSql;
                 }
                 else
                 {
-                    MainTable = string.Format("select * from {0} where 1=1 ", (string)EntityInfo["entitytable"]);
+                    MainTable = string.Format("select * from {0} where 1=1 {1}", (string)EntityInfo["entitytable"], dynamicEntity.RelSql);
                 }
                 //处理menuid
                 if (dynamicEntity.MenuId != null && dynamicEntity.MenuId.Length > 0)
@@ -1774,13 +1775,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             string tmpDataSourceId = fieldNameMapDataSource[fieldInfo.FieldName];
                             string tablename = dataSources[tmpDataSourceId];
-                            fromClause = string.Format(@"{0} left outer join {1} as {2}_t on jsonb_extract_path_text(e.{2},'id') = {2}_t.recid::text ", fromClause, tablename, fieldInfo.FieldName);
+                            fromClause = string.Format(@"{0} left outer join {1} as {2}_t on (e.{2}->>'id')::uuid = {2}_t.recid ", fromClause, tablename, fieldInfo.FieldName);
                             selectClause = string.Format(@"{0},{1}_t.recname as {1}_name", selectClause, fieldInfo.FieldName);
                         }
                         else
                         {
                             Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo.FieldConfig);
                             bool SaveNamed = false;
+                            bool IsMulti = false;
                             if (fieldConfigDict.ContainsKey("dataSource")
                                 && fieldConfigDict["dataSource"] != null)
                             {
@@ -1795,16 +1797,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     }
                                 }
                             }
+                            if (fieldConfigDict.ContainsKey("multiple") && fieldConfigDict["multiple"] != null)
+                            {
+                                int tmp = 0;
+                                int.TryParse(fieldConfigDict["multiple"].ToString(), out tmp);
+                                if (tmp != 0) IsMulti = true;
+                            }
                             if (SaveNamed)
                             {
                                 selectClause = string.Format(@"{0},jsonb_extract_path_text(e.{1},'name') as {1}_name", selectClause, fieldInfo.FieldName);
                             }
                             else
                             {
-                                string tmpDataSourceId = fieldNameMapDataSource[fieldInfo.FieldName];
-                                string tablename = dataSources[tmpDataSourceId];
-                                fromClause = string.Format(@"{0} left outer join {1} as {2}_t on jsonb_extract_path_text(e.{2},'id') = {2}_t.recid::text ", fromClause, tablename, fieldInfo.FieldName);
-                                selectClause = string.Format(@"{0},{1}_t.recname as {1}_name", selectClause, fieldInfo.FieldName);
+                                if (IsMulti)
+                                {
+                                    selectClause = string.Format(@"{0},jsonb_extract_path_text(e.{1},'name') as {1}_name", selectClause, fieldInfo.FieldName);
+                                }
+                                else
+                                {
+                                    string tmpDataSourceId = fieldNameMapDataSource[fieldInfo.FieldName];
+                                    string tablename = dataSources[tmpDataSourceId];
+                                    fromClause = string.Format(@"{0} left outer join {1} as {2}_t on (e.{2}->>'id')::uuid = {2}_t.recid ", fromClause, tablename, fieldInfo.FieldName);
+                                    selectClause = string.Format(@"{0},{1}_t.recname as {1}_name", selectClause, fieldInfo.FieldName);
+                                }
                             }
                         }
                         break;
@@ -2362,6 +2377,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     else
                     {
                         sqlWhere = sqlWhere.Replace("and recid", "and e.recid");
+                        dynamicEntity.RelSql = sqlWhere;
+                        sqlWhere = " and 1=1 ";
                     }
                 }
                 dynamicEntity.SearchQuery = dynamicEntity.SearchQuery + sqlWhere;
@@ -3662,6 +3679,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             string SpecFuncName = _dynamicEntityRepository.CheckDataListSpecFunction(tabModel.RelEntityId);
             string sqlWhere = _dynamicEntityRepository.ReturnRelTabSql(tabModel.RelId, tabModel.RecId, userNumber);
+            DynamicEntityListMapper mapper = new DynamicEntityListMapper
+            {
+                EntityId = tabModel.RelEntityId,
+                MenuId = null,
+                ViewType = tabModel.ViewType,
+                SearchOrder = string.Empty
+            };
             if (sqlWhere != null && sqlWhere.StartsWith("and recid"))
             {//兼容历史
                 if (SpecFuncName != null)
@@ -3671,15 +3695,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else
                 {
                     sqlWhere = sqlWhere.Replace("and recid", "and e.recid");
+                    mapper.RelSql = sqlWhere;
+                    sqlWhere = " 1=1 ";
                 }
             }
-            DynamicEntityListMapper mapper = new DynamicEntityListMapper
-            {
-                EntityId = tabModel.RelEntityId,
-                MenuId = null,
-                ViewType = tabModel.ViewType,
-                SearchOrder = string.Empty
-            };
             //生成查询语句
             var searchFields = GetEntityFields(tabModel.RelEntityId, userNumber);
             if (searchFields == null)

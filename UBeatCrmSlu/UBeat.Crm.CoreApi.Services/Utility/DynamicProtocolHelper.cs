@@ -9,6 +9,7 @@ using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -167,6 +168,28 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     return result;
                 }
             }
+            if (field.ControlType == (int)(DynamicProtocolControlType.DataSourceSingle))
+            {
+                if (!string.IsNullOrEmpty(dataString))
+                {
+                    try
+                    {
+                        Dictionary<string, object> tmp = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataString);
+                        if (tmp.ContainsKey("id"))
+                        {
+                            Guid id = Guid.Empty;
+                            if (Guid.TryParse(string.Concat(tmp["id"]), out id) == false)
+                            {
+                                dataString = null;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        dataString = null;
+                    }
+                }
+            }
 
             result.IsValid = true;
             result.FieldData = dataString;
@@ -263,6 +286,38 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 case DynamicProtocolControlType.TimeStamp:
                     {
                         result.FieldData = DateTime.Parse(result.FieldData.ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                        break;
+                    }
+                case DynamicProtocolControlType.DataSourceSingle:
+                    {
+                        if (result.FieldData == null)
+                        {
+                            break;
+                        }
+                        if (result.FieldData.ToString().Equals(""))
+                        {
+                            result.FieldData = null;
+                            break;
+                        }
+                        try
+                        {
+                            Dictionary<string, object> tmp = JsonConvert.DeserializeObject<Dictionary<string, object>>(result.FieldData.ToString());
+                            if (tmp.ContainsKey("id") && tmp["id"] != null)
+                            {
+                                Guid id = Guid.Empty;
+                                if (Guid.TryParse(tmp["id"].ToString(), out id))
+                                {
+                                    result.FieldData = null;
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            result.FieldData = null;
+                            break;
+                        }
+
                         break;
                     }
             }
