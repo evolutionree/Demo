@@ -2094,17 +2094,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         case EntityFieldControlType.Address://31,地址
                         case EntityFieldControlType.Location://14定位
-                            curItemOrderBySQL = "convert_to(e." + orderFieldInfo.FieldName + "->>'address','GBK') " + orderType;
+                            curItemOrderBySQL = "e." + orderFieldInfo.FieldName + "->>'address' collate \"zh_CN\" " + orderType;
                             break;
                         case EntityFieldControlType.RecCreator://1002创建人
                         case EntityFieldControlType.RecUpdator://1003更新人
                         case EntityFieldControlType.RecManager://1006负责人
-                            curItemOrderBySQL = string.Format("convert_to({0}_t.username ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("{0}_t.username collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.AreaGroup://20分组，不处理
                             break;
                         case EntityFieldControlType.AreaRegion://16 行政区域
-                            curItemOrderBySQL = string.Format("convert_to({0}_t.fullname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("{0}_t.fullname collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.DataSourceMulti://19数据源多选
                                                                     //目前这个没有使用
@@ -2112,7 +2112,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         case EntityFieldControlType.DataSourceSingle://18数据源单选
                             if (orderFieldInfo.FieldConfig == null)
                             {
-                                curItemOrderBySQL = string.Format("convert_to({0}_t.recname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                                curItemOrderBySQL = string.Format("{0}_t.recname collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             }
                             else
                             {
@@ -2134,24 +2134,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                                 if (SaveNamed)
                                 {
-                                    curItemOrderBySQL = string.Format("convert_to(jsonb_extract_path_text(e.{0},'name') ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                                    curItemOrderBySQL = string.Format("jsonb_extract_path_text(e.{0},'name') collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                                 }
                                 else
                                 {
-                                    curItemOrderBySQL = string.Format("convert_to({0}_t.recname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                                    curItemOrderBySQL = string.Format("{0}_t.recname collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                                 }
                             }
                             break;
                         case EntityFieldControlType.RecType://1009记录类型
-                            curItemOrderBySQL = string.Format("convert_to({0}_t.categoryname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("{0}_t.categoryname collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.SelectMulti://4本地字典多选
                             break;
                         case EntityFieldControlType.SelectSingle://3本地字典单选
-                            curItemOrderBySQL = string.Format("convert_to({0}_t.dataval ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("{0}_t.dataval collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.SalesStage://销售阶段
-                            curItemOrderBySQL = string.Format("convert_to({0}_t.stagename ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("{0}_t.stagename collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
 
                         case EntityFieldControlType.RecCreated://1004创建时间
@@ -2169,23 +2169,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         case EntityFieldControlType.QuoteControl://31引用(分三种情况，)
                             if (orderFieldInfo.FieldName.ToUpper().Equals("predeptgroup".ToUpper()))
                             {
-                                curItemOrderBySQL = string.Format("convert_to({0}_t.deptname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                                curItemOrderBySQL = string.Format("{0}_t.deptname collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             }
                             else if (orderFieldInfo.FieldName.ToUpper().Equals("deptgroup".ToUpper()))
                             {
-                                curItemOrderBySQL = string.Format("convert_to({0}_t.deptname ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                                curItemOrderBySQL = string.Format("{0}_t.deptname collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             }
                             else
                             {
-                                curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_quote_control(row_to_json(outersql)::json,'{0}','{1}') ,'GBK') {2}", orderFieldInfo.FieldId, orderFieldInfo.FieldName, orderType);
+                                curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_quote_control(row_to_json(outersql)::json,'{0}','{1}') collate \"zh_CN\" {2}", orderFieldInfo.FieldId, orderFieldInfo.FieldName, orderType);
                             }
                             break;
                         case EntityFieldControlType.Department://17部门
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_dept_multi(outersql.{0}::text)  ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_dept_multi(outersql.{0}::text)  collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             //outerSelectClause = string.Format(@"{0},crm_func_entity_protocol_format_dept_multi(outersql.{1}::text) as {1}_name", outerSelectClause, fieldInfo.FieldName);
                             break;
                         case EntityFieldControlType.EmailAddr://11email地址
-                            curItemOrderBySQL = string.Format("convert_to(e.{0} ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("e.{0} collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.FileAttach://23 文件地址
                             //此字段不能排序
@@ -2202,19 +2202,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.PersonSelectMulti://26人员多选
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_userinfo_multi(e.{0}) collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.PersonSelectSingle://25人员单选
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_userinfo_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_userinfo_multi(e.{0}) collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.Product://28产品
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_product_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_product_multi(e.{0}) collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.ProductSet://29产品系列
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_productserial_multi(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_productserial_multi(e.{0}) collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.RecAudits://1007记录状态
-                            curItemOrderBySQL = string.Format("convert_to(crm_func_entity_protocol_format_workflow_auditstatus(e.{0}) ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_workflow_auditstatus(e.{0}) collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.RecId://1001
                             curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
@@ -2223,7 +2223,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             //不能排序
                             break;
                         case EntityFieldControlType.RecName://1012记录名称
-                            curItemOrderBySQL = string.Format("convert_to(e.{0} ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("e.{0} collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.RecOnlive://1011 活动时间
                             curItemOrderBySQL = string.Format("e.{0} {1}", orderFieldInfo.FieldName, orderType);
@@ -2238,7 +2238,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         case EntityFieldControlType.Text:
                         case EntityFieldControlType.TextArea:
                         case EntityFieldControlType.TipText:
-                            curItemOrderBySQL = string.Format("convert_to(e.{0} ,'GBK') {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("e.{0} collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             break;
                         case EntityFieldControlType.TreeMulti://27树形多选
                             //不处理
