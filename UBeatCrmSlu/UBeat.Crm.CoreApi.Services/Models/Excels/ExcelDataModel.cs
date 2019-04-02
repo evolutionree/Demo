@@ -81,8 +81,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// 预留字段，根据需要使用
         /// </summary>
         public object DataObject { set; get; }
+        /// <summary>
+        /// 嵌套表格的字段类型
+        /// </summary>
+        public object SubDataObject { get; set; }
     }
-    public class MultiHeader : SimpleHeader {
+    public class MultiHeader : SimpleHeader
+    {
         public int HeaderType { get; set; }
         public List<MultiHeader> SubHeaders { get; set; }
         /// <summary>
@@ -272,7 +277,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
             RowErrors = new List<string>();
         }
     }
-    public class MergeCellInfo {
+    public class MergeCellInfo
+    {
         public int FromRowIndex { get; set; }
         public int RowCount { get; set; }
         public int FromColIndex { get; set; }
@@ -407,19 +413,19 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// <summary>
         /// 不偏移
         /// </summary>
-        None=-1,
+        None = -1,
         /// <summary>
         /// 只偏移X方向
         /// </summary>
-        X=0,
+        X = 0,
         /// <summary>
         /// 只偏移Y方向
         /// </summary>
-        Y=1,
+        Y = 1,
         /// <summary>
         /// xy方向同时偏移
         /// </summary>
-        XY=2
+        XY = 2
     }
 
     public class OffsetXY
@@ -432,7 +438,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
 
         public long YOffset { set; get; }
 
-        
+
     }
 
 }

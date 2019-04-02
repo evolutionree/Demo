@@ -93,7 +93,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             list.Add(sheetTemplate);
             return ReadExcelList(file, list).FirstOrDefault();
         }
-        public static List<Dictionary<string, object>> ReadExcelFirstSheet(Stream file) {
+        public static List<Dictionary<string, object>> ReadExcelFirstSheet(Stream file)
+        {
             WorkbookPart workbookPart;
             try
             {
@@ -102,7 +103,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 var sheet = workbookPart.Workbook.Descendants<Sheet>().FirstOrDefault();
                 return ReadSheet(workbookPart, sheet);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
             return null;
         }
@@ -364,16 +366,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             {
                 return DataRows;
             }
-            foreach (Row row in rows) {
+            foreach (Row row in rows)
+            {
                 Dictionary<string, object> rowData = new Dictionary<string, object>();
                 int columnIndex = 0;
-                foreach (Cell cell in row.Descendants<Cell>()) {
+                foreach (Cell cell in row.Descendants<Cell>())
+                {
 
                     rowData.Add(columnIndex.ToString(), GetCellValue(cell, workbookPart));
                     columnIndex++;
                 }
                 DataRows.Add(rowData);
-                
+
             }
             return DataRows;
         }
@@ -401,25 +405,88 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             }
             else
             {
+                bool HasTableField = false;
+
                 //读取表头数据
-                var headrow = ReadOneRowData(rows[0], workbookPart);
-                var template = templateDefine as SimpleSheetTemplate;
+
+
+                var template = templateDefine as MultiHeaderSheetTemplate;
+                #region 检查是否有嵌套表格需要导入
+                foreach (var header in template.Headers)
+                {
+                    if (header.SubHeaders != null && header.SubHeaders.Count > 0)
+                    {
+                        HasTableField = true;
+                        headerRowsCount = 2;
+                        break;
+                    }
+                }
+                #endregion
+                List<string> headrow0 = ReadOneRowData(rows[0], workbookPart);
+                List<string> headrow1 = null;
+                if (HasTableField) headrow1 = ReadOneRowData(rows[1], workbookPart);
                 //判断是否都包含了必填列
-                var existColumns = template.Headers.FindAll(m => m.IsNotEmpty).Select(m => m.HeaderText).Intersect(headrow);
+                /*var existColumns = template.Headers.FindAll(m => m.IsNotEmpty).Select(m => m.HeaderText).Intersect(headrow1);
                 var lackColumns = template.Headers.FindAll(m => m.IsNotEmpty).Select(m => m.HeaderText).Except(existColumns);
                 if (lackColumns.Count() > 0)
                 {
                     var lackColumnsName = string.Join(",", lackColumns.ToArray());
                     throw new Exception(string.Format("表{0}中缺少必填列：{1}", sheet.Name, lackColumnsName));
-                }
+                }*/
                 //读取表头，获得列映射关系，没有在模板定义的列剔除
                 int indextemp = 0;
-                foreach (var item in headrow)
+                string lastItem = "";
+                int colIndex = 0;
+                foreach (var item in headrow0)
                 {
-                    var model = template.Headers.FirstOrDefault(m => m.HeaderText.Equals(item));
-                    if (model == null)
-                        continue;
-                    columnMap.Add(new ColumnMapModel() { Index = indextemp++, FieldName = model.FieldName, IsNotEmpty = model.IsNotEmpty, FieldType = model.FieldType });
+                    colIndex++;
+                    MultiHeader header1 = null;
+                    MultiHeader header2 = null;
+                    if (item == null || item.Length == 0)
+                    {
+                        if (lastItem == null || lastItem.Length == 0)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            header1 = template.Headers.FirstOrDefault(m => m.HeaderText.Trim().Equals(lastItem));
+                        }
+                        header2 = header1.SubHeaders.FirstOrDefault(m => m.HeaderText.Trim().Equals(headrow1[colIndex - 1]));
+                    }
+                    else
+                    {
+                        lastItem = item;
+                        header1 = template.Headers.FirstOrDefault(m => m.HeaderText.Trim().Equals(lastItem));
+                        if (header1 == null)
+                        {
+                            throw (new Exception("请使用正确的导入模板"));
+                        }
+                        else
+                        {
+
+                            if (header1.SubHeaders != null && header1.SubHeaders.Count > 0)
+                            {
+                                header2 = header1.SubHeaders.FirstOrDefault(m => m.HeaderText.Trim().Equals(headrow1[colIndex - 1]));
+                                if (header2 == null) continue;
+                            }
+                        }
+                    }
+                    if (header1 == null) continue;
+                    string fieldname = header1.FieldName;
+                    if (header2 != null)
+                    {
+                        fieldname = fieldname + "." + header2.FieldName;
+                    }
+
+
+                    columnMap.Add(new ColumnMapModel()
+                    {
+                        Index = indextemp++,
+                        FieldName = fieldname,
+                        IsNotEmpty = (header2 == null ? header1.IsNotEmpty : header2.IsNotEmpty),
+                        FieldType = header2 == null ? header1.FieldType : header2.FieldType
+                    });
                 }
             }
             // Read the sheet data
@@ -427,97 +494,17 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             {
                 //获取最后一行非空行的下标
                 var lastNotEmptyRowIndex = rows.Last(m => !IsEmptyRow(m, workbookPart)).RowIndex.Value;
-
-                //每个线程处理的最大条数
-                var numThreads = 5;
-                //每个线程处理的最大条数
-                var count = (int)((lastNotEmptyRowIndex- headerRowsCount) / (numThreads-1));
-                
-                List<Dictionary<string, object>> dataRows1 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows2 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows3 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows4 = new List<Dictionary<string, object>>();
-                List<Dictionary<string, object>> dataRows5 = new List<Dictionary<string, object>>();
-                var finished = new CountdownEvent(1);
-
-                //从表头下面一行开始读取数据，直到最后一行非空行
-                for (int i = 0; i < numThreads; i++)
+                var datarows = rows.GetRange(headerRowsCount, (int)(lastNotEmptyRowIndex - headerRowsCount));
+                foreach (var row in datarows)
                 {
-                    
-                    int index = i;
-                    var length = (int)(numThreads - 1 == i ? lastNotEmptyRowIndex-1 - i * count : count);
-
-                    var rangdata = rows.GetRange(headerRowsCount + i * count, length).ToList();
-
-                    finished.AddCount();
-                    
-                    ThreadPool.QueueUserWorkItem(delegate (object dataparam)
-                    {
-                        //Thread.CurrentThread
-                       
-                        Thread.CurrentThread.IsBackground = true;
-                        var datarows = dataparam as List<Row>;
-                        if (datarows == null)
-                            return;
-                        foreach (var row in datarows)
-                        {
-                            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-                            stopwatch.Start(); // 开始监视代码
-                            var rowdata = ReadRowDataToDictionary(row, workbookPart, sheet, columnMap);
-
-                            stopwatch.Stop(); // 停止监视
-                            double seconds = stopwatch.Elapsed.TotalSeconds; // 秒数
-                            stopwatch.Reset();
-                            stopwatch.Restart();
-
-
-                            if (rowdata != null)
-                            {
-                                switch (index)
-                                {
-                                    case 0:
-                                        dataRows1.Add(rowdata);
-                                        break;
-                                    case 1:
-                                        dataRows2.Add(rowdata);
-                                        break;
-                                    case 2:
-                                        dataRows3.Add(rowdata);
-                                        break;
-                                    case 3:
-                                        dataRows4.Add(rowdata);
-                                        break;
-                                    case 4:
-                                        dataRows5.Add(rowdata);
-                                        break;
-                                }
-
-                            }
-                        }
-                        finished.Signal();
-                        //for (var j = headerRowsCount; j < lastNotEmptyRowIndex; j++)
-                        //{
-                        //    var rowdata = ReadRowDataToDictionary(rows[j], workbookPart, sheet, columnMap);
-                        //    if (rowdata != null)
-                        //        data.DataRows.Add(rowdata);
-                        //}
-                    }, rangdata);
+                    var rowdata = ReadRowDataToDictionary(row, workbookPart, sheet, columnMap);
+                    data.DataRows.Add(rowdata);
                 }
-                finished.Signal();
-                finished.Wait();
-                finished.Dispose();
-
-                data.DataRows.AddRange(dataRows1);
-                data.DataRows.AddRange(dataRows2);
-                data.DataRows.AddRange(dataRows3);
-                data.DataRows.AddRange(dataRows4);
-                data.DataRows.AddRange(dataRows5);
-
 
             }
             return data;
         }
-        
+
 
         private static Dictionary<string, object> ReadRowDataToDictionary(Row row, WorkbookPart workbookPart, Sheet sheet, List<ColumnMapModel> columnMap)
         {
@@ -532,7 +519,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 if (columnMap.Exists(m => m.Index == columnIndex))
                 {
                     var map = columnMap.FirstOrDefault(m => m.Index == columnIndex);
-                    switch(map.FieldType)
+                    switch (map.FieldType)
                     {
                         case FieldType.TimeDate:
                             {
@@ -577,15 +564,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                         case FieldType.NumberDecimal:
                             {
                                 double dbvalue = 0;
-                                Double.TryParse(text, out dbvalue);
-                                text = dbvalue.ToString();
+                                if (text != null && text.Length > 0)
+                                {
+                                    Double.TryParse(text, out dbvalue);
+                                    text = dbvalue.ToString();
+                                }
                             }
                             break;
 
 
                     }
-                   
-                    
+
+
                     //if (map.IsNotEmpty && string.IsNullOrEmpty(text))
                     //{
                     //    var columnText = OpenXMLExcelHelper.GetColumnName((uint)map.Index);
@@ -748,23 +738,23 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                     if (dicStyles.Count > 0 && cell.StyleIndex != null)//对于数字,cell.StyleIndex==null
                     {
                         int styleIndex = Convert.ToInt32(cell.StyleIndex.Value);
-                        string cellStyle = dicStyles.Count>=styleIndex? dicStyles[styleIndex - 1]:null;//获取该索引的样式
-						if (cellStyle != null)
-						{
-							if (cellStyle.Contains("yyyy") || cellStyle.Contains("h")
-								|| cellStyle.Contains("dd") || cellStyle.Contains("ss"))
-							{
-								//如果为日期或时间进行格式处理,去掉“;@”
-								cellStyle = cellStyle.Replace(";@", "");
-								while (cellStyle.Contains("[") && cellStyle.Contains("]"))
-								{
-									int otherStart = cellStyle.IndexOf('[');
-									int otherEnd = cellStyle.IndexOf("]");
+                        string cellStyle = dicStyles.Count >= styleIndex ? dicStyles[styleIndex - 1] : null;//获取该索引的样式
+                        if (cellStyle != null)
+                        {
+                            if (cellStyle.Contains("yyyy") || cellStyle.Contains("h")
+                                || cellStyle.Contains("dd") || cellStyle.Contains("ss"))
+                            {
+                                //如果为日期或时间进行格式处理,去掉“;@”
+                                cellStyle = cellStyle.Replace(";@", "");
+                                while (cellStyle.Contains("[") && cellStyle.Contains("]"))
+                                {
+                                    int otherStart = cellStyle.IndexOf('[');
+                                    int otherEnd = cellStyle.IndexOf("]");
 
-									cellStyle = cellStyle.Remove(otherStart, otherEnd - otherStart + 1);
-								}
-								//double doubleDateTime = double.Parse(cellInnerText);
-								
+                                    cellStyle = cellStyle.Remove(otherStart, otherEnd - otherStart + 1);
+                                }
+                                //double doubleDateTime = double.Parse(cellInnerText);
+
                                 double tmpValue = 0;
                                 if (double.TryParse(cellInnerText, out tmpValue))
                                 {
@@ -776,17 +766,17 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                                 }
 
                                 if (cellStyle.Contains("m")) { cellStyle = cellStyle.Replace("m", "M"); }
-								if (cellStyle.Contains("AM/PM")) { cellStyle = cellStyle.Replace("AM/PM", ""); }
-								
-							}
-							else//其他的货币、数值
-							{
+                                if (cellStyle.Contains("AM/PM")) { cellStyle = cellStyle.Replace("AM/PM", ""); }
+
+                            }
+                            else//其他的货币、数值
+                            {
                                 cellValue = cellInnerText;
-        //                        cellStyle = cellStyle.Substring(cellStyle.LastIndexOf('.') - 1).Replace("\\", "");
-								//decimal decimalNum = decimal.Parse(cellInnerText);
-								//cellValue = decimal.Parse(decimalNum.ToString(cellStyle)).ToString();
-							}
-						}
+                                //                        cellStyle = cellStyle.Substring(cellStyle.LastIndexOf('.') - 1).Replace("\\", "");
+                                //decimal decimalNum = decimal.Parse(cellInnerText);
+                                //cellValue = decimal.Parse(decimalNum.ToString(cellStyle)).ToString();
+                            }
+                        }
                     }
                     else if (
                         (cf.NumberFormatId >= 14 && cf.NumberFormatId <= 22) ||
@@ -801,7 +791,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                                 tmpValue -= 1;
                             var tmpDate = new DateTime(1899, 12, 31).AddDays(tmpValue);
                             cellValue = tmpDate.ToString("yyyy-MM-dd HH:mm:ss");
-                           
+
                         }
 
                         //DateTime dt = new DateTime(1899, 12, 30).AddDays(double.Parse(cellInnerText));

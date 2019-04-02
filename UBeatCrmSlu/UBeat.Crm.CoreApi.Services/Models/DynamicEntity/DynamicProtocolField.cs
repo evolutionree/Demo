@@ -342,6 +342,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 嵌套表格字段时记录嵌套实体的id
         /// </summary>
         public Guid EntityId { get; set; }
+
+        /// <summary>
+        /// 是否多选，只有数据源有效
+        /// </summary>
+        public int Multiple { get; set; }
     }
 
     public class DynamicProtocolValidResult
@@ -350,6 +355,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 数据库字段名
         /// </summary>
         public string FieldName { get; set; }
+
+        /// <summary>
+        /// 字段名称
+        /// </summary>
+        public string FieldDisplay { get; set; }
         /// <summary>
         /// 错误提示
         /// </summary>
@@ -358,9 +368,17 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 是否验证通过
         /// </summary>
         public bool IsValid { get; set; }
+
+        public bool IsRequired { get; set; }
         /// <summary>
         /// 字段值
         /// </summary>
         public object FieldData { get; set; }
+        /// <summary>
+        /// 字段类型
+        /// </summary>
+        public int ControlType { get; set; }
+
+        public string FieldConfig { get; set; }
     }
 }

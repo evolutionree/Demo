@@ -5,7 +5,7 @@ using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.Services.Models.Excels
 {
-    
+
     public class ExportDataModel
     {
         /// <summary>
@@ -22,7 +22,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// <summary>
         /// 导出时的查询参数
         /// </summary>
-        public string QueryParameters { set; get; } 
+        public string QueryParameters { set; get; }
 
         /// <summary>
         /// 导出时的查询参数
@@ -46,7 +46,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         /// 实体类型的导出的查询参数对象，由DynamicQuery生成，不需传该字段
         /// </summary>
         public DynamicEntityListModel DynamicModel { set; get; }
-        
+
         /// <summary>
         /// 标注哪些嵌套表格字段要导出/导出
         /// </summary>
@@ -67,16 +67,19 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         public Guid EntityId { get; set; }
 
         #endregion
+        public bool CanChange2Asynch { get; set; }
     }
     /// <summary>
     /// 实体导出Excel时，标记主表行的显示模式
     /// </summary>
-    public enum ExportDataRowModeEnum {
+    public enum ExportDataRowModeEnum
+    {
         FullFill = 0,//每行填充
         KeepEmpty = 1,//留空白
         MergeRow = 2//合并
     }
-    public enum ExportDataColumnSourceEnum {
+    public enum ExportDataColumnSourceEnum
+    {
         WEB_Standard = 0,
         WEB_Personal = 1,
         All_Columns = 2

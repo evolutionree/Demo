@@ -9,5 +9,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         public byte[] ExcelFile { set; get; }
 
         public string FileName { set; get; }
+        public bool IsAysnc { get; set; }
+        public string Message { get; set; }
+        public ExportModel()
+        {
+            IsAysnc = false;
+
+        }
     }
 }

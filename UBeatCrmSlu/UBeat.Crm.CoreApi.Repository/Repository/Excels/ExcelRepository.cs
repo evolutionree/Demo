@@ -101,7 +101,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
             rowargs.Add(new NpgsqlParameter("operatetype", data.OperateType));
             rowargs.Add(new NpgsqlParameter("userno", data.UserNo));
 
-            return ExecuteQuery<OperateResult>( data.Sql, rowargs.ToArray(), tran).FirstOrDefault();
+            return ExecuteQuery<OperateResult>(data.Sql, rowargs.ToArray(), tran).FirstOrDefault();
 
         }
 
@@ -122,18 +122,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
                             throw new Exception("rulesql为内置参数，不需传值");
                         args.Add(new NpgsqlParameter(m.Key, m.Value));
                     }
-                   
+
                 }
             }
             args.Add(new NpgsqlParameter("userno", data.UserNo));
             args.Add(new NpgsqlParameter("rulesql", data.RuleSql));
             if (data.IsStoredProcCursor)
             {
-               return ExecuteQueryRefCursor(data.Sql, args.ToArray()).FirstOrDefault().Value;
-               
+                return ExecuteQueryRefCursor(data.Sql, args.ToArray()).FirstOrDefault().Value;
+
             }
             return ExecuteQuery(data.Sql, args.ToArray());
-           
+
         }
 
 
@@ -419,7 +419,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
             else
             {
                 executeSql = @"SELECT p.recid,
-                            ,array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(s.productsetid, 0) ORDER BY nodepath DESC),',') fullname
+                            array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(s.productsetid, 0) ORDER BY nodepath DESC),',') fullname
                             FROM crm_sys_product AS p
                             INNER JOIN crm_sys_products_series AS s ON s.productsetid=p.productsetid
                             WHERE productname=@productname AND  array_to_string( array(SELECT productsetname FROM crm_func_product_serial_tree(s.productsetid, 0) ORDER BY nodepath DESC),'/')=@serialPath
@@ -502,7 +502,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
             {
                 errorMsg = "存在多个同名产品，请使用全路径";
             }
-            return new Guid( dataResult.FirstOrDefault().FirstOrDefault().Value.ToString());
+            return new Guid(dataResult.FirstOrDefault().FirstOrDefault().Value.ToString());
         }
 
 
@@ -540,33 +540,41 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
         /// <param name="serialPath"></param>
         /// <param name="errorMsg"></param>
         /// <returns></returns>
-        public Guid GetDepartmentId(string departPath,int userno, out string errorMsg)
+        public Guid GetDepartmentId(string departPath, int userno, out string errorMsg)
         {
             errorMsg = null;
-            if (string.IsNullOrEmpty(departPath))
+            try
             {
-                return Guid.Empty;
-            }
-            var executeSql = @"SELECT departmentid  FROM crm_func_department_nameparsing(@deptnamepath,@userno)";
+                if (string.IsNullOrEmpty(departPath))
+                {
+                    return Guid.Empty;
+                }
+                var executeSql = @"SELECT departmentid  FROM crm_func_department_nameparsing(@deptnamepath,@userno)";
 
-            var param = new DbParameter[]
-            {
+                var param = new DbParameter[]
+                {
                 new NpgsqlParameter("deptnamepath",departPath??""),
                 new NpgsqlParameter("userno",userno)
-            };
+                };
 
-            var dataResult = ExecuteQuery(executeSql, param);
+                var dataResult = ExecuteQuery(executeSql, param);
 
-            if (dataResult.Count == 0)
+                if (dataResult.Count == 0)
+                {
+                    errorMsg = "部门不存在";
+                    return Guid.Empty;
+                }
+                else if (dataResult.Count > 1)
+                {
+                    errorMsg = "存在多个同名部门，请使用全路径";
+                }
+                return new Guid(dataResult.FirstOrDefault().FirstOrDefault().Value.ToString());
+            }
+            catch (Exception ex)
             {
-                errorMsg = "部门不存在";
+                errorMsg = ex.Message;
                 return Guid.Empty;
             }
-            else if (dataResult.Count > 1)
-            {
-                errorMsg = "存在多个同名部门，请使用全路径";
-            }
-            return new Guid(dataResult.FirstOrDefault().FirstOrDefault().Value.ToString());
         }
 
 
@@ -598,7 +606,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
                 errorMsg = "销售阶段不存在";
                 return Guid.Empty;
             }
-            
+
             return new Guid(dataResult.FirstOrDefault().FirstOrDefault().Value.ToString());
         }
 

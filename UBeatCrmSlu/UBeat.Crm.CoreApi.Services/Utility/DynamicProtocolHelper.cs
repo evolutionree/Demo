@@ -59,6 +59,26 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return validResultDic;
         }
 
+        /// <summary>
+        /// 返回必须填写的字段
+        /// </summary>
+        public static Dictionary<string, DynamicProtocolValidResult> ValidRequireData(
+            Dictionary<string, DynamicProtocolValidResult> fields)
+        {
+            //验证字段必填
+            var validResultDic = new Dictionary<string, DynamicProtocolValidResult>();
+
+            foreach (var key in fields.Keys)
+            {
+                if (fields[key].IsRequired)
+                {
+                    validResultDic.Add(key, fields[key]);
+                }
+            }
+
+            return validResultDic;
+        }
+
         public static DynamicProtocolValidResult ValidDefaultValue(DynamicEntityDataFieldMapper field)
         {
             var result = new DynamicProtocolValidResult();
@@ -87,13 +107,16 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         break;
                     }
             }
-
+            result.IsRequired = field.IsRequire;
+            result.ControlType = field.ControlType;
+            result.FieldDisplay = field.DisplayName;
+            result.FieldConfig = field.FieldConfig;
             result.IsValid = true;
 
             return result;
         }
 
-        public static DynamicProtocolValidResult ValidFieldConfig(DynamicEntityDataFieldMapper field, object data, bool isMobile)
+        public static DynamicProtocolValidResult ValidFieldConfig(DynamicEntityDataFieldMapper field, object data, bool isMobile, List<DynamicEntityDataFieldMapper> subFields = null)
         {
             var result = new DynamicProtocolValidResult();
             result.FieldName = field.FieldName;
@@ -101,14 +124,49 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             //字段值为空时，如果是非必填，则忽略该键值  必填+隐藏 跳过校验
             if (field.IsRequire && field.IsVisible)
             {
-                if (string.IsNullOrWhiteSpace(data?.ToString().Trim()))
+                if (field.ControlType == (int)DynamicProtocolControlType.LinkeTable)
                 {
-                    if (!(isMobile && field.ControlType == (int)DynamicProtocolControlType.FileAttach))
+                    if (data == null)
                     {
                         result.Tips = string.Format("{0}必填，不能为空", field.DisplayName);
                         return result;
                     }
+                    else if (data is List<Dictionary<string, object>>)
+                    {
+                        List<Dictionary<string, object>> dataList = (List<Dictionary<string, object>>)data;
+                        if (dataList.Count == 0)
+                        {
+                            result.Tips = string.Format("{0}必填，不能为空", field.DisplayName);
+                            return result;
+                        }
+                    }
+                    else if (data is JArray)
+                    {
+                        JArray dataList = (JArray)data;
+                        if (dataList.Count == 0)
+                        {
+                            result.Tips = string.Format("{0}必填，不能为空", field.DisplayName);
+                            return result;
+                        }
+                    }
+                    else
+                    {
+                        result.Tips = string.Format("{0}的表格数据异常", field.DisplayName);
+                        return result;
+                    }
                 }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(data?.ToString().Trim()))
+                    {
+                        if (!(isMobile && field.ControlType == (int)DynamicProtocolControlType.FileAttach))
+                        {
+                            result.Tips = string.Format("{0}必填，不能为空", field.DisplayName);
+                            return result;
+                        }
+                    }
+                }
+
             }
 
             if (field.IsRequire && field.IsReadOnly)
@@ -168,6 +226,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     return result;
                 }
             }
+
             if (field.ControlType == (int)(DynamicProtocolControlType.DataSourceSingle))
             {
                 if (!string.IsNullOrEmpty(dataString))
@@ -177,11 +236,17 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         Dictionary<string, object> tmp = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataString);
                         if (tmp.ContainsKey("id"))
                         {
-                            Guid id = Guid.Empty;
-                            if (Guid.TryParse(string.Concat(tmp["id"]), out id) == false)
+                            string tmpids = tmp["id"].ToString();
+                            if (tmpids.IndexOf(',') < 0)
                             {
-                                dataString = null;
+                                //变通实现排除多选问题
+                                Guid id = Guid.Empty;
+                                if (Guid.TryParse(string.Concat(tmp["id"]), out id) == false)
+                                {
+                                    dataString = null;
+                                }
                             }
+
                         }
                     }
                     catch (Exception ex)
@@ -190,8 +255,39 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     }
                 }
             }
-
+            if (field.ControlType == (int)DynamicProtocolControlType.LinkeTable && subFields != null
+               )
+            {
+                List<Dictionary<string, object>> subRowDataList = (List<Dictionary<string, object>>)data;
+                int index = 0;
+                foreach (Dictionary<string, object> rowDataInfo in subRowDataList)
+                {
+                    index++;
+                    if (rowDataInfo.ContainsKey("FieldData"))
+                    {
+                        Dictionary<string, object> subRow = (Dictionary<string, object>)rowDataInfo["FieldData"];
+                        foreach (DynamicEntityDataFieldMapper subTypeField in subFields)
+                        {
+                            if (subRow.ContainsKey(subTypeField.FieldName) == false) continue;
+                            var validatResult = ValidFieldConfig(subTypeField, subRow[subTypeField.FieldName], isMobile, null);
+                            if (validatResult != null && !validatResult.IsValid)
+                            {
+                                if (validatResult.Tips != null)
+                                {
+                                    validatResult.Tips = "第" + index.ToString() + "行的" + validatResult.Tips;
+                                }
+                                return validatResult;
+                            }
+                        }
+                    }
+                }
+            }
             result.IsValid = true;
+            //修改痕迹需要
+            result.IsRequired = field.IsRequire;
+            result.ControlType = field.ControlType;
+            result.FieldDisplay = field.DisplayName;
+            result.FieldConfig = field.FieldConfig;
             result.FieldData = dataString;
 
             return result;
@@ -503,7 +599,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                                 else
                                 {
-                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, tablealias: "e"), dataStr);
+                                    result.FieldData = string.Format(" {0}_t.username  ilike '%{1}%'", columnKey, dataStr);
                                 }
                                 break;
                             }
@@ -608,6 +704,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 if (field.IsLike == 0)
                                 {
                                     result.FieldData = string.Format("(e.{0}->>'id') in ('{1}')", columnKey, dataStr.Replace(",", "','"));
+                                }
+                                else
+                                {
+                                    result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                }
+                                break;
+                            }
+                        case DynamicProtocolControlType.SalesStage:
+                            {
+                                if (field.IsLike == 0)
+                                {
+                                    result.FieldData = string.Format("e.{0} = '{1}'", columnKey, dataStr);
                                 }
                                 else
                                 {
@@ -939,6 +1047,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 {
                                     result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
                                 }
+                                break;
+                            }
+                        case DynamicProtocolControlType.RelateControl:
+                        case DynamicProtocolControlType.RecId:
+                            {
+                                result.FieldData = string.Format("position(t.{0}::text in '{1}')>0", columnKey, dataStr);
                                 break;
                             }
                         case DynamicProtocolControlType.DataSourceMulti:

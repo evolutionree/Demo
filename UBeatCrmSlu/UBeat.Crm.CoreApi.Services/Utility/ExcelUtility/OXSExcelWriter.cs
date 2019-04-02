@@ -335,10 +335,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                     worksheetPart.Worksheet.InsertAfter(GetColumns(sheetTemplate.Headers), worksheetPart.Worksheet.SheetFormatProperties);
                 }
             }
-            else if (data.SheetDefines is MultiHeaderSheetTemplate) {
+            else if (data.SheetDefines is MultiHeaderSheetTemplate)
+            {
                 //多表头的处理
                 var sheetTemplate = data.SheetDefines as MultiHeaderSheetTemplate;
-                if (sheetTemplate.Headers != null && sheetTemplate.Headers.Count > 0) {
+                if (sheetTemplate.Headers != null && sheetTemplate.Headers.Count > 0)
+                {
                     columnMap = CreateHeaders(rootbookpart, worksheetPart, sheetTemplate.Headers);
                     worksheetPart.Worksheet.InsertAfter(GetColumns(columnMap), worksheetPart.Worksheet.SheetFormatProperties);
                 }
@@ -375,7 +377,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             // Add sheet data
             if (columnMap != null && columnMap.Count > 0)
                 InsertRowsData(rootbookpart, worksheetPart, columnMap, data.DataRows, errorColumnName, data.RowErrors);
-            if (data.MergeList != null && data.MergeList.Count > 0) {
+            if (data.MergeList != null && data.MergeList.Count > 0)
+            {
                 MergeCells(rootbookpart, worksheetPart, data.MergeList);
             }
 
@@ -392,9 +395,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         /// <param name="curColIndex"></param>
         /// <param name="MaxRowCount"></param>
         /// <returns></returns>
-        private static int CalcMultiHeaderSpan(List<MultiHeader> headers, int curRowIndex, int curColIndex, ref int MaxRowCount) {
+        private static int CalcMultiHeaderSpan(List<MultiHeader> headers, int curRowIndex, int curColIndex, ref int MaxRowCount)
+        {
             if (MaxRowCount < curRowIndex) MaxRowCount = curRowIndex;
-            for (int i = 0; i < headers.Count; i++) {
+            for (int i = 0; i < headers.Count; i++)
+            {
                 if (headers[i].HeaderType == 1)
                 {
                     headers[i].RowIndex = curRowIndex;
@@ -403,7 +408,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                     headers[i].ColSpan = 1;
                     headers[i].RowSpan = MaxRowCount - curRowIndex + 1;
                 }
-                else {
+                else
+                {
 
                     int endColIndex = CalcMultiHeaderSpan(headers[i].SubHeaders, curRowIndex + 1, curColIndex, ref MaxRowCount);
                     headers[i].RowIndex = curRowIndex;
@@ -420,9 +426,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         /// </summary>
         /// <param name="headers"></param>
         /// <param name="maxRowCount"></param>
-        private static void AfterCalcMultiHeaderSpan(List<MultiHeader> headers, int maxRowCount) {
-            foreach (MultiHeader item in headers) {
-                if (item.HeaderType == 1) {
+        private static void AfterCalcMultiHeaderSpan(List<MultiHeader> headers, int maxRowCount)
+        {
+            foreach (MultiHeader item in headers)
+            {
+                if (item.HeaderType == 1)
+                {
                     item.RowSpan = maxRowCount - item.RowIndex + 1;
                 }
             }
@@ -433,7 +442,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         /// <param name="rowIndex"></param>
         /// <param name="colIndex"></param>
         /// <returns></returns>
-        private static string getCellName(int rowIndex, int colIndex) {
+        private static string getCellName(int rowIndex, int colIndex)
+        {
             return OpenXMLExcelHelper.GetColumnName((uint)colIndex) + rowIndex.ToString();
         }
         /// <summary>
@@ -444,17 +454,27 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         /// <param name="headers"></param>
         /// <param name="columnMap"></param>
         private static void CalcMultiHeaderColumns(WorkbookPart workbookPart, WorksheetPart worksheetPart,
-            List<MultiHeader> headers, List<ColumnMapModel> columnMap) {
-            foreach (MultiHeader item in headers) {
+            List<MultiHeader> headers, List<ColumnMapModel> columnMap, MultiHeader parentHeader = null)
+        {
+            foreach (MultiHeader item in headers)
+            {
                 string headerText = item.HeaderText;
-                for (int r = 0; r < item.RowSpan; r++) {
-                    for (int c = 0; c < item.ColSpan; c++) {
+                for (int r = 0; r < item.RowSpan; r++)
+                {
+                    for (int c = 0; c < item.ColSpan; c++)
+                    {
                         var cell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, (uint)(item.ColIndex + c), (uint)(item.RowIndex + r), headerText);
-                        cell.StyleIndex = 6;
+                        // cell.StyleIndex = 6;
+                        if (item.IsNotEmpty)
+                        {
+                            cell.StyleIndex = 5;
+                        }
+                        else cell.StyleIndex = 4;
                         headerText = "";
                     }
                 }
-                if (item.ColSpan > 1 || item.RowSpan > 1) {
+                if (item.ColSpan > 1 || item.RowSpan > 1)
+                {
                     string FirstCellName = getCellName(item.RowIndex, item.ColIndex);
                     string SecondCellName = getCellName(item.RowIndex + item.RowSpan - 1, item.ColIndex + item.ColSpan - 1);
                     OpenXMLExcelHelper.MergeTwoCells(worksheetPart.Worksheet, FirstCellName, SecondCellName);
@@ -462,17 +482,28 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
                 if (item.HeaderType == 1)
                 {
                     //普通
-                    columnMap.Add(new ColumnMapModel() {
+                    string fieldname = "";
+                    if (parentHeader != null && item.FieldName.IndexOf(".") < 0)
+                    {
+                        fieldname = parentHeader.FieldName + "." + item.FieldName;//兼容
+                    }
+                    else
+                    {
+                        fieldname = item.FieldName;
+                    }
+                    columnMap.Add(new ColumnMapModel()
+                    {
                         Index = (int)item.ColIndex,
-                        FieldName = item.FieldName,
+                        FieldName = fieldname,
                         IsNotEmpty = item.IsNotEmpty,
                         Width = item.Width,
                         HeaderText = item.HeaderText
                     });
 
                 }
-                else {
-                    CalcMultiHeaderColumns(workbookPart, worksheetPart, item.SubHeaders, columnMap);
+                else
+                {
+                    CalcMultiHeaderColumns(workbookPart, worksheetPart, item.SubHeaders, columnMap, item);
                 }
             }
         }
@@ -597,8 +628,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         }
         #endregion
         #region 合并单元格
-        private static void MergeCells(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<MergeCellInfo> mergeList) {
-            foreach (MergeCellInfo mergeInfo in mergeList) {
+        private static void MergeCells(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<MergeCellInfo> mergeList)
+        {
+            foreach (MergeCellInfo mergeInfo in mergeList)
+            {
                 string FirstCellName = getCellName(mergeInfo.FromRowIndex, mergeInfo.FromColIndex);
                 string SecondCellName = getCellName(mergeInfo.FromRowIndex + mergeInfo.RowCount - 1, mergeInfo.FromColIndex + mergeInfo.ColCount - 1);
                 OpenXMLExcelHelper.MergeTwoCells(worksheetPart.Worksheet, FirstCellName, SecondCellName);
@@ -608,129 +641,129 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
         #endregion 
         #region --插入每行数据--
         private static void InsertRowsData(WorkbookPart workbookPart, WorksheetPart worksheetPart, List<ColumnMapModel> columnMap, List<Dictionary<string, object>> rowsdata, string errorColumnName = null, List<string> rowErrors = null)
-		{
-			if (columnMap == null || columnMap.Count <= 0)
-				throw new Exception("Excel 必须包含columnMap数据");
+        {
+            if (columnMap == null || columnMap.Count <= 0)
+                throw new Exception("Excel 必须包含columnMap数据");
 
-			Worksheet worksheet = worksheetPart.Worksheet;
-			SheetData sheetData = worksheet.GetFirstChild<SheetData>();
-			var columnMapOrderBy = columnMap.OrderBy(m => m.Index);
-			uint rowIdex = (UInt32)sheetData.Descendants<Row>().Count();
-			uint cellIdex = 0;
+            Worksheet worksheet = worksheetPart.Worksheet;
+            SheetData sheetData = worksheet.GetFirstChild<SheetData>();
+            var columnMapOrderBy = columnMap.OrderBy(m => m.Index);
+            uint rowIdex = (UInt32)sheetData.Descendants<Row>().Count();
+            uint cellIdex = 0;
             OpenXMLExcelHelper.CellTypeSelfDefined celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Normal;
 
             if (rowsdata == null)
-				return;
-			for (int i = 0; i < rowsdata.Count; i++)
-			{
+                return;
+            for (int i = 0; i < rowsdata.Count; i++)
+            {
                 var row = rowsdata[i];
-				cellIdex = 0;
-				var newrow = new Row { RowIndex = ++rowIdex };
-				List<OXSExcelDataCell> cellList = new List<OXSExcelDataCell>();
-				foreach (var column in columnMapOrderBy)
+                cellIdex = 0;
+                var newrow = new Row { RowIndex = ++rowIdex };
+                List<OXSExcelDataCell> cellList = new List<OXSExcelDataCell>();
+                foreach (var column in columnMapOrderBy)
                 {
                     celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Normal;
                     object cellValue = null;
-					uint styleIndex = 0;
-					//判断是否是错误提示列
-					if (column.FieldName.Equals(errorColumnName) && rowErrors != null)
-					{
-						cellValue = rowErrors.ElementAtOrDefault(i) ?? "";
-						styleIndex = column.StyleIndex;
-					}
-					else cellValue = row.ContainsKey(column.FieldName) ? row[column.FieldName] : "";
-					OXSExcelDataCell celldata = new OXSExcelDataCell("");
-					if (cellValue is OXSExcelDataCell)
-					{
-						celldata = cellValue as OXSExcelDataCell;
-					}
-					else
-					{
-                        
+                    uint styleIndex = 0;
+                    //判断是否是错误提示列
+                    if (column.FieldName.Equals(errorColumnName) && rowErrors != null)
+                    {
+                        cellValue = rowErrors.ElementAtOrDefault(i) ?? "";
+                        styleIndex = column.StyleIndex;
+                    }
+                    else cellValue = row.ContainsKey(column.FieldName) ? row[column.FieldName] : "";
+                    OXSExcelDataCell celldata = new OXSExcelDataCell("");
+                    if (cellValue is OXSExcelDataCell)
+                    {
+                        celldata = cellValue as OXSExcelDataCell;
+                    }
+                    else
+                    {
+
                         if (cellValue is decimal)
                         {
                             cellValue = Decimal.ToDouble((decimal)cellValue);
                             celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Number;
                         }
                         celldata = new OXSExcelDataCell(cellValue == null ? "" : cellValue.ToString());
-					}
-					cellList.Add(celldata);
+                    }
+                    cellList.Add(celldata);
 
-					InsertCellData(celldata, workbookPart, worksheetPart, cellIdex++, rowIdex, newrow, styleIndex, celltype);
-				}
+                    InsertCellData(celldata, workbookPart, worksheetPart, cellIdex++, rowIdex, newrow, styleIndex, celltype);
+                }
 
-				var maxrowheight = GetMaxRowHeight(cellList);
-				if (maxrowheight > 0)
-				{
-					newrow.CustomHeight = true;
-					newrow.Height = maxrowheight;
-				}
-				sheetData.AppendChild(newrow);
-			}
-		}
-		#endregion
+                var maxrowheight = GetMaxRowHeight(cellList);
+                if (maxrowheight > 0)
+                {
+                    newrow.CustomHeight = true;
+                    newrow.Height = maxrowheight;
+                }
+                sheetData.AppendChild(newrow);
+            }
+        }
+        #endregion
 
-		#region --插入单元格数据--
-		private static void InsertCellData(OXSExcelDataCell callData, WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, Row row = null, uint styleIndex = 0, OpenXMLExcelHelper.CellTypeSelfDefined celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Normal)
-		{
-			if (callData.DataType == OXSDataItemType.String)
-			{
-				var newcell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIdex, rowIndex, callData.Data == null ? string.Empty : callData.Data.ToString(), row,celltype);
-				newcell.StyleIndex = styleIndex;
-			}
-			else if (callData.DataType == OXSDataItemType.Hyperlink)
-			{
-				HyperlinkData hyperlinkData = callData.Data as HyperlinkData;
-				if (hyperlinkData == null || string.IsNullOrEmpty(hyperlinkData.Text))
-				{
-					return;
-				}
-				var cell = OpenXMLExcelHelper.CreateHyperlinkCell(columnIdex, rowIndex, hyperlinkData.Text, hyperlinkData.Hyperlink);
+        #region --插入单元格数据--
+        private static void InsertCellData(OXSExcelDataCell callData, WorkbookPart workbookPart, WorksheetPart worksheetPart, uint columnIdex, uint rowIndex, Row row = null, uint styleIndex = 0, OpenXMLExcelHelper.CellTypeSelfDefined celltype = OpenXMLExcelHelper.CellTypeSelfDefined.Normal)
+        {
+            if (callData.DataType == OXSDataItemType.String)
+            {
+                var newcell = OpenXMLExcelHelper.InsertText(workbookPart, worksheetPart, columnIdex, rowIndex, callData.Data == null ? string.Empty : callData.Data.ToString(), row, celltype);
+                newcell.StyleIndex = styleIndex;
+            }
+            else if (callData.DataType == OXSDataItemType.Hyperlink)
+            {
+                HyperlinkData hyperlinkData = callData.Data as HyperlinkData;
+                if (hyperlinkData == null || string.IsNullOrEmpty(hyperlinkData.Text))
+                {
+                    return;
+                }
+                var cell = OpenXMLExcelHelper.CreateHyperlinkCell(columnIdex, rowIndex, hyperlinkData.Text, hyperlinkData.Hyperlink);
 
-				row.AppendChild(cell);
-			}
-			else//其他的类型均为图片
-			{
-				ImagePartType dataType = (ImagePartType)callData.DataType;
+                row.AppendChild(cell);
+            }
+            else//其他的类型均为图片
+            {
+                ImagePartType dataType = (ImagePartType)callData.DataType;
 
-				int offsetx = 1;
-				int offsety = 0;
-				int offsetavg = 0;
-				int? imagewidth = callData.CellWidth <= 0 ? null : (int?)callData.CellWidth;
-				int? imageheight = callData.CellHeight <= 0 ? null : (int?)callData.CellHeight;
-				if (callData.Data is List<byte[]>)
-				{
-					List<byte[]> datas = callData.Data as List<byte[]>;
-					offsetavg = (callData.CellWidth - 2 * (datas.Count + 1)) / datas.Count;
+                int offsetx = 1;
+                int offsety = 0;
+                int offsetavg = 0;
+                int? imagewidth = callData.CellWidth <= 0 ? null : (int?)callData.CellWidth;
+                int? imageheight = callData.CellHeight <= 0 ? null : (int?)callData.CellHeight;
+                if (callData.Data is List<byte[]>)
+                {
+                    List<byte[]> datas = callData.Data as List<byte[]>;
+                    offsetavg = (callData.CellWidth - 2 * (datas.Count + 1)) / datas.Count;
 
-					foreach (var m in datas)
-					{
-						OpenXMLExcelHelper.InsertImage(worksheetPart, m, dataType, rowIndex - 1, columnIdex, offsetavg, imageheight, offsetx, offsety);
-						offsetx += offsetavg + 1;
-					}
-				}
-				else
-				{
-					OpenXMLExcelHelper.InsertImage(worksheetPart, (callData.Data as byte[]), dataType, rowIndex - 1, columnIdex, imagewidth, imageheight, offsetx, offsety);
-				}
-			}
-		}
-		#endregion
+                    foreach (var m in datas)
+                    {
+                        OpenXMLExcelHelper.InsertImage(worksheetPart, m, dataType, rowIndex - 1, columnIdex, offsetavg, imageheight, offsetx, offsety);
+                        offsetx += offsetavg + 1;
+                    }
+                }
+                else
+                {
+                    OpenXMLExcelHelper.InsertImage(worksheetPart, (callData.Data as byte[]), dataType, rowIndex - 1, columnIdex, imagewidth, imageheight, offsetx, offsety);
+                }
+            }
+        }
+        #endregion
 
-		#region --计算当前行的最大高度--
-		private static double GetMaxRowHeight(List<OXSExcelDataCell> rowdata)
-		{
-			int maxRowHeight = 0;
-			foreach (var col in rowdata)
-			{
-				if (col.CellHeight > maxRowHeight)
-					maxRowHeight = col.CellHeight;
-			}
-			//点数，是point简称 1磅=0.03527厘米=1/72英寸
-			//1英寸=2.54厘米=96像素（分辨率为96dpi)
-			return maxRowHeight / 96.0 * 72;
-		}
-		#endregion
+        #region --计算当前行的最大高度--
+        private static double GetMaxRowHeight(List<OXSExcelDataCell> rowdata)
+        {
+            int maxRowHeight = 0;
+            foreach (var col in rowdata)
+            {
+                if (col.CellHeight > maxRowHeight)
+                    maxRowHeight = col.CellHeight;
+            }
+            //点数，是point简称 1磅=0.03527厘米=1/72英寸
+            //1英寸=2.54厘米=96像素（分辨率为96dpi)
+            return maxRowHeight / 96.0 * 72;
+        }
+        #endregion
 
         private static Columns GetColumns(List<ColumnMapModel> columnsMap)
         {
@@ -760,33 +793,33 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
             return columns;
         }
 
-		private static Columns GetColumns(List<SimpleHeader> headers)
-		{
+        private static Columns GetColumns(List<SimpleHeader> headers)
+        {
 
-			double colWidth = 0;
-			Columns columns = new Columns();
+            double colWidth = 0;
+            Columns columns = new Columns();
 
-			double maxWidth = 7;
-			int index = 0;
-			foreach (var header in headers)
-			{
-				double width = 0;
-				if (header.Width <= 0)
-				{
-					colWidth = header.HeaderText.Length;
-				}
-				else
-				{
-					//double charWidth = Math.Truncate((pixels - 5) / maxWidth * 100 + 0.5) / 100;
-					colWidth = Math.Truncate((header.Width - 5) / maxWidth * 100 + 0.5) / 100;
-				}
-				width = Math.Truncate((colWidth * maxWidth + 5) / maxWidth * 256) / 256;
-				//单位转换公式地址 https://msdn.microsoft.com/en-us/library/documentformat.openxml.spreadsheet.column
-				Column col = new Column() { BestFit = true, Min = (UInt32)(index + 1), Max = (UInt32)(index + 1), CustomWidth = true, Width = width };
-				index++;
-				columns.Append(col);
-			}
-			return columns;
-		}
-	}
+            double maxWidth = 7;
+            int index = 0;
+            foreach (var header in headers)
+            {
+                double width = 0;
+                if (header.Width <= 0)
+                {
+                    colWidth = header.HeaderText.Length;
+                }
+                else
+                {
+                    //double charWidth = Math.Truncate((pixels - 5) / maxWidth * 100 + 0.5) / 100;
+                    colWidth = Math.Truncate((header.Width - 5) / maxWidth * 100 + 0.5) / 100;
+                }
+                width = Math.Truncate((colWidth * maxWidth + 5) / maxWidth * 256) / 256;
+                //单位转换公式地址 https://msdn.microsoft.com/en-us/library/documentformat.openxml.spreadsheet.column
+                Column col = new Column() { BestFit = true, Min = (UInt32)(index + 1), Max = (UInt32)(index + 1), CustomWidth = true, Width = width };
+                index++;
+                columns.Append(col);
+            }
+            return columns;
+        }
+    }
 }

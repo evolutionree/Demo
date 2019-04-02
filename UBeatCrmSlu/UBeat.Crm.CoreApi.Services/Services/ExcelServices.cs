@@ -12,12 +12,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
-using UBeat.Crm.CoreApi.DomainModel.Department;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel.Excels;
 using UBeat.Crm.CoreApi.DomainModel.Message;
-using UBeat.Crm.CoreApi.DomainModel.Notify;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -26,6 +24,7 @@ using UBeat.Crm.CoreApi.Services.Models.Excels;
 using UBeat.Crm.CoreApi.Services.Models.Message;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
+using UBeat.Crm.CoreApi.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -167,7 +166,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>
         public ExportModel GenerateDetailImportTemplate(Guid mainEntityId, Guid mainTypeId, Guid detailEntityId)
         {
-            List < SheetDefine > defines = this.GeneralDetailTemplate_Import(detailEntityId, mainTypeId, ExcelOperateType.ImportAdd, 1);
+            List<SheetDefine> defines = this.GeneralDetailTemplate_Import(detailEntityId, mainTypeId, ExcelOperateType.ImportAdd, 1);
             var sheetsdata = new List<ExportSheetData>();
 
 
@@ -193,19 +192,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             };
         }
 
-        public OutputResult<object> TaskStart(string taskid)
+        public OutputResult<object> TaskStart(string taskid, IServiceProvider serviceProvider)
         {
             var taskData = _cache.Get<TaskDataModel>(taskDataId_prefix + taskid);
             if (taskData == null)
                 return ShowError<object>("任务不存在");
-            TaskStart(taskid, taskData);
+            TaskStart(taskid, taskData, serviceProvider);
             _cache.Remove(taskDataId_prefix + taskid);
             return new OutputResult<object>("任务已启动");
         }
 
 
 
-        private void TaskStart(string taskid, TaskDataModel taskData)
+        private void TaskStart(string taskid, TaskDataModel taskData, IServiceProvider serviceProvider)
         {
             if (taskData == null)
                 return;
@@ -259,172 +258,263 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         progress.ErrorRowsCount += m.DataRows.Count;
                         continue;
                     }
-                    //每个线程处理的最大条数
-                    var count = 100;
-                    //计算线程个数
-                    var numThreads = (int)Math.Ceiling((double)m.DataRows.Count / count);
-                    
-                    //限制最多使用10线程
-                    if (numThreads > 10)
+                    #region 开始整理数据，把嵌套实体合并到一个地方
+                    bool hasTableField = false;
+                    if (define is MultiHeaderSheetTemplate)
                     {
-                        numThreads = 10;
-                        //此时重新计算每个线程的最大条数
-                        count = m.DataRows.Count / numThreads;
-                    }
-                    if ("account_userinfo_import".Equals(taskData.FormDataKey)) {
-                        //对于人员导入，如果采用多线程，则会导致部门自动生成重复，需要避免人员多线程导入
-                        numThreads = 1;
-                        count = m.DataRows.Count / numThreads;
-                    }
-                    numThreads = 1;
-                    count = m.DataRows.Count / numThreads;
-                    var finished = new CountdownEvent(1);
-                    for (int i = 0; i < numThreads; i++)
-                    {
-                        finished.AddCount();
-                        var i1 = i;
-                        var length = numThreads - 1 == i ? m.DataRows.Count - i * count : count;
-                        var rangdata = m.DataRows.GetRange(i * count, length);
-
-                        ThreadPool.QueueUserWorkItem(delegate (object dataparam)
+                        foreach (var headeritem in ((MultiHeaderSheetTemplate)define).Headers)
                         {
-                            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-                            var datarows = dataparam as List<Dictionary<string, object>>;
-                            if (datarows == null)
-                                return;
-                            var taskSuccessRows = new List<Dictionary<string, object>>();
-                            var taskErrorRows = new List<Dictionary<string, object>>();
-                            var taskErrorTips = new List<string>();
-                            var taskSuccessTips = new List<string>();
-                            try
+                            if (headeritem.SubHeaders != null && headeritem.SubHeaders.Count > 0)
                             {
-                                foreach (var onerow in datarows)
+                                hasTableField = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    /**
+                     *需要考虑三种模式：
+                     * 1、冗余模式
+                     * 2、首行模式
+                     * 3、合并模式
+                     * 4、混合模式
+                     **/
+                    MultiHeaderSheetTemplate realDefine = null;
+                    if (hasTableField)
+                    {
+                        //只有包含嵌套表格的导入才需要重新整理数据
+                        List<Dictionary<string, object>> RealDatas = new List<Dictionary<string, object>>();
+                        int totalRowCount = m.DataRows.Count;
+                        Dictionary<string, object> lastRealRowData = null;
+                        realDefine = define as MultiHeaderSheetTemplate;
+                        for (int i = 0; i < totalRowCount; i++)
+                        {
+                            bool isNewRow = false;
+                            Dictionary<string, object> curRow = m.DataRows[i];
+                            foreach (var header in realDefine.Headers)
+                            {
+                                if (header.SubHeaders == null || header.SubHeaders.Count == 0)
                                 {
-
-                                    var tempRow = new Dictionary<string, object>(onerow);
-                                    //测试上传进度接口时，暂停3s
-                                    //Thread.Sleep(10000);
-                                    //1、数据校验
-                                    string errorMsg = string.Empty;
-                                    bool issucces = false;
-                                    if (ValidationRowData(define, taskData.OperateType, tempRow, taskData.UserNo, out errorMsg))
+                                    if (lastRealRowData == null)
                                     {
-                                        using (var conn = GetDbConnect())
-                                        {
-                                            conn.Open();
-                                            var tran = conn.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted);
-
-                                            try
-                                            {
-                                                //2、验证成功，执行导入
-                                                //动态实体方式导入
-                                                if (define is SimpleSheetTemplate)
-                                                {
-                                                    var entityid = new Guid(taskData.FormDataKey);
-                                                    issucces = DynamicImport(tran, entityid, define, taskData.OperateType, tempRow, taskData.UserNo, out errorMsg);
-                                                }
-                                                //模板方式导入
-                                                else if (define is SheetTemplate)
-                                                {
-                                                    var taskdata = new ImportRowDomainModel()
-                                                    {
-                                                        DataRow = tempRow,
-                                                        Sql = m.ExecuteSQL,//新增导入和覆盖导入由自定义的sql决定
-                                                        DefaultParameters = taskData.DefaultParameters,
-                                                        UserNo = taskData.UserNo,
-                                                        OperateType = (int)taskData.OperateType
-                                                    };
-                                                    var sqlresult = _repository.ImportRowData(tran, taskdata);
-                                                    issucces = sqlresult.Flag == 1;
-                                                    errorMsg = sqlresult.Msg;
-                                                }
-                                                else
-                                                {
-                                                    issucces = false;
-                                                    errorMsg = "系统错误，模板类型不存在";
-                                                }
-
-                                                tran.Commit();
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                tran.Rollback();
-                                                issucces = false;
-                                                errorMsg = "导入异常：" + ex.Message;
-                                            }
-                                            finally
-                                            {
-                                                conn.Close();
-                                                conn.Dispose();
-                                            }
-                                        }
+                                        isNewRow = true;
+                                        break;
                                     }
-                                    if (issucces)
+                                    if (curRow[header.FieldName] != null && (curRow[header.FieldName].ToString() != "" && curRow[header.FieldName].ToString() != "0")
+                                          && (lastRealRowData[header.FieldName] == null || curRow[header.FieldName].ToString() != lastRealRowData[header.FieldName].ToString()))
                                     {
-                                        taskSuccessRows.Add(onerow);
-                                        taskSuccessTips.Add(string.Format("导入成功，{0}", errorMsg));
+                                        isNewRow = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isNewRow)
+                            {
+                                if (lastRealRowData != null)
+                                {
+                                    RealDatas.Add(lastRealRowData);
+                                }
+                                lastRealRowData = new Dictionary<string, object>();
+                                foreach (var header in realDefine.Headers)
+                                {
+                                    if (header.SubHeaders == null || header.SubHeaders.Count == 0)
+                                    {
+                                        lastRealRowData[header.FieldName] = curRow[header.FieldName];
                                     }
                                     else
                                     {
-                                        taskErrorRows.Add(onerow);
-                                        taskErrorTips.Add(string.Format("导入失败，{0}", errorMsg));
-                                    }
-                                    //3、记录导入进度
-                                    lock (tasklockObj)
-                                    {
-                                        progress.DealRowsCount += 1;
-                                        if (!issucces)
-                                            progress.ErrorRowsCount += 1;
-                                    }
+                                        lastRealRowData[header.FieldName] = new List<Dictionary<string, object>>();
 
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                var temp = datarows.Except(taskSuccessRows).Except(taskErrorRows).ToList();
-                                foreach (var eRow in temp)
-                                {
-                                    taskErrorRows.Add(eRow);
-                                    taskErrorTips.Add(string.Format("导入出现异常：{0}", ex.Message));
-                                }
-                                lock (tasklockObj)
-                                {
-                                    progress.DealRowsCount += temp.Count;
-                                    progress.ErrorRowsCount += temp.Count;
-                                }
-                            }
-                            finally
-                            {
-                                lock (lockObj)
-                                {
-                                    if (taskSuccessRows.Count > 0)
-                                    {
-                                        success.DataRows.AddRange(taskSuccessRows);
-                                        success.RowErrors.AddRange(taskSuccessTips);
-                                    }
-                                    if (taskErrorRows.Count > 0)
-                                    {
-                                        error.DataRows.AddRange(taskErrorRows);
-                                        error.RowErrors.AddRange(taskErrorTips);
                                     }
                                 }
+                            }
+                            foreach (var header in realDefine.Headers)
+                            {
+                                if (header.SubHeaders != null && header.SubHeaders.Count > 0)
+                                {
+                                    Dictionary<string, object> subRow = new Dictionary<string, object>();
+                                    bool hasNoEmptyField = false;
+                                    foreach (var subHeader in header.SubHeaders)
+                                    {
+                                        string fieldname = header.FieldName + "." + subHeader.FieldName;
+                                        if (curRow.ContainsKey(fieldname))
+                                        {
+                                            subRow.Add(subHeader.FieldName, curRow[fieldname]);
+                                            if (curRow[fieldname] != null && curRow[fieldname].ToString().Length > 0)
+                                            {
+                                                hasNoEmptyField = true;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            subRow.Add(subHeader.FieldName, "");
+                                        }
+                                    }
+                                    if (hasNoEmptyField)
+                                    {
+                                        List<DynamicEntityDataFieldMapper> subfields = (List<DynamicEntityDataFieldMapper>)(((Dictionary<string, object>)realDefine.SubDataObject)[header.FieldName]);
+                                        DynamicEntityDataFieldMapper firstField = subfields.FirstOrDefault();
+                                        Dictionary<string, object> newRowInfo = new Dictionary<string, object>();
+                                        newRowInfo["TypeId"] = firstField.TypeId;
+                                        newRowInfo["FieldData"] = subRow;
 
-                                finished.Signal();
+                                        ((List<Dictionary<string, object>>)lastRealRowData[header.FieldName]).Add(newRowInfo);
+                                    }
+                                }
                             }
-                        }, rangdata);
+                        }
+                        if (lastRealRowData != null)
+                        {
+                            RealDatas.Add(lastRealRowData);
+                        }
+                        m.DataRows = RealDatas;
+
                     }
-                    finished.Signal();
-                    finished.Wait();
-                    finished.Dispose();
+                    progress.TotalRowsCount = taskData.Datas.Sum(o => o.DataRows.Count);
+                    #endregion
+                    var taskSuccessRows = new List<Dictionary<string, object>>();
+                    var taskErrorRows = new List<Dictionary<string, object>>();
+                    var taskErrorTips = new List<string>();
+                    var taskSuccessTips = new List<string>();
+                    var excelDataList = new List<Dictionary<string, object>>();
+                    try
+                    {
+                        foreach (var onerow in m.DataRows)
+                        {
 
-                    //如果有错误出现，则添加到导出对象中
+                            var tempRow = new Dictionary<string, object>(onerow);
+                            //测试上传进度接口时，暂停3s
+                            //Thread.Sleep(10000);
+                            //1、数据校验
+                            string errorMsg = string.Empty;
+                            bool issucces = false;
+                            if (ValidationRowData(define, taskData.OperateType, tempRow, taskData.UserNo, out errorMsg))
+                            {
+                                using (var conn = GetDbConnect())
+                                {
+                                    conn.Open();
+                                    var tran = conn.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted);
+
+                                    try
+                                    {
+                                        //2、验证成功，执行导入
+                                        //动态实体方式导入
+                                        if (define is MultiHeaderSheetTemplate)
+                                        {
+                                            var entityid = new Guid(taskData.FormDataKey);
+                                            issucces = DynamicImport(tran, entityid, define, taskData.OperateType, tempRow, taskData.UserNo, out errorMsg);
+                                        }
+                                        //模板方式导入
+                                        else if (define is SheetTemplate)
+                                        {
+                                            var taskdata = new ImportRowDomainModel()
+                                            {
+                                                DataRow = tempRow,
+                                                Sql = m.ExecuteSQL,//新增导入和覆盖导入由自定义的sql决定
+                                                DefaultParameters = taskData.DefaultParameters,
+                                                UserNo = taskData.UserNo,
+                                                OperateType = (int)taskData.OperateType
+                                            };
+                                            var sqlresult = _repository.ImportRowData(tran, taskdata);
+                                            issucces = sqlresult.Flag == 1;
+                                            errorMsg = sqlresult.Msg;
+                                        }
+                                        else
+                                        {
+                                            issucces = false;
+                                            errorMsg = "系统错误，模板类型不存在";
+                                        }
+
+                                        tran.Commit();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        tran.Rollback();
+                                        issucces = false;
+                                        errorMsg = "导入异常：" + ex.Message;
+                                    }
+                                    finally
+                                    {
+                                        conn.Close();
+                                        conn.Dispose();
+                                    }
+                                }
+                            }
+                            if (issucces)
+                            {
+                                if (hasTableField && realDefine != null
+                                    && realDefine.DataObject != null && realDefine.DataObject is List<DynamicEntityDataFieldMapper>)
+                                {
+                                    ConstructImportResult(taskSuccessRows, taskSuccessTips, onerow, tempRow, realDefine, errorMsg, "导入成功，{0}");
+                                }
+                                else
+                                {
+                                    taskSuccessRows.Add(onerow);
+                                    taskSuccessTips.Add(string.Format("导入成功，{0}", errorMsg));
+                                }
+                                excelDataList.Add(tempRow);
+                            }
+                            else
+                            {
+                                if (hasTableField && realDefine != null
+                                    && realDefine.DataObject != null && realDefine.DataObject is List<DynamicEntityDataFieldMapper>)
+                                {
+                                    ConstructImportResult(taskErrorRows, taskErrorTips, onerow, tempRow, realDefine, errorMsg, "导入失败，{0}");
+                                }
+                                else
+                                {
+                                    taskErrorRows.Add(onerow);
+                                    taskErrorTips.Add(string.Format("导入失败，{0}", errorMsg));
+                                }
+                            }
+                            progress.DealRowsCount += 1;
+                            if (!issucces)
+                                progress.ErrorRowsCount += 1;
+                            onerow["task_isdealed"] = 1;
+                        }
+                        if (taskData.TaskName.Contains("毛利"))
+                            BackWriteBudgetOfJx(excelDataList, taskData.TaskName);
+                    }
+                    catch (Exception ex)
+                    {
+                        var temp = m.DataRows.Where<Dictionary<string, object>>(item => item.ContainsKey("task_isdealed") == false || item["task_isdealed"] == null || item["task_isdealed"].ToString() != "1").ToList();
+                        foreach (var eRow in temp)
+                        {
+                            if (hasTableField && realDefine != null
+                                    && realDefine.DataObject != null && realDefine.DataObject is List<DynamicEntityDataFieldMapper>)
+                            {
+                                ConstructImportResult(taskErrorRows, taskErrorTips, eRow, null, realDefine, ex.Message, "导入出现异常：{0}");
+                                //没有经过ValidRow的数据，要自行处理
+
+                            }
+                            else
+                            {
+                                taskErrorRows.Add(eRow);
+                                taskErrorTips.Add(string.Format("导入出现异常：{0}", ex.Message)); ;
+                            }
+                        }
+                        progress.DealRowsCount += temp.Count;
+                        progress.ErrorRowsCount += temp.Count;
+                    }
+                    finally
+                    {
+                        if (taskSuccessRows.Count > 0)
+                        {
+                            success.DataRows.AddRange(taskSuccessRows);
+                            success.RowErrors.AddRange(taskSuccessTips);
+                        }
+                        if (taskErrorRows.Count > 0)
+                        {
+                            error.DataRows.AddRange(taskErrorRows);
+                            error.RowErrors.AddRange(taskErrorTips);
+                        }
+                    }
                     if (error.DataRows.Count > 0)
                     {
                         resultData.Add(error);
                         hasError = true;
                     }
                 }
-
                 if (resultData.Count > 0)
                 {
                     //生成错误提示的Excel文档
@@ -445,6 +535,104 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             });
 
+        }
+
+        private void ConstructImportResult(List<Dictionary<string, object>> taskRow, List<string> taskTips,
+                            Dictionary<string, object> onerow, Dictionary<string, object> tempRow,
+                            MultiHeaderSheetTemplate realDefine, string errorMsg,
+                            string ResultFormatString)
+        {
+            int maxTableRow = 1;
+            if (tempRow == null)
+            {
+                tempRow = new Dictionary<string, object>(onerow);
+                foreach (DynamicEntityDataFieldMapper fieldType in (List<DynamicEntityDataFieldMapper>)realDefine.DataObject)
+                {
+                    if (fieldType.ControlType == (int)DynamicProtocolControlType.LinkeTable
+                         && tempRow.ContainsKey(fieldType.FieldName) && tempRow[fieldType.FieldName] != null)
+                    {
+                        List<Dictionary<string, object>> newList = new List<Dictionary<string, object>>();
+                        tempRow["org_data_" + fieldType.FieldName] = newList;
+                        foreach (Dictionary<string, object> subRow in (List<Dictionary<string, object>>)tempRow[fieldType.FieldName])
+                        {
+                            if (subRow.ContainsKey("FieldData") && subRow["FieldData"] != null)
+                            {
+                                newList.Add((Dictionary<string, object>)subRow["FieldData"]);
+                            }
+                        }
+                    }
+                }
+            }
+            foreach (DynamicEntityDataFieldMapper fieldType in (List<DynamicEntityDataFieldMapper>)realDefine.DataObject)
+            {
+                if (fieldType.ControlType == (int)DynamicProtocolControlType.LinkeTable)
+                {
+                    if (tempRow.ContainsKey("org_data_" + fieldType.FieldName) && tempRow["org_data_" + fieldType.FieldName] != null)
+                    {
+                        int thisLen = ((List<Dictionary<string, object>>)tempRow["org_data_" + fieldType.FieldName]).Count;
+                        if (thisLen > maxTableRow) maxTableRow = thisLen;
+                    }
+                    else if (tempRow.ContainsKey(fieldType.FieldName) && tempRow[fieldType.FieldName] != null)
+                    {
+                        tempRow["org_data_" + fieldType.FieldName] = new List<Dictionary<string, object>>();
+                        foreach (Dictionary<string, object> rowDataInfo in (List<Dictionary<string, object>>)tempRow[fieldType.FieldName])
+                        {
+                            if (rowDataInfo.ContainsKey("FieldData"))
+                            {
+                                ((List<Dictionary<string, object>>)tempRow["org_data_" + fieldType.FieldName]).Add(new Dictionary<string, object>((Dictionary<string, object>)rowDataInfo["FieldData"]));
+                            }
+                            else
+                            {
+                                ((List<Dictionary<string, object>>)tempRow["org_data_" + fieldType.FieldName]).Add(new Dictionary<string, object>());
+                            }
+                        }
+                        int thisLen = ((List<Dictionary<string, object>>)tempRow["org_data_" + fieldType.FieldName]).Count;
+                        if (thisLen > maxTableRow) maxTableRow = thisLen;
+                    }
+                }
+            }
+            for (int tmpi = 0; tmpi < maxTableRow; tmpi++)
+            {
+                Dictionary<string, object> thisRow = new Dictionary<string, object>();
+                foreach (DynamicEntityDataFieldMapper fieldType in (List<DynamicEntityDataFieldMapper>)realDefine.DataObject)
+                {
+                    if (fieldType.ControlType == (int)DynamicProtocolControlType.LinkeTable)
+                    {
+                        if (tempRow.ContainsKey("org_data_" + fieldType.FieldName) && tempRow["org_data_" + fieldType.FieldName] != null)
+                        {
+                            if (((List<Dictionary<string, object>>)tempRow["org_data_" + fieldType.FieldName]).Count <= tmpi)
+                            {
+                                continue;
+                            }
+                            Dictionary<string, object> subRowData = ((List<Dictionary<string, object>>)tempRow["org_data_" + fieldType.FieldName])[tmpi];
+                            if (realDefine.SubDataObject != null && realDefine.SubDataObject is Dictionary<string, object>
+                                    && ((Dictionary<string, object>)realDefine.SubDataObject).ContainsKey(fieldType.FieldName))
+                            {
+                                List<DynamicEntityDataFieldMapper> thisSubTypes = (List<DynamicEntityDataFieldMapper>)((Dictionary<string, object>)realDefine.SubDataObject)[fieldType.FieldName];
+                                foreach (DynamicEntityDataFieldMapper subFieldType in thisSubTypes)
+                                {
+                                    if (subRowData.ContainsKey(subFieldType.FieldName))
+                                    {
+                                        thisRow[fieldType.FieldName + "." + subFieldType.FieldName] = subRowData[subFieldType.FieldName];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (tmpi == 0 && onerow.ContainsKey(fieldType.FieldName))
+                            thisRow[fieldType.FieldName] = onerow[fieldType.FieldName];
+                    }
+
+                }
+                taskRow.Add(thisRow);
+                if (tmpi == 0)
+                    taskTips.Add(string.Format(ResultFormatString, errorMsg));
+                else
+                    taskTips.Add("");
+
+            }
         }
 
         private void SendMessage(Guid entityid, ProgressModel progress, bool hasError, int userId)
@@ -470,6 +658,40 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     paramData.Add("title", "导入任务完成");
                     paramData.Add("content", string.Format("导入结果：{0}", hasError ? "存在错误" : "成功导入"));
                     paramData.Add("pushcontent", string.Format("您的{0}任务已完成，导入结果：{0}", progress.TaskName, hasError ? "存在错误" : "成功导入"));
+
+                    msg.TemplateKeyValue = paramData;
+
+                    MessageService.WriteMessageAsyn(msg, userId);
+                }
+                catch (Exception ex)
+                {
+
+                }
+            });
+        }
+        private void SendExportMessage(Guid entityid, ProgressModel progress, bool hasError, int userId)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+
+                    var msg = new MessageParameter();
+                    msg.EntityId = entityid;
+                    msg.TypeId = Guid.Empty;
+                    msg.RelBusinessId = Guid.Empty;
+                    msg.RelEntityId = Guid.Empty;
+                    msg.BusinessId = Guid.Empty;
+                    msg.ParamData = JsonConvert.SerializeObject(progress);
+                    msg.FuncCode = "ExportRedmind";
+
+                    msg.Receivers.Add(MessageUserType.SpecificUser, new List<int>() { userId });
+
+                    var paramData = new Dictionary<string, string>();
+
+                    paramData.Add("title", "导出任务完成");
+                    paramData.Add("content", string.Format("成功导出"));
+                    paramData.Add("pushcontent", string.Format("成功导出"));
 
                     msg.TemplateKeyValue = paramData;
 
@@ -571,7 +793,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Guid entityid = Guid.Empty;
                 if (!Guid.TryParse(formData.Key, out entityid))
                     return ShowError<object>("实体id必须是guid类型");
-                sheetDefine = GeneralDynamicTemplate(entityid, null, formData.OperateType,ExportDataColumnSourceEnum.WEB_Standard, userno);
+                sheetDefine = GeneralDynamicTemplate(entityid, null, formData.OperateType, ExportDataColumnSourceEnum.WEB_Standard, userno);
 
                 taskName = _repository.GetEntityName(entityid);
             }
@@ -605,7 +827,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             bool issucces = true;
             errorMsg = "";
             Guid typeId = Guid.Empty;
-            var sheetTemplate = define as SimpleSheetTemplate;
+            var sheetTemplate = define as MultiHeaderSheetTemplate;
             if (sheetTemplate.DataObject is List<DynamicEntityDataFieldMapper>)
             {
                 var typeFields = sheetTemplate.DataObject as List<DynamicEntityDataFieldMapper>;
@@ -688,7 +910,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <summary>
         /// 导出数据
         /// </summary>
-        public ExportModel ExportData(ExportDataModel data)
+        public ExportModel ExportData(ExportDataModel data, int userId)
         {
             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
             if (data.NestTableList == null) data.NestTableList = new List<string>();
@@ -704,9 +926,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 if (data.DynamicModel == null)
                     throw new Exception("DynamicQuery必须有值");
-                sheetDefine = GeneralDynamicTemplate(data.DynamicModel.EntityId, data.NestTableList, ExcelOperateType.Export,data.ColumnSource, data.UserId);
+                sheetDefine = GeneralDynamicTemplate(data.DynamicModel.EntityId, data.NestTableList, ExcelOperateType.Export, data.ColumnSource, data.UserId);
             }
-
+            string entityname = "";
             var sheets = new List<ExportSheetData>();
             foreach (var m in sheetDefine)
             {
@@ -735,7 +957,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         throw new Exception("实体类型数据导出，需要传DynamicModel参数");
                     }
-                    var entityname = _repository.GetEntityName(data.DynamicModel.EntityId);
+                    entityname = _repository.GetEntityName(data.DynamicModel.EntityId);
                     filename = string.Format("{0}导出数据.xlsx", entityname);
                     #region 获取并处理主表数据
                     var isAdvance = data.DynamicModel.IsAdvanceQuery == 1;
@@ -844,11 +1066,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 List<Guid> MainIds = new List<Guid>();//如果涉及嵌套表格，这个变量是记录所有主实体的id，虽然性能查了一点，但不是绝对的问题
                                 foreach (var item1 in pageDataTemp)//这个遍历不合并到上面的遍历的原因是因为代码的可阅读性，虽然降低了一点点可以忽略的性能。
                                 {
-                                    if (item1.ContainsKey(fieldname) && item1[fieldname]!= null)
+                                    if (item1.ContainsKey(fieldname) && item1[fieldname] != null)
                                     {
                                         string tmp = item1[fieldname].ToString();
                                         string[] ids = tmp.Split(",");
-                                        foreach (string id in ids) {
+                                        foreach (string id in ids)
+                                        {
                                             Guid tmpid = Guid.Empty;
                                             if (Guid.TryParse(id, out tmpid))
                                             {
@@ -856,7 +1079,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             }
                                         }
 
-                                       
+
                                     }
                                 }
                                 //确实是需要输出的嵌套表格
@@ -870,7 +1093,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     PageIndex = 1,
                                     PageSize = 1024 * 1024,
                                     IsAdvanceQuery = 1,
-                                    MainIds = MainIds
+                                    MainIds = MainIds,
+                                    NeedPower = 0
                                 };
                                 var sub_dataList = _entityServices.DataList2(query, true, data.UserId);
                                 var sub_queryResult = sub_dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
@@ -880,8 +1104,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     if (item.FieldName.StartsWith(fieldname + ".") == false) continue;
                                     foreach (var mdata in sub_pageDataTemp)
                                     {
-                                       
-                                        string thisfieldname =item.FieldName.Substring(fieldname.Length + 1);
+
+                                        string thisfieldname = item.FieldName.Substring(fieldname.Length + 1);
                                         if (mdata.ContainsKey(thisfieldname) == false) continue;//第一层忽略表格内容字段
                                         switch (item.FieldType)
                                         {
@@ -941,7 +1165,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                                         dic.Add(item2.Key, item2.Value);
                                     }
-                                    if (dic.ContainsKey("recid") && dic["recid"] != null) {
+                                    if (dic.ContainsKey("recid") && dic["recid"] != null)
+                                    {
 
                                         sub_pageData.Add(dic["recid"].ToString(), dic);
                                     }
@@ -955,22 +1180,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     #region 把主表的数据与每个嵌套实体的数据合并起来
                     var new_PageData = new List<Dictionary<string, object>>();
-                    int curRow =3;
-                    foreach (Dictionary<string, object> itemData in pageData) {
+                    int curRow = 3;
+                    foreach (Dictionary<string, object> itemData in pageData)
+                    {
                         int maxRow = 1;
                         Dictionary<string, List<Dictionary<string, object>>> thisSubTableData = new Dictionary<string, List<Dictionary<string, object>>>();
                         foreach (string fieldname in data.NestTableList)
                         {
                             List<Dictionary<string, object>> detailList = new List<Dictionary<string, object>>();
-                            if (itemData.ContainsKey(fieldname)&& itemData[fieldname] !=null  && allSubTableDict.ContainsKey(fieldname))
+                            if (itemData.ContainsKey(fieldname) && itemData[fieldname] != null && allSubTableDict.ContainsKey(fieldname))
                             {
                                 string details = itemData[fieldname].ToString();
                                 if (details != null && details.Length > 0)
                                 {
                                     Dictionary<string, Dictionary<string, object>> orgSubTableData = allSubTableDict[fieldname];
                                     string[] subids = details.Split(',');
-                                    foreach (string id in subids) {
-                                        if (orgSubTableData.ContainsKey(id)) {
+                                    foreach (string id in subids)
+                                    {
+                                        if (orgSubTableData.ContainsKey(id))
+                                        {
                                             detailList.Add(orgSubTableData[id]);
                                         }
                                     }
@@ -979,11 +1207,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             thisSubTableData.Add(fieldname, detailList);
                         }
-                        if (data.RowMode == ExportDataRowModeEnum.MergeRow&&maxRow > 1) {
+                        if (data.RowMode == ExportDataRowModeEnum.MergeRow && maxRow > 1)
+                        {
                             int curCol = 0;
-                            foreach (var field in AllExportFields) {
-                                
-                                if (field.FieldName.IndexOf('.') < 0) {
+                            foreach (var field in AllExportFields)
+                            {
+
+                                if (field.FieldName.IndexOf('.') < 0)
+                                {
                                     MergeCellInfo mergeCellInfo = new MergeCellInfo()
                                     {
                                         FromColIndex = curCol,
@@ -996,7 +1227,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 curCol++;
                             }
                         }
-                        for (int i = 0; i < maxRow; i++) {
+                        for (int i = 0; i < maxRow; i++)
+                        {
                             curRow++;
                             Dictionary<string, object> newData = null;
                             if (data.RowMode == ExportDataRowModeEnum.FullFill)
@@ -1009,11 +1241,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 {
                                     newData = copyDictionary(itemData);
                                 }
-                                else {
+                                else
+                                {
                                     newData = new Dictionary<string, object>();
                                 }
                             }
-                            else {
+                            else
+                            {
                                 if (i == 0)
                                 {
                                     newData = copyDictionary(itemData);
@@ -1023,11 +1257,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     newData = new Dictionary<string, object>();
                                 }
                             }
-                            foreach (string key in thisSubTableData.Keys) {
+                            foreach (string key in thisSubTableData.Keys)
+                            {
                                 List<Dictionary<string, object>> subList = thisSubTableData[key];
-                                if (subList.Count >i) {
+                                if (subList.Count > i)
+                                {
                                     Dictionary<string, object> subItem = subList[i];
-                                    appendDictionary(subItem, newData, key+".");
+                                    appendDictionary(subItem, newData, key + ".");
                                 }
                             }
                             new_PageData.Add(newData);
@@ -1041,30 +1277,64 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 sheetdata.SheetDefines = m;
                 sheets.Add(sheetdata);
             }
-
-            return new ExportModel()
+            int newUserId = userId;
+            if (sheets[0].DataRows.Count > 1000 && data.CanChange2Asynch == false)
             {
-                FileName = filename == null ? null : filename.Replace("模板", ""),
-                ExcelFile = OXSExcelWriter.GenerateExcel(sheets)
-            };
+                ThreadPool.QueueUserWorkItem(delegate (object dataparam)
+                {
+                    ExportModel exportModel = new ExportModel()
+                    {
+                        FileName = filename == null ? null : filename.Replace("模板", ""),
+                        ExcelFile = OXSExcelWriter.GenerateExcel(sheets)
+                    };
+                    ProgressModel progress = new ProgressModel() { };
+                    var fileID = Guid.NewGuid().ToString();
+                    //上传文档到文件服务器
+                    progress.ResultFileId = _fileServices.UploadFile(null, fileID, "导出结果.xlsx", exportModel.ExcelFile);
+
+                    SendExportMessage(Guid.Empty, progress, false, newUserId);
+                });
+                return new ExportModel()
+                {
+                    FileName = "异步处理",
+                    Message = string.Format("共有{0}条记录需要导出，预计耗时{1}分钟，导出成功后会以消息方式通知您！", sheets[0].DataRows.Count, sheets[0].DataRows.Count / 5000),
+                    IsAysnc = true,
+                    ExcelFile = new byte[] { }
+                };
+
+            }
+            else
+            {
+                return new ExportModel()
+                {
+                    FileName = filename == null ? null : filename.Replace("模板", ""),
+                    ExcelFile = OXSExcelWriter.GenerateExcel(sheets)
+                };
+            }
+
         }
-        public List<MultiHeader> GetExportSpecFields(List<MultiHeader> headers) {
+        public List<MultiHeader> GetExportSpecFields(List<MultiHeader> headers)
+        {
             List<MultiHeader> ret = new List<MultiHeader>();
-            foreach (MultiHeader o in headers) {
+            foreach (MultiHeader o in headers)
+            {
                 if (o.FieldType == FieldType.Image
                 || o.FieldType == FieldType.Address
                 || o.FieldType == FieldType.reference
-                || o.FieldType == FieldType.TimeDate) {
+                || o.FieldType == FieldType.TimeDate)
+                {
                     ret.Add(o);
                 }
-                if (o.SubHeaders != null && o.SubHeaders.Count > 0) {
+                if (o.SubHeaders != null && o.SubHeaders.Count > 0)
+                {
                     ret.AddRange(GetExportSpecFields(o.SubHeaders));
                 }
             }
 
             return ret;
         }
-        public List<MultiHeader > GetExportFields(List<MultiHeader> headers){
+        public List<MultiHeader> GetExportFields(List<MultiHeader> headers)
+        {
             List<MultiHeader> ret = new List<MultiHeader>();
             foreach (MultiHeader o in headers)
             {
@@ -1072,25 +1342,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     ret.AddRange(GetExportFields(o.SubHeaders));
                 }
-                else {
+                else
+                {
                     ret.Add(o);
                 }
             }
 
             return ret;
         }
-        public Dictionary<string, object> copyDictionary(Dictionary<string, object> orgDict) {
+        public Dictionary<string, object> copyDictionary(Dictionary<string, object> orgDict)
+        {
             if (orgDict == null) return null;
             Dictionary<string, object> retDict = new Dictionary<string, object>();
-            foreach (string key in orgDict.Keys) {
+            foreach (string key in orgDict.Keys)
+            {
                 retDict.Add(key, orgDict[key]);
             }
             return retDict;
         }
-        public void appendDictionary(Dictionary<string, object> orgDict, Dictionary<string, object> resultDict, string prefix) {
+        public void appendDictionary(Dictionary<string, object> orgDict, Dictionary<string, object> resultDict, string prefix)
+        {
             foreach (string key in orgDict.Keys)
             {
-                resultDict.Add(prefix+key, orgDict[key]);
+                resultDict.Add(prefix + key, orgDict[key]);
             }
         }
         #endregion
@@ -1149,19 +1423,40 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public ExportModel GenerateImportTemplate(Guid entityid, int userNumber)
         {
 
-            var defines = GeneralDynamicTemplate(entityid, null,ExcelOperateType.ImportAdd, ExportDataColumnSourceEnum.WEB_Standard, userNumber);
+            var defines = GeneralDynamicTemplate(entityid, null, ExcelOperateType.ImportAdd, ExportDataColumnSourceEnum.WEB_Standard, userNumber);
             var sheetsdata = new List<ExportSheetData>();
 
 
             foreach (var m in defines)
             {
                 var tiprow = new Dictionary<string, object>();//字段说明的提示数据
-                var simpleTemp = m as SimpleSheetTemplate;
+                var simpleTemp = m as MultiHeaderSheetTemplate;
                 var typeFields = simpleTemp.DataObject as List<DynamicEntityDataFieldMapper>;
                 foreach (var header in simpleTemp.Headers)
                 {
                     var field = typeFields.Find(o => o.FieldName == header.FieldName);
                     tiprow.Add(field.FieldName, GetFieldTip(field));
+
+                    #region 处理子表
+                    if (header.SubHeaders != null && header.SubHeaders.Count > 0)
+                    {
+                        if (simpleTemp.SubDataObject != null && ((Dictionary<string, object>)simpleTemp.SubDataObject).ContainsKey(header.FieldName))
+                        {
+                            List<DynamicEntityDataFieldMapper> subTypeFields = (List<DynamicEntityDataFieldMapper>)((Dictionary<string, object>)simpleTemp.SubDataObject)[header.FieldName];
+                            if (subTypeFields != null)
+                            {
+                                foreach (var subHeader in header.SubHeaders)
+                                {
+                                    var subfield = subTypeFields.Find(o => o.FieldName == subHeader.FieldName);
+                                    if (subfield != null)
+                                    {
+                                        tiprow.Add(field.FieldName + "." + subfield.FieldName, GetFieldTip(subfield));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    #endregion
                 }
                 var sheetDataTemp = new ExportSheetData() { SheetDefines = m };
                 sheetDataTemp.DataRows.Add(tiprow);
@@ -1357,24 +1652,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --生成动态模板--
-        private List<SheetDefine> GeneralDynamicTemplate(Guid entityId, List<string> nestTableList,ExcelOperateType operateType,ExportDataColumnSourceEnum columnSource , int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate(Guid entityId, List<string> nestTableList, ExcelOperateType operateType, ExportDataColumnSourceEnum columnSource, int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
             switch (operateType)
             {
                 case ExcelOperateType.ImportAdd:
                 case ExcelOperateType.ImportUpdate:
-                    defines = GeneralDynamicTemplate_Import(entityId, nestTableList,operateType, userNumber);
+                    defines = GeneralDynamicTemplate_Import(entityId, nestTableList, operateType, userNumber);
                     break;
                 default:
-                    defines = GeneralDynamicTemplate_Export(entityId, nestTableList,operateType, columnSource,userNumber);
+                    defines = GeneralDynamicTemplate_Export(entityId, nestTableList, operateType, columnSource, userNumber);
                     break;
             }
 
             return defines;
         }
         #region --生成动态模板的导出模板定义--
-        private List<SheetDefine> GeneralDynamicTemplate_Export(Guid entityId, List<string> nestTableList, ExcelOperateType operateType, ExportDataColumnSourceEnum columnSource , int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate_Export(Guid entityId, List<string> nestTableList, ExcelOperateType operateType, ExportDataColumnSourceEnum columnSource, int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
             if (nestTableList == null) nestTableList = new List<string>();
@@ -1398,29 +1693,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     typeVisibleFields = _entityProRepository.FieldWebVisibleQuery(entityId.ToString(), userNumber);
                     if (!typeVisibleFields.ContainsKey("FieldVisible"))
                         throw new Exception("获取实体显示字段接口报错，缺少FieldVisible参数的结果集");
-                    List<IDictionary<string, object>>  standardFields  = typeVisibleFields["FieldVisible"];
-                    Dictionary<string, object> detail =  _dynamicEntityRepository.GetPersonalWebListColumnsSetting(entityId, userNumber, null);
+                    List<IDictionary<string, object>> standardFields = typeVisibleFields["FieldVisible"];
+                    Dictionary<string, object> detail = _dynamicEntityRepository.GetPersonalWebListColumnsSetting(entityId, userNumber, null);
                     if (detail != null && detail.ContainsKey("viewconfig") && detail["viewconfig"] != null)
                     {
                         typeFields = new List<IDictionary<string, object>>();
                         WebListPersonalViewSettingInfo view = Newtonsoft.Json.JsonConvert.DeserializeObject<WebListPersonalViewSettingInfo>(detail["viewconfig"].ToString());
-                        foreach (WebListPersonalViewColumnSettingInfo column in view.Columns) {
+                        foreach (WebListPersonalViewColumnSettingInfo column in view.Columns)
+                        {
                             //判断是否在标准列表中
                             if (column.IsDisplay != 1) continue;
-                            if (standardFields.Exists((IDictionary<string, object> o) => o["fieldid"].ToString().Equals(column.FieldId.ToString()))){
+                            if (standardFields.Exists((IDictionary<string, object> o) => o["fieldid"].ToString().Equals(column.FieldId.ToString())))
+                            {
                                 IDictionary<string, object> item = standardFields.Where<IDictionary<string, object>>((IDictionary<string, object> o) => o["fieldid"].ToString().Equals(column.FieldId.ToString())).First();
                                 if (item != null)
                                     typeFields.Add(item);
                             }
                         }
                         //把没有的补在最后
-                        foreach (IDictionary<string, object> item in standardFields) {
+                        foreach (IDictionary<string, object> item in standardFields)
+                        {
                             string fieldid = item["fieldid"].ToString();
                             if (view.Columns.Exists((WebListPersonalViewColumnSettingInfo o) => o.FieldId.ToString().Equals(fieldid))) continue;
                             typeFields.Add(item);
                         }
                     }
-                    else {
+                    else
+                    {
                         typeFields = standardFields;
                     }
                 }
@@ -1428,8 +1727,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     //导出全部字段
                     typeFields = new List<IDictionary<string, object>>();
-                    List<DynamicEntityFieldSearch>  tmp = _dynamicEntityRepository.GetEntityFields(entityId, userNumber);
-                    foreach (DynamicEntityFieldSearch item in tmp) {
+                    List<DynamicEntityFieldSearch> tmp = _dynamicEntityRepository.GetEntityFields(entityId, userNumber);
+                    foreach (DynamicEntityFieldSearch item in tmp)
+                    {
                         Dictionary<string, object> newItem = new Dictionary<string, object>();
                         //fieldid,displayname,fieldname,controltype,fieldconfig
                         newItem.Add("fieldid", item.EntityId);
@@ -1440,7 +1740,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         typeFields.Add(newItem);
                     }
                 }
-                else {
+                else
+                {
                     throw (new Exception("参数异常"));
                 }
                 #endregion
@@ -1450,7 +1751,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     throw new Exception("实体信息不存在");
                 var modelType = Convert.ToInt32(entityInfo["modeltype"].ToString());
                 List<MultiHeader> headers = new List<MultiHeader>();
-                
+
                 foreach (var field in typeFields)
                 {
                     if (!field.ContainsKey("displayname") || !field.ContainsKey("fieldname") || !field.ContainsKey("controltype"))
@@ -1460,7 +1761,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var displayname = field["displayname"].ToString();
                     var fieldname = field["fieldname"].ToString();
                     var controltype = field["controltype"].ToString();
-                    
+
                     FieldType fieldTypetemp = FieldType.Text;
                     if (modelType == 3 && field["fieldname"].ToString() == "recrelateid")//动态实体走别的逻辑
                     {
@@ -1474,7 +1775,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         ConstructField(controltype, out fieldTypetemp);
                     }
-                    MultiHeader header = new MultiHeader() {HeaderType=1, FieldName = fieldname, HeaderText = displayname, Width = 150, FieldType = fieldTypetemp,SubHeaders = new List<MultiHeader>() };
+                    MultiHeader header = new MultiHeader() { HeaderType = 1, FieldName = fieldname, HeaderText = displayname, Width = 150, FieldType = fieldTypetemp, SubHeaders = new List<MultiHeader>() };
                     headers.Add(header);
                     if (int.Parse(controltype) == (int)EntityFieldControlType.LinkeTable && nestTableList.Exists((string s) => s.Equals(fieldname)))
                     {
@@ -1493,7 +1794,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     throw new Exception("嵌套实体信息不存在");
                                 sub_typeFields = sub_typeVisibleFields["FieldVisible"];
                             }
-                            else {
+                            else
+                            {
                                 sub_typeFields = new List<IDictionary<string, object>>();
                                 List<DynamicEntityFieldSearch> tmp = _dynamicEntityRepository.GetEntityFields(fieldConfigInfo.EntityId, userNumber);
                                 foreach (DynamicEntityFieldSearch item in tmp)
@@ -1508,7 +1810,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     sub_typeFields.Add(newItem);
                                 }
                             }
-                            
+
                             header.HeaderType = 0;
                             foreach (var sub_field in sub_typeFields)
                             {
@@ -1539,7 +1841,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("生成动态模板失败", ex);
+                throw ex;
             }
             return defines;
         }
@@ -1619,51 +1921,51 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 EntityId = entityId.ToString()
             };
             Guid relTypeId = _dynamicEntityRepository.getGridTypeByMainType(MainTypeId, entityId);
-            List<DynamicEntityDataFieldMapper>  fields = _entityServices.GetGridTypeFields(relTypeId, entityId, DynamicProtocolOperateType.Add, userNumber);
+            List<DynamicEntityDataFieldMapper> fields = _entityServices.GetGridTypeFields(relTypeId, entityId, DynamicProtocolOperateType.Add, userNumber);
             try
             {
-                    List<SimpleHeader> headers = new List<SimpleHeader>();
-                    foreach (var field in fields)
+                List<SimpleHeader> headers = new List<SimpleHeader>();
+                foreach (var field in fields)
+                {
+
+                    if (!ExportFieldSelect(field, operateType))
+                        continue;
+                    FieldType tempFieldType = FieldType.Text;
+                    //处理特殊类型字段，比如日期类型字段时只获取日期部分
+                    switch ((DynamicProtocolControlType)field.ControlType)
                     {
-
-                        if (!ExportFieldSelect(field, operateType))
-                            continue;
-                        FieldType tempFieldType = FieldType.Text;
-                        //处理特殊类型字段，比如日期类型字段时只获取日期部分
-                        switch ((DynamicProtocolControlType)field.ControlType)
-                        {
-                            case DynamicProtocolControlType.TimeDate:
-                                tempFieldType = FieldType.TimeDate;
-                                break;
-                            case DynamicProtocolControlType.TimeStamp:
-                                tempFieldType = FieldType.TimeStamp;
-                                break;
-                            case DynamicProtocolControlType.NumberDecimal:
-                                tempFieldType = FieldType.NumberDecimal;
-                                break;
-                        }
-
-
-                        headers.Add(new SimpleHeader() { FieldName = field.FieldName, HeaderText = field.DisplayName, IsNotEmpty = field.IsRequire, Width = 150, FieldType = tempFieldType });
+                        case DynamicProtocolControlType.TimeDate:
+                            tempFieldType = FieldType.TimeDate;
+                            break;
+                        case DynamicProtocolControlType.TimeStamp:
+                            tempFieldType = FieldType.TimeStamp;
+                            break;
+                        case DynamicProtocolControlType.NumberDecimal:
+                            tempFieldType = FieldType.NumberDecimal;
+                            break;
                     }
-                    defines.Add(new SimpleSheetTemplate()
-                    {
-                        SheetName = "Sheet1",
-                        ExecuteSQL = "",
-                        Headers = headers,
-                        DataObject = fields
-                    });
+
+
+                    headers.Add(new SimpleHeader() { FieldName = field.FieldName, HeaderText = field.DisplayName, IsNotEmpty = field.IsRequire, Width = 150, FieldType = tempFieldType });
+                }
+                defines.Add(new SimpleSheetTemplate()
+                {
+                    SheetName = "Sheet1",
+                    ExecuteSQL = "",
+                    Headers = headers,
+                    DataObject = fields
+                });
             }
             catch (Exception ex)
             {
-                throw new Exception("生成动态模板失败", ex);
+                throw ex;
             }
             return defines;
         }
         #endregion
 
         #region --生成动态模板的导入模板定义--
-        private List<SheetDefine> GeneralDynamicTemplate_Import(Guid entityId, List<string> nestTableList,  ExcelOperateType operateType, int userNumber)
+        private List<SheetDefine> GeneralDynamicTemplate_Import(Guid entityId, List<string> nestTableList, ExcelOperateType operateType, int userNumber)
         {
             List<SheetDefine> defines = new List<SheetDefine>();
             EntityTypeQueryMapper entityType = new EntityTypeQueryMapper()
@@ -1689,13 +1991,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var categoryname = typeModel["categoryname"].ToString();
                     var typeId = new Guid(categoryid);
                     var typeFields = _entityServices.GetTypeFields(typeId, DynamicProtocolOperateType.ImportAdd, userNumber);
-                    List<SimpleHeader> headers = new List<SimpleHeader>();
+                    var subTypes = new Dictionary<string, object>();
+                    #region  检查是否存在嵌套表格字段
+
+                    #endregion
+                    List<MultiHeader> headers = new List<MultiHeader>();
                     foreach (var field in typeFields)
                     {
 
+                        int rowSpan = 2;
+                        int colSpan = 1;
+                        List<MultiHeader> SubHeaders = null;
                         if (!ExportFieldSelect(field, operateType))
                             continue;
                         FieldType tempFieldType = FieldType.Text;
+                        List<DynamicEntityDataFieldMapper> subtypeFields = null;
                         //处理特殊类型字段，比如日期类型字段时只获取日期部分
                         switch ((DynamicProtocolControlType)field.ControlType)
                         {
@@ -1708,25 +2018,89 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             case DynamicProtocolControlType.NumberDecimal:
                                 tempFieldType = FieldType.NumberDecimal;
                                 break;
+                            case DynamicProtocolControlType.LinkeTable:
+                                rowSpan = 1;
+                                SubHeaders = GeneralTableTemplate_Import(operateType, field, entityId, categoryid, ref colSpan, userNumber, out subtypeFields);
+                                if (subtypeFields != null)
+                                {
+                                    subTypes.Add(field.FieldName, subtypeFields);
+                                }
+                                break;
                         }
 
 
-                        headers.Add(new SimpleHeader() { FieldName = field.FieldName, HeaderText = field.DisplayName, IsNotEmpty = field.IsRequire, Width = 150, FieldType = tempFieldType });
+                        headers.Add(new MultiHeader()
+                        {
+                            FieldName = field.FieldName,
+                            HeaderText = field.DisplayName,
+                            IsNotEmpty = field.IsRequire,
+                            Width = 150,
+                            FieldType = tempFieldType,
+                            RowSpan = rowSpan,
+                            ColSpan = colSpan,
+                            HeaderType = (rowSpan == 1 ? 2 : 1),
+                            SubHeaders = SubHeaders
+                        });
                     }
-                    defines.Add(new SimpleSheetTemplate()
+                    defines.Add(new MultiHeaderSheetTemplate()
                     {
                         SheetName = categoryname,
                         ExecuteSQL = "",
                         Headers = headers,
-                        DataObject = typeFields
+                        DataObject = typeFields,
+                        SubDataObject = subTypes
                     });
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception("生成动态模板失败", ex);
+                throw ex;
             }
             return defines;
+        }
+        private List<MultiHeader> GeneralTableTemplate_Import(ExcelOperateType operateType, DynamicEntityDataFieldMapper fieldInfo, Guid parentEntityId,
+            string categoryid, ref int colSpan, int userNumber,
+            out List<DynamicEntityDataFieldMapper> typeFields)
+        {
+            DynamicProtocolFieldConfig fieldConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(fieldInfo.FieldConfig);
+            Guid tableTypeId = this._dynamicEntityRepository.getGridTypeByMainType(Guid.Parse(categoryid), fieldConfig.EntityId);
+            typeFields = _entityServices.GetTypeFields(tableTypeId, DynamicProtocolOperateType.ImportAdd, userNumber);
+            List<MultiHeader> retHeader = new List<MultiHeader>();
+            foreach (var field in typeFields)
+            {
+                if (!ExportFieldSelect(field, operateType))
+                    continue;
+                FieldType tempFieldType = FieldType.Text;
+                //处理特殊类型字段，比如日期类型字段时只获取日期部分
+                switch ((DynamicProtocolControlType)field.ControlType)
+                {
+                    case DynamicProtocolControlType.TimeDate:
+                        tempFieldType = FieldType.TimeDate;
+                        break;
+                    case DynamicProtocolControlType.TimeStamp:
+                        tempFieldType = FieldType.TimeStamp;
+                        break;
+                    case DynamicProtocolControlType.NumberDecimal:
+                        tempFieldType = FieldType.NumberDecimal;
+                        break;
+                    case DynamicProtocolControlType.LinkeTable:
+                        continue;
+                }
+
+
+                retHeader.Add(new MultiHeader()
+                {
+                    FieldName = field.FieldName,
+                    HeaderText = field.DisplayName,
+                    IsNotEmpty = field.IsRequire,
+                    Width = 150,
+                    FieldType = tempFieldType,
+                    RowSpan = 1,
+                    ColSpan = 1,
+                    HeaderType = 1
+                });
+            }
+            return retHeader;
         }
         #endregion
 
@@ -1757,7 +2131,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     case DynamicProtocolControlType.AreaGroup://分组
                     case DynamicProtocolControlType.TakePhoto://拍照
                     case DynamicProtocolControlType.FileAttach://附件
-                    case DynamicProtocolControlType.LinkeTable://表格控件
+                    //case DynamicProtocolControlType.LinkeTable://表格控件
                     case DynamicProtocolControlType.TreeMulti://树形多选
                     case DynamicProtocolControlType.TreeSingle://树形
                     case DynamicProtocolControlType.RecId://记录ID
@@ -1780,9 +2154,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --验证每行数据--
         private bool ValidationRowData(SheetDefine sheetDefine, ExcelOperateType operateType, Dictionary<string, object> rowdata, int userno, out string errorMsg)
         {
-            if (sheetDefine is SimpleSheetTemplate)
+            if (sheetDefine is MultiHeaderSheetTemplate)
             {
-                var sheetTemplate = sheetDefine as SimpleSheetTemplate;
+                var sheetTemplate = sheetDefine as MultiHeaderSheetTemplate;
                 return ValidationRowData(sheetTemplate, operateType, rowdata, userno, out errorMsg);
             }
             else
@@ -1796,12 +2170,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <summary>
         /// 动态模板行数据校验
         /// </summary>
-        private bool ValidationRowData(SimpleSheetTemplate sheetTemplate, ExcelOperateType operateType, Dictionary<string, object> rowdata, int userno, out string errorMsg)
+        private bool ValidationRowData(MultiHeaderSheetTemplate sheetTemplate, ExcelOperateType operateType, Dictionary<string, object> rowdata, int userno, out string errorMsg)
         {
             errorMsg = null;
             bool result = true;
             Guid typeId = Guid.Empty;
-
+            List<DynamicEntityDataFieldMapper> subFields = null;
 
             if (sheetTemplate.DataObject is List<DynamicEntityDataFieldMapper>)
             {
@@ -1835,7 +2209,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (rowdata.TryGetValue(m.FieldName, out data))
                     {
                         //执行实体配置中的数据校验
-                        var validatResult = DynamicProtocolHelper.ValidFieldConfig(m, data, false);
+                        subFields = null;
+                        if (m.ControlType == (int)DynamicProtocolControlType.LinkeTable
+                            && sheetTemplate.SubDataObject != null && sheetTemplate.SubDataObject is Dictionary<string, object>
+                            && ((Dictionary<string, object>)sheetTemplate.SubDataObject).ContainsKey(m.FieldName))
+                        {
+                            subFields = (List<DynamicEntityDataFieldMapper>)(((Dictionary<string, object>)sheetTemplate.SubDataObject)[m.FieldName]);
+                        }
+                        var validatResult = DynamicProtocolHelper.ValidFieldConfig(m, data, false, subFields);
                         if (validatResult != null && !validatResult.IsValid)
                         {
                             result = false;
@@ -1847,26 +2228,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         result = false;
                         errorMsg = string.Format("缺少必填列:{0}", m.FieldLabel);
                     }
-                    else if (data != null)
+                    else if (data != null && result)
                     {
                         var columnValue = data.ToString().Trim();
                         //处理特殊控件类型的数据以及实体没有配置验证方式的数据校验
-                        result = CheckFieldData(typeId, m, columnValue, rowdata, userno, out errorMsg);
+                        result = CheckFieldData(sheetTemplate, typeId, m, columnValue, rowdata, userno, out errorMsg);
                     }
 
                     //如果存在错误，则跳出循环
                     if (result == false)
                         break;
+
                 }
             }
-
             return result;
         }
 
         //校验字段的数据格式和处理特殊控件
-        public  bool CheckFieldData(Guid typeId, DynamicEntityDataFieldMapper typeField, string columnValue, Dictionary<string, object> rowdata, int userno, out string errorMsg,Dictionary<string,object > fieldFilters  = null)
+        public bool CheckFieldData(MultiHeaderSheetTemplate sheetTemplate, Guid typeId, DynamicEntityDataFieldMapper typeField, string columnValue, Dictionary<string, object> rowdata, int userno, out string errorMsg, Dictionary<string, object> fieldFilters = null)
         {
             errorMsg = null;
+            List<DynamicEntityDataFieldMapper> subTypes = null;
             switch ((DynamicProtocolControlType)typeField.ControlType)
             {
 
@@ -1960,7 +2342,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (string.IsNullOrEmpty(errorMsg))
                             {
                                 rowdata[typeField.FieldName] = string.Join(",", userids.ToArray());
-                                rowdata[typeField.FieldName+"_name"] = string.Join(",", names.ToArray());
+                                rowdata[typeField.FieldName + "_name"] = string.Join(",", names.ToArray());
                             }
                             else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
                         }
@@ -2008,11 +2390,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case DynamicProtocolControlType.Product:
                     if (!string.IsNullOrEmpty(columnValue))
                     {
-                        var pid = _repository.GetProductId(columnValue, out errorMsg,fieldFilters);
+                        var pid = _repository.GetProductId(columnValue, out errorMsg, fieldFilters);
                         if (string.IsNullOrEmpty(errorMsg))
                         {
                             rowdata[typeField.FieldName] = pid;
-                            rowdata[typeField.FieldName+"_name"] = columnValue;
+                            rowdata[typeField.FieldName + "_name"] = columnValue;
                         }
                         else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
                     }
@@ -2024,7 +2406,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (string.IsNullOrEmpty(errorMsg))
                         {
                             rowdata[typeField.FieldName] = pid;
-                            rowdata[typeField.FieldName+"_name"] = columnValue;
+                            rowdata[typeField.FieldName + "_name"] = columnValue;
                         }
                         else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
                     }
@@ -2033,12 +2415,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case DynamicProtocolControlType.Department://团队组织
                     if (!string.IsNullOrEmpty(columnValue) && typeField.FieldType != 1)
                     {
-                        var pid = _repository.GetDepartmentId(columnValue, userno, out errorMsg);
-                        if (string.IsNullOrEmpty(errorMsg))
-                        {
-                            rowdata[typeField.FieldName] = pid;
-                        }
-                        else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
+                        ValidationDepartment(typeField, columnValue, rowdata, userno, out errorMsg);
+
                     }
                     break;
                 case DynamicProtocolControlType.SalesStage:
@@ -2053,12 +2431,82 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     break;
 
+                case DynamicProtocolControlType.LinkeTable://表格控件
+
+                    rowdata["org_data_" + typeField.FieldName] = new List<Dictionary<string, object>>();
+                    if (rowdata.ContainsKey(typeField.FieldName) && rowdata[typeField.FieldName] != null)
+                    {
+
+                        List<Dictionary<string, object>> subRowDataList = (List<Dictionary<string, object>>)rowdata[typeField.FieldName];
+                        foreach (Dictionary<string, object> rowDataInfo in subRowDataList)
+                        {
+                            if (rowDataInfo.ContainsKey("FieldData"))
+                            {
+                                string tmpStr = Newtonsoft.Json.JsonConvert.SerializeObject(rowDataInfo["FieldData"]);
+                                ((List<Dictionary<string, object>>)rowdata["org_data_" + typeField.FieldName]).Add(new Dictionary<string, object>(JsonConvert.DeserializeObject<Dictionary<string, object>>(tmpStr)));
+                            }
+                            else
+                            {
+                                ((List<Dictionary<string, object>>)rowdata["org_data_" + typeField.FieldName]).Add(new Dictionary<string, object>());
+                                return false;
+                            }
+                        }
+                    }
+                    if (sheetTemplate != null && sheetTemplate.SubDataObject != null && ((Dictionary<string, object>)sheetTemplate.SubDataObject).ContainsKey(typeField.FieldName))
+                    {
+                        subTypes = (List<DynamicEntityDataFieldMapper>)(((Dictionary<string, object>)sheetTemplate.SubDataObject)[typeField.FieldName]);
+                    }
+                    if (subTypes != null)
+                    {
+                        List<Dictionary<string, object>> subRowDataList = (List<Dictionary<string, object>>)rowdata[typeField.FieldName];
+                        foreach (Dictionary<string, object> rowDataInfo in subRowDataList)
+                        {
+                            Guid subTypeId = Guid.Empty;
+                            if (rowDataInfo.ContainsKey("TypeId"))
+                            {
+                                if (Guid.TryParse(rowDataInfo["TypeId"].ToString(), out subTypeId) == false)
+                                {
+                                    errorMsg = "嵌套表格的typeid格式异常";
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                errorMsg = "嵌套表格的typeid未定义";
+                                return false;
+                            }
+                            if (rowDataInfo.ContainsKey("FieldData"))
+                            {
+                                Dictionary<string, object> subRow = (Dictionary<string, object>)rowDataInfo["FieldData"];
+                                foreach (DynamicEntityDataFieldMapper subTypeField in subTypes)
+                                {
+                                    if (subRow.ContainsKey(subTypeField.FieldName) && subRow[subTypeField.FieldName] != null)
+                                    {
+                                        string subColumnValue = subRow[subTypeField.FieldName].ToString();
+                                        string subErrorMsg = "";
+                                        if (CheckFieldData(sheetTemplate, subTypeId, subTypeField, subColumnValue, subRow, userno, out subErrorMsg) == false)
+                                        {
+                                            errorMsg = subErrorMsg;
+                                            return false;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                errorMsg = "嵌套表格的数据异常";
+                                return false;
+                            }
+                        }
+
+                    }
+                    rowdata[typeField.FieldName] = Newtonsoft.Json.JsonConvert.SerializeObject(rowdata[typeField.FieldName]);
+                    break;
                 case DynamicProtocolControlType.Location://定位
                 case DynamicProtocolControlType.HeadPhoto://头像
                 case DynamicProtocolControlType.AreaGroup://分组
                 case DynamicProtocolControlType.TakePhoto://拍照
                 case DynamicProtocolControlType.FileAttach://附件
-                case DynamicProtocolControlType.LinkeTable://表格控件
                 case DynamicProtocolControlType.TreeMulti://树形多选
                 case DynamicProtocolControlType.TreeSingle://树形
                 case DynamicProtocolControlType.RecId://记录ID
@@ -2127,6 +2575,67 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return string.IsNullOrEmpty(errorMsg);
         }
+        private bool ValidationDepartment(DynamicEntityDataFieldMapper typeField, string columnValue, Dictionary<string, object> rowdata, int userno, out string errorMsg)
+        {
+            errorMsg = null;
+            var fieldConfig = JsonHelper.ToObject<DynamicProtocolFieldConfig>(typeField.FieldConfig);
+            if (fieldConfig == null)
+            {
+                errorMsg = string.Format("{0}配置有误，FieldConfig不能为空", typeField.FieldLabel);
+            }
+            else
+            {
+                //如果没填该字段的值，则获取配置中的默认值
+                if (string.IsNullOrEmpty(columnValue))
+                {
+                    rowdata[typeField.FieldName] = fieldConfig.DefaultValue;
+                    return true;
+                }
+                object datainfo = null;
+                if ((DynamicProtocolControlType)typeField.ControlType == DynamicProtocolControlType.Department)
+                {
+                    if (fieldConfig.Multiple != 1)
+                    {
+                        var pid = _repository.GetDepartmentId(columnValue, userno, out errorMsg);
+                        if (string.IsNullOrEmpty(errorMsg))
+                        {
+                            rowdata[typeField.FieldName] = pid;
+                        }
+                        else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
+                    }
+                    else
+                    {
+                        List<string> dicDatas = columnValue.Split(',').ToList();
+                        string id = "";
+                        foreach (string dic in dicDatas)
+                        {
+                            string tmpError = "";
+                            var pid = _repository.GetDepartmentId(dic, userno, out tmpError);
+                            if (string.IsNullOrEmpty(tmpError))
+                            {
+                                id = id + "," + pid;
+                            }
+                            else errorMsg = string.Format("{2},{0}:{1}", typeField.FieldLabel, tmpError, errorMsg);
+                        }
+                        if (id.Length > 0) id = id.Substring(1);
+                        datainfo = id;
+                    }
+                }
+                else
+                {
+                    //不会进这里来，已经不在使用多选数据源，而是改为单选数据的多选配置
+                    /* List<string> dicDatas = columnValue.Split(',').ToList();
+                     datainfo = _repository.GetDataSourceMapDataId(ruleSql, dicDatas, out errorMsg);
+                     */
+                }
+                if (string.IsNullOrEmpty(errorMsg))
+                {
+                    rowdata[typeField.FieldName] = datainfo;
+                }
+                else errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, errorMsg);
+            }
+            return string.IsNullOrEmpty(errorMsg);
+        }
         //验证处理数据源单选和多选的数据
         private bool ValidationDataSource(DynamicEntityDataFieldMapper typeField, string columnValue, Dictionary<string, object> rowdata, int userno, out string errorMsg)
         {
@@ -2174,13 +2683,46 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 object datainfo = null;
                 if ((DynamicProtocolControlType)typeField.ControlType == DynamicProtocolControlType.DataSourceSingle)
                 {
+                    if (fieldConfig.Multiple != 1)
+                    {
+                        datainfo = _repository.GetDataSourceMapDataId(ruleSql, columnValue, out errorMsg);
+                    }
+                    else
+                    {
+                        List<string> dicDatas = columnValue.Split(',').ToList();
+                        datainfo = _repository.GetDataSourceMapDataId(ruleSql, dicDatas, out errorMsg);
+                        string id = "";
+                        string name = "";
+                        List<Dictionary<string, object>> rows = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(Newtonsoft.Json.JsonConvert.SerializeObject(datainfo));
 
-                    datainfo = _repository.GetDataSourceMapDataId(ruleSql, columnValue, out errorMsg);
+                        foreach (Dictionary<string, object> row in rows)
+                        {
+                            id = id + "," + (string)row["id"];
+                            name = name + "," + (string)row["name"];
+                        }
+                        if (id.Length > 0) id = id.Substring(1);
+                        if (name.Length > 0) name = name.Substring(1);
+                        List<string> foundname = name.Split(',').ToList();
+                        string unfoundname = string.Join(',', dicDatas.Except(foundname).ToArray());
+                        if (unfoundname != null && unfoundname.Length > 0)
+                        {
+                            errorMsg = string.Format("{0}:{1}", typeField.FieldLabel, "没有找到以下数据:" + unfoundname);
+                        }
+                        else
+                        {
+                            Dictionary<string, object> realdata = new Dictionary<string, object>();
+                            realdata["id"] = id;
+                            realdata["name"] = name;
+                            datainfo = realdata;
+                        }
+                    }
                 }
                 else
                 {
-                    List<string> dicDatas = columnValue.Split(',').ToList();
-                    datainfo = _repository.GetDataSourceMapDataId(ruleSql, dicDatas, out errorMsg);
+                    //不会进这里来，已经不在使用多选数据源，而是改为单选数据的多选配置
+                    /* List<string> dicDatas = columnValue.Split(',').ToList();
+                     datainfo = _repository.GetDataSourceMapDataId(ruleSql, dicDatas, out errorMsg);
+                     */
                 }
                 if (string.IsNullOrEmpty(errorMsg))
                 {
@@ -2352,9 +2894,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 Dictionary<string, object> RealDataRow = new Dictionary<string, object>();
                 //开始处理一行
-                foreach (string indexKey  in ExcelRowData.Keys)
+                foreach (string indexKey in ExcelRowData.Keys)
                 {
-                    string fieldKey = FieldRowDict[indexKey].ToString() ;
+                    string fieldKey = FieldRowDict[indexKey].ToString();
                     EntityFieldProMapper FieldInfo = null;
                     foreach (EntityFieldProMapper field in FieldList)
                     {
@@ -2383,7 +2925,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 FieldConfig = FieldInfo.FieldConfig
                             };
                             RealDataRow[f.FieldName] = ExcelRowData[indexKey].ToString();
-                            if (CheckFieldData(paramInfo.MainTypeId, f, ExcelRowData[indexKey].ToString(), RealDataRow, userId, out errorMsg) == false) {
+                            if (CheckFieldData(null, paramInfo.MainTypeId, f, ExcelRowData[indexKey].ToString(), RealDataRow, userId, out errorMsg) == false)
+                            {
                                 if (RealDataRow.ContainsKey("uk100v7_import_error"))
                                 {
                                     RealDataRow["uk100v7_import_error"] = RealDataRow["uk100v7_import_error"] + "\r\n" + errorMsg;
@@ -2446,6 +2989,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //Regex r = new Regex(@"^\s*([A-Za-z0-9_-]+(\.\w+)*@(\w+\.)+\w{2,5})\s*$");
             Regex r = new Regex(@"\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*");
             return r.IsMatch(value);
+        }
+        #endregion
+
+        #region 回写预算
+        /// <summary>
+        /// 回写预算
+        /// </summary>
+        private void BackWriteBudgetOfJx(List<Dictionary<string, object>> excelDataList, string TaskName)
+        {
+            string methodName = "BackWriteBudgetOfJx";
+            var type = new Type[] { typeof(List<Dictionary<string, object>>), typeof(string) };
+            var param = new object[] { excelDataList, TaskName };
+            InvokeBudget(methodName, type, param);
+        }
+
+        public void InvokeBudget(string methodName, Type[] types, object[] param)
+        {
+            string serviceName = "UBeat.Crm.CoreApi.wxChina.Services.JiXin.JxBudgetServices";
+            Type type = AssemblyPluginUtils.getInstance().getUKType(serviceName);
+            object service = ServiceLocator.Current.GetInstanceWithName(serviceName);
+            System.Reflection.MethodInfo methodInfo = null;
+            methodInfo = type.GetMethod(methodName, types);
+            methodInfo.Invoke(service, param);
         }
         #endregion
     }
