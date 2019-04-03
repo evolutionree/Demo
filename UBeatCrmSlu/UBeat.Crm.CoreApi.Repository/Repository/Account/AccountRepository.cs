@@ -620,7 +620,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
         public int GetLicenseUserCount()
         {
-            var sql = @"select count(1) nums from crm_sys_account  where recstatus = 1 and accesstype <>'99' ";
+			//accountid = 1默认是系统管理员
+			var sql = @"select count(1) nums from crm_sys_account  where recstatus = 1 and accesstype <>'99' and accountid <> 1 ";
             var count = DataBaseHelper.QuerySingle<int>(sql);
             return count;
         }
