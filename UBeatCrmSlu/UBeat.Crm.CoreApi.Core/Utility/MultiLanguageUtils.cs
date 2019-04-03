@@ -44,7 +44,7 @@ namespace UBeat.Crm.CoreApi.Core.Utility
 
         public static string GetDefaultLanguageValue(string DefaultValue,Dictionary<string, string> multilanguage,out string Result)
         {
-            Result = DefaultValue;
+            Result = string.Concat(DefaultValue).Trim();
             
             if (multilanguage == null) return Result;
             foreach (var item in multilanguage)
@@ -53,7 +53,7 @@ namespace UBeat.Crm.CoreApi.Core.Utility
                 {
                     if (item.Value == null) return Result;
                     else {
-                        Result= item.Value;
+                        Result= string.Concat(item.Value).Trim();
                         return Result;
                     }
                 }
