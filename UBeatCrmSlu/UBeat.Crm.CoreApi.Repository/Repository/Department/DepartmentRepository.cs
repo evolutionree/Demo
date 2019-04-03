@@ -17,7 +17,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
     {
         public OperateResult DeptAdd(DbTransaction tran, DepartmentAddMapper deptEntity, int userNumber)
         {
-            var sql = @"
+			OperateResult operateResult = new OperateResult();
+			var sql = @"
                 SELECT * FROM crm_func_department_add(@topdeptId,@deptName, @oglevel, @userNo,@deptlanguage)
             ";
 
@@ -27,11 +28,49 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                 new NpgsqlParameter("deptName",deptEntity.DeptName),
                 new NpgsqlParameter("oglevel",deptEntity.OgLevel),
                 new NpgsqlParameter("userNo", userNumber),
-                new NpgsqlParameter("deptlanguage",deptEntity.DeptLanguage)
-            };
-            var result = DBHelper.ExecuteQuery<OperateResult>(tran, sql, param);
+                new NpgsqlParameter("deptlanguage",deptEntity.DeptLanguage),
+				new NpgsqlParameter("deptcode",deptEntity.DeptCode)
+			};
 
-            return result.FirstOrDefault();
+			try
+			{
+				var updateSql = string.Empty;
+				if (!string.IsNullOrEmpty(deptEntity.DeptCode))
+				{
+					var check_sql = @"SELECT 1 FROM crm_sys_department where deptcode=@deptcode LIMIT 1";
+					var isExist = ExecuteScalar(check_sql, param, tran);
+					if (isExist != null && isExist.ToString() == "1")
+					{
+						throw new Exception("部门编码已存在");
+					}
+
+					updateSql = @"UPDATE crm_sys_department SET deptcode = @deptcode WHERE deptid = @deptid;";
+				}
+
+				var result = DBHelper.ExecuteQuery<OperateResult>(tran, sql, param);
+				operateResult = result.FirstOrDefault();
+				if (operateResult.Flag == 1 && !string.IsNullOrEmpty(updateSql) && !string.IsNullOrEmpty(operateResult.Id))
+				{
+					var paramUpdate = new DbParameter[]
+					{
+						new NpgsqlParameter("deptid",new Guid(operateResult.Id)),
+						new NpgsqlParameter("deptcode",deptEntity.DeptCode)
+					};
+
+					var res = ExecuteNonQuery(updateSql, paramUpdate, tran);
+					if (res <= 0)
+						throw new Exception("新增部门失败");
+				}
+			}
+			catch (Exception ex)
+			{ 
+				throw ex;
+			}
+			finally
+			{ 
+			}
+			 
+			return operateResult;
         }
 
 
@@ -56,16 +95,25 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         new NpgsqlParameter("deptname", deptEntity.DeptName),
                         new NpgsqlParameter("recupdated", DateTime.Now),
                         new NpgsqlParameter("recupdator", userNumber),
-                        new NpgsqlParameter("deptlanguage",deptEntity.DeptLanguage)
-                    };
+                        new NpgsqlParameter("deptlanguage",deptEntity.DeptLanguage),
+						new NpgsqlParameter("deptcode",deptEntity.DeptCode)
+					};
 
-                    var check_sql = @"SELECT 1 FROM crm_sys_department where deptid<>@deptid AND pdeptid=@pdeptid AND deptname=@deptname LIMIT 1";
+                    var check_sql = @"SELECT 1 FROM crm_sys_department where deptid<>@deptid AND deptcode=@deptcode LIMIT 1";
                     var isExist = ExecuteScalar(check_sql, param, tran);
                     if (isExist != null && isExist.ToString() == "1")
                     {
-                        throw new Exception("同一级的部门名称不能重复");
+                        throw new Exception("部门编码已存在");
                     }
-                    var old_pdeptid_sql = @"SELECT pdeptid FROM crm_sys_department where deptid = @deptid;";
+
+					check_sql = @"SELECT 1 FROM crm_sys_department where deptid<>@deptid AND pdeptid=@pdeptid AND deptname=@deptname LIMIT 1";
+					isExist = ExecuteScalar(check_sql, param, tran);
+					if (isExist != null && isExist.ToString() == "1")
+					{
+						throw new Exception("同一级的部门名称不能重复");
+					}
+					 
+					var old_pdeptid_sql = @"SELECT pdeptid FROM crm_sys_department where deptid = @deptid;";
                     var old_pdeptid_res = ExecuteScalar(old_pdeptid_sql, param, tran);
                     Guid old_pdeptid;
                     if (old_pdeptid_res != null && Guid.TryParse(old_pdeptid_res.ToString(), out old_pdeptid))
@@ -88,7 +136,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         }
                     }
 
-                    var sql = @" UPDATE crm_sys_department SET deptname = @deptname,pdeptid = @pdeptid,recupdated=@recupdated, recupdator=@recupdator ,deptlanguage=@deptlanguage::jsonb WHERE deptid = @deptid;";
+                    var sql = @" UPDATE crm_sys_department SET deptname = @deptname,pdeptid = @pdeptid,recupdated=@recupdated, recupdator=@recupdator ,deptlanguage=@deptlanguage::jsonb,deptcode = @deptcode WHERE deptid = @deptid;";
 
                     var result = ExecuteNonQuery(sql, param, tran);
                     if (result > 0)
@@ -96,7 +144,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         res.Id = deptEntity.DeptId.ToString();
                         res.Flag = 1;
                     }
-                    else throw new Exception("修改保存失败！");
+                    else throw new Exception("修改保存失败");
                     tran.Commit();
                 }
                 catch (Exception ex)
