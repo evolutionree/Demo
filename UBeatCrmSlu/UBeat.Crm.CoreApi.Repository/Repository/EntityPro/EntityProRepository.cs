@@ -137,7 +137,47 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             return result;
         }
 
-        public OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber)
+		public List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber)
+		{
+			var sql = @"
+			select * from(
+                SELECT 0 as datatype, array_to_string(array(
+										with tmp as (
+						select e.entityid, e.entityname, f.fieldid, f.displayname,(((f.fieldconfig->>'dataSource')::jsonb)->>'sourceId')::text as datasrcid
+						from crm_sys_entity e
+						inner join crm_sys_entity_fields f on f.entityid = e.entityid
+					)
+					select
+					datasrcname || '：' || e.entityname || '->' || e.displayname
+					from crm_sys_entity_datasource d
+					left join tmp e on e.datasrcid = d.datasrcid::text
+					where d.recstatus = 1
+					and d.entityid = @entityid
+					and e.datasrcid is not null 
+				),'，') as msg
+
+				union 
+
+				SELECT 1 as datatype, array_to_string(array(
+					select entityname FROM crm_sys_entity WHERE recstatus = 1 and modeltype IN (1,3)
+					AND  relentityid = @entityid
+				),'，') as msg
+
+				union 
+
+				SELECT 2 as datatype, array_to_string(array(
+					select flowname FROM crm_sys_workflow WHERE recstatus = 1 
+					and entityid = @entityid
+				),'，') as msg
+			) as t order by datatype;
+            ";
+			var param = new DynamicParameters();
+			param.Add("entityid", new Guid(entity.EntityId)); 
+			var result = DataBaseHelper.Query(sql, param);
+			return result;
+		}
+
+		public OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber)
         {
             var sql = @"
                 SELECT * FROM crm_func_entity_disabled(@entityid,@status,@userno)
