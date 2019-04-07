@@ -110,6 +110,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> DisabledEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProMapper>(entityModel);
+
+			//删除时验证
+			if(entity.RecStatus == 2)
+			{
+				var msgSB = new StringBuilder();
+				var msgItems = _entityProRepository.CheckDeleteEntityPro(entity, userNumber);
+				foreach (var item in msgItems)
+				{
+					var dataType = int.Parse(item["datatype"].ToString());
+					var msg = string.Concat(item["msg"]);
+					if (!string.IsNullOrEmpty(msg))
+					{
+						switch (dataType)
+						{
+							case 0:
+								msgSB.AppendFormat(@"存在关联的数据源：{0}；", msg);
+								break;
+							case 1:
+								msgSB.AppendFormat(@"存在关联的实体：{0}；", msg);
+								break;
+							case 2:
+								msgSB.AppendFormat(@"存在关联的流程：{0}；", msg);
+								break;
+							default:
+								break;
+						}
+					} 
+				}
+
+				if (!string.IsNullOrEmpty(msgSB.ToString()))
+					return new OutputResult<object>(null, msgSB.ToString(), 1);
+			}
+
             var result = HandleResult(_entityProRepository.DisabledEntityPro(entity, userNumber));
             IncreaseDataVersion(DataVersionType.EntityData);
             IncreaseDataVersion(DataVersionType.PowerData);

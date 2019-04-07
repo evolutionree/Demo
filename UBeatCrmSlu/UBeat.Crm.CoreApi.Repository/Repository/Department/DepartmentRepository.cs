@@ -96,7 +96,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         new NpgsqlParameter("recupdated", DateTime.Now),
                         new NpgsqlParameter("recupdator", userNumber),
                         new NpgsqlParameter("deptlanguage",deptEntity.DeptLanguage),
-						new NpgsqlParameter("deptcode",deptEntity.DeptCode)
+						new NpgsqlParameter("deptcode",deptEntity.DeptCode),
+						new NpgsqlParameter("oglevel",deptEntity.OgLevel),
 					};
 
                     var check_sql = @"SELECT 1 FROM crm_sys_department where deptid<>@deptid AND deptcode=@deptcode LIMIT 1";
@@ -136,7 +137,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                         }
                     }
 
-                    var sql = @" UPDATE crm_sys_department SET deptname = @deptname,pdeptid = @pdeptid,recupdated=@recupdated, recupdator=@recupdator ,deptlanguage=@deptlanguage::jsonb,deptcode = @deptcode WHERE deptid = @deptid;";
+                    var sql = @" UPDATE crm_sys_department SET 
+									deptname = @deptname,
+									pdeptid = @pdeptid,
+									recupdated=@recupdated, 
+									recupdator=@recupdator ,
+									deptlanguage=@deptlanguage::jsonb,
+									deptcode = @deptcode,
+									oglevel = @oglevel 
+									WHERE deptid = @deptid;";
 
                     var result = ExecuteNonQuery(sql, param, tran);
                     if (result > 0)

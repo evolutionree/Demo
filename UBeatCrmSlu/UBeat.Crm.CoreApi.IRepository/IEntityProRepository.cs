@@ -18,7 +18,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult SaveEntityGlobalJs(EntityGlobalJsMapper entity, int userNumber);
         OperateResult UpdateEntityPro(EntityProSaveMapper entity, int userNumber);
 
-        OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber);
+		List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber);
+
+		OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber);
         OperateResult DeleteEntityData(DeleteEntityDataMapper entity, int userNumber);
         Dictionary<string, List<IDictionary<string, object>>> EntityOrderbyQuery(EntityOrderbyMapper entity, int userNumber);
         Dictionary<string, List<IDictionary<string, object>>> EntityClassQuery(EntityProMapper entity, int userNumber);
