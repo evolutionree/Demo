@@ -83,6 +83,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
             if (result != null && !result.ToString().Equals(model.FileId.GetValueOrDefault().ToString()))
             {
                 InsertTemplate(model, tran);
+                var sql = @"update crm_sys_entity_print_template set recstatus=0 where   recid = @recid";
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("recid", model.RecId),
+                };
+                var rowscount = ExecuteNonQuery(sql, param, tran);
             }
             else//否则更新模板信息数据
             {

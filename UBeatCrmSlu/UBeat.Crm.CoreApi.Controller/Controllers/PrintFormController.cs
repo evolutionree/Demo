@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.PrintForm;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -49,6 +50,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
         [HttpPost("updatetemplate")]
+        [UKWebApi("更新套打模板",Description ="用于更新套打模板，套打模板更新将会产生一条新的记录，就的记录将被标志删除")]
         public OutputResult<object> UpdateTemplate([FromBody] TemplateInfoModel data = null)
         {
             if (data == null) return ResponseError<object>("参数格式错误");
