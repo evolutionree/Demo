@@ -254,7 +254,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
     public class RelTabListModel
     {
         public Guid EntityId { get; set; }
-    }
+		public Guid RecId { get; set; }
+	}
 
     public class GetEntityFieldsModel
     {

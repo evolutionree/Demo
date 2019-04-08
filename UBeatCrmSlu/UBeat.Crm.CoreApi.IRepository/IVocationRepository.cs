@@ -220,6 +220,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<FunctionInfo> GetTotalFunctions();
         List<FunctionInfo> GetTotalFunctionsWithStatus0();
         bool ExplainVocationRulePower( string ruleSql, int userNo);
-    }
+
+		OperateResult SaveRelTabRule(RelTabRuleSaveModel data, int userNumber);
+		List<RelTabRuleQueryMapper> GetRelTabRule(RelTabRuleSelect data, int userNumber);
+
+	}
 }
 

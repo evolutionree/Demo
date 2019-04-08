@@ -452,9 +452,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             return _dynamicEntityServices.UpdateRelTab(dynamicModel, UserId);
-        }
+        } 
 
-        [HttpPost]
+		[HttpPost]
         [Route("disabledreltab")]
         public OutputResult<object> DisabledRelTab([FromBody] DisabledRelTabModel dynamicModel = null)
         {

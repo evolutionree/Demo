@@ -220,7 +220,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.Vocation
 
     public class VocationRuleInfoModel
     {
-        public string VocationId { get; set; }
+		public string RelTabId { get; set; }
+		public string VocationId { get; set; }
         public string FunctionId { get; set; }
         public string RuleId { get; set; }
         public string RuleName { get; set; }
@@ -228,8 +229,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.Vocation
         public RuleSetInfoModel RuleSet { get; set; }
     }
 
+	public class RelTabRuleSelectModel
+	{ 
+		public Guid RelTabId { get; set; }
+		public Guid EntityId { get; set; } 
+	}
 
-    public enum FunctionType
+	public enum FunctionType
     {
         /// <summary>
         /// 入口

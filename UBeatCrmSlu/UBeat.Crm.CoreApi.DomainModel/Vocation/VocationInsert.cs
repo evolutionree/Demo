@@ -420,10 +420,39 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
         public string RuleSet { get; set; }
     }
 
+	public class RelTabRuleSelect : BaseEntity
+	{
+		public Guid RelTabId { get; set; }
+		public Guid EntityId { get; set; }
 
+		protected override IValidator GetValidator()
+		{
+			return new Validator();
+		}
+		class Validator : AbstractValidator<RelTabRuleSelect>
+		{
+			public Validator()
+			{
+				RuleFor(d => d.RelTabId).NotNull().WithMessage("页签id不能为空");
+				RuleFor(d => d.EntityId).NotNull().WithMessage("实体id不能为空");
+			}
+		}
+	}
 
+	public class RelTabRuleQueryMapper
+	{ 
+		public Guid RelTabId { get; set; }
+		public Guid RuleId { get; set; }
+		public string RuleName { get; set; }
+		public int RecStatus { get; set; }
+		public Guid ItemId { get; set; }
 
-
-
-
+		public Guid FieldId { get; set; }
+		public string ItemName { get; set; }
+		public string Operate { get; set; }
+		public int UseType { get; set; }
+		public int RuleType { get; set; }
+		public string RuleData { get; set; }
+		public string RuleSet { get; set; }
+	}
 }

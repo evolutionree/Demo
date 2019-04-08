@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Models.Vocation;
 using UBeat.Crm.CoreApi.Services.Models;
+using UBeat.Crm.CoreApi.DomainModel.Vocation;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -161,20 +162,33 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _service.GetFunctionRule(body, UserId);
         }
 
+		[HttpPost]
+		[Route("savereltabrule")]
+		public OutputResult<object> SaveRelTabRule([FromBody] RelTabRuleSaveModel dynamicModel = null)
+		{
+			if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+			return _ruleService.SaveRuleForRelTab(dynamicModel, UserId);
+		}
+
+		[HttpPost("getreltabrule")]
+		public OutputResult<object> GetRelTabRule([FromBody] RelTabRuleSelectModel body)
+		{
+			if (body == null) return ResponseError<object>("参数格式错误");
+			return _ruleService.GetRelTabFunctionRule(body, UserId);
+		}
+
+		#endregion
+
+		#region 用户
 
 
-        #endregion
 
-        #region 用户
-
-       
-
-        /// <summary>
-        /// 获取职能下的用户
-        /// </summary>
-        /// <param name="body"></param>
-        /// <returns></returns>
-        [HttpPost("getuser")]
+		/// <summary>
+		/// 获取职能下的用户
+		/// </summary>
+		/// <param name="body"></param>
+		/// <returns></returns>
+		[HttpPost("getuser")]
         public OutputResult<object> GetVocationUser([FromBody] VocationUserSelectModel body)
         {
             if (body == null) return ResponseError<object>("参数格式错误");

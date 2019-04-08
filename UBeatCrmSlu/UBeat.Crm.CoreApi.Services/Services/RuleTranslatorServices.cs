@@ -579,15 +579,40 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IncreaseDataVersion(DataVersionType.EntityData);
             return ruleSet;
         }
-        /// <summary>
-        /// 处理不同的操作符
-        /// </summary>
-        /// <param name="operate"></param>
-        /// <param name="fieldName"></param>
-        /// <param name="strData"></param>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        private string TranslateRuleConditionSql(string operate, int ruleType, string strData, int userId, EntityFieldProMapper entityField = null,string prestring=null)
+
+		private string TranslateRuleSetCom(string ruleSet, ref List<ComRuleItemModel> rel)
+		{
+
+			string[] splitSet = ruleSet.Split(' ');
+			int indexPara = 0;
+			foreach (var tmp in splitSet)
+			{
+				if (!tmp.Contains("$")) continue;
+				ruleSet = ruleSet.Replace(tmp, "%s");
+				string paraIndex = tmp.Replace("$", "");
+				if (Int32.TryParse(paraIndex, out indexPara))
+				{
+					if (indexPara > rel.Count) throw new Exception("规则明细索引溢出");
+					if (indexPara < 0) throw new Exception("规则明细索引不能为0");
+					rel[indexPara - 1].Relation.ParamIndex = indexPara - 1;
+				}
+				else
+				{
+					throw new Exception("规则参数格式异常");
+				}
+			}
+			IncreaseDataVersion(DataVersionType.EntityData);
+			return ruleSet;
+		}
+		/// <summary>
+		/// 处理不同的操作符
+		/// </summary>
+		/// <param name="operate"></param>
+		/// <param name="fieldName"></param>
+		/// <param name="strData"></param>
+		/// <param name="userId"></param>
+		/// <returns></returns>
+		private string TranslateRuleConditionSql(string operate, int ruleType, string strData, int userId, EntityFieldProMapper entityField = null,string prestring=null)
         {
             string fieldName = string.Empty;
             int controlType = -1;
@@ -1676,10 +1701,98 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ruleData;
         }
 
+		#region 页签可见规则
+		public OutputResult<object> SaveRuleForRelTab(RelTabRuleSaveModel entityModel, int userId)
+		{ 
+			List<EntityFieldProMapper> fields = _entityProRepository.FieldQuery(entityModel.EntityId.ToString(), userId);
+			foreach (var entity in entityModel.RuleItems)
+			{
+				switch (entity.RuleType)
+				{
+					case 0:
+					case 1:
+						{
+							var entityField = fields.SingleOrDefault(t => t.FieldId == entity.FieldId.ToString());
+							if (entityField.ControlType != entity.ControlType) throw new Exception("配置字段类型不匹配");
+							entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField);
+							break;
+						}
+					case 2:
+						{
+							var data = JObject.Parse(entity.RuleData);
+							entity.RuleSql = string.Format(@"({0})", data["dataVal"].ToString());
+							break;
+						}
+					default: throw new Exception("尚未实现的规则类型");
+				}
+				entity.Relation.ParamIndex = -1;
+			}
+			var ruleItemList = entityModel.RuleItems.ToList();
+			entityModel.RuleSet.RuleFormat = TranslateRuleSetCom(entityModel.RuleSet.RuleSet, ref ruleItemList);
+	  
+			OperateResult result = new OperateResult();
+			entityModel.IsAdd = false;
+			if (entityModel.Rule.RuleId.HasValue == false)
+			{
+				entityModel.IsAdd = true;
+				entityModel.Rule.RuleId = Guid.NewGuid();
+				entityModel.RuleSet.RuleId = entityModel.Rule.RuleId.Value;  
+			}  
+			foreach (var tmp in entityModel.RuleItems)
+			{
+				tmp.ItemId = Guid.NewGuid();
+				tmp.Relation.ItemId = tmp.ItemId; 
+			}
+			
+			result = _vocationRepository.SaveRelTabRule(entityModel, userId);  
+			IncreaseDataVersion(DataVersionType.EntityData);
+			return HandleResult(result); 
+		}
 
+		public dynamic GetRelTabFunctionRule(RelTabRuleSelectModel body, int userNumber)
+		{
+			var crmData = new RelTabRuleSelect()
+			{
+				RelTabId = body.RelTabId, 
+				EntityId = body.EntityId
+			};
 
-        //end of the class
-    }
+			if (!crmData.IsValid())
+			{
+				return HandleValid(crmData);
+			}
+
+			var ruleList = _vocationRepository.GetRelTabRule(crmData, userNumber);
+			var obj = ruleList.GroupBy(t => new
+			{ 
+				t.RelTabId,
+				t.RuleId,
+				t.RuleName,
+				t.RuleSet,
+			}).Select(group => new VocationRuleInfoModel
+			{
+				RuleId = group.Key.RuleId.ToString(),
+				RelTabId = group.Key.RelTabId.ToString(), 
+				RuleName = group.Key.RuleName,
+				RuleItems = group.Select(t => new RuleItemInfoModel
+				{
+					ItemId = t.ItemId.ToString(),
+					ItemName = t.ItemName,
+					FieldId = t.FieldId.ToString(),
+					Operate = t.Operate,
+					UseType = t.UseType,
+					RuleData = t.RuleData,
+					RuleType = t.RuleType
+				}).ToList(),
+				RuleSet = new RuleSetInfoModel
+				{
+					RuleSet = group.Key.RuleSet
+				}
+			}).ToList();
+			return new OutputResult<object>(obj);
+		}
+		#endregion
+	}
 
 
 
