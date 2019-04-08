@@ -301,6 +301,16 @@ namespace UBeat.Crm.CoreApi.Services.Models
 			if (AccountUserInfo == null)
 				return string.Empty;
 			return RuleSqlHelper.FormatRuleSql(sql, AccountUserInfo.UserId, AccountUserInfo.DepartmentId);
-		} 
+		}
+
+		public string RuleSqlFormatForSql(string sql)
+		{
+			if (string.IsNullOrEmpty(sql)) return string.Empty;
+			 
+			sql = string.Format("({0})", sql);
+			if (AccountUserInfo == null)
+				return string.Empty;
+			return RuleSqlHelper.FormatRuleSql(sql, AccountUserInfo.UserId, AccountUserInfo.DepartmentId);
+		}
 	}   
 }

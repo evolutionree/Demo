@@ -123,7 +123,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         /// <summary>
         /// 节点配置数据，如位置坐标
         /// </summary>
-        public object NodeConfig { set; get; }
+        public Dictionary<string, object> NodeConfig { set; get; }
     }
 
     public class WorkFlowLineModel

@@ -1176,33 +1176,16 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
 		}
 
 		public List<RelTabInfo> GetRelTabs()
-		{ 
-			using (var conn = DBHelper.GetDbConnect())
-			{
-				conn.Open(); 
-				try
-				{  
-					var sql = string.Format(@"
-							SELECT re.reltabid, row_to_json(r) ""Rule""
-							FROM crm_sys_vocation_reltab_rule_relation re
-								inner join crm_sys_rule AS r on  re.ruleid = r.ruleid
-								inner join crm_sys_entity_rel_tab rel on re.reltabid = rel.relid
-							WHERE rel.recstatus = 1;");
-					var sqlParameters = new List<DbParameter>(); 
-					var result = DBHelper.ExecuteQuery<RelTabInfo>(conn.ConnectionString, sql, sqlParameters.ToArray());
+		{  
+			var sql = string.Format(@"
+					SELECT re.reltabid, rulesql
+					FROM crm_sys_vocation_reltab_rule_relation re
+						inner join crm_sys_rule AS r on  re.ruleid = r.ruleid
+						inner join crm_sys_entity_rel_tab rel on re.reltabid = rel.relid
+					WHERE rel.recstatus = 1;"); 
+			var result = DataBaseHelper.Query<RelTabInfo>(sql, null, CommandType.Text);
 
-					return result;
-				}
-				catch (Exception ex)
-				{ 
-					throw ex;
-				}
-				finally
-				{
-					conn.Close();
-					conn.Dispose();
-				}
-			}
+			return result;   
 		}
 		private static List<string> getParameters(DynamicParameters sqlParameters, string addRuleItemFieldsStr, int index = 0)
 		{

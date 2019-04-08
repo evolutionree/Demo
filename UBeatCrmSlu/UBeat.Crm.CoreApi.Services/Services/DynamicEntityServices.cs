@@ -22,6 +22,7 @@ using UBeat.Crm.CoreApi.DomainModel.Vocation;
 using UBeat.Crm.CoreApi.DomainModel.WorkFlow;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository.Rule;
+using UBeat.Crm.CoreApi.Repository.Repository.Vocation;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DataSource;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
@@ -44,9 +45,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly JavaScriptUtilsServices _javaScriptUtilsServices;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
-        //private readonly WorkFlowServices _workflowService;
-		private readonly IRuleRepository _ruleRepository = new RuleRepository();
-		private readonly IVocationRepository _vocationRepository;
+        //private readonly WorkFlowServices _workflowService; 
 
 		private readonly IMapper _mapper;
 
@@ -54,9 +53,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
                 IDataSourceRepository dataSourceRepository,
                 ICustomerRepository customerRepository,
-                JavaScriptUtilsServices javaScriptUtilsServices,
-				IRuleRepository ruleRepository,
-				IVocationRepository vocationRepository)
+                JavaScriptUtilsServices javaScriptUtilsServices)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
             _entityProRepository = entityProRepository;
@@ -67,9 +64,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dataSourceRepository = dataSourceRepository;
             _customerRepository = customerRepository;
             _javaScriptUtilsServices = javaScriptUtilsServices;
-			//_workflowService = workflowService;
-			_ruleRepository = ruleRepository;
-			_vocationRepository = vocationRepository; 
+			//_workflowService = workflowService; 
 		}
 
         public OutputResult<object> Add(DynamicEntityAddModel dynamicModel, AnalyseHeader header, int userNumber)
@@ -3817,7 +3812,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
-                List<IDictionary<string, object>> lst = new List<IDictionary<string, object>>();
+				IRuleRepository ruleRepository =  new RuleRepository();
+				IVocationRepository vocationRepository = new VocationRepository();
+				List<IDictionary<string, object>> lst = new List<IDictionary<string, object>>();
 
                 if (DeviceClassic == DeviceClassic.WEB)
                 {
@@ -3829,7 +3826,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 GetUserData(userNumber).Vocations.ForEach(t =>
                 {
-					var relTabRelationList = _vocationRepository.GetRelTabs(); 
+					var relTabRelationList = vocationRepository.GetRelTabs(); 
 					foreach (var tmp in relTabList)
                     {
                         string uuid = tmp["relid"].ToString();
@@ -3853,15 +3850,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 								var sql = userData.RuleSqlFormatForFunction(fun);
 								if(!string.IsNullOrEmpty(sql))
 								{
-									hasAccess = _ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+									hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
 								}
 								if (hasAccess == true)
 								{
-									if (relTabRelationList.Any(i =>i.RelTabId.ToString() == uuid))
+									if (relTabRelationList != null && relTabRelationList.Any(i => i.RelTabId.ToString() == uuid))
 									{
 										var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
-										sql = tab.Rule.Rulesql;
-										hasAccess = _ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+										sql = userData.RuleSqlFormatForSql(tab.RuleSql);
+										hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
 									}
 								}
 

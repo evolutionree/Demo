@@ -415,8 +415,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
         public string FieldId { get; set; }
         public string ItemName { get; set; }
         public string Operate { get; set; }
-        public int UseType { get; set; }
-        public int RuleType { get; set; }
+        public int? UseType { get; set; }
+        public int? RuleType { get; set; }
         public string RuleData { get; set; }
         public string RuleSet { get; set; }
     }
@@ -460,6 +460,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
 	public class RelTabInfo
 	{
 		public Guid RelTabId { get; set; } 
-		public RuleInfo Rule { set; get; }
+		public string RuleSql { set; get; }
 	}
 }

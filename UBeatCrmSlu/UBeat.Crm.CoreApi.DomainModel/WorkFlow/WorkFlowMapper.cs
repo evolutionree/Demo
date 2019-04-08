@@ -162,7 +162,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// <summary>
         /// 节点配置数据，如位置坐标
         /// </summary>
-        public object NodeConfig { set; get; }
+        public Dictionary<string, object> NodeConfig { set; get; }
 
         protected override IValidator GetValidator()
         {
