@@ -1086,19 +1086,20 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
 				fieldsStr = @"itemid, itemname, fieldid, operate, ruledata,
 					ruletype, rulesql, usetype, recorder, reccreator,
 					recupdator";
-				parameters = getParameters(sqlParameters, fieldsStr);
+				parameters = getParameters(sqlParameters, fieldsStr, orderby);
 
 				executeSql.AppendFormat(@"INSERT INTO crm_sys_rule_item(
 					itemid, itemname, fieldid, operate, ruledata,
 					ruletype, rulesql, usetype, recorder, reccreator,
 					recupdator) values ({0});", string.Join(",", parameters));
 
+				sqlParameters.Add(string.Concat(@"ruleid", orderby), data.Rule.RuleId); 
 				sqlParameters.Add(string.Concat(@"userid", orderby), userNumber);
 				sqlParameters.Add(string.Concat(@"rolesub", orderby), item.Relation.RoleSub);
 				sqlParameters.Add(string.Concat(@"paramindex", orderby), item.Relation.ParamIndex);
 
 				fieldsStr = @"ruleid, itemid, userid, rolesub, paramindex";
-				parameters = getParameters(sqlParameters, fieldsStr);
+				parameters = getParameters(sqlParameters, fieldsStr, orderby);
 				executeSql.AppendFormat(@"INSERT INTO crm_sys_rule_item_relation(
 					ruleid, itemid, userid, rolesub, paramindex) values ({0});", string.Join(",", parameters));
 
@@ -1173,14 +1174,47 @@ on f.funcid = r.functionid AND r.vocationid =@vocationid WHERE entityid = @entit
 			var result = DataBaseHelper.Query<RelTabRuleQueryMapper>(executeSql, args, CommandType.Text);
 			return result; 
 		}
-		private static List<string> getParameters(DynamicParameters sqlParameters, string addRuleItemFieldsStr)
+
+		public List<RelTabInfo> GetRelTabs()
+		{ 
+			using (var conn = DBHelper.GetDbConnect())
+			{
+				conn.Open(); 
+				try
+				{  
+					var sql = string.Format(@"
+							SELECT re.reltabid, row_to_json(r) ""Rule""
+							FROM crm_sys_vocation_reltab_rule_relation re
+								inner join crm_sys_rule AS r on  re.ruleid = r.ruleid
+								inner join crm_sys_entity_rel_tab rel on re.reltabid = rel.relid
+							WHERE rel.recstatus = 1;");
+					var sqlParameters = new List<DbParameter>(); 
+					var result = DBHelper.ExecuteQuery<RelTabInfo>(conn.ConnectionString, sql, sqlParameters.ToArray());
+
+					return result;
+				}
+				catch (Exception ex)
+				{ 
+					throw ex;
+				}
+				finally
+				{
+					conn.Close();
+					conn.Dispose();
+				}
+			}
+		}
+		private static List<string> getParameters(DynamicParameters sqlParameters, string addRuleItemFieldsStr, int index = 0)
 		{
 			var parameters = new List<string>();
 			foreach (var str in addRuleItemFieldsStr.Split(',', StringSplitOptions.RemoveEmptyEntries))
 			{
 				foreach (var p in sqlParameters.ParameterNames)
 				{
-					if (p.Contains(str.Trim()))
+					var tmp = str.Trim();
+					if (index > 0)
+						tmp = string.Concat(tmp, index);
+					if (p.Contains(tmp))
 					{ 
 						if (p.Contains("ruledata"))
 						{

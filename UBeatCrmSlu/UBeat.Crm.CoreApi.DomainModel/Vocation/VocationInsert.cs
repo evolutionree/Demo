@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using FluentValidation;
+using UBeat.Crm.CoreApi.DomainModel.Rule;
 
 namespace UBeat.Crm.CoreApi.DomainModel.Vocation
 {
@@ -454,5 +455,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.Vocation
 		public int RuleType { get; set; }
 		public string RuleData { get; set; }
 		public string RuleSet { get; set; }
+	}
+
+	public class RelTabInfo
+	{
+		public Guid RelTabId { get; set; } 
+		public RuleInfo Rule { set; get; }
 	}
 }

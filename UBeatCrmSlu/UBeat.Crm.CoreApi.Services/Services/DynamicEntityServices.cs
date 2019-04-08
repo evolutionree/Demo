@@ -21,6 +21,7 @@ using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.DomainModel.Vocation;
 using UBeat.Crm.CoreApi.DomainModel.WorkFlow;
 using UBeat.Crm.CoreApi.IRepository;
+using UBeat.Crm.CoreApi.Repository.Repository.Rule;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DataSource;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
@@ -44,15 +45,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService;
+		private readonly IRuleRepository _ruleRepository = new RuleRepository();
+		private readonly IVocationRepository _vocationRepository;
 
-
-        private readonly IMapper _mapper;
+		private readonly IMapper _mapper;
 
         public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository,
                 IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
                 IDataSourceRepository dataSourceRepository,
                 ICustomerRepository customerRepository,
-                JavaScriptUtilsServices javaScriptUtilsServices)
+                JavaScriptUtilsServices javaScriptUtilsServices,
+				IRuleRepository ruleRepository,
+				IVocationRepository vocationRepository)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
             _entityProRepository = entityProRepository;
@@ -63,8 +67,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dataSourceRepository = dataSourceRepository;
             _customerRepository = customerRepository;
             _javaScriptUtilsServices = javaScriptUtilsServices;
-            //_workflowService = workflowService;
-        }
+			//_workflowService = workflowService;
+			_ruleRepository = ruleRepository;
+			_vocationRepository = vocationRepository; 
+		}
 
         public OutputResult<object> Add(DynamicEntityAddModel dynamicModel, AnalyseHeader header, int userNumber)
         {
@@ -3823,7 +3829,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 GetUserData(userNumber).Vocations.ForEach(t =>
                 {
-                    foreach (var tmp in relTabList)
+					var relTabRelationList = _vocationRepository.GetRelTabs(); 
+					foreach (var tmp in relTabList)
                     {
                         string uuid = tmp["relid"].ToString();
 
@@ -3835,8 +3842,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             functions = t.Functions.Where(a => a.ParentId == function.FuncId);
                             if (functions.Any(a => a.RelationValue == uuid))
                             {
-                                if (!lst.Contains(tmp))
-                                    lst.Add(tmp);
+								//1.检查职能可见规则
+								//2.检查页签可见规则
+								var hasAccess = true; 
+								var recIds = new List<Guid>();
+								recIds.Add(entityModel.RecId);
+
+								var fun = functions.Where(a => a.RelationValue == uuid).FirstOrDefault();
+								var userData = GetUserData(userNumber, false);
+								var sql = userData.RuleSqlFormatForFunction(fun);
+								if(!string.IsNullOrEmpty(sql))
+								{
+									hasAccess = _ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+								}
+								if (hasAccess == true)
+								{
+									if (relTabRelationList.Any(i =>i.RelTabId.ToString() == uuid))
+									{
+										var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
+										sql = tab.Rule.Rulesql;
+										hasAccess = _ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+									}
+								}
+
+								if(hasAccess == true)
+								{
+									if (!lst.Contains(tmp))
+										lst.Add(tmp);
+								} 
                             }
                         }
                     }

@@ -223,7 +223,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
 		OperateResult SaveRelTabRule(RelTabRuleSaveModel data, int userNumber);
 		List<RelTabRuleQueryMapper> GetRelTabRule(RelTabRuleSelect data, int userNumber);
-
+		List<RelTabInfo> GetRelTabs();
 	}
 }
 
