@@ -629,8 +629,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string NewLoad { get; set; }
         public string EditLoad { get; set; }
         public string CheckLoad { get; set; }
-
-        protected override IValidator GetValidator()
+		public string CopyLoad { get; set; }
+		protected override IValidator GetValidator()
         {
             return new EntityGlobalJsMapperValidator();
         }

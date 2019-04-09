@@ -386,9 +386,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public string NewLoad { get; set; }
         public string EditLoad { get; set; }
         public string CheckLoad { get; set; }
+		public string CopyLoad { get; set; }
 
-
-    }
+	}
     public class   EntityInputMethodParamInfo{
         public Guid EntityId { get; set; }
         public List<EntityInputModeInfo> InputMethods { get; set; }

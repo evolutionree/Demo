@@ -89,7 +89,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult SaveEntityGlobalJs(EntityGlobalJsMapper entity, int userNumber)
         {
             var sql = @"
-                Update crm_sys_entity Set newload=@newload,editload=@editload,checkload=@checkload Where entityid=@entityid;
+                Update crm_sys_entity Set newload=@newload,editload=@editload,checkload=@checkload,copyload=@copyload Where entityid=@entityid;
             ";
             string field = string.Empty;
             var param = new DbParameter[]
@@ -97,8 +97,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     new NpgsqlParameter("newload",entity.NewLoad),
                     new NpgsqlParameter("editload",entity.EditLoad),
                     new NpgsqlParameter("checkload", entity.CheckLoad),
-                    new NpgsqlParameter("entityid",entity.EntityId)
-            };
+                    new NpgsqlParameter("entityid",entity.EntityId),
+					new NpgsqlParameter("copyload",entity.CopyLoad)
+			};
             var result = ExecuteNonQuery(sql, param);
             if (result == 1)
             {

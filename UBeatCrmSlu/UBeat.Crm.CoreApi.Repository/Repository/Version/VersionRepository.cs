@@ -368,7 +368,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetEntityListByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "entityid,entityname,modeltype,styles,icons,relentityid,relaudit,recorder,recstatus,newload,editload,checkload,servicesjson,relfieldid,relfieldname,inputmethod,entityname_lang,funcbtnlanguage";
+            var selectFields = "entityid,entityname,modeltype,styles,icons,relentityid,relaudit,recorder,recstatus,newload,editload,checkload,copyload,servicesjson,relfieldid,relfieldname,inputmethod,entityname_lang,funcbtnlanguage";
             return GetDatasByVersion("crm_sys_entity", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
