@@ -96,9 +96,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var commonData = GetCommonCacheData(usernumber);
             //获取个人用户数据
             UserData userData = GetUserData(usernumber);
-
+            string _RoutePath = RoutePath;
             //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
-            if (commonData.TotalFunctions.Exists(a => a.EntityId == entityId && a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath) && a.DeviceType == (int)DeviceClassic))
+            if (commonData.TotalFunctions.Exists(a => a.EntityId == entityId && a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(_RoutePath) && a.DeviceType == (int)DeviceClassic))
             {
                 if (!userData.HasFunction(RoutePath, entityId, DeviceClassic))
                 {
@@ -182,7 +182,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     
                     tran.Rollback();
                     Logger.Error(ex, "数据库执行出错");
-                    return ShowError<object>(ex.Message);
+                    if (ex.InnerException != null)
+                    {
+                        return ShowError<object>(ex.InnerException.Message);
+                    }
+                    else {
+                        return ShowError<object>(ex.Message);
+                    }
                 }
                 finally
                 {
