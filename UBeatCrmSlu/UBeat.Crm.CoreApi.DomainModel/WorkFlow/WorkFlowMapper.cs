@@ -225,7 +225,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public Guid EntityId { get; set; }
         public int SkipFlag { get; set; }
         public Dictionary<string, string> FlowName_Lang { get; set; }
-        protected override IValidator GetValidator()
+		public Dictionary<string, object> Config { get; set; }
+		protected override IValidator GetValidator()
         {
             return new WorkFlowAddMapperValidator();
         }
@@ -243,7 +244,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
             RuleFor(d => d.Remark).NotNull().WithMessage("备注不能为空");
             RuleFor(d => d.EntityId).NotNull().WithMessage("实体ID不能为空");
             RuleFor(d => d.SkipFlag).NotNull().WithMessage("跳过标志不能为空");
-        }
+			RuleFor(d => d.Config).NotNull().WithMessage("入口标志不能为空");
+		}
     }
 
     public class WorkFlowUpdateMapper : BaseEntity
@@ -256,7 +258,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public string Remark { get; set; }
         public int SkipFlag { get; set; }
         public Dictionary<string,string> FlowName_Lang { get; set; }
-        protected override IValidator GetValidator()
+		public Dictionary<string, object> Config { get; set; }
+		protected override IValidator GetValidator()
         {
             return new WorkFlowUpdateMapperValidator();
         }
@@ -273,7 +276,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
             RuleFor(d => d.ExpireDay).NotNull().GreaterThanOrEqualTo(0).WithMessage("过期天数不能为空");
             RuleFor(d => d.Remark).NotNull().WithMessage("备注不能为空");
             RuleFor(d => d.SkipFlag).NotNull().WithMessage("跳过标志不能为空");
-        }
+			RuleFor(d => d.Config).NotNull().WithMessage("入口标志不能为空");
+		}
     }
 
 

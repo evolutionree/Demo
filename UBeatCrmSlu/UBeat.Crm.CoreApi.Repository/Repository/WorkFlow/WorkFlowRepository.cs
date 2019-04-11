@@ -452,7 +452,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         public OperateResult AddFlow(WorkFlowAddMapper flowMapper, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_workflow_add(@entityId,@flowName,@flowType,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb)
+                SELECT * FROM crm_func_workflow_add(@entityId,@flowName,@flowType,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb, @config::jsonb)
             ";
 
             var param = new
@@ -466,8 +466,9 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
-                FlowLanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang)
-            };
+                FlowLanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang),
+				Config = JsonConvert.SerializeObject(flowMapper.Config)
+			};
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -475,7 +476,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         public OperateResult UpdateFlow(WorkFlowUpdateMapper flowMapper, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_workflow_update(@flowId,@flowName,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb)
+                SELECT * FROM crm_func_workflow_update(@flowId,@flowName,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb, @config::jsonb)
             ";
 
             var param = new
@@ -488,8 +489,9 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 Remark = flowMapper.Remark,
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
-                flowlanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang)
-            };
+                flowlanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang),
+				Config = JsonConvert.SerializeObject(flowMapper.Config)
+			};
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
