@@ -340,6 +340,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             //打印响应数据
             WriteResponseLog(context);
 
+            if (_baseServices != null)
+            {
+                foreach (var service in _baseServices)
+                {
+                    service.ClearThreadParam();
+                }
+
+            }
             base.OnActionExecuted(context);
         }
 

@@ -30,9 +30,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
 
-
+            string _RoutePath = RoutePath;
             //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
-            if (commonData.TotalFunctions.Exists(a => a.EntityId == entityid && a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath)))
+            if (commonData.TotalFunctions.Exists(a => a.EntityId == entityid && a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(_RoutePath)))
             {
                 if (!userData.HasFunction(RoutePath, entityid, DeviceClassic))
                 {
@@ -84,9 +84,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //获取个人用户数据
             UserData userData = GetUserData(usernumber);
 
-
+            string _RoutePath = RoutePath;
             //判断该接口是否有职能控制，只控制有职能控制的接口，其他接口不处理功能权限判断
-            if (commonData.TotalFunctions.Exists(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(RoutePath)))
+            if (commonData.TotalFunctions.Exists(a => a.RoutePath != null && a.RoutePath.Trim().Trim('/').Equals(_RoutePath)))
             {
                 if (!userData.HasFunction(RoutePath, Guid.Empty, DeviceClassic))
                 {

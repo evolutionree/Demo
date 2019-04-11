@@ -25,6 +25,7 @@ using UBeat.Crm.CoreApi.DomainModel.Role;
 using UBeat.Crm.CoreApi.Repository.Repository.Dynamics;
 using UBeat.Crm.CoreApi.Repository.Repository.Notify;
 using UBeat.Crm.CoreApi.DomainModel.Message;
+using System.Collections;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -40,12 +41,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public UKServiceContext UKServiceContext { get; set; }
         public AnalyseHeader header { get; set; }
 
-        public List<ActionExtModel> PreActionExtModelList { get; set; }
-        public List<ActionExtModel> FinishActionExtModelList { get; set; }
+        private Hashtable _PreActionExtModelList = new Hashtable();
+        public List<ActionExtModel> PreActionExtModelList {
+            get {
+                int threadid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                if (_PreActionExtModelList.ContainsKey(threadid)) return (List<ActionExtModel>)_PreActionExtModelList[threadid];
+                throw (new Exception("网络异常Code=200001"));
+            }
+            set
+            {
+                int threadid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                _PreActionExtModelList[threadid] = value;
+            }
+        }
+        private Hashtable _FinishActionExtModelList = new Hashtable();
+        public List<ActionExtModel> FinishActionExtModelList {
+            get
+            {
+                int threadid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                if (_FinishActionExtModelList.ContainsKey(threadid)) return (List<ActionExtModel>)_FinishActionExtModelList[threadid];
+                throw (new Exception("网络异常Code=200001"));
+            }
+            set
+            {
+                int threadid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                _FinishActionExtModelList[threadid] = value;
+            }
+        }
+
+        private Hashtable _RoutePath = new Hashtable();
         /// <summary>
         /// 请求api的路由路径,前后去掉'/'的字符串，如：api/customer/add
         /// </summary>
-        public string RoutePath { set; get; }
+        public string RoutePath {
+            get
+            {
+                int threadid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                if (_RoutePath.ContainsKey(threadid)) return (string)_RoutePath[threadid];
+                throw (new Exception("网络异常Code=200001"));
+            }
+            set
+            {
+                int threadid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                _RoutePath[threadid] = value;
+            }
+        }
+        public void ClearThreadParam()
+        {
+            int threadid = System.Threading.Thread.CurrentThread.ManagedThreadId;
+            if (_RoutePath != null && _RoutePath.ContainsKey(threadid)) _RoutePath.Remove(threadid);
+            if (_FinishActionExtModelList != null && _FinishActionExtModelList.ContainsKey(threadid)) _FinishActionExtModelList.Remove(threadid);
+            if (_PreActionExtModelList != null && _PreActionExtModelList.ContainsKey(threadid)) _PreActionExtModelList.Remove(threadid);
+        }
 
         /// <summary>
         /// 设备类型：0=WEB，1=IOS，2=Android
