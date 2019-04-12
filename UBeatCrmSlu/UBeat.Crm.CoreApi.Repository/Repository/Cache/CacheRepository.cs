@@ -336,5 +336,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Cache
             //_helper.Dispose();
             //instance = null;
         }
+
+        public Dictionary<string, T>  GetAllWebLoginSession<T>()
+        {
+            return _helper.GetAllWebLoginSession<T>();
+        }
+
+        public Dictionary<string, T> GetAllMobileLoginSession<T>()
+        {
+            return _helper.GetAllMobileLoginSession<T>();
+        }
     }
 }

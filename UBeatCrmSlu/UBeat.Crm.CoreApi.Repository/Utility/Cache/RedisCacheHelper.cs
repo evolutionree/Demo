@@ -531,5 +531,45 @@ namespace UBeat.Crm.CoreApi.Repository.Utility.Cache
 
             GC.SuppressFinalize(this);
         }
+
+        public Dictionary<string, T> GetAllWebLoginSession<T>()
+        {
+            Dictionary<string, T> list = new Dictionary<string, T>();
+            string keys = GetKeyForRedis("WebLoginSession_*");
+            string orgkeys = GetKeyForRedis("WebLoginSession_");
+            IEnumerable<RedisKey> keyIterator = Connection.GetServer(Connection.GetEndPoints().First()).Keys(_database, pattern: keys);
+            foreach (RedisKey key in keyIterator)
+            {
+                var value = GetDatabase().StringGet(key);
+
+                if (value.HasValue)
+                {
+                    string tmpkey = key.ToString();
+                    tmpkey = tmpkey.Replace(orgkeys, "");
+                    list.Add(tmpkey, JsonConvert.DeserializeObject<T>(value));
+                }
+            }
+            return list;
+        }
+
+        public Dictionary<string,T> GetAllMobileLoginSession<T>()
+        {
+            Dictionary<string,T> list = new Dictionary<string, T>();
+            string keys = GetKeyForRedis("MobileLoginSession_*");
+            string orgkeys = GetKeyForRedis("MobileLoginSession_");
+            IEnumerable<RedisKey> keyIterator = Connection.GetServer(Connection.GetEndPoints().First()).Keys(_database, pattern: keys);
+            foreach (RedisKey key in keyIterator)
+            {
+                var value = GetDatabase().StringGet(key);
+
+                if (value.HasValue)
+                {
+                    string tmpkey = key.ToString();
+                    tmpkey = tmpkey.Replace(orgkeys, "");
+                    list.Add(tmpkey,JsonConvert.DeserializeObject<T>(value));
+                }
+            }
+            return list;
+        }
     }
 }

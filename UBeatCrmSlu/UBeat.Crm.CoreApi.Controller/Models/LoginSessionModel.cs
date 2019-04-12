@@ -31,6 +31,9 @@ namespace UBeat.Crm.CoreApi.Models
     public class TokenInfo
     {
         public string Token { set; get; }
+        public string DeviceId { get; set; }
+        public string DeviceType { get; set; }
+        public string SysMark { get; set; }
 
         public DateTime Expiration { set; get; }
         /// <summary>
@@ -38,11 +41,15 @@ namespace UBeat.Crm.CoreApi.Models
         /// </summary>
         public long RequestTimeStamp { set; get; }
 
-        public TokenInfo(string token,DateTime expiration, long requestTimeStamp)
+        public TokenInfo(string token,DateTime expiration, long requestTimeStamp,
+            string deviceid = null ,string devicetype = null ,string sysMark = null)
         {
             Token = token;
             Expiration = expiration;
             RequestTimeStamp = requestTimeStamp;
+            DeviceId = deviceid;
+            DeviceType = devicetype;
+            SysMark = sysMark;
         }
     }
 }

@@ -107,7 +107,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (isMobile)
             {
 
-                SetLoginSession(MobileLoginSessionKey, token, header.DeviceId, expiration - DateTime.UtcNow, requestTimeStamp, false);
+                SetLoginSession(MobileLoginSessionKey, token, header.DeviceId, expiration - DateTime.UtcNow, requestTimeStamp, header.SysMark,header.Device,false);
 
                 //Cache.Remove(userInfo.UserId.ToString());
                 //CacheService.Repository.Add($"MOBILE_{userInfo.UserId.ToString()}", $"Bearer {token}_{header.DeviceId}", expiration - DateTime.UtcNow);
@@ -129,7 +129,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                     webexpiration = new TimeSpan(0, 0, seconds);
                 }
 
-                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration, requestTimeStamp, true);
+                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration, requestTimeStamp, header.SysMark, header.Device, true);
                 //CacheService.Repository.Add($"WEB_{userInfo.UserId.ToString()}", $"Bearer {token}", expiration - DateTime.UtcNow);
             }
             #region 检查是否符合账号安全限制(包含两部分1、账号是否被设定了下次登陆必须修改密码，2、密码是否已经过期或者临近过期)
@@ -258,12 +258,16 @@ namespace UBeat.Crm.CoreApi.Controllers
             return true;
         }
 
-        private void SetLoginSession(string sessionKey, string token, string deviceId, TimeSpan expiration, long requestTimeStamp, bool isMultipleLogin = true)
+        private void SetLoginSession(string sessionKey, string token, string deviceId, TimeSpan expiration, long requestTimeStamp, 
+                            string SysMark ,string DeviceType,
+                            bool isMultipleLogin = true)
         {
             LoginSessionModel loginSession = null;
             try
             {
                 loginSession = CacheService.Repository.Get<LoginSessionModel>(sessionKey);
+                if (loginSession != null) ClearExpiredSession(loginSession); //清除已经过期的session
+
             }
             catch { }
             bool isExist = loginSession == null;
@@ -282,9 +286,9 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             if (loginSession.Sessions.ContainsKey(deviceId))
             {
-                loginSession.Sessions[deviceId] = new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp);
+                loginSession.Sessions[deviceId] = new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp, deviceId, DeviceType, SysMark);
             }
-            else loginSession.Sessions.Add(deviceId, new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp));
+            else loginSession.Sessions.Add(deviceId, new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp,deviceId,DeviceType,SysMark));
 
             if (isExist)
                 CacheService.Repository.Replace(sessionKey, loginSession, expiration);
@@ -308,18 +312,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (isMobile)
             {
                 var loginSession = CacheService.Repository.Get<LoginSessionModel>(MobileLoginSessionKey);
-
+                ClearExpiredSession(loginSession);//清除已经过期的session
                 if (loginSession != null && loginSession.Sessions.ContainsKey(loginOutModel.DeviceId))
                 {
                     loginSession.Sessions.Remove(loginOutModel.DeviceId);
                     CacheService.Repository.Replace(MobileLoginSessionKey, loginSession, loginSession.Expiration);
                 }
-
-                //$"{requestToken}_{header.DeviceId}"
-                //if (CacheService.Repository.Get($"MOBILE_{UserId.ToString()}").Equals($"{requestToken}_{header.DeviceId}"))
-                //{
-                //    CacheService.Repository.Remove($"MOBILE_{UserId.ToString()}");
-                //}
             }
             else
             {
@@ -333,21 +331,13 @@ namespace UBeat.Crm.CoreApi.Controllers
                         //如果web没有传deviceid字段，则取token作为设备id
                         deviceId = requestToken;
                     }
-
-
-
                     var loginSession = CacheService.Repository.Get<LoginSessionModel>(WebLoginSessionKey);
-
+                    ClearExpiredSession(loginSession);//清除已经过期的session
                     if (loginSession != null && loginSession.Sessions.ContainsKey(deviceId))
                     {
                         loginSession.Sessions.Remove(deviceId);
                         CacheService.Repository.Replace(WebLoginSessionKey, loginSession, loginSession.Expiration);
                     }
-
-                    //if (CacheService.Repository.Get($"MOBILE_{UserId.ToString()}").Equals($"{requestToken}_{header.DeviceId}"))
-                    //{
-                    //    CacheService.Repository.Remove($"WEB_{UserId.ToString()}");
-                    //}
                 }
             }
             var response = new
@@ -355,6 +345,19 @@ namespace UBeat.Crm.CoreApi.Controllers
                 value = result
             };
             return new OutputResult<object>(response);
+        }
+        /// <summary>
+        /// 清除已经过期的数据
+        /// </summary>
+        /// <param name="sessions"></param>
+        private void ClearExpiredSession(LoginSessionModel sessions ) {
+            List<string> ExpiredSession = new List<string>();
+            foreach (string key in sessions.Sessions.Keys) {
+                if (sessions.Sessions[key].Expiration < System.DateTime.Now) ExpiredSession.Add(key);
+            }
+            foreach (string key in ExpiredSession) {
+                sessions.Sessions.Remove(key);
+            }
         }
 
         [HttpPost]
@@ -659,7 +662,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                     webexpiration = new TimeSpan(0, 0, seconds);
                 }
 
-                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration,0, true);
+                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration,0, header.SysMark, header.Device, true);
                 //CacheService.Repository.Add($"WEB_{userInfo.UserId.ToString()}", $"Bearer {token}", expiration - DateTime.UtcNow);
             }
             //result

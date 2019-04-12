@@ -217,5 +217,12 @@ namespace UBeat.Crm.CoreApi.IRepository
         #endregion
 
         void Dispose();
+
+        #region  获取所有的WEB登陆的设备列表
+        Dictionary<string, T> GetAllWebLoginSession<T>();
+        #endregion 
+        #region  获取所有的Mobile登陆的设备列表
+        Dictionary<string, T> GetAllMobileLoginSession<T>();
+        #endregion 
     }
 }
