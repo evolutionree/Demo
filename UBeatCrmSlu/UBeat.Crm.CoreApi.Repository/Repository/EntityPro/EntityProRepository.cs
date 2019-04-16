@@ -83,6 +83,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("userno", userNumber);
             param.Add("entitylanguage", JsonConvert.SerializeObject(entity.EntityName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+			if (result.Flag == 1)
+			{
+				sql = @"
+                Update crm_sys_entity Set servicesjson=@servicesjson::jsonb Where entityid=@entityid::uuid;
+            ";
+				var args = new DynamicParameters();
+				args.Add("@entityid", entity.EntityId);
+				args.Add("@servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
+
+				result.Flag = DataBaseHelper.ExecuteNonQuery(sql, args);
+			}
+
             return result;
         }
 
@@ -135,7 +147,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("userno", userNumber);
             param.Add("entitylanguage", JsonConvert.SerializeObject(entity.EntityName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
-            return result;
+			if (result.Flag == 1)
+			{
+				sql = @"
+                Update crm_sys_entity Set servicesjson=(@servicesjson::jsonb) Where entityid=@entityid::uuid;
+            ";
+				var args = new DynamicParameters(); 
+				args.Add("@entityid", entity.EntityId);
+				args.Add("@servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
+				 
+				result.Flag = DataBaseHelper.ExecuteNonQuery(sql, args);
+			}
+			return result;
         }
 
 		public List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber)

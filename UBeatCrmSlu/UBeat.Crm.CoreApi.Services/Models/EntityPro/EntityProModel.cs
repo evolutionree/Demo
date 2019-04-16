@@ -58,7 +58,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public Guid RelFieldId { get; set; }
 
         public Dictionary<string,string> EntityName_Lang { get; set; }
-    }
+
+		public Dictionary<string, string> ServicesJson { get; set; }
+	}
 
 
     public class EntityFieldProModel

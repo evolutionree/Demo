@@ -61,8 +61,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public Guid RelFieldId { get; set; }
 
         public Dictionary<string,string> EntityName_Lang { get; set; }
+		public Dictionary<string, string> ServicesJson { get; set; }
 
-        protected override IValidator GetValidator()
+		protected override IValidator GetValidator()
         {
             return new EntityProSaveMapperValidator();
         }
