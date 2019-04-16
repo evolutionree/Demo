@@ -593,7 +593,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetWorkflowListByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "flowid,flowtype,backflag,resetflag,flowname,entityid,vernum,recorder,recstatus,flowname_lang";
+            var selectFields = "flowid,flowtype,backflag,resetflag,flowname,entityid,vernum,recorder,recstatus,flowname_lang, config";
             return GetDatasByVersion("crm_sys_workflow", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
