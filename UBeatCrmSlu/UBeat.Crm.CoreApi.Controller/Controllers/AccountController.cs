@@ -312,7 +312,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (isMobile)
             {
                 var loginSession = CacheService.Repository.Get<LoginSessionModel>(MobileLoginSessionKey);
-                ClearExpiredSession(loginSession);//清除已经过期的session
+                if (loginSession != null) ClearExpiredSession(loginSession);//清除已经过期的session
                 if (loginSession != null && loginSession.Sessions.ContainsKey(loginOutModel.DeviceId))
                 {
                     loginSession.Sessions.Remove(loginOutModel.DeviceId);
@@ -332,7 +332,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                         deviceId = requestToken;
                     }
                     var loginSession = CacheService.Repository.Get<LoginSessionModel>(WebLoginSessionKey);
-                    ClearExpiredSession(loginSession);//清除已经过期的session
+                    if(loginSession != null) ClearExpiredSession(loginSession);//清除已经过期的session
                     if (loginSession != null && loginSession.Sessions.ContainsKey(deviceId))
                     {
                         loginSession.Sessions.Remove(deviceId);
