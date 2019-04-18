@@ -20,7 +20,6 @@ namespace UBeat.Crm.CoreApi.DevAssist.Controllers
             this._accountServices = accountServices;
 
         }
-        [AllowAnonymous]
         [UKWebApiAttribute("获取用户的登陆", Description = "获取所有用户的登陆情况")]
         [HttpPost("listalluser")]
         public OutputResult<object> ListAllUsers()
@@ -50,6 +49,7 @@ namespace UBeat.Crm.CoreApi.DevAssist.Controllers
                         item["sysmark"] = ((LoginSessionModel)mobileLogin[user["userid"].ToString()]).Sessions[key].SysMark;
                         item["expiration"] = ((LoginSessionModel)mobileLogin[user["userid"].ToString()]).Sessions[key].Expiration;
                         item["requesttimestamp"] = ((LoginSessionModel)mobileLogin[user["userid"].ToString()]).Sessions[key].RequestTimeStamp;
+                        item["lastrequesttimestamp"] = ((LoginSessionModel)mobileLogin[user["userid"].ToString()]).Sessions[key].LastRequestTime;
                         ((List<Dictionary<string, object>>)newUserInfo["sessions"]).Add(item);
                     }
                     
@@ -70,6 +70,7 @@ namespace UBeat.Crm.CoreApi.DevAssist.Controllers
                         item["sysmark"] = ((LoginSessionModel)webLogin[user["userid"].ToString()]).Sessions[key].SysMark;
                         item["expiration"] = ((LoginSessionModel)webLogin[user["userid"].ToString()]).Sessions[key].Expiration;
                         item["requesttimestamp"] = ((LoginSessionModel)webLogin[user["userid"].ToString()]).Sessions[key].RequestTimeStamp;
+                        item["lastrequesttimestamp"] = ((LoginSessionModel)webLogin[user["userid"].ToString()]).Sessions[key].LastRequestTime;
                         ((List<Dictionary<string, object>>)newUserInfo["sessions"]).Add(item);
                     }
 
@@ -86,5 +87,47 @@ namespace UBeat.Crm.CoreApi.DevAssist.Controllers
             }
             return new OutputResult<object>(retUserList);
         }
+
+        [UKWebApiAttribute("获取某个用户的登录信息", Description = "获取某个用户的登录信息")]
+        [HttpPost("userlogininfo")]
+        public OutputResult<object> ListLoginUserInfo([FromBody]UserLoginParamInfo userInfo = null)
+        {
+            if (userInfo == null || userInfo.UserId <= 0) {
+                return ResponseError<object>("参数异常");
+            }
+            var loginSession_web = CacheService.Repository.Get<LoginSessionModel>("WebLoginSession_" + userInfo.UserId);
+            var loginSession_mobile = CacheService.Repository.Get<LoginSessionModel>("MobileLoginSession_" + userInfo.UserId);
+            List<Dictionary<string, object>> retList = new List<Dictionary<string, object>>();
+            if (loginSession_web != null) {
+                foreach (var tokenInfo in loginSession_web.Sessions.Values) {
+                    Dictionary<string, object> item = new Dictionary<string, object>();
+                    item["deviceid"] = tokenInfo.DeviceId;
+                    item["devicetype"] = tokenInfo.DeviceType;
+                    item["sysmark"] = tokenInfo.SysMark;
+                    item["expiration"] = tokenInfo.Expiration;
+                    item["requesttimestamp"] = tokenInfo.RequestTimeStamp;
+                    item["lastrequesttimestamp"] = tokenInfo.LastRequestTime;
+                    retList.Add(item);
+                }
+            }
+            if (loginSession_mobile != null)
+            {
+                foreach (var tokenInfo in loginSession_mobile.Sessions.Values)
+                {
+                    Dictionary<string, object> item = new Dictionary<string, object>();
+                    item["deviceid"] = tokenInfo.DeviceId;
+                    item["devicetype"] = tokenInfo.DeviceType;
+                    item["sysmark"] = tokenInfo.SysMark;
+                    item["expiration"] = tokenInfo.Expiration;
+                    item["requesttimestamp"] = tokenInfo.RequestTimeStamp;
+                    item["lastrequesttimestamp"] = tokenInfo.LastRequestTime;
+                    retList.Add(item);
+                }
+            }
+            return new OutputResult<object>(retList);
+        }
+    }
+    public class UserLoginParamInfo {
+        public int UserId { get; set; }
     }
 }

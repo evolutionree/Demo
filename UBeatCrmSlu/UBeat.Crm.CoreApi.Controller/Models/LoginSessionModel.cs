@@ -36,6 +36,7 @@ namespace UBeat.Crm.CoreApi.Models
         public string SysMark { get; set; }
 
         public DateTime Expiration { set; get; }
+        public DateTime LastRequestTime { get; set; }
         /// <summary>
         /// 记录本次登录的时间戳
         /// </summary>

@@ -425,6 +425,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                             return;
                         //时间超过一分钟才更新缓存，否则不更新缓存
                         loginSession.Sessions[deviceId].Expiration = DateTime.UtcNow + loginSession.Expiration;
+                        loginSession.Sessions[deviceId].LastRequestTime = DateTime.UtcNow;
                         CacheService.Repository.Replace(sessionKey, loginSession, loginSession.Expiration);
                     }
 
@@ -438,6 +439,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                             return;
                         //时间超过一分钟才更新缓存，否则不更新缓存
                         loginSession.Sessions[deviceId].Expiration = DateTime.UtcNow + loginSession.Expiration;
+                        loginSession.Sessions[deviceId].LastRequestTime = DateTime.UtcNow;
                         CacheService.Repository.Replace(sessionKey, loginSession, loginSession.Expiration);
                     }
                     return;
