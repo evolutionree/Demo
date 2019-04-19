@@ -1483,7 +1483,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             if (modeltypeobj != null && int.TryParse(modeltypeobj.ToString(), out modeltype))
             {
                 int relmodeltype = -1;
-                if (modeltype == 2 && (relmodeltypeobj == null || (int.TryParse(relmodeltypeobj.ToString(), out relmodeltype) && relmodeltype != 0)))
+				//现在的版本也开放独立实体可以编辑
+                if ((modeltype == 0 || modeltype == 2) && (relmodeltypeobj == null || (int.TryParse(relmodeltypeobj.ToString(), out relmodeltype) && relmodeltype != 0)))
                 {
                     return true;
                 }
