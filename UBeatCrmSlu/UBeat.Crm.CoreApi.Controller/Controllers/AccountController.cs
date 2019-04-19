@@ -720,8 +720,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>("参数异常或者未提供参数");
             }
             string requestAuthorization = HttpContext.Request.Headers["Authorization"];
-            this._accountServices.ForUserLogout(paramList, requestAuthorization,UserId);
-            return new OutputResult<object>("完成");
+            int totalCount = this._accountServices.ForUserLogout(paramList, requestAuthorization,UserId);
+            return new OutputResult<object>("共注销"+ totalCount.ToString() +"个登录");
         }
         [HttpPost("passwordvalid")]
         public OutputResult<object> PasswordValid([FromBody] List<int> UserList) {

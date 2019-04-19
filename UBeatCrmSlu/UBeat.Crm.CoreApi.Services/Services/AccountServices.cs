@@ -634,22 +634,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="userId">被操作的用户id</param>
         /// <param name="thisSession">需要排除的authorizedcode</param>
         /// <param name="operatorUserId">操作者id</param>
-        public void ForceLogoutButThis(int userId, string thisSession, string logoutSession, ForceUserLogoutTypeEnum forcetype, int operatorUserId) {
-            //   throw (new NotImplementedException());
+        public int ForceLogoutButThis(int userId, string thisSession, string deviceid, ForceUserLogoutTypeEnum forcetype, int operatorUserId) {
+            int logoutSessionCount = 0;
             if (thisSession != null && thisSession.StartsWith("Bearer ")) {
                 thisSession = thisSession.Substring("Bearer ".Length);
-            }
-            if (logoutSession != null && logoutSession.StartsWith("Bearer "))
-            {
-                logoutSession = logoutSession.Substring("Bearer ".Length);
             }
             LoginSessionModel_ForInner loginSession = CacheService.Repository.Get<LoginSessionModel_ForInner>(MobileLoginSessionKey(userId));
             if (loginSession != null && (forcetype == ForceUserLogoutTypeEnum.All || forcetype == ForceUserLogoutTypeEnum.AllMobile || forcetype == ForceUserLogoutTypeEnum.SpecialDevice)) {
                 List<string> removeKeys = new List<string>();
                 foreach (string key in loginSession.Sessions.Keys) {
                     TokenInfo_ForInner tokenInfo = loginSession.Sessions[key];
-                    if (tokenInfo.Token.Equals(thisSession) == false && (logoutSession == null || logoutSession.Length == 0 || logoutSession.Equals(tokenInfo.Token))) {
+                    if (tokenInfo.Token.Equals(thisSession)) continue;
+                    if (forcetype == ForceUserLogoutTypeEnum.All
+                        || forcetype == ForceUserLogoutTypeEnum.AllMobile)
+                    {
                         removeKeys.Add(key);
+                        logoutSessionCount++;
+                    }
+                    else if (forcetype == ForceUserLogoutTypeEnum.SpecialDevice && (deviceid == null || (deviceid != null && deviceid.Equals(tokenInfo.DeviceId)))) {
+                        removeKeys.Add(key);
+                        logoutSessionCount++;
                     }
                 }
                 foreach (string key in removeKeys) {
@@ -685,9 +689,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 foreach (string key in loginSession.Sessions.Keys)
                 {
                     TokenInfo_ForInner tokenInfo = loginSession.Sessions[key];
-                    if (tokenInfo.Token.Equals(thisSession) == false && (logoutSession == null || logoutSession.Length == 0 || logoutSession.Equals(tokenInfo.Token)))
+                    if (tokenInfo.Token.Equals(thisSession)) continue;
+                    if (forcetype == ForceUserLogoutTypeEnum.All
+                        || forcetype == ForceUserLogoutTypeEnum.AllWeb)
                     {
                         removeKeys.Add(key);
+                        logoutSessionCount++;
+                    }
+                    else if (forcetype == ForceUserLogoutTypeEnum.SpecialDevice && (deviceid == null || (deviceid != null && deviceid.Equals(tokenInfo.DeviceId))))
+                    {
+                        removeKeys.Add(key);
+                        logoutSessionCount++;
                     }
                 }
                 foreach (string key in removeKeys)
@@ -719,6 +731,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     CacheService.Repository.Replace(WebLoginSessionKey(userId), loginSession);
                 }
             }
+            return logoutSessionCount;
         }
 
         public void SetPasswordInvalid(List<int> userList, int userId)
@@ -728,20 +741,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             
         }
 
-        public void ForUserLogout(List<ForceUserLogoutParamInfo> paramList,string thisSession, int userId)
+        public int  ForUserLogout(List<ForceUserLogoutParamInfo> paramList,string thisSession, int userId)
         {
+            int totalCount = 0;
             foreach (ForceUserLogoutParamInfo item in paramList) {
                 switch (item.ForceType) {
                     case ForceUserLogoutTypeEnum.All:
                     case ForceUserLogoutTypeEnum.AllMobile:
                     case ForceUserLogoutTypeEnum.AllWeb:
-                        ForceLogoutButThis(item.UserId, thisSession, null, item.ForceType, userId);
+                        totalCount = totalCount + ForceLogoutButThis(item.UserId, thisSession, null, item.ForceType, userId);
                         break;
                     case ForceUserLogoutTypeEnum.SpecialDevice:
-                        ForceLogoutButThis(item.UserId, thisSession, item.DeviceId, item.ForceType, userId);
+                        totalCount = totalCount + ForceLogoutButThis(item.UserId, thisSession, item.DeviceId, item.ForceType, userId);
                         break;
                 }
             }
+            return totalCount;
         }
         public bool CheckAuthorizedCodeValid(int UserId, string authorizedCode) {
             if (authorizedCode == null) authorizedCode = "";
@@ -795,8 +810,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
     public class TokenInfo_ForInner
     {
         public string Token { set; get; }
+        public string DeviceId { get; set; }
+        public string DeviceType { get; set; }
+        public string SysMark { get; set; }
 
         public DateTime Expiration { set; get; }
+        public DateTime LastRequestTime { get; set; }
         /// <summary>
         /// 记录本次登录的时间戳
         /// </summary>
