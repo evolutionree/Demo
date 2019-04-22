@@ -52,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<ActionExtModel> CheckActionExt(string routePath, int operatetype)
         {
             var resutl = new List<ActionExtModel>();
-             var extData = _cacheService.Repository.Get(CacheKeyManager.ActionExtDataKey) as List<ActionExtModel>;
+            var extData = _cacheService.Repository.Get<List<ActionExtModel>>(CacheKeyManager.ActionExtDataKey);
             if (extData == null)
             {
                 extData = GetActionExtData();
