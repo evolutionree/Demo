@@ -134,7 +134,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return this._qrtzRepository.TriggerDetail(triggerInfo.RecId, userid, null);
 
         }
-        public void TestForCallService(Dictionary<string,object> paramInfo ) {
+
+		public TriggerDefineInfo StopTrigger(Guid recid, int userid, string userName)
+		{
+			if (recid == null || recid.Equals(Guid.Empty)) throw (new Exception("参数异常")); 
+			TriggerDefineInfo triggerInfo = this._qrtzRepository.TriggerDetail(recid, userid, null);
+			if (triggerInfo == null) throw (new Exception("无法找到事务定义"));
+			if (triggerInfo.InBusy != 1) throw (new Exception("事务必须是运行中才能终止实例"));
+			triggerInfo.InBusy = 0;//0空闲 1运行中
+			this._qrtzRepository.UpdateTrigger(triggerInfo, userid, null);
+
+			TriggerInstanceInfo instanceInfo = new TriggerInstanceInfo();
+			instanceInfo.BeginTime = DateTime.Now;
+			instanceInfo.RecId = Guid.NewGuid();
+			instanceInfo.Status = TriggerInstanceStatusEnum.Completed;
+			instanceInfo.RunServer = System.Net.Dns.GetHostName();
+			instanceInfo.TriggerId = triggerInfo.RecId;
+			instanceInfo.ErrorMsg = string.Format(@"【{0}】用户终止了实例", userName);
+			this._qrtzRepository.AddTriggerInstance(instanceInfo, userid, null); 
+
+			return this._qrtzRepository.TriggerDetail(triggerInfo.RecId, userid, null); 
+		}
+
+		public void TestForCallService(Dictionary<string,object> paramInfo ) {
             Console.WriteLine("Test For Call Service :" + DateTime.Now.ToString());
         }
         /// <summary>

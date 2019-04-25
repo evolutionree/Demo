@@ -22,8 +22,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// 根据查询条件返回后台事务
         /// </summary>
         /// <returns></returns>
-        [HttpPost("listtrigger")]
-        [AllowAnonymous]
+        [HttpPost("listtrigger")] 
         public OutputResult<object> ListTriggers([FromBody] ListTriggerParamInfo paramInfo ) {
             if (paramInfo == null) return ResponseError<object>("参数异常");
             try
@@ -41,8 +40,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             return null;
         }
-        [HttpPost("add")]
-        [AllowAnonymous]
+        [HttpPost("add")] 
         public OutputResult<object> AddTrigger([FromBody] TriggerDefineInfo triggerInfo) {
             if (triggerInfo == null) return ResponseError<object>("参数异常");
             if (triggerInfo.RecId != null && triggerInfo.RecId.Equals(Guid.Empty) == false) {
@@ -57,8 +55,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return new OutputResult<object>(null, ex.Message, -1);
             }
         }
-        [HttpPost("detail")]
-        [AllowAnonymous]
+        [HttpPost("detail")] 
         public OutputResult<object> DetailTrigger([FromBody]TriggerDetailParamInfo paramInfo ) {
 
             if (paramInfo == null) return ResponseError<object>("参数异常");
@@ -74,8 +71,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             return null;
         }
-        [HttpPost("update")]
-        [AllowAnonymous]
+        [HttpPost("update")] 
         public OutputResult<object> UpdateTrigger([FromBody] TriggerDefineInfo triggerInfo) {
             if (triggerInfo == null )return ResponseError<object>("参数异常");
             if (triggerInfo.RecId == null || triggerInfo.RecId.Equals(Guid.Empty)) {
@@ -90,8 +86,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
-        [HttpPost("status")]
-        [AllowAnonymous]
+        [HttpPost("status")] 
         public OutputResult<object> UpdateTriggerStatus([FromBody] UpdateTriggerStatuParamInfo paramInfo) {
             if (paramInfo == null) {
                 return ResponseError<object>("参数异常");
@@ -111,8 +106,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
-        [HttpPost("instances")]
-        [AllowAnonymous]
+        [HttpPost("instances")] 
         public OutputResult<object> ListInstances([FromBody] ListInstanceParamInfo paramInfo) {
             if (paramInfo == null)
             {
@@ -136,7 +130,29 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
-    }
+
+		[HttpPost("stopinstance")] 
+		public OutputResult<object> StopTriggerStatus([FromBody] StopTriggerStatuParamInfo paramInfo)
+		{
+			if (paramInfo == null)
+			{
+				return ResponseError<object>("参数异常");
+			}
+			if (paramInfo.RecId == null || paramInfo.RecId.Equals(Guid.Empty))
+			{
+				return ResponseError<object>("参数异常(RecId)");
+			} 
+			try
+			{ 
+				TriggerDefineInfo triggerInfo = this._qrtzServices.StopTrigger(paramInfo.RecId, UserId, LoginUser.UserName);
+				return new OutputResult<object>(triggerInfo);
+			}
+			catch (Exception ex)
+			{
+				return ResponseError<object>(ex.Message);
+			}
+		}
+	}
     public class TriggerDetailParamInfo {
         public Guid RecId { get; set; }
     }
@@ -160,4 +176,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         public int PageSize { get; set; }
         public int IsLoadArchived { get; set; }
     }
+
+	public class StopTriggerStatuParamInfo
+	{
+		public Guid RecId { get; set; } 
+	}
 }
