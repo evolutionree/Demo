@@ -62,71 +62,90 @@ namespace UBeat.Crm.CoreApi.Services.webchat
         }
         public  void WaitAndSendResponse() {
             while (true) {
-                WebResponsePackage pkg = null;
                 try
                 {
-                    pkg = queue.Dequeue();
-                }
-                catch (Exception ex) {
+                    WebResponsePackage pkg = null;
+                    try
+                    {
+                        pkg = queue.Dequeue();
+                    }
+                    catch (Exception ex)
+                    {
 
-                }
-                if (pkg == null) {
-                    _wh.WaitOne(10 * 1000);//最多等待10秒钟
-                    continue;
-                }
-                List<WebSocket> sockets = new List<WebSocket>();
-                if (pkg.WebSock != null)
-                {
-                    sockets.Add(pkg.WebSock);
-                }
-                else {
-                    sockets = WebSockChatSocketManager.getInstance().getSocketsByUserId(pkg.ReceiverId);
-                }
-                List<Task> ts = new List<Task>();
-                foreach (WebSocket socket in sockets)
-                {
-                    if (pkg.MessageType == WebChatMsgType.ChatMessage) {
-                        pkg.ChatMsg.MessageType = WebChatMsgType.ChatMessage;
-                        //需要处理文件的情况
-                        if (pkg.ChatMsg.CustomContent != null && pkg.ChatMsg.CustomContent.ContainsKey("ct") && pkg.ChatMsg.CustomContent["ct"]!= null)
-                        {
-                            int ct = 0;
-                            ct = int.Parse(pkg.ChatMsg.CustomContent["ct"].ToString());
-                            if (ct == 5) //文件才处理
-                            {
-                                try
-                                {
-
-                                    FileInfoModel fileInfo = _fileService.GetOneFileInfo(null, pkg.ChatMsg.CustomContent["ct"].ToString());
-                                    if (fileInfo != null) {
-                                        pkg.ChatMsg.CustomContent.Add("file", fileInfo);
-                                    }
-                                }
-                                catch (Exception ex) {
-                                }
-                            }
-                        }
-                        Task task = SendStringAsync(socket, pkg.ChatMsg);
-                        if (task != null)
-                            ts.Add(task);
+                    }
+                    if (pkg == null)
+                    {
+                        _wh.WaitOne(10 * 1000);//最多等待10秒钟
+                        continue;
+                    }
+                    List<WebSocket> sockets = new List<WebSocket>();
+                    if (pkg.WebSock != null)
+                    {
+                        sockets.Add(pkg.WebSock);
                     }
                     else
                     {
-                        pkg.CmdMsg.MessageType = WebChatMsgType.Command;
-                        Task task = SendStringAsync(socket, pkg.CmdMsg);
-                        if (task != null)
-                            ts.Add(task);
+                        sockets = WebSockChatSocketManager.getInstance().getSocketsByUserId(pkg.ReceiverId);
                     }
-                   
+                    List<Task> ts = new List<Task>();
+                    foreach (WebSocket socket in sockets)
+                    {
+                        if (pkg.MessageType == WebChatMsgType.ChatMessage)
+                        {
+                            pkg.ChatMsg.MessageType = WebChatMsgType.ChatMessage;
+                            //需要处理文件的情况
+                            if (pkg.ChatMsg.CustomContent != null && pkg.ChatMsg.CustomContent.ContainsKey("ct") && pkg.ChatMsg.CustomContent["ct"] != null)
+                            {
+                                int ct = 0;
+                                ct = int.Parse(pkg.ChatMsg.CustomContent["ct"].ToString());
+                                if (ct == 5) //文件才处理
+                                {
+                                    try
+                                    {
+
+                                        FileInfoModel fileInfo = _fileService.GetOneFileInfo(null, pkg.ChatMsg.CustomContent["ct"].ToString());
+                                        if (fileInfo != null)
+                                        {
+                                            pkg.ChatMsg.CustomContent.Add("file", fileInfo);
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                    }
+                                }
+                            }
+                            Task task = SendStringAsync(socket, pkg.ChatMsg);
+                            if (task != null)
+                                ts.Add(task);
+                        }
+                        else
+                        {
+                            pkg.CmdMsg.MessageType = WebChatMsgType.Command;
+                            Task task = SendStringAsync(socket, pkg.CmdMsg);
+                            if (task != null)
+                                ts.Add(task);
+                        }
+
+                    }
+                    foreach (Task t in ts)
+                    {
+                        try
+                        {
+                            t.Wait(1000);
+                        }
+                        catch (Exception ex) { }
+                    }
                 }
-                foreach (Task t in ts) {
+                catch (Exception ex) {
                     try
                     {
-                        t.Wait(1000);
+                        System.Threading.Thread.Sleep(1000 * 10);
                     }
-                    catch (Exception ex) { } 
-                }
+                    catch (Exception ex2) {
 
+                    }
+                }
+                
             }
         }
         private  Task SendStringAsync(System.Net.WebSockets.WebSocket socket, object data, CancellationToken ct = default(CancellationToken))
