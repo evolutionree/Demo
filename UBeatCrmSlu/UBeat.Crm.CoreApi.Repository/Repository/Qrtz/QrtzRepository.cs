@@ -30,7 +30,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Qrtz
             try
             {
                 string strSQL = @"insert into crm_sys_qrtz_triggerdefine(recid,recname,recstatus,triggertime,actiontype,actioncmd,actionparameters,singlerun)
-select recid,recname,0,triggertime,actiontype,actioncmd,actionparameters,singlerun,reclanguage
+select recid,recname,0,triggertime,actiontype,actioncmd,actionparameters,singlerun,reclanguage, triggertype, triggerchildtype
 from jsonb_populate_recordset(null::crm_sys_qrtz_triggerdefine,@qrtzdata)";
                 List<TriggerDefineInfo> l = new List<TriggerDefineInfo>();
                 l.Add(triggerInfo);
@@ -158,11 +158,11 @@ from jsonb_populate_recordset(null::crm_sys_qrtz_triggerinstance,@qrtzinstance)"
                 string strSQL = @"update crm_sys_qrtz_triggerdefine as a 
 set (recname,recstatus,triggertime,actiontype,actioncmd,actionparameters,
 singlerun,remark,inbusy,runningserver,startruntime,
-endruntime,errorcount,lasterrortime,reclanguage)
+endruntime,errorcount,lasterrortime,reclanguage, triggertype, triggerchildtype)
 =(
 select recname,recstatus,triggertime,actiontype,actioncmd,actionparameters,
 singlerun,remark,inbusy,runningserver,startruntime,
-endruntime,errorcount,lasterrortime,reclanguage
+endruntime,errorcount,lasterrortime,reclanguage, triggertype, triggerchildtype
 from jsonb_populate_recordset(null::crm_sys_qrtz_triggerdefine,@qrtzdefines)
 where recid = @recid)
 where recid = @recid ";
