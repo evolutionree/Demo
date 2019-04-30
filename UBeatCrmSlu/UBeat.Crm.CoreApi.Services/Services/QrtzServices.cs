@@ -106,15 +106,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="triggerDefineInfo"></param>
         /// <param name="userid"></param>
         public TriggerDefineInfo AddTriggerDefineInfo(TriggerDefineInfo triggerDefineInfo, int userid) {
-            if (triggerDefineInfo == null) throw(new Exception("参数异常"));
-            triggerDefineInfo.RecId = Guid.NewGuid();
+            if (triggerDefineInfo == null) throw(new Exception("参数异常")); 
+			triggerDefineInfo.RecId = Guid.NewGuid();
             this._qrtzRepository.AddTrigger(triggerDefineInfo, userid, null);
             return this._qrtzRepository.TriggerDetail(triggerDefineInfo.RecId, userid, null);
         }
 
         public PageDataInfo<TriggerInstanceInfo> ListInstances(Guid triggerId, DateTime searchFrom, DateTime searchTo, bool listArchived, int pageIndex, int pageSize, int userId)
         {
-            return this._qrtzRepository.ListTriggerInstances(triggerId, "", searchFrom, searchTo, listArchived, pageIndex, pageSize, userId, null);
+			TriggerDefineInfo triggerInfo = this._qrtzRepository.TriggerDetail(triggerId, userId, null);
+			if (triggerInfo.TriggerType == TriggerType.TriggerType_System)
+				throw (new Exception("不支持系统事务类型操作（triggertype）"));
+
+			return this._qrtzRepository.ListTriggerInstances(triggerId, "", searchFrom, searchTo, listArchived, pageIndex, pageSize, userId, null);
 
         }
 
@@ -129,7 +133,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (status != 1 && status != 2 && status != 0) throw (new Exception("参数异常"));
             TriggerDefineInfo triggerInfo = this._qrtzRepository.TriggerDetail(recid, userid, null);
             if (triggerInfo == null) throw (new Exception("无法找到事务定义"));
-            triggerInfo.RecStatus = status;
+			if (triggerInfo.TriggerType == TriggerType.TriggerType_System)
+				throw (new Exception("不支持系统事务类型操作（triggertype）"));
+			triggerInfo.RecStatus = status;
             this._qrtzRepository.UpdateTrigger(triggerInfo, userid, null);
             return this._qrtzRepository.TriggerDetail(triggerInfo.RecId, userid, null);
 
@@ -141,6 +147,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			TriggerDefineInfo triggerInfo = this._qrtzRepository.TriggerDetail(recid, userid, null);
 			if (triggerInfo == null) throw (new Exception("无法找到事务定义"));
 			if (triggerInfo.InBusy != 1) throw (new Exception("事务必须是运行中才能终止实例"));
+			if (triggerInfo.TriggerType == TriggerType.TriggerType_System)
+				throw (new Exception("不支持系统事务类型操作（triggertype）"));
 			triggerInfo.InBusy = 0;//0空闲 1运行中
 			this._qrtzRepository.UpdateTrigger(triggerInfo, userid, null);
 
