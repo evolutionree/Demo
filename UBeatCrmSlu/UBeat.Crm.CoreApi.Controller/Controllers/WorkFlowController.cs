@@ -29,8 +29,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (detailModel == null) return ResponseError<object>("参数格式错误");
             return _workFlowServices.CaseDetail(detailModel, UserId);
         }
-
-
+		 
         /// <summary>
         /// 发起审批接口
         /// </summary>
@@ -56,9 +55,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (caseModel == null) return ResponseError<object>("参数格式错误");
             return _workFlowServices.PreAddWorkflowCase(caseModel, LoginUser);
         }
-
-
-        
+		 
         //获取下一个节点，以及节点选人数据
         [HttpPost]
         [Route("getnextnode")]
@@ -86,8 +83,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             WriteOperateLog("提交流程审批", caseItemModel);
             return _workFlowServices.SubmitWorkFlowAudit(caseItemModel, LoginUser);
         }
-
-
+		 
         //选人之后，提交审批明细数据
         [HttpPost]
         [Route("caseitemlist")]
@@ -104,8 +100,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (nodeLineModel == null) return ResponseError<object>("参数格式错误");
             return _workFlowServices.NodeLineInfo(nodeLineModel, UserId);
         }
-
-        //
+		 
         [HttpPost]
         [Route("getnodelinesinfo")]
         public OutputResult<object> GetNodeLinesInfo([FromBody] WorkFlowNodeLinesInfoModel nodeLineModel = null)
@@ -113,9 +108,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (nodeLineModel == null) return ResponseError<object>("参数格式错误");
             return _workFlowServices.GetNodeLinesInfo(nodeLineModel, UserId);
         }
-
-        
-
+		 
         [HttpPost]
         [Route("savenodesconfig")]
         public OutputResult<object> SaveNodeLinesConfig([FromBody] WorkFlowNodeLinesConfigModel configModel = null)
@@ -141,8 +134,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             WriteOperateLog("修改自由流程配置", configModel);
             return _workFlowServices.GetFreeFlowNodeEvents(configModel, UserId);
         }
-
-
+		 
         [HttpPost]
         [Route("flowlist")]
         public OutputResult<object> FlowList([FromBody] WorkFlowListModel listModel = null)
@@ -193,8 +185,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _workFlowServices.UnDeleteFlow(flowModel, UserId);
 
         }
-
-
+		 
         ///// <summary>
         ///// 发起多个审批
         ///// </summary>
@@ -281,7 +272,19 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
-        #endregion 
-    }
+		#endregion
+
+		#region 流程超期检查：审批设置了超时自动中止之后，系统根据设置的超时时间自动中止审批
+		[HttpPost]
+		[Route("autostopworkflow")]
+		public OutputResult<object> AutoStopWorkflow()
+		{ 
+			var res = true;
+			_workFlowServices.AutoTerminateWorkflowCases();
+
+			return new OutputResult<object>(res);
+		}
+		#endregion
+	}
 }
  

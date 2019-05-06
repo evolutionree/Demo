@@ -37,8 +37,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             catch (Exception ex) {
                 return ResponseError<object>(ex.Message);
-            }
-            return null;
+            } 
         }
         [HttpPost("add")] 
         public OutputResult<object> AddTrigger([FromBody] TriggerDefineInfo triggerInfo) {
@@ -46,7 +45,9 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (triggerInfo.RecId != null && triggerInfo.RecId.Equals(Guid.Empty) == false) {
                 return ResponseError<object>("参数异常(RecId)");
             }
-            try
+			if (triggerInfo.TriggerType == TriggerType.TriggerType_System)
+				return ResponseError<object>("不支持新增系统事务类型（triggertype）");
+			try
             {
                 TriggerDefineInfo newTriggerInfo = this._qrtzServices.AddTriggerDefineInfo(triggerInfo, UserId);
                 return new OutputResult<object>(newTriggerInfo);
@@ -63,7 +64,9 @@ namespace UBeat.Crm.CoreApi.Controllers
             try
             {
                 TriggerDefineInfo triggerInfo = this._qrtzServices.TriggerDetail(paramInfo.RecId, UserId);
-                return new OutputResult<object>(triggerInfo);
+				if (triggerInfo.TriggerType == TriggerType.TriggerType_System)
+					return ResponseError<object>("不支持编辑系统事务类型（triggertype）");
+				return new OutputResult<object>(triggerInfo);
             }
             catch (Exception ex)
             {
@@ -77,7 +80,9 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (triggerInfo.RecId == null || triggerInfo.RecId.Equals(Guid.Empty)) {
                 return ResponseError<object>("参数异常(recid)");
             }
-            try
+			if (triggerInfo.TriggerType == TriggerType.TriggerType_System)
+				return ResponseError<object>("不支持编辑系统事务类型（triggertype）");
+			try
             {
                 TriggerDefineInfo newTrigger = this._qrtzServices.UpdateTriggerBaseInfo(triggerInfo, UserId);
                 return new OutputResult<object>(newTrigger);
@@ -96,8 +101,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
             if (paramInfo.Status != 0 && paramInfo.Status != 1 && paramInfo.Status != 2) {
                 return ResponseError<object>("参数异常(status)");
-            }
-            try
+            } 
+			try
             {
                 TriggerDefineInfo triggerInfo = this._qrtzServices.ForbitTrigger(paramInfo.RecId, paramInfo.Status, UserId);
                 return new OutputResult<object>(triggerInfo);
@@ -115,8 +120,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (paramInfo.TriggerId == null || paramInfo.TriggerId.Equals(Guid.Empty))
             {
                 return ResponseError<object>("参数异常(TriggerId)");
-            }
-            try
+            } 
+			try
             {
                 if (paramInfo.PageIndex < 1) paramInfo.PageIndex = 1;
                 if (paramInfo.PageSize <= 0) paramInfo.PageSize = 10;

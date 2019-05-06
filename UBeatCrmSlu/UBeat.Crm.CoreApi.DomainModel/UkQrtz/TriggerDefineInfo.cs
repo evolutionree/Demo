@@ -55,9 +55,31 @@ namespace UBeat.Crm.CoreApi.DomainModel.UkQrtz
         public int ErrorCount { get; set; }
         [JsonProperty("reclanguage")]
         public string RecLanguage { get; set; }
-    }
+		 
+		[JsonProperty("triggertype")]
+		public TriggerType TriggerType { get; set; }
+		[JsonProperty("triggerchildtype")]
+		public TriggerChildType TriggerChildType { get; set; }
+
+	}
     public enum TriggerActionType {
         ActionType_Service = 1,
         ActionType_DbFunc = 2
     }
+
+	//通用/系统
+	public enum TriggerType
+	{
+		TriggerType_Common = 0,
+		TriggerType_System = 1, 
+	}
+
+	//通用/回收/提醒/工作流超时
+	public enum TriggerChildType
+	{
+		TriggerType_Common = 0,
+		TriggerType_Recover = 1,
+		TriggerType_Reminder = 2,
+		TriggerType_Flow = 3,
+	}
 }
