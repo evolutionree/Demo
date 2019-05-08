@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 {
@@ -278,11 +279,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     public class DynamicProtocolDataSource
     {
+        [JsonProperty("type")]
         /// <summary>
         /// 数据源类型
         /// </summary>
         public string Type { get; set; }
-
+        [JsonProperty("sourceId")]
         /// <summary>
         /// 参数KEY,本地数据源是字典表的类型ID,在线是数据源的UUID
         /// </summary>
@@ -306,10 +308,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     public class DynamicProtocolFieldConfig
     {
+        [JsonProperty("dataSource")]
         /// <summary>
         /// 数据源
         /// </summary>
-        public DynamicProtocolDataSource DataSource { get; set; }
+        public  DynamicProtocolDataSource DataSource { get; set; }
+        
         /// <summary>
         /// 数据最短长度
         /// </summary>
@@ -322,18 +326,22 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 正则验证
         /// </summary>
         public string ValidRegex { get; set; }
+
+        [JsonProperty("isReadOnly")]
         /// <summary>
         /// 是否只读
         /// </summary>
-        public bool IsReadOnly { get; set; }
+        public int IsReadOnly { get; set; }
+        [JsonProperty("isRequired")]
         /// <summary>
         /// 是否必填
         /// </summary>
-        public bool IsRequired { get; set; }
+        public int IsRequired { get; set; }
+        [JsonProperty("isVisible")]
         /// <summary>
         /// 是否可见
         /// </summary>
-        public bool IsVisible { get; set; }
+        public int IsVisible { get; set; }
         /// <summary>
         /// 默认值
         /// </summary>
@@ -342,11 +350,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 嵌套表格字段时记录嵌套实体的id
         /// </summary>
         public Guid EntityId { get; set; }
-
+        [JsonProperty("multiple")]
         /// <summary>
         /// 是否多选，只有数据源有效
         /// </summary>
-        public int Multiple { get; set; }
+        public int Multiple { get; set;}
+
+        [JsonProperty("style")]
+        public int Stype { get; set; }
     }
 
     public class DynamicProtocolValidResult

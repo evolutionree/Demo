@@ -1175,7 +1175,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 if (item.ContainsKey("entityid") && item["entityid"] != null)
                                 {
                                     config.DataSource.EntityId = Guid.Parse(item["entityid"].ToString());
-                                    field.FieldConfig = Newtonsoft.Json.JsonConvert.SerializeObject(config);
+                                    field.FieldConfig = JsonConvert.SerializeObject(config);
                                 }
                             }
                         }
