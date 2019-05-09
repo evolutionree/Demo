@@ -2050,10 +2050,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             //if (isAdvanceQuery || isColumnFilter)
             //{
-                if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
-                {
-                    WhereSQL = " e.recstatus = 1   " + dynamicEntity.SearchQuery;
-                }
+            if (dynamicEntity.SearchQuery != null && dynamicEntity.SearchQuery.Length > 0)
+            {
+                WhereSQL = " e.recstatus = 1   " + dynamicEntity.SearchQuery;
+            }
+            else {
+
+                WhereSQL = " e.recstatus = 1   ";
+            }
             //}
             //else
             //    WhereSQL = " e.recstatus = 1   ";
