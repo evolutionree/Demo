@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 
 namespace UBeat.Crm.CoreApi.Services.Models.Account
 {
@@ -202,5 +203,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
     {
         public string AccessToken { get; set; }
         public string Md5 { get; set; }
+    }
+    public class LinceseImportParamInfo
+    {
+        public IFormFile Data { set; get; }
+        public int IsImport { get; set; }
     }
 }

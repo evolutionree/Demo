@@ -15,6 +15,10 @@ using UBeat.Crm.CoreApi.Core.Utility;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.IO;
+using UBeat.Crm.LicenseCore;
+using MessagePack;
+using MessagePack.Resolvers;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -545,7 +549,52 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return _accountServices.AuthLicenseInfo();
         }
-        [HttpPost]
+        [HttpPost("updatelicense")]
+        [UKWebApi("更新许可文件",Description ="更新许可文件的接口")]
+        public OutputResult<object> UploadLicenseFile([FromBody] LinceseImportParamInfo paramInfo = null) {
+            if (paramInfo == null) return new OutputResult<object>("参数异常");
+            try
+            {
+                StreamReader sr = new StreamReader(paramInfo.Data.OpenReadStream());
+                string encryptData = sr.ReadLine();
+                sr.Close();
+                string jsonLicense = RSAEncrypt.RSADecryptStr(encryptData);
+                var bytes = MessagePackSerializer.FromJson(jsonLicense);
+                LicenseConfig tmpConfig = MessagePackSerializer.Deserialize<LicenseConfig>(bytes, ContractlessStandardResolver.Instance);
+                if (tmpConfig == null) throw (new Exception("解析文件异常"));
+                if (paramInfo.IsImport == 1) {
+                    //需要保存，则需要先把原来的备份
+
+                    string tmpFileName = System.DateTime.Now.Ticks.ToString();
+                    string path = Directory.GetCurrentDirectory();
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        throw new Exception("应用主程序目录不存在");
+                    }
+                    path = path + "//encryptdata.dat";
+                    FileInfo fs = new FileInfo(path);
+                    if (fs.Exists) {
+                        fs.MoveTo(path + "." + tmpFileName);
+                    }
+                    FileStream fout = new FileStream(path,FileMode.OpenOrCreate);
+                    StreamWriter wr = new StreamWriter(fout);
+                    wr.Write(encryptData);
+                    wr.Close();
+                    fout.Close();
+                    LicenseInstance.Instance = tmpConfig;
+
+                }
+                return _accountServices.AuthLicenseInfo(tmpConfig);
+            }
+            catch (Exception ex) {
+                return ResponseError<object>(ex.Message);
+            }
+
+        }
+        [HttpPost("importlicense")]
+        public OutputResult<object> ImportLicenseFile() {
+            return null;
+        }
         [Route("requireToken")]
         public OutputResult<object> requireAuthToken([FromBody] AuthTokenRequireModel requireModel)
         {

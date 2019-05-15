@@ -545,16 +545,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return new OutputResult<object>(LicenseInstance.Instance.Company);
         }
-        public OutputResult<object> AuthLicenseInfo()
+        public OutputResult<object> AuthLicenseInfo(LicenseConfig config = null)
         {
             //添加license
+            if (config == null) config = LicenseInstance.Instance;
             IDictionary<string, object> dic = new Dictionary<string, object>();
-            dic.Add("company", LicenseInstance.Instance.Company);
-            dic.Add("endtime", LicenseInstance.Instance.EndTime);
-            dic.Add("totaluser", LicenseInstance.Instance.LimitPersonNum);
+            dic.Add("company", config.Company);
+            dic.Add("endtime", config.EndTime);
+            dic.Add("totaluser", config.LimitPersonNum);
             var userCount = _accountRepository.GetLicenseUserCount();
             dic.Add("usercount", userCount);
-            dic.Add("allowregcount", LicenseInstance.Instance.LimitPersonNum - userCount);
+            dic.Add("allowregcount", config.LimitPersonNum - userCount);
             return new OutputResult<object>(dic);
         }
 
