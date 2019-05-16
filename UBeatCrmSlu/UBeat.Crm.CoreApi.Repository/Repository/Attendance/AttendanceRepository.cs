@@ -17,7 +17,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Attendance
         public OperateResult Sign(AttendanceSignMapper signEntity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_attendance_add(@signimg,@locations,@signtype,@signmark,@signTime,@userNo)
+                SELECT * FROM crm_func_attendance_add(@signimg,@locations,@signtype,@signmark,@signTime,@cardtype,@userNo)
             ";
 
             //pwd salt security
@@ -29,7 +29,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Attendance
                 SignType = signEntity.SignType,
                 SignMark = signEntity.SignMark,
                 SignTime = signEntity.SignTime,
-                UserNo = userNumber
+                UserNo = userNumber,
+                CardType = signEntity.CardType
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;

@@ -16,7 +16,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
-    public class ActionExtServices 
+    public class ActionExtServices
     {
         IActionExtRepository _repository;
 
@@ -39,7 +39,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<ActionExtModel> GetActionExtData()
         {
             var extData = _repository.GetActionExtData();
-            _cacheService.Repository.Add(CacheKeyManager.ActionExtDataKey, extData, CacheKeyManager.ActionExtDataExpires);
+            _cacheService.Repository.Add(CacheKeyManager.ActionExtDataKey, extData);
             return extData;
         }
 
@@ -57,7 +57,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 extData = GetActionExtData();
             }
-
             if (extData != null)
             {
                 resutl = extData.Where(m => routePath == m.routepath && m.operatetype == operatetype).ToList();
@@ -65,13 +64,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return resutl;
         }
 
-        public OutputResult<object> ExcutePreAction( DbTransaction transaction, object basicParamData, UserData userData, ActionExtModel actionExtModel)
+        public OutputResult<object> ExcutePreAction(DbTransaction transaction, object basicParamData, UserData userData, ActionExtModel actionExtModel)
         {
 
             //数据库函数方式实现
             if (actionExtModel.implementtype == 0)
             {
-                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData,null,null, userData.UserId);
+                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData, null, null, userData.UserId);
                 return new OutputResult<object>(result);
             }
             else
@@ -83,19 +82,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Type type = assembly.GetType(classTypeName);//用类型的命名空间和名称获得类型
                 Object obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
                 MethodInfo mi = type.GetMethod(mehtodName);//通过方法名称获得方法
-                var result = mi.Invoke(obj, new object[] {  transaction,basicParamData, userData.UserId });//根据参数直线方法,返回值就是原方法的返回值
+                var result = mi.Invoke(obj, new object[] { transaction, basicParamData, userData.UserId });//根据参数直线方法,返回值就是原方法的返回值
                 return new OutputResult<object>(result);
             }
 
 
         }
 
-        public OutputResult<object> ExcuteFinishAction( DbTransaction transaction, object basicParamData, object preActionResult, object actionResult, UserData userData, ActionExtModel actionExtModel)
+        public OutputResult<object> ExcuteFinishAction(DbTransaction transaction, object basicParamData, object preActionResult, object actionResult, UserData userData, ActionExtModel actionExtModel)
         {
             //数据库函数方式实现
             if (actionExtModel.implementtype == 0)
             {
-                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData,preActionResult,actionResult, userData.UserId);
+                var result = _repository.ExcuteActionExt(transaction, actionExtModel.funcname, basicParamData, preActionResult, actionResult, userData.UserId);
                 return new OutputResult<object>(result);
             }
             else
@@ -107,7 +106,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Type type = assembly.GetType(classTypeName);//用类型的命名空间和名称获得类型
                 Object obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
                 MethodInfo mi = type.GetMethod(mehtodName);//通过方法名称获得方法
-                var result = mi.Invoke(obj, new object[] {  transaction, basicParamData, preActionResult, actionResult, userData.UserId });//根据参数直线方法,返回值就是原方法的返回值
+                var result = mi.Invoke(obj, new object[] { transaction, basicParamData, preActionResult, actionResult, userData.UserId });//根据参数直线方法,返回值就是原方法的返回值
                 return new OutputResult<object>(result);
             }
         }
