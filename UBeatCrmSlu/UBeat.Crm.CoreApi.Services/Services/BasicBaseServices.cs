@@ -72,7 +72,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return commonData.TotalFunctions;
         }
 
-        protected OutputResult<object> ExcuteAction<T>(Func<DbTransaction, T, UserData, OutputResult<object>> func, T arg, int usernumber, string connectString = null)
+        protected OutputResult<object> ExcuteAction<T>(Func<DbTransaction, T, UserData, OutputResult<object>> func, T arg, int usernumber, string connectString = null, IsolationLevel isolationLevel = IsolationLevel.ReadUncommitted)
         {
             OutputResult<object> outResult = null;
             object preActionResult = null;

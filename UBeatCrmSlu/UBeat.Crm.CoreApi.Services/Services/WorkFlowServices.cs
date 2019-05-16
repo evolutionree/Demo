@@ -1303,11 +1303,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
 						nodetemp.NodeState = 0;
 						users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
 					}
-					result = new NextNodeDataModel()
+                    var cpUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, nodetemp.NodeId.GetValueOrDefault(), userinfo.UserId, workflowInfo.FlowType, tran);
+                    if (cpUsers == null || cpUsers.Count == 0 && nodetemp.NodeState == 0)//没有满足下一步审批人条件的选人列表,则获取与自由流程一样返回全公司人员
+                    {
+                        nodetemp.NodeState = 0;
+                        cpUsers = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
+                    }
+
+                    result = new NextNodeDataModel()
 					{
 						NodeInfo = nodetemp,
-						Approvers = users
-					};
+                        Approvers = users,
+                        CPUsers = cpUsers
+
+                    };
 				}
 				else
 				{

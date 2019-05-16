@@ -587,6 +587,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
         }
+
+        public OutputResult<object> ChangeProductSet(DynamicEntityEditModel dynamicModel, int userNumber)
+        {
+            //验证通过后，插入数据
+            var result = _dynamicEntityServices.SimpleEdit(dynamicModel, userNumber);
+
+            return result;
+        }
     }
     /// <summary>
     /// 记录产品及产品系列的包

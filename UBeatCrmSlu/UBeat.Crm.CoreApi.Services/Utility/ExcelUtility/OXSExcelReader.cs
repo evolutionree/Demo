@@ -693,6 +693,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility.ExcelUtility
 
 
             //获取WorkbookPart中共享String数据
+            if (workBookPart.SharedStringTablePart == null)
+                throw new Exception("导入模板格式异常，请编辑模板数据");
+            if (workBookPart.SharedStringTablePart.SharedStringTable == null)
+                throw new Exception("导入模板格式异常，请编辑模板数据");
+
             SharedStringTable sharedTable = workBookPart.SharedStringTablePart.SharedStringTable;
 
             try

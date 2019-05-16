@@ -697,16 +697,6 @@ namespace UBeat.Crm.CoreApi.Controllers
                 return ResponseError<object>(ex.Message);
             }
         }
-        
-        [Route("sendtomule")]
-
-        #region 用于测试安居宝，过后会删除
-        public OutputResult<object> SendToMule([FromBody] MuleSendParamInfo paramInfo)
-        {
-            return this._dynamicEntityServices.SendToMule(paramInfo, UserId);
-
-        } 
-        #endregion
     }
     
 }

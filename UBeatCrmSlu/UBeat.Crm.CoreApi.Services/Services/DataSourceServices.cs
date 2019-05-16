@@ -200,7 +200,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 entity.DicTypeId = dicId;
                 var recOrder = dataSourceRepository.QueryRecOrder();
                 entity.RecOrder = recOrder;
-                if (!dataSourceRepository.HasDicTypeName(entity.DicTypeName))
+                if (!dataSourceRepository.HasDicTypeName(entity.DicTypeName_Lang["cn"]))
                     return new OutputResult<object>(null, "类型名称已存在", 1);
                 string DicTypeName = "";
                 MultiLanguageUtils.GetDefaultLanguageValue(entity.DicTypeName, entity.DicTypeName_Lang, out DicTypeName);

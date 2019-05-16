@@ -315,14 +315,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         public Dictionary<string, List<IDictionary<string, object>>> PageVisible(DynamicPageVisibleMapper visibleMapper, int userNumber)
         {
             var procName =
-          "SELECT crm_func_entity_page_check_visible(@entityid,@pageCode,@pageType,@recid,@userNo)";
+          "SELECT crm_func_entity_page_check_visible(@entityid,@pageCode,@pageType,@recid::text,@userNo)";
+
 
             var param = new
             {
                 EntityId = visibleMapper.EntityId,
                 PageCode = visibleMapper.PageCode,
                 PageType = visibleMapper.PageType,
-                RecId = visibleMapper.RecId,
+                RecId = visibleMapper.RecId.ToString(),
                 UserNo = userNumber
             };
 

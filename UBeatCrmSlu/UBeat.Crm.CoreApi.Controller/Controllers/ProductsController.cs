@@ -137,6 +137,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             return res;
         }
 
+        [HttpPost]
+        [Route("changeproductset")]
+        public OutputResult<object> ChangeProductSet([FromBody] DynamicEntityEditModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            var res = _service.ChangeProductSet(dynamicModel, UserId);
+            return res;
+        }
 
         /// <summary>
         /// 删除产品

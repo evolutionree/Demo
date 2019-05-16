@@ -9,7 +9,9 @@ using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Text;
+using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.ReportRelation;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.DomainModel.WorkFlow;
 using UBeat.Crm.CoreApi.IRepository;
@@ -877,13 +879,13 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         cmdText += @"  AND ur.deptid =  (SELECT s.pdeptid FROM crm_sys_department AS s WHERE s.deptid = (
 															    SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid = @userno AND e.recstatus = 1 LIMIT 1
                                                                 )
-                                                            )";
+                                                            )   and u.isleader=@isleader ";
                         break;
                     case NodeStepType.ApproverPreDepatrment_Launcher://111:指定审批人所在团队-用户所在部门的上级部门-流程发起人,
                         cmdText += @"  AND ur.deptid =  (SELECT s.pdeptid FROM crm_sys_department AS s WHERE s.deptid = (
 															    SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid = @casecreator AND e.recstatus = 1 LIMIT 1
                                                                 )
-                                                            )";
+                                                            )   and u.isleader=@isleader ";
                         break;
 
 
@@ -900,7 +902,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 													                            ) as r WHERE r.userid!=''
                                                                    ) AND e.recstatus = 1 
                                                                 )
-                                                            )", fieldname, entityTableName);
+                                                            )   and u.isleader=@isleader ", fieldname, entityTableName);
                         }
                         break;
                     #endregion
@@ -1011,7 +1013,127 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         break;
                     #endregion
                     #endregion
+                    #region 14X 指定表单中的团队字段
+                    case NodeStepType.FormDeptGroup:
+                        string f1, e1;
+                        GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f1, out e1);
+                        if (GetRuleConfigInfo("entityid", flowNodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
+                        {
+                            cmdText += string.Format(@" AND u.userid in (
+                            SELECT u1.userid FROM (
+                            select * from crm_sys_account_userinfo_relate where deptid in (
+                            select deptid from crm_func_department_tree((select {0} from {1} where recid=@relrecid LIMIT 1),1)
+                            ) AND recstatus=1
+                            ) as tmp 
+                            LEFT JOIN crm_sys_userinfo u1 on u1.userid=tmp.userid 
+                            LEFT JOIN crm_sys_department d on tmp.deptid=d.deptid AND d.recstatus=1
+                            where u1.isleader=@isleader
+                            )", f1, e1);
+                        }
+                        else
+                        {
+                            cmdText += string.Format(@" AND u.userid in (
+                            SELECT u1.userid FROM (
+                            select * from crm_sys_account_userinfo_relate where deptid in (
+                            select deptid from crm_func_department_tree((select {0} from {1} where recid=@recid LIMIT 1),1)
+                            ) AND recstatus=1
+                            ) as tmp 
+                            LEFT JOIN crm_sys_userinfo u1 on u1.userid=tmp.userid 
+                            LEFT JOIN crm_sys_department d on tmp.deptid=d.deptid AND d.recstatus=1
+                            where u1.isleader=@isleader
+                            )", f1, e1);
+                        }
+                        break;
+                    #endregion
 
+
+                    #region 15X 汇报关系
+                    case NodeStepType.ReportRelation:
+                        JToken reportRelation = GetRuleConfigObject("reportrelation", flowNodeInfo);
+                        if (reportRelation != null)
+                        {
+                            Guid id = Guid.Parse(reportRelation["id"].ToString());
+                            int type = Convert.ToInt32(reportRelation["type"].ToString());
+                            var reportRelationRepository = ServiceLocator.Current.GetInstance<IReportRelationRepository>();
+                            QueryReportRelDetailMapper model = new QueryReportRelDetailMapper();
+                            switch (type)
+                            {
+                                case 0://流程发起人
+                                    var l1 = CaseItemList(caseInfo.CaseId, userNumber);
+                                    model = new QueryReportRelDetailMapper
+                                    {
+                                        ReportRelationId = id,
+                                        UserId = l1.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l1.FirstOrDefault()["handleuser"].ToString())
+                                    };
+                                    var d1 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
+                                    cmdText += @" AND u.userid in (" + d1.FirstOrDefault().ReportLeader + ")";
+                                    break;
+                                case 1://上一步骤处理人
+                                    var l2 = CaseItemList(caseInfo.CaseId, userNumber);
+                                    if (l2.Count == 0)
+                                    {
+                                        model = new QueryReportRelDetailMapper
+                                        {
+                                            ReportRelationId = id,
+                                            UserId = l2.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l2.FirstOrDefault()["handleuser"].ToString())
+                                        };
+                                    }
+                                    else
+                                    {
+                                        int index = l2.Count - 1;
+                                        string userid = string.Empty;
+                                        if (index > 0)
+                                        {
+                                            userid = l2[index]["handleuser"].ToString();
+                                            model = new QueryReportRelDetailMapper
+                                            {
+                                                ReportRelationId = id,
+                                                UserId = Convert.ToInt32(userid)
+                                            };
+                                            var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
+                                            cmdText += @" AND u.userid in (" + d2.FirstOrDefault().ReportLeader + ")";
+                                        }
+                                    }
+                                    break;
+                                case 2://表单中的人员
+                                    string f2, e2;
+                                    GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f2, out e2);
+                                    if (GetRuleConfigInfo("entityid", flowNodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
+                                    {
+                                        cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
+SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
+select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relrecid
+) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f2, e2);
+                                    }
+                                    else
+                                    {
+                                        cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
+SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
+select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relrecid
+) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f2, e2);
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        break;
+                    #endregion
+
+                    #region 指定函数
+                    case NodeStepType.Function:
+                        JToken funcname = GetRuleConfigObject("funcname", flowNodeInfo);
+                        param.Add(new NpgsqlParameter("ruleconfig", flowNodeInfo.RuleConfig) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
+                        param.Add(new NpgsqlParameter("userno", userNumber));
+                        param.Add(new NpgsqlParameter("recid", caseInfo.RecId));
+                        param.Add(new NpgsqlParameter("relrecid", caseInfo.RelRecId));
+                        param.Add(new NpgsqlParameter("isleader", GetRuleConfigInfo("isleader", flowNodeInfo) == null ? 0 : Convert.ToInt32(GetRuleConfigInfo("isleader", flowNodeInfo))));
+                        param.Add(new NpgsqlParameter("caseid", caseId));
+                        result = ExecuteQuery<ApproverInfo>("select * from " + funcname.ToString() + "(@caseid,@ruleconfig,@recid,@relrecid,@userno);", param.ToArray(), trans);
+                        return result;
+                        break;
+
+                    #endregion
 
                     default:
                         cmdText += " AND 1=2";
@@ -1020,7 +1142,9 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 param.Add(new NpgsqlParameter("ruleconfig", flowNodeInfo.RuleConfig) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
                 param.Add(new NpgsqlParameter("userno", userNumber));
                 param.Add(new NpgsqlParameter("recid", caseInfo.RecId));
+                param.Add(new NpgsqlParameter("relrecid", caseInfo.RelRecId));
                 param.Add(new NpgsqlParameter("caseid", caseId));
+                param.Add(new NpgsqlParameter("isleader", GetRuleConfigInfo("isleader", flowNodeInfo) == null ? 0 : Convert.ToInt32(GetRuleConfigInfo("isleader", flowNodeInfo))));
                 param.Add(new NpgsqlParameter("casecreator", caseInfo.RecCreator));
 
                 result = ExecuteQuery<ApproverInfo>(cmdText, param.ToArray(), trans);
@@ -1028,7 +1152,76 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             return result;
 
         }
+        public List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null)
+        {
+            string cmdText = null;
+            var result = new List<ApproverInfo>();
+            if (flowtype == WorkFlowType.FreeFlow)//自由流程
+            {
+                cmdText = @"SELECT u.userid,u.username,u.usericon,u.namepinyin,ur.deptid,d.deptname 
+                            FROM crm_sys_userinfo AS u
+			                LEFT JOIN crm_sys_account_userinfo_relate AS ur ON u.userid = ur.userid AND ur.recstatus = 1
+			                LEFT JOIN crm_sys_department AS d ON ur.deptid = d.deptid
+			                WHERE u.recstatus = 1";
 
+                result = ExecuteQuery<ApproverInfo>(cmdText, null, trans);
+
+            }
+            else
+            {
+                cmdText = @"SELECT u.userid,u.username,u.usericon,u.namepinyin,ur.deptid,d.deptname FROM crm_sys_userinfo AS u
+                           LEFT JOIN crm_sys_account_userinfo_relate AS ur ON u.userid = ur.userid AND ur.recstatus = 1
+                           LEFT JOIN crm_sys_department AS d ON ur.deptid = d.deptid
+                           WHERE u.recstatus = 1";
+
+
+                var caseInfo = GetWorkFlowCaseInfo(trans, caseId);
+                if (caseInfo == null)
+                    throw new Exception("未找到相关联的流程");
+                var flowNodeInfo = GetWorkFlowNodeInfo(trans, nodeid);
+                if (flowNodeInfo == null)
+                    throw new Exception("未找到相关联的流程节点");
+
+                List<DbParameter> param = new List<DbParameter>();
+
+                switch (flowNodeInfo.StepTypeId)
+                {
+                    case NodeStepType.SpecifyApprover:// 2:指定审批人, 
+                        cmdText += @" AND u.userid IN (
+													SELECT userid::INT from (
+																SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'cpuserid'), ',')) AS userid 
+													) as r WHERE r.userid!=''
+                                       )";
+                        break;
+                    #region 指定函数
+                    case NodeStepType.Function:
+                        JToken funcname = GetRuleConfigObject("funcname", flowNodeInfo);
+                        param.Add(new NpgsqlParameter("ruleconfig", flowNodeInfo.RuleConfig) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
+                        param.Add(new NpgsqlParameter("userno", userNumber));
+                        param.Add(new NpgsqlParameter("recid", caseInfo.RecId));
+                        param.Add(new NpgsqlParameter("relrecid", caseInfo.RelRecId));
+                        param.Add(new NpgsqlParameter("caseid", caseId));
+                        result = ExecuteQuery<ApproverInfo>("select * from " + funcname.ToString() + "(@caseid,@ruleconfig,@recid,@relrecid,@userno);", param.ToArray(), trans);
+                        return result;
+                        break;
+
+                    #endregion
+                    default:
+                        cmdText += " AND 1=2";
+                        break;
+                }
+                param.Add(new NpgsqlParameter("ruleconfig", flowNodeInfo.RuleConfig) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
+                param.Add(new NpgsqlParameter("userno", userNumber));
+                param.Add(new NpgsqlParameter("recid", caseInfo.RecId));
+                param.Add(new NpgsqlParameter("relrecid", caseInfo.RelRecId));
+                param.Add(new NpgsqlParameter("caseid", caseId));
+                param.Add(new NpgsqlParameter("casecreator", caseInfo.RecCreator));
+                param.Add(new NpgsqlParameter("isleader", GetRuleConfigInfo("isleader", flowNodeInfo) == null ? 0 : Convert.ToInt32(GetRuleConfigInfo("isleader", flowNodeInfo))));
+                result = ExecuteQuery<ApproverInfo>(cmdText, param.ToArray(), trans);
+            }
+            return result;
+
+        }
         private void GetEntityField(DbTransaction trans, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo flowNodeInfo, out string fieldname, out string entityTableName)
         {
             var ruleConfig = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
@@ -1041,6 +1234,29 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             entityTableName = entitytable == null ? null : entitytable.ToString();
             if (entityTableName == null)
                 throw new Exception("流程关联实体表不存在");
+        }
+        private void GetEntityFieldBasicRuleConfig(DbTransaction trans, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo flowNodeInfo, out string fieldname, out string entityTableName)
+        {
+            var ruleConfig = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
+            fieldname = ruleConfig["fieldname"] != null ? ruleConfig["fieldname"].ToString() : null;
+            string entityId = ruleConfig["entityid"] != null ? ruleConfig["entityid"].ToString() : null;
+            var entitySql = @"SELECT entitytable FROM crm_sys_entity WHERE entityid = @entityid LIMIT 1";
+            var entityparam = new DbParameter[] { new NpgsqlParameter("entityid", Guid.Parse(entityId)) };
+            object entitytable = ExecuteScalar(entitySql, entityparam, trans);
+
+            entityTableName = entitytable == null ? null : entitytable.ToString();
+            if (entityTableName == null)
+                throw new Exception("实体表不存在");
+        }
+        private string GetRuleConfigInfo(string key, WorkFlowNodeInfo flowNodeInfo)
+        {
+            var ruleConfig = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
+            return ruleConfig[key] != null ? ruleConfig[key].ToString() : null;
+        }
+        private JToken GetRuleConfigObject(string key, WorkFlowNodeInfo flowNodeInfo)
+        {
+            var ruleConfig = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
+            return ruleConfig[key] != null ? ruleConfig[key] : null;
         }
         #endregion
 

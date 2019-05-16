@@ -52,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
                         new NpgsqlParameter("typeid", typeid)
              };
             var templateResult = ExecuteQuery(template_sql, template_param).FirstOrDefault();
-           
+
             if (templateResult == null)
             {
                 throw new Exception("没有配置该实体的动态模板");
@@ -91,6 +91,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
                     var columnResult = executeSqlResult.FirstOrDefault().FirstOrDefault();
                     var columnnames = columnResult["columnnames"] == null ? null : columnResult["columnnames"].ToString();
                     var columnsql = columnResult["columnsql"] == null ? null : columnResult["columnsql"].ToString();
+                    if (entityID == new Guid("0b81d536-3817-4cbc-b882-bc3e935db845"))
+                    {
+                        if (!columnsql.Contains("reportdate_name"))
+                            columnsql += " ,reportdate::text as reportdate_name";
+                    }
+
                     if (!string.IsNullOrEmpty(columnnames))
                     {
                         var tableNameReuslt = executeSqlResult[1].FirstOrDefault();
@@ -172,12 +178,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
 
         }
 
-        
+
 
 
         #endregion
 
-        
+
 
         #region --动态详情--
 
@@ -302,7 +308,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
             };
             return ExecuteQuery<DynamicInfoExt>(sql, param).FirstOrDefault();
         }
-        public DynamicInfo GetDynamicInfoByBizId(DbTransaction tran , Guid entityid,Guid RecId,int userNo)
+        public DynamicInfo GetDynamicInfoByBizId(DbTransaction tran, Guid entityid, Guid RecId, int userNo)
         {
             var sql = string.Format(@"SELECT d.*,t.tempcontent::Jsonb ,e.entityname,ec.categoryname AS TypeName, re.entityname AS relentityname,u.usericon AS reccreatorUserIcon,u.username AS reccreatorname,
 				                                    array(
@@ -358,7 +364,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
             else
             {
                 //判断增量方向,如果版本号为小于等于0的数据，则获取最新N条数据
-                if (incrementPage.Direction != IncrementDirection.None&& incrementPage.RecVersion>0)
+                if (incrementPage.Direction != IncrementDirection.None && incrementPage.RecVersion > 0)
                 {
                     versionSql = string.Format(@" AND d.recversion{0}@recversion", incrementPage.Direction == IncrementDirection.Forward ? "<" : ">");
                     orderby = incrementPage.Direction == IncrementDirection.Forward ? "DESC" : "ASC";
@@ -485,10 +491,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
                                                 ORDER BY d.recversion DESC ", entityIdSql, businessIdSql, dynamictypeSql);
 
             dbParams.Add(new NpgsqlParameter("userid", userNumber));
-            var result= ExecuteQueryByPaging<DynamicInfoExt>(executeSql, dbParams.ToArray(), pageSize, pageIndex);
+            var result = ExecuteQueryByPaging<DynamicInfoExt>(executeSql, dbParams.ToArray(), pageSize, pageIndex);
             result.DataList = result.DataList.OrderByDescending(m => m.RecCreated).ToList();
             return result;
-        } 
+        }
         #endregion
 
 
@@ -754,20 +760,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
             return result > 0;
         }
 
-        public bool TransferEntityData(DbTransaction tran, string tableName, List<string> fieldNames, int newUserId, Guid RecId,int userId)
+        public bool TransferEntityData(DbTransaction tran, string tableName, List<string> fieldNames, int newUserId, Guid RecId, int userId)
         {
             try
             {
                 string setClau = "";
-                foreach (string fieldname in fieldNames) {
-                    setClau = "," + fieldname+  "= " + newUserId.ToString();
+                foreach (string fieldname in fieldNames)
+                {
+                    setClau = "," + fieldname + "= " + newUserId.ToString();
                 }
                 setClau = setClau.Substring(1);
                 string strSQL = "update " + tableName + " set " + setClau + "  where recid = @recid";
                 ExecuteNonQuery(strSQL, new DbParameter[] { new NpgsqlParameter("@recid", RecId) }, tran);
                 return true;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return false;
             }
         }
@@ -778,7 +786,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
                 string setClau = "";
                 foreach (string fieldname in fieldNames)
                 {
-                    setClau = "," + fieldname + "= '" + newUserIds+"'";
+                    setClau = "," + fieldname + "= '" + newUserIds + "'";
                 }
                 setClau = setClau.Substring(1);
                 string strSQL = "update " + tableName + " set " + setClau + "  where recid = @recid";

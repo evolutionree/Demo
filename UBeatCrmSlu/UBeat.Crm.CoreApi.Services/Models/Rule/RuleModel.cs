@@ -129,7 +129,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
     {
         public string FieldName { get; set; }
         public string BizDateFieldName { get; set; }
-        public int CaculateType { get; set; }
+        public int? CaculateType { get; set; }
 
         public string RuleId { get; set; }
         public string RuleName { get; set; }
@@ -158,8 +158,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
         public string FieldId { get; set; }
         public string Operate { get; set; }
         public string RuleData { get; set; }
-        public int RuleType { get; set; }
-        public int UseType { get; set; }
+        public int? RuleType { get; set; }
+        public int? UseType { get; set; }
         public string RuleSql { get; set; }
         public RuleItemRelationInfoModel Relation { get; set; }
     }

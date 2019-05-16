@@ -133,7 +133,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateEntityPro(EntityProSaveMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_edit(@entityid,@entityname, @typeid,@icons, @remark,@relentityid,@relfieldid,@relaudit,@userno,@entitylanguage::jsonb)
+                SELECT * FROM crm_func_entity_edit(@entityid,@entityname, @typeid,@icons, @remark,@relentityid,@relfieldid,@relaudit,@userno,@entitylanguage::jsonb,@servicesjson::jsonb)
+
             ";
             var param = new DynamicParameters();
             param.Add("entityid", entity.EntityId);
@@ -146,6 +147,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("relaudit", entity.Relaudit);
             param.Add("userno", userNumber);
             param.Add("entitylanguage", JsonConvert.SerializeObject(entity.EntityName_Lang));
+            param.Add("servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
 			if (result.Flag == 1)
 			{

@@ -238,6 +238,22 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         ApproverDeptWidthChild_Role_Select = 132,
         #endregion
 
+        #region 14X 指定表单中的团队字段
+
+        FormDeptGroup = 14,
+
+        #endregion
+        #region 15X 指定汇报关系
+
+        ReportRelation = 15,
+
+        #endregion
+
+        #region 16X 指定函数
+
+        Function = 16,
+
+        #endregion
     }
 
 

@@ -15,9 +15,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         /// 节点的审批人列表
         /// </summary>
         public List<ApproverInfo> Approvers { set; get; }
+        public List<ApproverInfo> CPUsers { set; get; }
 
     }
 
-   
+
 
 }

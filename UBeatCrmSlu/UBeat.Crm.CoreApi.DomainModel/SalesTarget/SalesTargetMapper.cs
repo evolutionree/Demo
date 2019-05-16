@@ -444,18 +444,18 @@ namespace UBeat.Crm.CoreApi.DomainModel.SalesTarget
         public string EntityId { get; set; }
         public string FieldName { get; set; }
         public string BizDateFieldName { get; set; }
-        public int CaculateType { get; set; }
+        public int? CaculateType { get; set; }
 
         public string RuleId { get; set; }
         public string RuleName { get; set; }
-        public int RecStatus { get; set; }
+        public int? RecStatus { get; set; }
         public string ItemId { get; set; }
         public string FieldId { get; set; }
         public string ItemName { get; set; }
         public string Operate { get; set; }
         public string RuleSql { get; set; }
-        public int UseType { get; set; }
-        public int RuleType { get; set; }
+        public int? UseType { get; set; }
+        public int? RuleType { get; set; }
         public string RuleData { get; set; }
         public string RuleSet { get; set; }
     }
