@@ -431,7 +431,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 
                     return;
                 }
-                else if (loginSession.LatestSession.Equals(requestToken) && loginSession.Sessions.ContainsKey(deviceId) && loginSession.Sessions[deviceId].Expiration > DateTime.UtcNow)
+                else if (loginSession.Sessions.ContainsKey(deviceId) && loginSession.Sessions[deviceId].Expiration > DateTime.UtcNow)
                 {
                     if (DateTime.UtcNow + loginSession.Expiration - loginSession.Sessions[deviceId].Expiration > new TimeSpan(0, 5, 0))
                     {
