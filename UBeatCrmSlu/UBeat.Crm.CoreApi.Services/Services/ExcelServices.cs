@@ -834,7 +834,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 typeId = typeFields.FirstOrDefault().TypeId;
 
             }
-            Dictionary<string, object> extRow = new Dictionary<string, object>();
             Guid existRecordid = Guid.Empty;
             //客户查重条件从客户基础资料中查询D
             if (entityid.ToString() == "f9db9d79-e94b-4678-a5cc-aa6e281c1246")
@@ -1779,6 +1778,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (modelType == 3 && field["fieldname"].ToString() == "recrelateid")//动态实体走别的逻辑
                     {
                         var relField = _dynamicEntityRepository.GetEntityFields(Guid.Parse(entityInfo["relentityid"].ToString()), userNumber).FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
+                        if (relField == null) continue;
                         displayname = relField.DisplayName;
                         fieldname = entityInfo["relfieldname"].ToString();
                         controltype = relField.ControlType.ToString();
