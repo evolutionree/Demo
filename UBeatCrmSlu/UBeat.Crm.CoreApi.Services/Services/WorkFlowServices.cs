@@ -186,7 +186,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 						NeedPower = 0
 					};
 					var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
-					result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber).FirstOrDefault();
+
+
 					#endregion
 
 					#region --获取 relatedetail--
@@ -200,11 +201,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
 							NeedPower = 0
 						};
 						var detailtemp = _dynamicEntityRepository.Detail(reldetailMapper, userNumber, tran);
-						result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
-					}
-					#endregion
+                        if (detailtemp != null)
+                        {
+                            var relEntityFields = _dynamicEntityRepository.GetEntityFields(caseInfo.RelEntityId, userNumber);
+                            var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(caseInfo.EntityId, userNumber);
+                            var relField = relEntityFields.FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
+                            if (detailtemp[relField.FieldName] != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
+                            {
+                                if (!detail.ContainsKey(entityInfo["relfieldname"].ToString()))
+                                {
+                                    detail.Add(entityInfo["relfieldname"].ToString(), detailtemp[relField.FieldName]);
+                                    if (detailtemp.ContainsKey(relField.FieldName + "_name"))
+                                    {
+                                        if (!detail.ContainsKey(entityInfo["relfieldname"].ToString() + "_name"))
+                                        {
+                                            detail.Add(entityInfo["relfieldname"].ToString() + "_name", detailtemp[relField.FieldName + "_name"]);
+                                        }
+                                    }
+                                }
 
-					_workFlowRepository.SetWorkFlowCaseItemReaded(tran, caseInfo.CaseId, caseInfo.NodeNum, userNumber);
+                            }
+                        }
+                        result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
+					}
+                    result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber).FirstOrDefault();
+
+                    #endregion
+
+                    _workFlowRepository.SetWorkFlowCaseItemReaded(tran, caseInfo.CaseId, caseInfo.NodeNum, userNumber);
 
 					tran.Commit();
 				}

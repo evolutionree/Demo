@@ -834,9 +834,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 typeId = typeFields.FirstOrDefault().TypeId;
 
             }
-
+            Dictionary<string, object> extRow = new Dictionary<string, object>();
             Guid existRecordid = Guid.Empty;
-            //客户查重条件从客户基础资料中查询
+            //客户查重条件从客户基础资料中查询D
             if (entityid.ToString() == "f9db9d79-e94b-4678-a5cc-aa6e281c1246")
             {
                 var tempdata = _customerRepository.IsCustomerExist(onerow);
@@ -847,6 +847,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else if (tempdata.Count == 1)
                 {
                     existRecordid = tempdata.FirstOrDefault().Custid;
+                }
+            }
+            else if (entityid.ToString() == "e450bfd7-ff17-4b29-a2db-7ddaf1e79342")
+            {
+                //联系人，需要增加拼音字段
+                if (onerow.ContainsKey("recname"))
+                {
+                    var name = onerow["recname"] as string;
+                    var pinYin = PinYinConvert.ToChinese(name, true);
+                    if (!string.IsNullOrWhiteSpace(pinYin))
+                    {
+                        onerow.Add("namepinyin", pinYin);
+                    }
                 }
             }
             else

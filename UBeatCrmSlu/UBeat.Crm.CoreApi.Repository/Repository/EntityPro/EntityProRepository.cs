@@ -31,7 +31,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
             var dataNames = new List<string> { "PageData", "PageCount" };
             string typeids = crmEntityQuery.TypeIds;
-            if (crmEntityQuery.TypeId >= 0) {
+            if (crmEntityQuery.TypeId >= 0)
+            {
                 //兼容旧接口
                 typeids = crmEntityQuery.TypeId.ToString();
             }
@@ -46,7 +47,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 UserNo = userNumber
             };
             Dictionary<string, List<IDictionary<string, object>>> result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
-            
+
             return result;
         }
         public Dictionary<string, List<IDictionary<string, object>>> EntityProInfoQuery(EntityProInfoMapper entity, int userNumber)
@@ -83,17 +84,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("userno", userNumber);
             param.Add("entitylanguage", JsonConvert.SerializeObject(entity.EntityName_Lang));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
-			if (result.Flag == 1)
-			{
-				sql = @"
+            if (result.Flag == 1)
+            {
+                sql = @"
                 Update crm_sys_entity Set servicesjson=@servicesjson::jsonb Where entityid=@entityid::uuid;
             ";
-				var args = new DynamicParameters();
-				args.Add("@entityid", entity.EntityId);
-				args.Add("@servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
+                var args = new DynamicParameters();
+                args.Add("@entityid", entity.EntityId);
+                args.Add("@servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
 
-				result.Flag = DataBaseHelper.ExecuteNonQuery(sql, args);
-			}
+                DataBaseHelper.ExecuteNonQuery(sql, args);
+            }
 
             return result;
         }
@@ -110,8 +111,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     new NpgsqlParameter("editload",entity.EditLoad),
                     new NpgsqlParameter("checkload", entity.CheckLoad),
                     new NpgsqlParameter("entityid",entity.EntityId),
-					new NpgsqlParameter("copyload",entity.CopyLoad)
-			};
+                    new NpgsqlParameter("copyload",entity.CopyLoad)
+            };
             var result = ExecuteNonQuery(sql, param);
             if (result == 1)
             {
@@ -149,23 +150,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("entitylanguage", JsonConvert.SerializeObject(entity.EntityName_Lang));
             param.Add("servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
-			if (result.Flag == 1)
-			{
-				sql = @"
+            if (result.Flag == 1)
+            {
+                sql = @"
                 Update crm_sys_entity Set servicesjson=(@servicesjson::jsonb) Where entityid=@entityid::uuid;
             ";
-				var args = new DynamicParameters(); 
-				args.Add("@entityid", entity.EntityId);
-				args.Add("@servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
-				 
-				result.Flag = DataBaseHelper.ExecuteNonQuery(sql, args);
-			}
-			return result;
+                var args = new DynamicParameters();
+                args.Add("@entityid", entity.EntityId);
+                args.Add("@servicesjson", JsonConvert.SerializeObject(entity.ServicesJson));
+
+                result.Flag = DataBaseHelper.ExecuteNonQuery(sql, args);
+            }
+            return result;
         }
 
-		public List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber)
-		{
-			var sql = @"
+        public List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber)
+        {
+            var sql = @"
 			select * from(
                 SELECT 0 as datatype, array_to_string(array(
 										with tmp as (
@@ -197,13 +198,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 				),'，') as msg
 			) as t order by datatype;
             ";
-			var param = new DynamicParameters();
-			param.Add("entityid", new Guid(entity.EntityId)); 
-			var result = DataBaseHelper.Query(sql, param);
-			return result;
-		}
+            var param = new DynamicParameters();
+            param.Add("entityid", new Guid(entity.EntityId));
+            var result = DataBaseHelper.Query(sql, param);
+            return result;
+        }
 
-		public OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber)
+        public OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber)
         {
             var sql = @"
                 SELECT * FROM crm_func_entity_disabled(@entityid,@status,@userno)
@@ -314,7 +315,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("userno", userNumber);
             param.Add("fieldlanguage", JsonConvert.SerializeObject(entity.FieldLabel_Lang));
             param.Add("displaylanguage", JsonConvert.SerializeObject(entity.DisplayName_Lang));
-           
+
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -739,10 +740,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                         if (String.IsNullOrWhiteSpace(tmp.FieldRulesId))
                         {
                             //if (tmp.IsVisible == 0) continue; 此处不能跳过，必须插入，不然新增实体数据时，有些默认字段会被过滤
-                              sql = @"
+                            sql = @"
                 SELECT * FROM crm_func_fieldrules_add(@typeid,@fieldid,@operatetype,@isrequire,@isvisible,@isreadonly, @viewrules, @validrules, @userno)
             ";
-                              param = new DynamicParameters();
+                            param = new DynamicParameters();
                             param.Add("typeid", rule.TypeId);
                             param.Add("fieldid", rule.FieldId);
                             param.Add("operatetype", tmp.OperateType);
@@ -757,10 +758,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                         }
                         else
                         {
-                              sql = @"
+                            sql = @"
                 SELECT * FROM crm_func_fieldrules_edit(@fieldrulesid,@isrequire,@isvisible,@isreadonly, @viewrules, @validrules, @userno)
             ";
-                              param = new DynamicParameters();
+                            param = new DynamicParameters();
                             param.Add("fieldrulesid", tmp.FieldRulesId);
                             param.Add("isvisible", tmp.IsVisible);
                             param.Add("isrequire", tmp.IsRequired);
@@ -775,7 +776,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     sql = @"
                 SELECT * FROM crm_func_fieldrules_disabled(@fieldid,@typeid, @status, @userno)
             ";
-                      param = new DynamicParameters();
+                    param = new DynamicParameters();
                     param.Add("@fieldid", rule.FieldId);
                     param.Add("@typeid", rule.TypeId);
                     param.Add("@status", rule.RecStatus);
@@ -1775,7 +1776,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public void UpdateExtFunction(DbTransaction tran, Guid entityId, List<ExtFunction> data, int userNumber)
         {
-            foreach (ExtFunction item in data) {
+            foreach (ExtFunction item in data)
+            {
                 item.RecStatus = 1;
             }
             #region sql
@@ -1800,7 +1802,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 
         public List<Dictionary<string, object>> QueryEntityWithDataSource(DbTransaction tran, int userId)
         {
-            try {
+            try
+            {
                 string strSQL = @"select * from crm_sys_entity where
                              entityid in (
                             select entityid
@@ -1897,7 +1900,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 };
                 ExecuteNonQuery(strSQL, param, null);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
         }
 
@@ -1912,7 +1916,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 };
                 ExecuteNonQuery(strSQL, p, null);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Console.WriteLine(ex.Message);
             }
         }
@@ -1965,7 +1970,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 };
                 ExecuteNonQuery(strSQL, p, tran);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw (ex);
             }
         }
@@ -1985,7 +1991,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 ExecuteNonQuery(strSQL, p, tran);
 
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw (ex);
             }
         }

@@ -28,6 +28,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> Add([FromBody] DynamicEntityAddModel dynamicModel = null)
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            if (dynamicModel.FlowId.HasValue) { dynamicModel.FlowId = null; }
             WriteOperateLog("提交动态数据", dynamicModel);
             var header = GetAnalyseHeader();
             return _dynamicEntityServices.Add(dynamicModel, header, UserId);
@@ -37,7 +38,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("temporarysave")]
         public OutputResult<Object> TemporarySave([FromBody] TemporarySaveModel body)
         {
-            if (body == null) return  ResponseError<object>("参数格式错误");
+            if (body == null) return ResponseError<object>("参数格式错误");
             if (body.TypeId == Guid.Empty || body.CacheId == Guid.Empty)
                 return ResponseError<object>("Guid不能为空");
             return _dynamicEntityServices.TemporarySave(body, UserId);
@@ -72,7 +73,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 else
                     return ResponseError<object>("Guid格式错误");
             }
-           return _dynamicEntityServices.DeleteTemporaryList(CacheIds, UserId);
+            return _dynamicEntityServices.DeleteTemporaryList(CacheIds, UserId);
         }
 
         [HttpPost]
@@ -142,11 +143,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dynamicEntityServices.DataList2(dynamicModel, isAdvance, UserId);
         }
         [HttpPost("listcount")]
-        public OutputResult<object> ListStatistic([FromBody] DynamicEntityListViewColumnModel paramInfo ) {
-            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) {
+        public OutputResult<object> ListStatistic([FromBody] DynamicEntityListViewColumnModel paramInfo)
+        {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty)
+            {
                 return ResponseError<object>("参数异常");
             }
-            return _dynamicEntityServices.CalcMenuDataCount(paramInfo.EntityId,UserId);
+            return _dynamicEntityServices.CalcMenuDataCount(paramInfo.EntityId, UserId);
         }
         /// <summary>
         /// 此接口已废弃
@@ -222,10 +225,11 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <param name="paramInfo"></param>
         /// <returns></returns>
         [HttpPost("transfer_v2_user2user")]
-        public OutputResult<object> Tansfer_V2_User2User([FromBody] DynamicEntityTransferUser2UserModel paramInfo = null) {
-            if (paramInfo == null ) return ResponseError<object>("参数格式错误");
+        public OutputResult<object> Tansfer_V2_User2User([FromBody] DynamicEntityTransferUser2UserModel paramInfo = null)
+        {
+            if (paramInfo == null) return ResponseError<object>("参数格式错误");
 
-            return _dynamicEntityServices.TransferUser2User(paramInfo,UserId);
+            return _dynamicEntityServices.TransferUser2User(paramInfo, UserId);
         }
         [HttpPost("transfer_pro")]
         public OutputResult<object> Transfer_Pro([FromBody] EntityTransferParamInfo paramInfo = null)
@@ -413,14 +417,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("queryreldatasource")]
         public OutputResult<object> queryDataForDataSource([FromBody]RelQueryDataModel queryModel)
         {
-            if (queryModel == null || queryModel.RelId == null || queryModel.RelId== new Guid("00000000-0000-0000-0000-000000000000")
-                || queryModel.RecId == null || queryModel.RecId== new Guid("00000000-0000-0000-0000-000000000000"))
+            if (queryModel == null || queryModel.RelId == null || queryModel.RelId == new Guid("00000000-0000-0000-0000-000000000000")
+                || queryModel.RecId == null || queryModel.RecId == new Guid("00000000-0000-0000-0000-000000000000"))
                 return new OutputResult<object>(null, "参数异常", 1);
-           
+
             try
             {
 
-                return _dynamicEntityServices.queryDataForDataSource(ControllerContext.HttpContext.RequestServices,queryModel, UserId); ;
+                return _dynamicEntityServices.queryDataForDataSource(ControllerContext.HttpContext.RequestServices, queryModel, UserId); ;
             }
             catch (Exception ex)
             {
@@ -439,8 +443,10 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [HttpPost("queryvaluefornewdata")]
         [AllowAnonymous]
-        public OutputResult<object> QueryValueForReltabAddNewData([FromBody] RelTabQueryDataSourceModel paramInfo ) {
-            if (paramInfo == null || paramInfo.EntityId == Guid.Empty || paramInfo.FieldId == Guid.Empty || paramInfo.RecId == Guid.Empty) {
+        public OutputResult<object> QueryValueForReltabAddNewData([FromBody] RelTabQueryDataSourceModel paramInfo)
+        {
+            if (paramInfo == null || paramInfo.EntityId == Guid.Empty || paramInfo.FieldId == Guid.Empty || paramInfo.RecId == Guid.Empty)
+            {
                 return ResponseError<object>("参数异常");
             }
             return this._dynamicEntityServices.QueryValueForRelTabAddNew(paramInfo, UserId);
@@ -452,9 +458,9 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             return _dynamicEntityServices.UpdateRelTab(dynamicModel, UserId);
-        } 
+        }
 
-		[HttpPost]
+        [HttpPost]
         [Route("disabledreltab")]
         public OutputResult<object> DisabledRelTab([FromBody] DisabledRelTabModel dynamicModel = null)
         {
@@ -523,12 +529,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (paramInfo == null) return ResponseError<object>("参数格式错误");
             if (functionname == null || functionname.Length == 0) return ResponseError<object>("参数格式错误");
-            if (paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty) {
-                if (paramInfo.OtherParams == null || paramInfo.OtherParams.ContainsKey("entityid") == false || paramInfo.OtherParams["entityid"] == null) {
+            if (paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty)
+            {
+                if (paramInfo.OtherParams == null || paramInfo.OtherParams.ContainsKey("entityid") == false || paramInfo.OtherParams["entityid"] == null)
+                {
                     return ResponseError<object>("参数异常");
                 }
                 Guid tmp = Guid.Empty;
-                if (Guid.TryParse(paramInfo.OtherParams["entityid"].ToString(), out tmp) == false) {
+                if (Guid.TryParse(paramInfo.OtherParams["entityid"].ToString(), out tmp) == false)
+                {
                     return ResponseError<object>("参数异常");
                 }
                 paramInfo.EntityId = tmp;
@@ -544,7 +553,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("ukextconf/list")]
-        public OutputResult<object> ListExtFunction([FromBody] UKExtConfigListModel paramInfo) {
+        public OutputResult<object> ListExtFunction([FromBody] UKExtConfigListModel paramInfo)
+        {
             return null;
 
         }
@@ -554,7 +564,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("ukextconf/add")]
-        public OutputResult<object> AddExtFunction() {
+        public OutputResult<object> AddExtFunction()
+        {
             return null;
         }
         /// <summary>
@@ -563,7 +574,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("ukextconf/edit")]
-        public OutputResult<object> EditExtFunction() {
+        public OutputResult<object> EditExtFunction()
+        {
             return null;
         }
         /// <summary>
@@ -676,7 +688,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 this._dynamicEntityServices.SavePersonalWebListColumnsSetting(paramInfo, UserId);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return ResponseError<object>(ex.Message);
             }
             return new OutputResult<object>("success");
@@ -685,18 +698,20 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         [HttpPost("test")]
         [AllowAnonymous]
-        public OutputResult<object> test() {
+        public OutputResult<object> test()
+        {
             try
             {
 
-                Dictionary<string,object>  listEntity = _entityExcelImportServices.ImportEntityFromExcel();
+                Dictionary<string, object> listEntity = _entityExcelImportServices.ImportEntityFromExcel();
                 listEntity.Add("allmessage", this._entityExcelImportServices.GenerateTotalMessage(listEntity));
                 return new OutputResult<object>(listEntity);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return ResponseError<object>(ex.Message);
             }
         }
     }
-    
+
 }

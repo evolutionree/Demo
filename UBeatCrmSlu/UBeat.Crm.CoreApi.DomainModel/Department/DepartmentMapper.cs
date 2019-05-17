@@ -47,7 +47,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Department
                 RuleFor(d => d.DeptId).NotNull().WithMessage("部门Id不能为空");
                 RuleFor(d => d.DeptName).NotEmpty().WithMessage("部门名称不能为空");
                 RuleFor(d => d.PDeptId).NotNull().WithMessage("父级部门不能为空");
-				RuleFor(d => d.DeptCode).NotEmpty().WithMessage("部门编码不能为空");
 			}
         }
     }
@@ -59,7 +58,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Department
             RuleFor(d => d.DeptId).NotNull().WithMessage("部门ID不能为空");
             RuleFor(d => d.DeptName).NotEmpty().WithMessage("部门名称不能为空");
             RuleFor(d => d.OgLevel).NotNull().WithMessage("部门类型不能为空");
-			RuleFor(d => d.DeptCode).NotEmpty().WithMessage("部门编码不能为空");
 		}
     }
     public class DepartMasterSlave : BaseEntity
