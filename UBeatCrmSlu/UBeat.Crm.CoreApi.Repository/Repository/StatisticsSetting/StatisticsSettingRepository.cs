@@ -51,7 +51,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.StatisticsSetting
                 result = DBHelper.ExecuteNonQuery("", sql, param);
             else
                 result = DBHelper.ExecuteNonQuery(dbTran, sql, param);
-            if (result > 0)
+            if (result >= 0)
             {
                 return new OperateResult
                 {
@@ -285,7 +285,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.StatisticsSetting
                     {
                 new NpgsqlParameter("groupmark",tmp.GroupName),
                 new NpgsqlParameter("recorder",tmp.RecOrder),
-                new NpgsqlParameter("anafuncid",tmp.AnafuncId),
+                new NpgsqlParameter("anafuncid",tmp.AnafuncId==null?null:tmp.AnafuncId),
                 new NpgsqlParameter("userno",userId),
                 new NpgsqlParameter("groupmark_lang",tmp.GroupName_Lang)
                     };

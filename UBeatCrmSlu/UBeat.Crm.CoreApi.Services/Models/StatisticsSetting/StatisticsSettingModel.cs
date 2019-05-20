@@ -25,7 +25,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.StatisticsSetting
         public int MoreFlag { get; set; }
         public String CountFunc { get; set; }
         public String MoreFunc { get; set; }
-        public Guid EntityId { get; set; }
+        public Guid? EntityId { get; set; }
         public int AllowInto { get; set; }
         public string AnaFuncName_Lang { get; set; }
 

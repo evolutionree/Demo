@@ -88,7 +88,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
                     result = DBHelper.ExecuteNonQuery("", sql, param1);
                 else
                     result = DBHelper.ExecuteNonQuery(dbTran, sql, param1);
-                if (result <= 0)
+                if (result < 0)
                 {
                     return new OperateResult
                     {
@@ -107,20 +107,25 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
         public PageDataInfo<Dictionary<string, object>> GetReportRelationListData(QueryReportRelationMapper mapper, DbTransaction dbTran, int userId)
         {
             var sql = " select * from crm_sys_reportrelation where 1=1 {0} {1}";
-            var param = new DbParameter[mapper.ColumnFilter.Count];
+            DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count];
             string conditionSql = String.Empty;
             int index = 0;
             foreach (var tmp in mapper.ColumnFilter)
             {
-                conditionSql += string.Format(" and {0}  ILIKE '%' || @{1} || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
-                param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                if (tmp.Value == null || string.IsNullOrEmpty(tmp.Value.ToString()))
+                {
+                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                }
+                else
+                {
+                    conditionSql += string.Format(" and {0}  ILIKE '%' || @{1} || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
+                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                }
                 index++;
             }
             sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? " order by " + mapper.SearchOrder : string.Empty));
             if (dbTran == null)
                 return ExecuteQueryByPaging(sql, param, mapper.PageSize, mapper.PageIndex);
-
-
             var result = ExecuteQueryByPaging(sql, param, mapper.PageSize, mapper.PageIndex, dbTran);
             return result;
         }
@@ -229,7 +234,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
                     result = DBHelper.ExecuteNonQuery("", sql, param1);
                 else
                     result = DBHelper.ExecuteNonQuery(dbTran, sql, param1);
-                if (result <= 0)
+                if (result < 0)
                 {
                     return new OperateResult
                     {
@@ -261,8 +266,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
             int index = 0;
             foreach (var tmp in mapper.ColumnFilter)
             {
-                conditionSql += string.Format(" and {0}_name  ILIKE '%' || @{1}_name || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
-                param[index] = new NpgsqlParameter(tmp.Key + "_name", tmp.Value);
+                if (tmp.Value == null || string.IsNullOrEmpty(tmp.Value.ToString()))
+                {
+                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                }
+                else
+                {
+                    conditionSql += string.Format(" and {0}_name  ILIKE '%' || @{1}_name || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
+                    param[index] = new NpgsqlParameter(tmp.Key + "_name", tmp.Value);
+                }
                 index++;
             }
             sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? " order by " + mapper.SearchOrder : string.Empty));

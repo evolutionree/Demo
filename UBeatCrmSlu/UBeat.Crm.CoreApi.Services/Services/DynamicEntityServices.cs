@@ -489,7 +489,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         funccode = "EntityDynamicAdd";
                     }
-                    DateTime reportdate = DateTime.Parse(detail["reportdate"].ToString());
+                    DateTime reportdate;
+                    if (detail.ContainsKey("reportdate")) {
+                        reportdate = DateTime.Parse(detail["reportdate"].ToString());
+                    }
+                    else{
+                        reportdate = DateTime.Parse(detail["reccreated"].ToString());
+                    }
                     var msg = MessageService.GetDailyMsgParameter(reportdate, entityInfotemp, bussinessId, relbussinessId, funccode, userNumber, newMembers, null, msgpParam);
                     msg.ApprovalUsers = msg.Receivers[MessageUserType.DailyApprover];
                     msg.CopyUsers = msg.Receivers[MessageUserType.DailyCarbonCopyUser];
