@@ -34,7 +34,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.ReportRelation
         // public Guid AnaFuncId { get; set; }
 
         public String ReportrelationId { get; set; }
-        public int ReportUser { get; set; }
+        public String ReportUser { get; set; }
         public String ReportLeader { get; set; }
     }
 
@@ -42,7 +42,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.ReportRelation
     {
         public Guid ReportRelDetailId { get; set; }
         public Guid ReportRelationId { get; set; }
-        public int ReportUser { get; set; }
+        public String ReportUser { get; set; }
         public String ReportLeader { get; set; }
 
     }

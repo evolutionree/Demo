@@ -252,15 +252,32 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
 
         public PageDataInfo<Dictionary<string, object>> GetReportRelDetailListData(QueryReportRelDetailMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = " select * from ( select  tmp.reportreldetailid,tmp.reportrelationid,tmp.reportuser,tmp.reportleader,tmp.reportuser_name,array_to_string(array_agg(tmp.reportleader_name),',') as \n" +
-"reportleader_name from (\n" +
-"select t1.reportreldetailid,t1.reportrelationid,t1.reportuser,t1.reportleader,t1.username reportuser_name,\n" +
-"u1.username AS reportleader_name from (\n" +
-"select d.*,regexp_split_to_table(d.reportleader,',')::int4 as reportleaderid,u.username from \n" +
-"crm_sys_reportreldetail d LEFT JOIN crm_sys_userinfo u on u.userid=d.reportuser\n" +
-") as t1 LEFT JOIN crm_sys_userinfo u1 on u1.userid=t1.reportleaderid\n" +
-" ) as tmp\n" +
-"  where 1=1 {0}  GROUP BY tmp.reportreldetailid,tmp.reportrelationid,tmp.reportuser,tmp.reportleader,tmp.reportuser_name ) as tmp1 {1}";
+            var sql = "select tmp1.*,tmp2.reportuser,tmp2.reportuser_name from (\n" +
+" select * from ( select  tmp.reportreldetailid,tmp.reportrelationid,tmp.reportleader,\n" +
+"array_to_string(array_agg(tmp.reportleader_name),',') as  \n" +
+"reportleader_name from ( \n" +
+"select t1.reportreldetailid,t1.reportrelationid,t1.reportleader, \n" +
+"t1.username AS reportleader_name from ( \n" +
+"select d.*,u.username from (select *,regexp_split_to_table(reportleader,',')::int4 as reportleaderid from  \n" +
+"crm_sys_reportreldetail) as d LEFT JOIN crm_sys_userinfo u on u.userid=d.reportleaderid \n" +
+") as t1  \n" +
+" ) as tmp \n" +
+"  where 1=1   \n" +
+" GROUP BY tmp.reportreldetailid,tmp.reportrelationid,tmp.reportleader ) as tmp1\n" +
+") as tmp1 LEFT JOIN\n" +
+"(\n" +
+" select * from ( select  tmp.reportreldetailid,tmp.reportrelationid,tmp.reportuser,\n" +
+"array_to_string(array_agg(tmp.reportuser_name),',') as  \n" +
+"reportuser_name from ( \n" +
+"select t1.reportreldetailid,t1.reportrelationid,t1.reportuser, \n" +
+"t1.username AS reportuser_name from ( \n" +
+"select d.*,u.username from (select *,regexp_split_to_table(reportuser,',')::int4 as reportuserid from  \n" +
+"crm_sys_reportreldetail) as d LEFT JOIN crm_sys_userinfo u on u.userid=d.reportuserid \n" +
+") as t1  \n" +
+" ) as tmp \n" +
+"  where 1=1   \n" +
+" GROUP BY tmp.reportreldetailid,tmp.reportrelationid,tmp.reportuser ) as tmp1\n" +
+") tmp2  on  tmp2.reportreldetailid=tmp1.reportreldetailid where 1=1 {0} {1}";
             var param = new DbParameter[mapper.ColumnFilter.Count];
             string conditionSql = String.Empty;
             int index = 0;

@@ -59,7 +59,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.ReportRelation
     public class AddReportRelDetailMapper : BaseEntity
     {
         public Guid ReportRelationId { get; set; }
-        public int ReportUser { get; set; }
+        public String ReportUser { get; set; }
         public String ReportLeader { get; set; }
         protected override IValidator GetValidator()
         {
@@ -77,7 +77,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.ReportRelation
     {
         public Guid ReportRelDetailId { get; set; }
         public Guid ReportRelationId { get; set; }
-        public int ReportUser { get; set; }
+        public String ReportUser { get; set; }
         public String ReportLeader { get; set; }
         protected override IValidator GetValidator()
         {
