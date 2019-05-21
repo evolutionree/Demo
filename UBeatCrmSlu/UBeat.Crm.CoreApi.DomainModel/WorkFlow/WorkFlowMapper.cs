@@ -153,6 +153,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public int AuditNum { get; set; }
         public int NodeType { get; set; }
         public int StepTypeId { get; set; }
+        public int StepCPTypeId { get; set; }
         public Dictionary<string, string> RuleConfig { get; set; }
         public Dictionary<string,object> ColumnConfig { get; set; }
         public int AuditSucc { get; set; }

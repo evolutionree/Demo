@@ -207,7 +207,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 int.TryParse(vernumResult.ToString(), out vernum);
 
 
-            var executeSql = @" SELECT n.nodeid,n.nodename,n.auditnum,n.nodetype,n.steptypeid,n.ruleconfig,n.columnconfig,n.auditsucc,n.nodeconfig ,e.funcname
+            var executeSql = @" SELECT n.nodeid,n.nodename,n.auditnum,n.nodetype,n.steptypeid,n.stepcptypeid,n.ruleconfig,n.columnconfig,n.auditsucc,n.nodeconfig ,e.funcname
                                 FROM crm_sys_workflow_node AS n
                                 LEFT JOIN crm_sys_workflow_func_event AS e ON e.flowid=n.flowid AND e.nodeid=n.nodeid
                                 WHERE n.flowid = @flowid AND n.vernum = @vernum ;
@@ -260,8 +260,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     int.TryParse(versionObj.ToString(), out versionValue);
 
                     #region --插入node节点--
-                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,ruleconfig,columnconfig,vernum,auditsucc,nodeconfig)
-                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc,@nodeconfig)";
+                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,stepcptypeid,ruleconfig,columnconfig,vernum,auditsucc,nodeconfig)
+                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@stepcptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc,@nodeconfig)";
                     List<DbParameter[]> workflow_node_params = new List<DbParameter[]>();
                     List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
                     foreach (var node in nodeLineConfig.Nodes)
@@ -274,6 +274,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("auditnum", node.AuditNum),
                             new NpgsqlParameter("nodetype",node.NodeType),
                             new NpgsqlParameter("steptypeid", node.StepTypeId),
+                            new NpgsqlParameter("stepcptypeid", node.StepCPTypeId),
                             new NpgsqlParameter("ruleconfig", JsonConvert.SerializeObject(node.RuleConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                             new NpgsqlParameter("columnconfig", JsonConvert.SerializeObject(node.ColumnConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                             new NpgsqlParameter("vernum", versionValue),
@@ -869,7 +870,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 																SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													) as r WHERE r.userid!=''
                                        )
-                                    AND recstatus = 1 )", fieldname, entityTableName);
+                                    AND recstatus = 1 ) and u.isleader=@isleader ", fieldname, entityTableName);
                         }
                         break;
                     #endregion
@@ -944,7 +945,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         {
                             string fieldname, entityTableName;
                             GetEntityField(trans, caseInfo, flowNodeInfo, out fieldname, out entityTableName);
-                            cmdText += string.Format(@" AND ur.deptid IN  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid IN (
+                            cmdText += string.Format(@" AND u.isleader=@isleader AND ur.deptid IN  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid IN (
 													                            SELECT userid::INT from (
 																                            SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													                            ) as r WHERE r.userid!=''
@@ -986,7 +987,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         {
                             string fieldname, entityTableName;
                             GetEntityField(trans, caseInfo, flowNodeInfo, out fieldname, out entityTableName);
-                            cmdText += string.Format(@" AND ur.deptid IN (SELECT s.pdeptid  FROM crm_sys_department AS s WHERE s.deptid = (
+                            cmdText += string.Format(@" AND u.isleader=isleader AND ur.deptid IN (SELECT s.pdeptid  FROM crm_sys_department AS s WHERE s.deptid = (
 									                            SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid IN (
 													                            SELECT userid::INT from (
 																                            SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
@@ -1044,6 +1045,38 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                             )", f1, e1);
                         }
                         break;
+                    case NodeStepType.FormDeptGroupForRole:
+                        string f2, e2;
+                        GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f2, out e2);
+                        if (GetRuleConfigInfo("entityid", flowNodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
+                        {
+                            cmdText += string.Format(@" AND u.userid in (
+                            select userid from crm_sys_account_userinfo_relate as ur where deptid in (
+                            select deptid from crm_func_department_tree((
+                            select array_to_string(array_agg(d.deptid),',')::text as deptid  from crm_sys_department d 
+                            LEFT JOIN crm_sys_account_userinfo_relate ur on ur.deptid=d.deptid
+                             INNER JOIN ( 
+                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
+                            ) as t1 on ur.userid=t1.userid GROUP BY d.deptid)
+                            ,1)
+                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid=(SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r limit 1))
+                            )", f2, e2);
+                        }
+                        else
+                        {
+                            cmdText += string.Format(@" AND u.userid in (
+                            select userid from crm_sys_account_userinfo_relate as ur where deptid in (
+                            select deptid from crm_func_department_tree((
+                            select array_to_string(array_agg(d.deptid),',')::text as deptid  from crm_sys_department d 
+                            LEFT JOIN crm_sys_account_userinfo_relate ur on ur.deptid=d.deptid
+                             INNER JOIN ( 
+                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@recid
+                            ) as t1 on ur.userid=t1.userid GROUP BY d.deptid)
+                            ,1)
+                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid=(SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r limit 1))
+                            )", f2, e2);
+                        }
+                        break;
                     #endregion
 
 
@@ -1093,7 +1126,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                                 UserId = Convert.ToInt32(userid)
                                             };
                                             var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
-                                            cmdText += @" AND u.userid in (" + string.Join(",", d1.Select(t => t.ReportLeader)) + ")";
+                                            cmdText += @" AND u.userid in (" + string.Join(",", d2.Select(t => t.ReportLeader)) + ")";
                                         }
                                     }
                                     break;
@@ -1186,9 +1219,9 @@ select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relr
 
                 List<DbParameter> param = new List<DbParameter>();
 
-                switch (flowNodeInfo.StepTypeId)
+                switch (flowNodeInfo.StepCPTypeId)
                 {
-                    case NodeStepType.SpecifyApprover:// 2:指定审批人, 
+                    case NodeStepType.CPUser:// 2:指定审批人, 
                         cmdText += @" AND u.userid IN (
 													SELECT userid::INT from (
 																SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'cpuserid'), ',')) AS userid 
