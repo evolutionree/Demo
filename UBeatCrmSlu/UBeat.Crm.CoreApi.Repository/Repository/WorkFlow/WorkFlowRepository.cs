@@ -1066,7 +1066,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                         UserId = l1.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l1.FirstOrDefault()["handleuser"].ToString())
                                     };
                                     var d1 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
-                                    cmdText += @" AND u.userid in (" + d1.FirstOrDefault().ReportLeader + ")";
+                                    cmdText += @" AND u.userid in (" + string.Join(",", d1.Select(t => t.ReportLeader)) + ")";
                                     break;
                                 case 1://上一步骤处理人
                                     var l2 = CaseItemList(caseInfo.CaseId, userNumber);
@@ -1077,6 +1077,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                             ReportRelationId = id,
                                             UserId = l2.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l2.FirstOrDefault()["handleuser"].ToString())
                                         };
+                                        var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
+                                        cmdText += @" AND u.userid in (" + string.Join(",", d2.Select(t => t.ReportLeader)) + ")";
                                     }
                                     else
                                     {
@@ -1091,7 +1093,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                                 UserId = Convert.ToInt32(userid)
                                             };
                                             var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
-                                            cmdText += @" AND u.userid in (" + d2.FirstOrDefault().ReportLeader + ")";
+                                            cmdText += @" AND u.userid in (" + string.Join(",", d1.Select(t => t.ReportLeader)) + ")";
                                         }
                                     }
                                     break;

@@ -106,7 +106,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
 
         public PageDataInfo<Dictionary<string, object>> GetReportRelationListData(QueryReportRelationMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = " select * from crm_sys_reportrelation where 1=1 {0} {1}";
+            var sql = " select * from crm_sys_reportrelation where recstatus=1 {0} {1}";
             DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count];
             string conditionSql = String.Empty;
             int index = 0;
@@ -146,7 +146,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
             }
             if (mapper.UserId.HasValue)
             {
-                conditionSql = string.IsNullOrEmpty(conditionSql) ? " and reportuser=@userid" : conditionSql + " and reportuser=@userid";
+                conditionSql = string.IsNullOrEmpty(conditionSql) ? " and @userid::int4 in (select regexp_split_to_table(reportuser,',')::int4) " : conditionSql + "  and @userid::int4 in (select regexp_split_to_table(reportuser,',')::int4)  ";
             }
             sql = string.Format(sql, conditionSql, mapper.SearchOrder);
             if (dbTran == null)
@@ -259,7 +259,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
 "select t1.reportreldetailid,t1.reportrelationid,t1.reportleader, \n" +
 "t1.username AS reportleader_name from ( \n" +
 "select d.*,u.username from (select *,regexp_split_to_table(reportleader,',')::int4 as reportleaderid from  \n" +
-"crm_sys_reportreldetail) as d LEFT JOIN crm_sys_userinfo u on u.userid=d.reportleaderid \n" +
+"crm_sys_reportreldetail where  recstatus=1) as d LEFT JOIN crm_sys_userinfo u on u.userid=d.reportleaderid \n" +
 ") as t1  \n" +
 " ) as tmp \n" +
 "  where 1=1   \n" +
@@ -272,7 +272,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
 "select t1.reportreldetailid,t1.reportrelationid,t1.reportuser, \n" +
 "t1.username AS reportuser_name from ( \n" +
 "select d.*,u.username from (select *,regexp_split_to_table(reportuser,',')::int4 as reportuserid from  \n" +
-"crm_sys_reportreldetail) as d LEFT JOIN crm_sys_userinfo u on u.userid=d.reportuserid \n" +
+"crm_sys_reportreldetail where  recstatus=1 ) as d LEFT JOIN crm_sys_userinfo u on u.userid=d.reportuserid \n" +
 ") as t1  \n" +
 " ) as tmp \n" +
 "  where 1=1   \n" +
