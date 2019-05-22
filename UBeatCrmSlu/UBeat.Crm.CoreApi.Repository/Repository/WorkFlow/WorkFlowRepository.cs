@@ -207,7 +207,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 int.TryParse(vernumResult.ToString(), out vernum);
 
 
-            var executeSql = @" SELECT n.nodeid,n.nodename,n.auditnum,n.nodetype,n.steptypeid,n.stepcptypeid,n.ruleconfig,n.columnconfig,n.auditsucc,n.nodeconfig ,e.funcname
+            var executeSql = @" SELECT n.nodeid,n.nodename,n.auditnum,n.nodetype,n.steptypeid,n.stepcptypeid,n.ruleconfig,n.columnconfig,n.auditsucc,n.nodeconfig ,e.funcname,n.notfound
                                 FROM crm_sys_workflow_node AS n
                                 LEFT JOIN crm_sys_workflow_func_event AS e ON e.flowid=n.flowid AND e.nodeid=n.nodeid
                                 WHERE n.flowid = @flowid AND n.vernum = @vernum ;
@@ -260,8 +260,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                     int.TryParse(versionObj.ToString(), out versionValue);
 
                     #region --插入node节点--
-                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,stepcptypeid,ruleconfig,columnconfig,vernum,auditsucc,nodeconfig)
-                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@stepcptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc,@nodeconfig)";
+                    var workflow_node_sql = @"INSERT INTO crm_sys_workflow_node(nodeid,nodename,flowid,auditnum,nodetype,steptypeid,stepcptypeid,ruleconfig,columnconfig,vernum,auditsucc,nodeconfig,notfound)
+                                              VALUES(@nodeid,@nodename,@flowid,@auditnum,@nodetype,@steptypeid,@stepcptypeid,@ruleconfig,@columnconfig,@vernum,@auditsucc,@nodeconfig,@notfound)";
                     List<DbParameter[]> workflow_node_params = new List<DbParameter[]>();
                     List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
                     foreach (var node in nodeLineConfig.Nodes)
@@ -279,6 +279,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("columnconfig", JsonConvert.SerializeObject(node.ColumnConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                             new NpgsqlParameter("vernum", versionValue),
                             new NpgsqlParameter("auditsucc", node.AuditSucc),
+                            new NpgsqlParameter("notfound", node.NotFound),
                             new NpgsqlParameter("nodeconfig", JsonConvert.SerializeObject(node.NodeConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                         });
 
@@ -1131,21 +1132,21 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                     }
                                     break;
                                 case 2://表单中的人员
-                                    string f2, e2;
-                                    GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f2, out e2);
+                                    string f3, e3;
+                                    GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f3, out e3);
                                     if (GetRuleConfigInfo("entityid", flowNodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
                                     {
                                         cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
 SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
 select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relrecid
-) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f2, e2);
+) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3);
                                     }
                                     else
                                     {
                                         cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
 SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
 select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relrecid
-) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f2, e2);
+) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3);
                                     }
                                     break;
                                 default:

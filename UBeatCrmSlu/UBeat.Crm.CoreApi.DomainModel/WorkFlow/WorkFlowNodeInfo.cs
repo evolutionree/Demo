@@ -26,6 +26,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public NodeStepType StepTypeId { set; get; }
 
         public NodeStepType StepCPTypeId { set; get; }
+
+        public int NotFound { get; set; }
         public object RuleConfig { set; get; }
 
         public object ColumnConfig { set; get; }

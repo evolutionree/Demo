@@ -1246,6 +1246,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodetemp.NodeNum = caseInfo.NodeNum == -1 ? -1 : caseInfo.NodeNum;
                 nodetemp.NodeState = caseInfo.NodeNum == -1 ? -1 : 0;
                 nodetemp.StepTypeId = flowNodeInfo.StepTypeId;
+                nodetemp.StepCPTypeId = flowNodeInfo.StepCPTypeId;
+                nodetemp.NotFound = flowNodeInfo.NotFound;
                 if (newcaseInfo.NodeNum == -1)//预审批审批结束，表明到达最后节点
                 {
                     nodetemp.NodeState = 2;
@@ -1325,27 +1327,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (users == null || users.Count == 0 && nodetemp.NodeState == 0)//没有满足下一步审批人条件的选人列表,则获取与自由流程一样返回全公司人员
                     {
                         nodetemp.NodeState = 0;
-                        var jo = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
-                        if (jo != null && jo["notfound"] != null)
+                        switch (nodetemp.NotFound)
                         {
-                            int notFound = Convert.ToInt32(JObject.Parse(flowNodeInfo.RuleConfig.ToString())["notfound"].ToString());
-                            switch (notFound)
-                            {
-                                case 1:
-                                    users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
-                                    break;
-                                case 2:
-                                    var nodes = _workFlowRepository.GetNodeInfoList(tran, workflowInfo.FlowId, workflowInfo.VerNum);
-                                    var node = nodes.FirstOrDefault(t => t.NodeId == nodetemp.NodeId);
-                                      result = GetNextNodeData(tran, caseInfo, workflowInfo, node, userinfo);
-                                    return result;
-                                case 3:
-                                    throw new Exception("功能未开放");
-                                    break;
-                                default:
-                                    break;
-                            }
-
+                            case 1:
+                                users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
+                                break;
+                            case 2:
+                                var nodes = _workFlowRepository.GetNodeInfoList(tran, workflowInfo.FlowId, workflowInfo.VerNum);
+                                var node = nodes.FirstOrDefault(t => t.NodeId == nodetemp.NodeId);
+                                result = GetNextNodeData(tran, caseInfo, workflowInfo, node, userinfo);
+                                return result;
+                            case 3:
+                                throw new Exception("功能未开放");
+                                break;
+                            default:
+                                break;
                         }
                     }
                     var cpUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, nodetemp.NodeId.GetValueOrDefault(), userinfo.UserId, workflowInfo.FlowType, tran);
@@ -1354,7 +1350,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nodetemp.NodeState = 0;
                         cpUsers = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
                     }
-
                     result = new NextNodeDataModel()
                     {
                         NodeInfo = nodetemp,
