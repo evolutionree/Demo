@@ -241,7 +241,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         #region 14X 指定表单中的团队字段
 
         FormDeptGroup = 116,
-        FormDeptGroupForRole = 141,
+        FormDeptGroupForRole = 106,
 
         #endregion
         #region 15X 指定汇报关系

@@ -762,7 +762,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
         public List<NextNodeDataInfo> GetNextNodeDataInfoList(Guid flowid, Guid fromnodeid, int vernum, DbTransaction trans = null)
         {
-            var executeSql = @" SELECT n.nodeid,n.nodename,n.nodetype,n.nodenum,n.steptypeid
+            var executeSql = @" SELECT n.nodeid,n.nodename,n.nodetype,n.nodenum,n.steptypeid,n.stepcptypeid,n.notfound
 								FROM crm_sys_workflow_node AS n
                                 INNER JOIN crm_sys_workflow_node_line AS nl ON nl.vernum=@vernum AND nl.fromnodeid=@fromnodeid AND nl.flowid = @flowid 
 								LEFT JOIN crm_sys_workflow_steptype AS s ON s.steptypeid = n.steptypeid
@@ -1060,7 +1060,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                             select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
                             ) as t1 on ur.userid=t1.userid GROUP BY d.deptid)
                             ,1)
-                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid=(SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r limit 1))
+                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r  ))
                             )", f2, e2);
                         }
                         else
@@ -1074,7 +1074,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                             select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@recid
                             ) as t1 on ur.userid=t1.userid GROUP BY d.deptid)
                             ,1)
-                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid=(SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r limit 1))
+                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r ))
                             )", f2, e2);
                         }
                         break;
@@ -1086,13 +1086,14 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         JToken reportRelation = GetRuleConfigObject("reportrelation", flowNodeInfo);
                         if (reportRelation != null)
                         {
-                            Guid id = Guid.Parse(reportRelation["id"].ToString());
-                            int type = Convert.ToInt32(reportRelation["type"].ToString());
+                            var jo = JObject.Parse(reportRelation.ToString());
+                            Guid id = Guid.Parse(jo["id"].ToString());
+                            int type = Convert.ToInt32(jo["type"].ToString());
                             var reportRelationRepository = ServiceLocator.Current.GetInstance<IReportRelationRepository>();
                             QueryReportRelDetailMapper model = new QueryReportRelDetailMapper();
                             switch (type)
                             {
-                                case 0://流程发起人
+                                case 1://流程发起人
                                     var l1 = CaseItemList(caseInfo.CaseId, userNumber);
                                     model = new QueryReportRelDetailMapper
                                     {
@@ -1100,9 +1101,12 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                         UserId = l1.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l1.FirstOrDefault()["handleuser"].ToString())
                                     };
                                     var d1 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
+                                    if (d1.Count == 0) {
+                                        throw new Exception("汇报关系找不到相关汇报人");
+                                    }
                                     cmdText += @" AND u.userid in (" + string.Join(",", d1.Select(t => t.ReportLeader)) + ")";
                                     break;
-                                case 1://上一步骤处理人
+                                case 2://上一步骤处理人
                                     var l2 = CaseItemList(caseInfo.CaseId, userNumber);
                                     if (l2.Count == 0)
                                     {
@@ -1112,6 +1116,10 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                             UserId = l2.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l2.FirstOrDefault()["handleuser"].ToString())
                                         };
                                         var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
+                                        if (d2.Count == 0)
+                                        {
+                                            throw new Exception("汇报关系找不到相关汇报人");
+                                        }
                                         cmdText += @" AND u.userid in (" + string.Join(",", d2.Select(t => t.ReportLeader)) + ")";
                                     }
                                     else
@@ -1127,25 +1135,29 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                                 UserId = Convert.ToInt32(userid)
                                             };
                                             var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
+                                            if (d2.Count == 0)
+                                            {
+                                                throw new Exception("汇报关系找不到相关汇报人");
+                                            }
                                             cmdText += @" AND u.userid in (" + string.Join(",", d2.Select(t => t.ReportLeader)) + ")";
                                         }
                                     }
                                     break;
-                                case 2://表单中的人员
+                                case 3://表单中的人员
                                     string f3, e3;
                                     GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f3, out e3);
                                     if (GetRuleConfigInfo("entityid", flowNodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
                                     {
                                         cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
 SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
-select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relrecid
+select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
 ) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3);
                                     }
                                     else
                                     {
                                         cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
 SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
-select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relrecid
+select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relrecid
 ) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3);
                                     }
                                     break;
@@ -1187,6 +1199,34 @@ select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relr
             }
             return result;
 
+        }
+
+        /// <summary>
+        /// 获取相应子节点的值
+        /// </summary>
+        /// <param name="childnodelist"></param>
+        private static string JSON_SeleteNode(JToken json, string ReName)
+        {
+            try
+            {
+                string result = "";
+                //这里6.0版块可以用正则匹配
+                var node = json.SelectToken("$.." + ReName);
+                if (node != null)
+                {
+                    //判断节点类型
+                    if (node.Type == JTokenType.String || node.Type == JTokenType.Integer || node.Type == JTokenType.Float)
+                    {
+                        //返回string值
+                        result = node.Value<object>().ToString();
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return "";
+            }
         }
         public List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null)
         {
@@ -1231,7 +1271,7 @@ select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relr
                         break;
                     #region 指定函数
                     case NodeStepType.Function:
-                        JToken funcname = GetRuleConfigObject("funcname", flowNodeInfo);
+                        JToken funcname = GetRuleConfigObject("cpfuncname", flowNodeInfo);
                         param.Add(new NpgsqlParameter("ruleconfig", flowNodeInfo.RuleConfig) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
                         param.Add(new NpgsqlParameter("userno", userNumber));
                         param.Add(new NpgsqlParameter("recid", caseInfo.RecId));
@@ -1275,6 +1315,9 @@ select regexp_split_to_table({0},',')::int4 as userid from {1} where recid=@relr
         {
             var ruleConfig = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
             fieldname = ruleConfig["fieldname"] != null ? ruleConfig["fieldname"].ToString() : null;
+            if (String.IsNullOrEmpty(fieldname)) {
+                fieldname = ruleConfig["fieldid"] != null ? ruleConfig["fieldid"].ToString() : null;
+            }
             string entityId = ruleConfig["entityid"] != null ? ruleConfig["entityid"].ToString() : null;
             var entitySql = @"SELECT entitytable FROM crm_sys_entity WHERE entityid = @entityid LIMIT 1";
             var entityparam = new DbParameter[] { new NpgsqlParameter("entityid", Guid.Parse(entityId)) };
