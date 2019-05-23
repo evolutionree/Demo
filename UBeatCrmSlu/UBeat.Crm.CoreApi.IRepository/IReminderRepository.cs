@@ -49,12 +49,10 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<ReminderRecycleRuleMapper> GetReminderRecycleRule(ReminderSelectMapper body, int usernumber);
 
-         ReminderMapper GetReminderById(Guid id, int usernumber);
+        ReminderMapper GetReminderById(Guid id, int usernumber);
 
-
-    }
-
-
-
+		List<ReminderMapper> GetAllReminder();
+		List<IDictionary<string, object>> CallFunction(string functionName, string eventId, int userNumber);
+	} 
 }
 

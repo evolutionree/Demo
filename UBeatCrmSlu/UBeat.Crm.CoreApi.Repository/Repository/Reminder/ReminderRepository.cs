@@ -531,11 +531,34 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
 
         }
 
+		#endregion
 
+		public List<ReminderMapper> GetAllReminder()
+		{
+			var executeSql = "select * from  crm_sys_reminder where recstatus = 1;";
+			var args = new
+			{
+			};
 
-        #endregion
+			return DataBaseHelper.Query<ReminderMapper>(executeSql, args, CommandType.Text);
 
-    }
+		}
+
+		public List<IDictionary<string, object>> CallFunction(string functionName, string eventId, int userNumber)
+		{
+			var result = new List<IDictionary<string, object>>(); 
+			var executeSql = $"select * from {functionName}(@eventid,@userno)";
+				 
+			var args = new
+			{
+				EventId = eventId,
+				UserNo = userNumber
+			}; 
+			result = DataBaseHelper.QueryStoredProcCursor(executeSql, args, CommandType.Text);
+				 
+			return result;
+		}
+	}
 }
 
 
