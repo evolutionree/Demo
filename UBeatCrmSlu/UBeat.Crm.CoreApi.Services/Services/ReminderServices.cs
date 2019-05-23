@@ -18,6 +18,7 @@ using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Models.Message;
 using UBeat.Crm.CoreApi.DomainModel.Message;
+using Microsoft.Extensions.Configuration;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -26,12 +27,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
 		IReminderRepository _repository;
 		/// private readonly Dictionary<DocumentType, string> staticEntityIdDic = null;
 
+		private readonly int isNeedSchedule;
 		public ReminderServices(IReminderRepository repository)
 		{
 			_repository = repository;
+
+			//获取作业调度的配置
+			IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+			var _config = config.GetSection("ScheduleSetting").Get<ScheduleSetting>();
+			isNeedSchedule = _config.IsNeedSchedule;
 		}
-
-
+		 
 		public OutputResult<object> GetRemainderSettingList(int userNumber)
 		{
 			List<IDictionary<string, object>> list = new List<IDictionary<string, object>>(_repository.GetReminderSettingList(userNumber));

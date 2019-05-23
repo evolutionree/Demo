@@ -27,8 +27,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         private readonly RuleTranslatorServices _ruleService;
 
         private readonly string enterpriseNo;
-
-        public ReminderController(ReminderServices service, RuleTranslatorServices ruleService) : base(service)
+		private readonly int isNeedSchedule;
+		public ReminderController(ReminderServices service, RuleTranslatorServices ruleService) : base(service)
         {
             _service = service;
             _ruleService = ruleService;
@@ -37,7 +37,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
             var _config = config.GetSection("ScheduleSetting").Get<ScheduleSetting>();
             enterpriseNo = _config.EnterpriseNo;
-        }
+			isNeedSchedule = _config.IsNeedSchedule;
+		}
 
 
         /// <summary>
@@ -94,11 +95,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _service.AddCustomReminder(body, UserId);
             if (result.Status == 0)
             {
-                //新增成功了，注册调度服务
-                var model = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.Title,
-                    enterpriseNo, result.DataBody.ToString(), "");
+				if(isNeedSchedule == 1)
+				{
+					//新增成功了，注册调度服务
+					var model = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.Title,
+						enterpriseNo, result.DataBody.ToString(), "");
 
-                ScheduleServices.AddSchedule(model);
+					ScheduleServices.AddSchedule(model);
+				} 
             }
 
             return result;
@@ -139,13 +143,16 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _service.DeleteCustomReminder(body.EventIds, UserId);
             if (result.Status == 0)
             {
-                var modelList = new List<TaskJobFullNameModel>();
-                foreach (var eventid in body.EventIds)
-                {
-                    var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, eventid, UserId.ToString());
-                    modelList.Add(model);
-                }
-                ScheduleServices.DelScheduleWithFullName(modelList);
+				if (isNeedSchedule == 0)
+				{
+					var modelList = new List<TaskJobFullNameModel>();
+					foreach (var eventid in body.EventIds)
+					{
+						var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, eventid, UserId.ToString());
+						modelList.Add(model);
+					}
+					ScheduleServices.DelScheduleWithFullName(modelList);
+				} 
             }
 
             return result;
@@ -165,22 +172,26 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (body.EventIds == null) return ResponseError<object>("eventid不能为空");
 
             _service.SetCustomReminderEnable(body.EventIds, body.Status, UserId);
-            var modelList = new List<TaskJobFullNameModel>();
-            foreach (var eventid in body.EventIds)
-            {
-                var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, eventid, UserId.ToString());
-                modelList.Add(model);
-            }
+             
+			if(isNeedSchedule == 1)
+			{
+				var modelList = new List<TaskJobFullNameModel>();
+				foreach (var eventid in body.EventIds)
+				{
+					var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, eventid, UserId.ToString());
+					modelList.Add(model);
+				}
 
-            // 如果status=1,是重启job,如果status=0,是暂停job
-            if (body.Status == 0)
-            {
-                ScheduleServices.ResumeJobsWithFullName(modelList);
-            }
-            else
-            {
-                ScheduleServices.StopJobsWithFullName(modelList);
-            }
+				// 如果status=1,是重启job,如果status=0,是暂停job
+				if (body.Status == 0)
+				{
+					ScheduleServices.ResumeJobsWithFullName(modelList);
+				}
+				else
+				{
+					ScheduleServices.StopJobsWithFullName(modelList);
+				}
+			} 
 
             return new OutputResult<object>();
         }
