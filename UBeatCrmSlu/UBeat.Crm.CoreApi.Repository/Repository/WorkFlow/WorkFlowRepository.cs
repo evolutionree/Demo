@@ -373,9 +373,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             return ExecuteQuery(executeSql, param);
         }
 
-        public void SaveNodeEvents(Guid flowId, List<WorkFlowNodeMapper> nodes, DbTransaction tran=null)
+        public void SaveNodeEvents(Guid flowId, List<WorkFlowNodeMapper> nodes, DbTransaction tran = null)
         {
-           
+
 
             List<DbParameter[]> node_eve_params = new List<DbParameter[]>();
             foreach (var node in nodes)
@@ -471,8 +471,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
                 FlowLanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang),
-				Config = JsonConvert.SerializeObject(flowMapper.Config)
-			};
+                Config = JsonConvert.SerializeObject(flowMapper.Config)
+            };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -494,8 +494,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
                 flowlanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang),
-				Config = JsonConvert.SerializeObject(flowMapper.Config)
-			};
+                Config = JsonConvert.SerializeObject(flowMapper.Config)
+            };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
@@ -1101,7 +1101,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                         UserId = l1.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l1.FirstOrDefault()["handleuser"].ToString())
                                     };
                                     var d1 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
-                                    if (d1.Count == 0) {
+                                    if (d1.Count == 0)
+                                    {
                                         throw new Exception("汇报关系找不到相关汇报人");
                                     }
                                     cmdText += @" AND u.userid in (" + string.Join(",", d1.Select(t => t.ReportLeader)) + ")";
@@ -1151,14 +1152,14 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                         cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
 SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
 select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
-) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3);
+)  and reportrelationid='{2}'::uuid ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3, id.ToString());
                                     }
                                     else
                                     {
                                         cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
 SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
 select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relrecid
-) ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3);
+)  and reportrelationid='{2}'::uuid ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3, id.ToString());
                                     }
                                     break;
                                 default:
@@ -1192,7 +1193,7 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
                 param.Add(new NpgsqlParameter("recid", caseInfo.RecId));
                 param.Add(new NpgsqlParameter("relrecid", caseInfo.RelRecId));
                 param.Add(new NpgsqlParameter("caseid", caseId));
-                param.Add(new NpgsqlParameter("isleader", GetRuleConfigInfo("isleader", flowNodeInfo) == null ? 0 : Convert.ToInt32(GetRuleConfigInfo("isleader", flowNodeInfo))));
+                param.Add(new NpgsqlParameter("isleader", string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? 0 : Convert.ToInt32(GetRuleConfigInfo("isleader", flowNodeInfo))));
                 param.Add(new NpgsqlParameter("casecreator", caseInfo.RecCreator));
 
                 result = ExecuteQuery<ApproverInfo>(cmdText, param.ToArray(), trans);
@@ -1315,8 +1316,9 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
         {
             var ruleConfig = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
             fieldname = ruleConfig["fieldname"] != null ? ruleConfig["fieldname"].ToString() : null;
-            if (String.IsNullOrEmpty(fieldname)) {
-                fieldname = ruleConfig["fieldid"] != null ? ruleConfig["fieldid"].ToString() : null;
+            if (String.IsNullOrEmpty(fieldname))
+            {
+                fieldname = ruleConfig["fieldtem"] != null ? ruleConfig["fieldtem"].ToString() : null;
             }
             string entityId = ruleConfig["entityid"] != null ? ruleConfig["entityid"].ToString() : null;
             var entitySql = @"SELECT entitytable FROM crm_sys_entity WHERE entityid = @entityid LIMIT 1";
@@ -1696,29 +1698,31 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
             try
             {
                 string tmpsql = "select flowid from crm_sys_workflow_case where caseid = @caseid";
-                Guid flowid = (Guid)ExecuteScalar(tmpsql, new DbParameter[] { new Npgsql.NpgsqlParameter("@caseid", caseid) },trans);
+                Guid flowid = (Guid)ExecuteScalar(tmpsql, new DbParameter[] { new Npgsql.NpgsqlParameter("@caseid", caseid) }, trans);
                 var config = new ConfigurationBuilder()
                   .SetBasePath(Directory.GetCurrentDirectory())
                   .AddJsonFile("workflowcopyusers.json")
                   .Build();
                 IConfigurationSection it2 = config.GetSection(flowid.ToString());
-                if (it2 !=null && it2.Value != null)
+                if (it2 != null && it2.Value != null)
                 {
                     AdditionCopyUsers = it2.Value.ToString();
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 AdditionCopyUsers = "";
             }
             #endregion
             string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseitemid,caseid,nodeid, nodenum,stepnum,choicestatus,suggest, casestatus,casedata,remark,handleuser,copyuser, reccreator, recupdator) 
                                          VALUES (@caseitemid,@caseid,@nodeid, @nodenum,@stepnum,@choicestatus,@suggest, @casestatus,@casedata,@remark,@handleuser,@copyuser, @userno, @userno);");
             List<DbParameter[]> sqlParameters = new List<DbParameter[]>();
-           
+
             foreach (var item in caseitems)
             {
                 #region 临时处理默认抄送问题
-                if (AdditionCopyUsers.Length > 0) {
+                if (AdditionCopyUsers.Length > 0)
+                {
                     if (item.CopyUser == null) item.CopyUser = AdditionCopyUsers;
                     else item.CopyUser = item.CopyUser + "," + AdditionCopyUsers;
                     item.CopyUser = string.Join(',', item.CopyUser.Split(',').Distinct());
@@ -1778,7 +1782,7 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
             if (modeltypeobj != null && int.TryParse(modeltypeobj.ToString(), out modeltype))
             {
                 int relmodeltype = -1;
-				//现在的版本也开放独立实体可以编辑
+                //现在的版本也开放独立实体可以编辑
                 if ((modeltype == 0 || modeltype == 2) && (relmodeltypeobj == null || (int.TryParse(relmodeltypeobj.ToString(), out relmodeltype) && relmodeltype != 0)))
                 {
                     return true;
@@ -1901,7 +1905,8 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
                 ExecuteNonQuery(strSQL, p, null);
                 return titleConfig;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw (ex);
             }
         }
@@ -1926,7 +1931,8 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
 			                WHERE caseid =@caseid  and (choicestatus=6 or choicestatus = 4)";
                 ExecuteNonQuery(strSQL, p, tran);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
         }
 
@@ -1941,7 +1947,8 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
                 };
                 return ExecuteQuery<WorkFlowCaseItemInfo>(strSQL, p, tran);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
             return new List<WorkFlowCaseItemInfo>();
         }
@@ -1957,7 +1964,8 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
 		WHERE w.expireday>0 AND w.recstatus=1 AND (date_part('day',now()- wci.reccreated)>=w.expireday)";
                 return ExecuteQuery<WorkFlowCaseInfo>(strSQL, new DbParameter[] { }, tran);
             }
-            catch (Exception x) {
+            catch (Exception x)
+            {
             }
             return new List<WorkFlowCaseInfo>();
         }
@@ -1973,7 +1981,8 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
                 return ExecuteQuery(strSQL, p, tran).FirstOrDefault();
 
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return null;
             }
         }
