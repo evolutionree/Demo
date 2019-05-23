@@ -1051,31 +1051,22 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f2, out e2);
                         if (GetRuleConfigInfo("entityid", flowNodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
                         {
-                            cmdText += string.Format(@" AND u.userid in (
-                            select userid from crm_sys_account_userinfo_relate as ur where deptid in (
+                            cmdText += string.Format(@"  AND u.userid in (
+     select userid from crm_sys_account_userinfo_relate as ur where deptid in (
                             select deptid from crm_func_department_tree((
-                            select array_to_string(array_agg(d.deptid),',')::text as deptid  from crm_sys_department d 
-                            LEFT JOIN crm_sys_account_userinfo_relate ur on ur.deptid=d.deptid
-                             INNER JOIN ( 
-                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
-                            ) as t1 on ur.userid=t1.userid GROUP BY d.deptid)
-                            ,1)
-                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r  ))
-                            )", f2, e2);
+                            select regexp_split_to_table(teaming::text,',')::uuid as deptid from crm_sales where recid=@relrecid
+                            ),1 ))
+                            )  and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r  ))", f2, e2);
                         }
                         else
                         {
-                            cmdText += string.Format(@" AND u.userid in (
-                            select userid from crm_sys_account_userinfo_relate as ur where deptid in (
+                            cmdText += string.Format(@"   AND u.userid in (
+     select userid from crm_sys_account_userinfo_relate as ur where deptid in (
                             select deptid from crm_func_department_tree((
-                            select array_to_string(array_agg(d.deptid),',')::text as deptid  from crm_sys_department d 
-                            LEFT JOIN crm_sys_account_userinfo_relate ur on ur.deptid=d.deptid
-                             INNER JOIN ( 
-                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@recid
-                            ) as t1 on ur.userid=t1.userid GROUP BY d.deptid)
-                            ,1)
-                            ) and recstatus=1 and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r ))
-                            )", f2, e2);
+                            select regexp_split_to_table(teaming::text,',')::uuid as deptid from crm_sales where recid=@recid
+                            ),1 ))
+                            )   and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r ))
+                            ", f2, e2);
                         }
                         break;
                     #endregion
@@ -1149,17 +1140,29 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                     GetEntityFieldBasicRuleConfig(trans, caseInfo, flowNodeInfo, out f3, out e3);
                                     if (GetRuleConfigInfo("entityid", flowNodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
                                     {
-                                        cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
-SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
-select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
-)  and reportrelationid='{2}'::uuid ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3, id.ToString());
+                                        cmdText += string.Format(@" AND u.userid in  (select t1.userid from(
+                                        SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail 
+                                        where  reportrelationid='{2}'::uuid and 
+                                        EXISTS (
+                                        select 1 from (
+                                        select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
+                                        INTERSECT
+                                        select  regexp_split_to_table(reportuser,',') ::int4
+                                        ) as t2)   ) as t1 GROUP BY t1.userid
+                                         )  ", f3, e3, id.ToString());
                                     }
                                     else
                                     {
-                                        cmdText += string.Format(@"  AND u.userid in  (select t1.userid from(
-SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail where reportuser in (
-select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relrecid
-)  and reportrelationid='{2}'::uuid ) as t1 GROUP BY t1.userid ) and u.isleader=@isleader", f3, e3, id.ToString());
+                                        cmdText += string.Format(@" AND u.userid in  (select t1.userid from(
+                                        SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail 
+                                        where  reportrelationid='{2}'::uuid and 
+                                        EXISTS (
+                                        select 1 from (
+                                        select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@recid
+                                        INTERSECT
+                                        select  regexp_split_to_table(reportuser,',') ::int4
+                                        ) as t2)   ) as t1 GROUP BY t1.userid
+                                         )  ", f3, e3, id.ToString());
                                     }
                                     break;
                                 default:
@@ -1202,33 +1205,6 @@ select regexp_split_to_table({0},',')::text as userid from {1} where recid=@relr
 
         }
 
-        /// <summary>
-        /// 获取相应子节点的值
-        /// </summary>
-        /// <param name="childnodelist"></param>
-        private static string JSON_SeleteNode(JToken json, string ReName)
-        {
-            try
-            {
-                string result = "";
-                //这里6.0版块可以用正则匹配
-                var node = json.SelectToken("$.." + ReName);
-                if (node != null)
-                {
-                    //判断节点类型
-                    if (node.Type == JTokenType.String || node.Type == JTokenType.Integer || node.Type == JTokenType.Float)
-                    {
-                        //返回string值
-                        result = node.Value<object>().ToString();
-                    }
-                }
-                return result;
-            }
-            catch (Exception ex)
-            {
-                return "";
-            }
-        }
         public List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null)
         {
             string cmdText = null;
