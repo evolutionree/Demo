@@ -326,17 +326,18 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
 
-        #endregion
+		#endregion
 
-        #region  回收机制
-
-
-        #endregion
-
-        #region  提醒消息
-        #endregion
-
-    }
+		#region 提醒和回收
+		[HttpPost]
+		[Route("autoreminder")]
+		public OutputResult<object> AutoReminder([FromBody] ReminderDisableModel body)
+		{
+			if (body == null) return ResponseError<object>("参数格式错误");
+			return new OutputResult<object>(_service.AutoReminder());
+		}
+		#endregion
+	}
 }
 
 

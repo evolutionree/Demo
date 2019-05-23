@@ -208,7 +208,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         }
         private static bool MatchDayOfWeek(DateTime dt, string item) {
             if (item == null || item.Length == 0) return false;
-            item = item.ToUpper();
+			if (item.IndexOf('?') >= 0) return true;
+
+			item = item.ToUpper();
             int curItem = ((int)dt.DayOfWeek) + 1;
             if (item.IndexOf("L") < 0 && item.IndexOf('#') < 0) return CheckMatch1(curItem, item);
             if (item.IndexOf("L") >= 0) {

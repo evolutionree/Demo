@@ -310,7 +310,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reminder
         public Int64 RecVersion { get; set; }
 
         public string ReminderName { get; set; }
-    }
+		 
+		public string FunctionName { get; set; }
+		public Guid RecId { get; set; }
+	}
 
 
 
