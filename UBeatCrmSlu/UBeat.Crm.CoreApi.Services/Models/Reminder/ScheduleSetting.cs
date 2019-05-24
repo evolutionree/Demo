@@ -12,6 +12,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.Reminder
 
         public string CommonJobCronString { get; set; }
 
-		public int IsNeedSchedule { get; set; } 
+		public ScheduleTypeEnum IsNeedSchedule { get; set; } 
+	}
+
+	public enum ScheduleTypeEnum
+	{
+		ScheduleTypeNotNeed = 0,
+		ScheduleTypeNeed = 1
 	}
 }
