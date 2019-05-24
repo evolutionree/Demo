@@ -1194,6 +1194,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			ReminderMapper _reminder = _repository.GetReminderById(Guid.Parse(body.RemindId), usernumber);
 			if (_reminder != null)
 			{
+				if(_reminder.RecStatus == 0)
+					return new OutputResult<object>(null, "停用的数据不能进行立即提醒操作", 1);
+
 				if (isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 				{
 					var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, _reminder.RecVersion.ToString(), body.RemindId, usernumber.ToString());
