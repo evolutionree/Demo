@@ -836,7 +836,9 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                       SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb, 'roleid'), ',')) AS roleid )as r) LIMIT 1)";
                         break;
                     case NodeStepType.SpecifyDepartment://5:指定审批人所在团队(特定部门),
-                        cmdText += @" AND ur.deptid = jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'deptid')::uuid";
+                        cmdText += @"  AND ur.deptid in (
+ SELECT deptid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'deptid')
+,',')) as deptid) as r)   " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
                         break;
                     case NodeStepType.SpecifyDepartment_Role://6:指定审批人所在团队及角色(特定),
                         cmdText += @" AND ur.deptid = jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'deptid')::uuid 
@@ -855,10 +857,10 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
                     #region --8XX 用户所在部门--
                     case NodeStepType.ApproverDept://8:指定审批人所在团队-用户所在部门-上一步处理人,
-                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @userno AND recstatus = 1 LIMIT 1)";
+                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @userno AND recstatus = 1 LIMIT 1) ";
                         break;
                     case NodeStepType.ApproverDept_Launcher://801:指定审批人所在团队-用户所在部门-流程发起人,
-                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @casecreator AND recstatus = 1 LIMIT 1)";
+                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @casecreator AND recstatus = 1 LIMIT 1) " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
                         break;
                     case NodeStepType.ApproverDept_Select://802:指定审批人所在团队-用户所在部门-表单中选人控件,
                                                           //{"fieldname": "recmanager"}
@@ -871,7 +873,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 																SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													) as r WHERE r.userid!=''
                                        )
-                                    AND recstatus = 1 ) and u.isleader=@isleader ", fieldname, entityTableName);
+                                    AND recstatus = 1 )  " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader"), fieldname, entityTableName);
                         }
                         break;
                     #endregion
@@ -881,13 +883,13 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         cmdText += @"  AND ur.deptid =  (SELECT s.pdeptid FROM crm_sys_department AS s WHERE s.deptid = (
 															    SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid = @userno AND e.recstatus = 1 LIMIT 1
                                                                 )
-                                                            )   and u.isleader=@isleader ";
+                                                            )   " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
                         break;
                     case NodeStepType.ApproverPreDepatrment_Launcher://111:指定审批人所在团队-用户所在部门的上级部门-流程发起人,
                         cmdText += @"  AND ur.deptid =  (SELECT s.pdeptid FROM crm_sys_department AS s WHERE s.deptid = (
 															    SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid = @casecreator AND e.recstatus = 1 LIMIT 1
                                                                 )
-                                                            )   and u.isleader=@isleader ";
+                                                            )  " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
                         break;
 
 
@@ -904,7 +906,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 													                            ) as r WHERE r.userid!=''
                                                                    ) AND e.recstatus = 1 
                                                                 )
-                                                            )   and u.isleader=@isleader ", fieldname, entityTableName);
+                                                            )   and" + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader"), fieldname, entityTableName);
                         }
                         break;
                     #endregion
@@ -946,7 +948,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         {
                             string fieldname, entityTableName;
                             GetEntityField(trans, caseInfo, flowNodeInfo, out fieldname, out entityTableName);
-                            cmdText += string.Format(@" AND u.isleader=@isleader AND ur.deptid IN  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid IN (
+                            cmdText += string.Format(@" {2} AND ur.deptid IN  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid IN (
 													                            SELECT userid::INT from (
 																                            SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
 													                            ) as r WHERE r.userid!=''
@@ -954,7 +956,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                                         AND EXISTS(SELECT 1 FROM crm_sys_userinfo_role_relate AS ro WHERE ro.userid = u.userid AND ro.roleid IN (
                                                                   SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r
                                                                   ) LIMIT 1
-                                                           )", fieldname, entityTableName);
+                                                           )", fieldname, entityTableName, (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader"));
                         }
                         break;
                     #endregion
@@ -988,7 +990,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         {
                             string fieldname, entityTableName;
                             GetEntityField(trans, caseInfo, flowNodeInfo, out fieldname, out entityTableName);
-                            cmdText += string.Format(@" AND u.isleader=isleader AND ur.deptid IN (SELECT s.pdeptid  FROM crm_sys_department AS s WHERE s.deptid = (
+                            cmdText += string.Format(@"   AND ur.deptid IN (SELECT s.pdeptid  FROM crm_sys_department AS s WHERE s.deptid = (
 									                            SELECT e.deptid FROM crm_sys_account_userinfo_relate AS e WHERE e.userid IN (
 													                            SELECT userid::INT from (
 																                            SELECT UNNEST( string_to_array((SELECT {0}::text FROM {1} WHERE recid=@recid LIMIT 1), ',')) AS userid 
@@ -1000,7 +1002,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                                                 SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r
                                                                 ) LIMIT 1
                                                            )
-                                                   ", fieldname, entityTableName);
+                                                   ", fieldname, entityTableName, (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader"));
                         }
                         break;
                     #endregion
@@ -1024,26 +1026,24 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                             cmdText += string.Format(@" AND u.userid in (
                             SELECT u1.userid FROM (
                             select * from crm_sys_account_userinfo_relate where deptid in (
-                            select deptid from crm_func_department_tree((select {0} from {1} where recid=@relrecid LIMIT 1),1)
+                            select regexp_split_to_table({0}::text,',')::uuid as deptid from {1} where recid=@relrecid 
                             ) AND recstatus=1
                             ) as tmp 
                             LEFT JOIN crm_sys_userinfo u1 on u1.userid=tmp.userid 
-                            LEFT JOIN crm_sys_department d on tmp.deptid=d.deptid AND d.recstatus=1
-                            where u1.isleader=@isleader
-                            )", f1, e1);
+                            LEFT JOIN crm_sys_department d on tmp.deptid=d.deptid AND d.recstatus=1 {2}
+                            )", f1, e1, (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " where u1.isleader=@isleader"));
                         }
                         else
                         {
                             cmdText += string.Format(@" AND u.userid in (
                             SELECT u1.userid FROM (
                             select * from crm_sys_account_userinfo_relate where deptid in (
-                            select deptid from crm_func_department_tree((select {0} from {1} where recid=@recid LIMIT 1),1)
+                            select  regexp_split_to_table({0}::text,',')::uuid as deptid from {1} where recid=@recid
                             ) AND recstatus=1
                             ) as tmp 
                             LEFT JOIN crm_sys_userinfo u1 on u1.userid=tmp.userid 
-                            LEFT JOIN crm_sys_department d on tmp.deptid=d.deptid AND d.recstatus=1
-                            where u1.isleader=@isleader
-                            )", f1, e1);
+                            LEFT JOIN crm_sys_department d on tmp.deptid=d.deptid AND d.recstatus=1 {2}
+                            )", f1, e1, (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " where u1.isleader=@isleader"));
                         }
                         break;
                     case NodeStepType.FormDeptGroupForRole:
@@ -1053,18 +1053,15 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                         {
                             cmdText += string.Format(@"  AND u.userid in (
      select userid from crm_sys_account_userinfo_relate as ur where deptid in (
-                            select deptid from crm_func_department_tree((
-                            select regexp_split_to_table(teaming::text,',')::uuid as deptid from crm_sales where recid=@relrecid
-                            ),1 ))
+                            select regexp_split_to_table({0}::text,',')::uuid as deptid from {1} where recid=@relrecid
+                            )
                             )  and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r  ))", f2, e2);
                         }
                         else
                         {
                             cmdText += string.Format(@"   AND u.userid in (
      select userid from crm_sys_account_userinfo_relate as ur where deptid in (
-                            select deptid from crm_func_department_tree((
-                            select regexp_split_to_table(teaming::text,',')::uuid as deptid from crm_sales where recid=@recid
-                            ),1 ))
+                            select regexp_split_to_table({0}::text,',')::uuid as deptid from {1} where recid=@recid)
                             )   and EXISTS(select 1 from crm_sys_userinfo_role_relate where userid=ur.userid and  roleid in (SELECT roleid::uuid from (SELECT UNNEST( string_to_array(jsonb_extract_path_text(LOWER(@ruleconfig::TEXT)::jsonb,'roleid'), ',')) AS roleid )as r ))
                             ", f2, e2);
                         }
@@ -1269,7 +1266,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 param.Add(new NpgsqlParameter("relrecid", caseInfo.RelRecId));
                 param.Add(new NpgsqlParameter("caseid", caseId));
                 param.Add(new NpgsqlParameter("casecreator", caseInfo.RecCreator));
-                param.Add(new NpgsqlParameter("isleader", GetRuleConfigInfo("isleader", flowNodeInfo) == null ? 0 : Convert.ToInt32(GetRuleConfigInfo("isleader", flowNodeInfo))));
+                param.Add(new NpgsqlParameter("isleader", string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? 0 : Convert.ToInt32(GetRuleConfigInfo("isleader", flowNodeInfo))));
                 result = ExecuteQuery<ApproverInfo>(cmdText, param.ToArray(), trans);
             }
             return result;

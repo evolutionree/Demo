@@ -132,7 +132,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
 
         public List<EditReportRelDetailMapper> GetReportRelDetail(QueryReportRelDetailMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = " select * from crm_sys_reportreldetail where 1=1 {0} limit 1";
+            var sql = " select * from crm_sys_reportreldetail where 1=1 {0} ";
             var param = new DbParameter[]
            {
                new NpgsqlParameter("reportrelationname",mapper.Name),
