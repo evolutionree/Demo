@@ -1213,8 +1213,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 					}
 				}
 				else
-				{
+				{ 
 					reminderMsg(usernumber, _reminder);
+					isSuccess = true;
 				}
 			}
 			 
