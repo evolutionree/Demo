@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         private readonly RuleTranslatorServices _ruleService;
 
         private readonly string enterpriseNo;
-		private readonly int isNeedSchedule;
+		private readonly ScheduleTypeEnum isNeedSchedule;
 		public ReminderController(ReminderServices service, RuleTranslatorServices ruleService) : base(service)
         {
             _service = service;
@@ -95,7 +95,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _service.AddCustomReminder(body, UserId);
             if (result.Status == 0)
             {
-				if(isNeedSchedule == 1)
+				if(isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 				{
 					//新增成功了，注册调度服务
 					var model = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.Title,
@@ -143,7 +143,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _service.DeleteCustomReminder(body.EventIds, UserId);
             if (result.Status == 0)
             {
-				if (isNeedSchedule == 0)
+				if (isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 				{
 					var modelList = new List<TaskJobFullNameModel>();
 					foreach (var eventid in body.EventIds)
@@ -172,8 +172,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (body.EventIds == null) return ResponseError<object>("eventid不能为空");
 
             _service.SetCustomReminderEnable(body.EventIds, body.Status, UserId);
-             
-			if(isNeedSchedule == 1)
+
+			if (isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 			{
 				var modelList = new List<TaskJobFullNameModel>();
 				foreach (var eventid in body.EventIds)

@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 		IReminderRepository _repository;
 		/// private readonly Dictionary<DocumentType, string> staticEntityIdDic = null;
 
-		private readonly int isNeedSchedule;
+		private readonly ScheduleTypeEnum isNeedSchedule;
 		public ReminderServices(IReminderRepository repository)
 		{
 			_repository = repository;
@@ -239,167 +239,168 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			//写数据库成功,然后操作schedule
 			if (result.Flag == 1)
 			{
-
-				//拼接cron字符串
-				string cronString = GetCronString(body);
-
-				//智能提醒
-				if (body.RecType == 0)
+				if(isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 				{
-					if (body.IsRepeat)
+					//拼接cron字符串
+					string cronString = GetCronString(body);
+
+					//智能提醒
+					if (body.RecType == 0)
 					{
-						if (body.ReminderId == null)
+						if (body.IsRepeat)
 						{
-							if (body.RecStatus == 1)
+							if (body.ReminderId == null)
 							{
-								//新增成功了，注册调度服务
-								var model = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
-								ScheduleServices.AddSchedule(model);
+								if (body.RecStatus == 1)
+								{
+									//新增成功了，注册调度服务
+									var model = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
+									ScheduleServices.AddSchedule(model);
+								}
+							}
+							else
+							{
+								//获取旧数据,用来比较是否数据有改变
+								if (oldData.RecStatus == body.RecStatus && oldData.IsRepeat == body.IsRepeat && oldData.RepeatType == body.RepeatType && body.CronString == oldData.CronString)
+								{
+									//数据没有改变，只更新数据库数据，不需要更新schedule
+								}
+								else
+								{
+									var modelList = new List<TaskJobFullNameModel>();
+									var oldVersion = oldData.RecVersion;
+									//var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, body.ReminderId.ToString(), usernumber.ToString());
+									var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, oldVersion.ToString(), body.ReminderId.ToString(), usernumber.ToString());
+									modelList.Add(model);
+
+									//请求数据是启用状态
+									if (body.RecStatus == 1)
+									{
+										if (oldData.IsRepeat == body.IsRepeat && oldData.RepeatType == body.RepeatType && body.CronString == oldData.CronString)
+										{
+											// 重启 reminder
+											ScheduleServices.ResumeJobsWithFullName(modelList);
+										}
+										else
+										{
+											// 删除 old reminder
+											var removeResult = ScheduleServices.DelScheduleWithFullName(modelList);
+
+											if (removeResult.IsSucc)
+											{
+												// 新增 reminder
+												//var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, enterpriseNo, result.Id, cronString);
+												var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newVersion.ToString(), result.Id, cronString);
+												ScheduleServices.AddSchedule(newModel);
+											}
+										}
+									}
+									else
+									{
+										//老数据是启用状态
+										if (oldData.RecStatus == 1)
+										{
+											// 暂停reminder
+											ScheduleServices.StopJobsWithFullName(modelList);
+										}
+									}
+								}
 							}
 						}
 						else
 						{
-							//获取旧数据,用来比较是否数据有改变
-							if (oldData.RecStatus == body.RecStatus && oldData.IsRepeat == body.IsRepeat && oldData.RepeatType == body.RepeatType && body.CronString == oldData.CronString)
-							{
-								//数据没有改变，只更新数据库数据，不需要更新schedule
-							}
-							else
-							{
-								var modelList = new List<TaskJobFullNameModel>();
-								var oldVersion = oldData.RecVersion;
-								//var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, body.ReminderId.ToString(), usernumber.ToString());
-								var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, oldVersion.ToString(), body.ReminderId.ToString(), usernumber.ToString());
-								modelList.Add(model);
+							var modelList = new List<TaskJobFullNameModel>();
+							var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, oldData.RecVersion.ToString(), body.ReminderId.ToString(), usernumber.ToString());
+							modelList.Add(model);
 
-								//请求数据是启用状态
-								if (body.RecStatus == 1)
+							//如果启用
+							if (body.RecStatus == 1)
+							{
+								//修改老数据
+								if (body.ReminderId.HasValue)
 								{
-									if (oldData.IsRepeat == body.IsRepeat && oldData.RepeatType == body.RepeatType && body.CronString == oldData.CronString)
+									//时间改变了
+									if (oldData.CronString != newData.CronString)
 									{
-										// 重启 reminder
-										ScheduleServices.ResumeJobsWithFullName(modelList);
+										// 删除 old reminder
+										ScheduleServices.DelScheduleWithFullName(modelList);
+
+										// 新增 reminder
+										var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
+										ScheduleServices.AddSchedule(newModel);
+
 									}
 									else
 									{
-										// 删除 old reminder
-										var removeResult = ScheduleServices.DelScheduleWithFullName(modelList);
-
-										if (removeResult.IsSucc)
+										//如果老数据是暂停状态
+										if (oldData.RecStatus == 0)
 										{
-											// 新增 reminder
-											//var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, enterpriseNo, result.Id, cronString);
-											var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newVersion.ToString(), result.Id, cronString);
-											ScheduleServices.AddSchedule(newModel);
+
+											// 重启 reminder
+											ScheduleServices.ResumeJobsWithFullName(modelList);
+
 										}
 									}
 								}
 								else
 								{
-									//老数据是启用状态
-									if (oldData.RecStatus == 1)
-									{
-										// 暂停reminder
-										ScheduleServices.StopJobsWithFullName(modelList);
-									}
+									// 新增 reminder
+									var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
+									ScheduleServices.AddSchedule(newModel);
+								}
+
+
+							}
+							else
+							{
+								//不启用
+								//老数据是启用状态
+								if (body.ReminderId.HasValue && oldData.RecStatus == 1)
+								{
+									// 暂停reminder
+									ScheduleServices.StopJobsWithFullName(modelList);
 								}
 							}
 						}
+
 					}
-					else
+					else //处理回收机制的执行逻辑
 					{
+
 						var modelList = new List<TaskJobFullNameModel>();
 						var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, oldData.RecVersion.ToString(), body.ReminderId.ToString(), usernumber.ToString());
 						modelList.Add(model);
 
-						//如果启用
+						//回收机制
+						//启用状态
 						if (body.RecStatus == 1)
 						{
-							//修改老数据
-							if (body.ReminderId.HasValue)
+							// 删除 old reminder
+							ScheduleServices.DelScheduleWithFullName(modelList);
+
+							// 新增 reminder
+							// 每天早晨 8点 执行一次
+							if (string.IsNullOrEmpty(cronString))
 							{
-								//时间改变了
-								if (oldData.CronString != newData.CronString)
-								{
-									// 删除 old reminder
-									ScheduleServices.DelScheduleWithFullName(modelList);
-
-									// 新增 reminder
-									var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
-									ScheduleServices.AddSchedule(newModel);
-
-								}
-								else
-								{
-									//如果老数据是暂停状态
-									if (oldData.RecStatus == 0)
-									{
-
-										// 重启 reminder
-										ScheduleServices.ResumeJobsWithFullName(modelList);
-
-									}
-								}
+								cronString = "0 0 8 * * ?";
 							}
-							else
-							{
-								// 新增 reminder
-								var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
-								ScheduleServices.AddSchedule(newModel);
-							}
-
-
+							// string cronString = "0 0 8 * * ?";
+							//前端要穿类型为1，然后再传时分秒
+							var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
+							ScheduleServices.AddSchedule(newModel);
 						}
 						else
 						{
-							//不启用
-							//老数据是启用状态
-							if (body.ReminderId.HasValue && oldData.RecStatus == 1)
+							//老数据是启用状态，新数据是停用状态
+							if (oldData.RecStatus == 1)
 							{
 								// 暂停reminder
 								ScheduleServices.StopJobsWithFullName(modelList);
+
 							}
 						}
 					}
-
-				}
-				else //处理回收机制的执行逻辑
-				{
-
-					var modelList = new List<TaskJobFullNameModel>();
-					var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, oldData.RecVersion.ToString(), body.ReminderId.ToString(), usernumber.ToString());
-					modelList.Add(model);
-
-					//回收机制
-					//启用状态
-					if (body.RecStatus == 1)
-					{
-						// 删除 old reminder
-						ScheduleServices.DelScheduleWithFullName(modelList);
-
-						// 新增 reminder
-						// 每天早晨 8点 执行一次
-						if (string.IsNullOrEmpty(cronString))
-						{
-							cronString = "0 0 8 * * ?";
-						}
-						// string cronString = "0 0 8 * * ?";
-						//前端要穿类型为1，然后再传时分秒
-						var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
-						ScheduleServices.AddSchedule(newModel);
-					}
-					else
-					{
-						//老数据是启用状态，新数据是停用状态
-						if (oldData.RecStatus == 1)
-						{
-							// 暂停reminder
-							ScheduleServices.StopJobsWithFullName(modelList);
-
-						}
-					}
-				}
-
+				}  
 			}
 
 			return new OutputResult<object>(result);
@@ -445,55 +446,58 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			//TODO:需要修改schedule的API
 			if (result.Flag == 1)
 			{
-				//拼接cron字符串
-				string cronString = GetCronString(body);
-
-				var modelList = new List<TaskJobFullNameModel>();
-				var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, body.ReminderId.ToString(), usernumber.ToString());
-				modelList.Add(model);
-
-				//编辑数据
-				if (body.ReminderId.HasValue)
+				if(isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 				{
-					//数据发生变化
-					if (!(oldData.RecStatus == body.RecStatus && body.CronString == oldData.CronString && oldData.IsRepeat == body.IsRepeat))
+					//拼接cron字符串
+					string cronString = GetCronString(body);
+
+					var modelList = new List<TaskJobFullNameModel>();
+					var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, enterpriseNo, body.ReminderId.ToString(), usernumber.ToString());
+					modelList.Add(model);
+
+					//编辑数据
+					if (body.ReminderId.HasValue)
 					{
-						//数据有变化,是启用状态
-						if (body.RecStatus == (int)ReminderStatus.Enable)
+						//数据发生变化
+						if (!(oldData.RecStatus == body.RecStatus && body.CronString == oldData.CronString && oldData.IsRepeat == body.IsRepeat))
 						{
-							//数据发生了变化
-
-							// 删除老数据 reminder
-							var deleteResult = ScheduleServices.DeleteJob(model);
-
-
-							// 新增 reminder
-							var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, enterpriseNo, result.Id, cronString);
-							ScheduleServices.AddSchedule(newModel);
-
-
-						}
-						else
-						{
-							//数据是禁用状态
-							if (oldData.RecStatus == (int)ReminderStatus.Enable)
+							//数据有变化,是启用状态
+							if (body.RecStatus == (int)ReminderStatus.Enable)
 							{
+								//数据发生了变化
+
 								// 删除老数据 reminder
-								ScheduleServices.DelScheduleWithFullName(modelList);
+								var deleteResult = ScheduleServices.DeleteJob(model);
+
+
+								// 新增 reminder
+								var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, enterpriseNo, result.Id, cronString);
+								ScheduleServices.AddSchedule(newModel);
+
+
+							}
+							else
+							{
+								//数据是禁用状态
+								if (oldData.RecStatus == (int)ReminderStatus.Enable)
+								{
+									// 删除老数据 reminder
+									ScheduleServices.DelScheduleWithFullName(modelList);
+								}
 							}
 						}
 					}
-				}
-				else
-				{
-					//新增数据,如果数据是启用状体
-					if (body.RecStatus == (int)ReminderStatus.Enable)
+					else
 					{
-						//如果启用,调用schedule add
-						var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, enterpriseNo, result.Id, cronString);
-						ScheduleServices.AddSchedule(newModel);
+						//新增数据,如果数据是启用状体
+						if (body.RecStatus == (int)ReminderStatus.Enable)
+						{
+							//如果启用,调用schedule add
+							var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, enterpriseNo, result.Id, cronString);
+							ScheduleServices.AddSchedule(newModel);
+						}
 					}
-				}
+				} 
 			}
 
 			return new OutputResult<object>(result);
@@ -535,54 +539,57 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			//TODO:需要修改schedule的API
 			if (result.Flag == 1)
 			{
-				//拼接cron字符串
-				string cronString = GetCronString(body);
-
-				var modelList = new List<TaskJobFullNameModel>();
-				var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, oldData.RecVersion.ToString(), body.ReminderId.ToString(), usernumber.ToString());
-				modelList.Add(model);
-
-				//编辑数据
-				if (body.ReminderId.HasValue)
+				if(isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 				{
-					//数据发生变化
-					if (!(oldData.RecStatus == body.RecStatus && body.CronString == oldData.CronString && oldData.IsRepeat == body.IsRepeat))
+					//拼接cron字符串
+					string cronString = GetCronString(body);
+
+					var modelList = new List<TaskJobFullNameModel>();
+					var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, oldData.RecVersion.ToString(), body.ReminderId.ToString(), usernumber.ToString());
+					modelList.Add(model);
+
+					//编辑数据
+					if (body.ReminderId.HasValue)
 					{
-						//数据有变化,是启用状态
-						if (body.RecStatus == (int)ReminderStatus.Enable)
+						//数据发生变化
+						if (!(oldData.RecStatus == body.RecStatus && body.CronString == oldData.CronString && oldData.IsRepeat == body.IsRepeat))
 						{
-							//数据发生了变化
-
-							// 删除老数据 reminder
-							ScheduleServices.DelScheduleWithFullName(modelList);
-
-							// 新增 reminder
-							var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
-							ScheduleServices.AddSchedule(newModel);
-
-
-						}
-						else
-						{
-							//数据是禁用状态
-							if (oldData.RecStatus == (int)ReminderStatus.Enable)
+							//数据有变化,是启用状态
+							if (body.RecStatus == (int)ReminderStatus.Enable)
 							{
+								//数据发生了变化
+
 								// 删除老数据 reminder
 								ScheduleServices.DelScheduleWithFullName(modelList);
+
+								// 新增 reminder
+								var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
+								ScheduleServices.AddSchedule(newModel);
+
+
+							}
+							else
+							{
+								//数据是禁用状态
+								if (oldData.RecStatus == (int)ReminderStatus.Enable)
+								{
+									// 删除老数据 reminder
+									ScheduleServices.DelScheduleWithFullName(modelList);
+								}
 							}
 						}
 					}
-				}
-				else
-				{
-					//新增数据,如果数据是启用状体
-					if (body.RecStatus == (int)ReminderStatus.Enable)
+					else
 					{
-						//如果启用,调用schedule add
-						var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
-						ScheduleServices.AddSchedule(newModel);
+						//新增数据,如果数据是启用状体
+						if (body.RecStatus == (int)ReminderStatus.Enable)
+						{
+							//如果启用,调用schedule add
+							var newModel = ScheduleServices.CreateCustomReminder(ScheduleServices.CustomerTipsJobName, body.ReminderName, newData.RecVersion.ToString(), result.Id, cronString);
+							ScheduleServices.AddSchedule(newModel);
+						}
 					}
-				}
+				} 
 			}
 
 			return new OutputResult<object>(result);
@@ -870,70 +877,75 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 				if (TriggerCronbCheckUtils.Match(now, model.CronString))
 				{
-					var dataList = _repository.CallFunction(reminder.FunctionName, reminder.RecId.ToString(), userNumber);
-					if (dataList != null && dataList.Count > 0)
-					{
-						var ListDic = new Dictionary<string, List<IDictionary<string, object>>>();
-						for (int i = 0; i < dataList.Count; i++)
-						{
-							var recId = string.Concat(dataList[i]["recid"]);
-							if (!ListDic.ContainsKey(recId))
-								ListDic.Add(recId, new List<IDictionary<string, object>>() { dataList[i] });
-							else
-								ListDic[recId].Add(dataList[i]);
-						}
-
-						foreach (var item in ListDic)
-						{
-							var dataItem = item.Value.FirstOrDefault();
-							if (dataItem != null)
-							{
-								var receiverIntList = new List<int>();
-								foreach (var recItem in item.Value)
-								{
-									var rec = Convert.ToInt32(string.Concat(recItem["receiver"]));
-									receiverIntList.Add(rec);
-								}
-								var receiveDic = new Dictionary<MessageUserType, List<int>>();
-								if (receiverIntList.Count > 0)
-									receiveDic.Add(MessageUserType.SpecificUser, receiverIntList);
-
-								if (receiveDic.Count > 0)
-								{
-									var templateKeyValue = new Dictionary<string, string>();
-									templateKeyValue.Add("title", string.Concat(dataItem["title"]));
-									templateKeyValue.Add("content", string.Concat(dataItem["content"]));
-									templateKeyValue.Add("pushcontent", string.Concat(dataItem["pushcontent"]));
-
-									var relEntityId = Guid.Empty;
-									Guid.TryParse(string.Concat(dataItem["relentityid"]), out relEntityId);
-
-									var relBusinessId = Guid.Empty;
-									Guid.TryParse(string.Concat(dataItem["relrecid"]), out relBusinessId);
-
-									var data = new MessageParameter
-									{
-										FuncCode = string.Concat(dataItem["funcode"]),
-										EntityId = Guid.Parse(string.Concat(dataItem["entityid"])),
-										TypeId = Guid.Parse(string.Concat(dataItem["typeid"])),
-										BusinessId = Guid.Parse(string.Concat(dataItem["recid"])),
-										RelEntityId = relEntityId,
-										RelBusinessId = relBusinessId,
-										ParamData = string.Concat(dataItem["msgparam"]),
-										TemplateKeyValue = templateKeyValue,
-										Receivers = receiveDic,
-										CopyUsers = null
-									};
-
-									MessageService.WriteMessageAsyn(data, userNumber);
-								}
-							}
-						}
-					}
+					reminderMsg(userNumber, reminder);
 				}
 			}
 
 			return true;
+		}
+
+		private void reminderMsg(int userNumber, ReminderMapper reminder)
+		{
+			var dataList = _repository.CallFunction(reminder.FunctionName, reminder.RecId.ToString(), userNumber);
+			if (dataList != null && dataList.Count > 0)
+			{
+				var ListDic = new Dictionary<string, List<IDictionary<string, object>>>();
+				for (int i = 0; i < dataList.Count; i++)
+				{
+					var recId = string.Concat(dataList[i]["recid"]);
+					if (!ListDic.ContainsKey(recId))
+						ListDic.Add(recId, new List<IDictionary<string, object>>() { dataList[i] });
+					else
+						ListDic[recId].Add(dataList[i]);
+				}
+
+				foreach (var item in ListDic)
+				{
+					var dataItem = item.Value.FirstOrDefault();
+					if (dataItem != null)
+					{
+						var receiverIntList = new List<int>();
+						foreach (var recItem in item.Value)
+						{
+							var rec = Convert.ToInt32(string.Concat(recItem["receiver"]));
+							receiverIntList.Add(rec);
+						}
+						var receiveDic = new Dictionary<MessageUserType, List<int>>();
+						if (receiverIntList.Count > 0)
+							receiveDic.Add(MessageUserType.SpecificUser, receiverIntList);
+
+						if (receiveDic.Count > 0)
+						{
+							var templateKeyValue = new Dictionary<string, string>();
+							templateKeyValue.Add("title", string.Concat(dataItem["title"]));
+							templateKeyValue.Add("content", string.Concat(dataItem["content"]));
+							templateKeyValue.Add("pushcontent", string.Concat(dataItem["pushcontent"]));
+
+							var relEntityId = Guid.Empty;
+							Guid.TryParse(string.Concat(dataItem["relentityid"]), out relEntityId);
+
+							var relBusinessId = Guid.Empty;
+							Guid.TryParse(string.Concat(dataItem["relrecid"]), out relBusinessId);
+
+							var data = new MessageParameter
+							{
+								FuncCode = string.Concat(dataItem["funcode"]),
+								EntityId = Guid.Parse(string.Concat(dataItem["entityid"])),
+								TypeId = Guid.Parse(string.Concat(dataItem["typeid"])),
+								BusinessId = Guid.Parse(string.Concat(dataItem["recid"])),
+								RelEntityId = relEntityId,
+								RelBusinessId = relBusinessId,
+								ParamData = string.Concat(dataItem["msgparam"]),
+								TemplateKeyValue = templateKeyValue,
+								Receivers = receiveDic,
+								CopyUsers = null
+							};
+
+							MessageService.WriteMessageAsyn(data, userNumber);
+						}
+					}
+				}
+			}
 		}
 
 		public string GetCronString_old(ReminderSaveModel body)
@@ -1182,21 +1194,27 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			ReminderMapper _reminder = _repository.GetReminderById(Guid.Parse(body.RemindId), usernumber);
 			if (_reminder != null)
 			{
-				var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, _reminder.RecVersion.ToString(), body.RemindId, usernumber.ToString());
-				var result = ScheduleServices.ExecuteNow(model);
-
-				if (result.IsSucc)
+				if (isNeedSchedule == ScheduleTypeEnum.ScheduleTypeNeed)
 				{
+					var model = ScheduleServices.Creator(ScheduleServices.CustomerTipsJobName, _reminder.RecVersion.ToString(), body.RemindId, usernumber.ToString());
+					var result = ScheduleServices.ExecuteNow(model);
 
-					isSuccess = true;
+					if (result.IsSucc)
+					{
+
+						isSuccess = true;
+					}
+					else
+					{
+						isSuccess = false;
+					}
 				}
 				else
 				{
-					isSuccess = false;
+					reminderMsg(usernumber, _reminder);
 				}
 			}
-
-
+			 
 			if (isSuccess)
 			{
 				return new OutputResult<object>(null, null, 0);
