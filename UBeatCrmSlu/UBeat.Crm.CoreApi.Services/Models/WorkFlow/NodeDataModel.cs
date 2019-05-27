@@ -17,6 +17,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public List<ApproverInfo> Approvers { set; get; }
         public List<ApproverInfo> CPUsers { set; get; }
 
+        public int NotFound { get; set; }
     }
 
 

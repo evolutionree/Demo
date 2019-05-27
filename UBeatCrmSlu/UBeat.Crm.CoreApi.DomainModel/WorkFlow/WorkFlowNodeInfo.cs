@@ -32,12 +32,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
         public object ColumnConfig { set; get; }
 
-        public  int VerNum { set; get; }
+        public int VerNum { set; get; }
         /// <summary>
         /// 通过审批最少需要多少人同意
         /// </summary>
         public int AuditSucc { set; get; }
 
 
+        public bool IsSkip { get; set; }
+        public bool IsEnd { get; set; }
     }
 }
