@@ -245,8 +245,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
         public int RecOrder { get; set; }
 
-
-        [JsonIgnore]
+        
         public string FieldConfig { get; set; }
 
 
