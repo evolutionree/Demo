@@ -1089,11 +1089,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                         UserId = l1.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l1.FirstOrDefault()["handleuser"].ToString())
                                     };
                                     var d1 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
-                                    if (d1.Count == 0)
-                                    {
-                                        throw new Exception("汇报关系找不到相关汇报人");
-                                    }
-                                    cmdText += @" AND u.userid in (" + string.Join(",", d1.Select(t => t.ReportLeader)) + ")";
+                                    cmdText += @" AND u.userid in (" + string.Join(",", (d1.Count == 0 ? new string[] { "-1" } : d1.Select(t => t.ReportLeader))) + ")";
                                     break;
                                 case 2://上一步骤处理人
                                     var l2 = CaseItemList(caseInfo.CaseId, userNumber);
@@ -1105,11 +1101,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                             UserId = l2.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l2.FirstOrDefault()["handleuser"].ToString())
                                         };
                                         var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
-                                        if (d2.Count == 0)
-                                        {
-                                            throw new Exception("汇报关系找不到相关汇报人");
-                                        }
-                                        cmdText += @" AND u.userid in (" + string.Join(",", d2.Select(t => t.ReportLeader)) + ")";
+                                        cmdText += @" AND u.userid in (" + string.Join(",", (d2.Count == 0 ? new string[] { "-1" } : d2.Select(t => t.ReportLeader))) + ")";
                                     }
                                     else
                                     {
@@ -1124,11 +1116,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                                 UserId = Convert.ToInt32(userid)
                                             };
                                             var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
-                                            if (d2.Count == 0)
-                                            {
-                                                throw new Exception("汇报关系找不到相关汇报人");
-                                            }
-                                            cmdText += @" AND u.userid in (" + string.Join(",", d2.Select(t => t.ReportLeader)) + ")";
+                                            cmdText += @" AND u.userid in (" + string.Join(",", (d2.Count == 0 ? new string[] { "-1" } : d2.Select(t => t.ReportLeader))) + ")";
                                         }
                                     }
                                     break;
