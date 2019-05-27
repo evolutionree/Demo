@@ -487,27 +487,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 Suggest = "",
                                 ChoiceStatus = 1
                             }, userinfo, out model);
-                            return LoopWorkFlow(model, caseInfo, workflowInfo, userinfo);
-
+                            if (model.Approvers.Count == 0)
+                                return LoopWorkFlow(model, caseInfo, workflowInfo, userinfo);
+                            else
+                                return obj;
                             #region 
-                            //SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
-                            //{
-                            //    CaseId = caseInfo.CaseId,
-                            //    NodeNum = caseInfo.NodeNum,
-                            //    Suggest = "",
-                            //    ChoiceStatus = 1
-                            //}, userinfo);
-                            //var nextNode = _workFlowRepository.GetWorkFlowNodeInfo(tran, Guid.Parse(node["tonodeid"].ToString()));
-                            //if (nextNode.StepTypeId == NodeStepType.End)
-                            //{
-                            //    nextNode.IsEnd = true;
-                            //}
-                            //else
-                            //{
-                            //    nextNode.IsSkip = true;
-                            //    result = GetNextNodeData(tran, caseInfo, workflowInfo, nextNode, userinfo);
-                            //}
-                            #endregion
+                                //SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
+                                //{
+                                //    CaseId = caseInfo.CaseId,
+                                //    NodeNum = caseInfo.NodeNum,
+                                //    Suggest = "",
+                                //    ChoiceStatus = 1
+                                //}, userinfo);
+                                //var nextNode = _workFlowRepository.GetWorkFlowNodeInfo(tran, Guid.Parse(node["tonodeid"].ToString()));
+                                //if (nextNode.StepTypeId == NodeStepType.End)
+                                //{
+                                //    nextNode.IsEnd = true;
+                                //}
+                                //else
+                                //{
+                                //    nextNode.IsSkip = true;
+                                //    result = GetNextNodeData(tran, caseInfo, workflowInfo, nextNode, userinfo);
+                                //}
+                                #endregion
                             break;
                         case 3:
                             throw new Exception("功能未开放");

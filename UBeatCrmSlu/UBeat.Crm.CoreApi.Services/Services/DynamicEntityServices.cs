@@ -2661,6 +2661,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         detail.Add(entityInfo["relfieldname"].ToString() + "_name", relResult[relField.FieldName + "_name"]);
                                     }
                                 }
+                                else
+                                {
+                                    if (!detail.ContainsKey(entityInfo["relfieldname"].ToString() + "_name"))
+                                    {
+                                        detail.Add(entityInfo["relfieldname"].ToString() + "_name", relResult[relField.FieldName]);
+                                    }
+                                }
                             }
 
                         }
