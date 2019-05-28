@@ -102,28 +102,68 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult SaveEntityGlobalJs(EntityGlobalJsMapper entity, int userNumber)
         {
             var sql = @"
-                Update crm_sys_entity Set newload=@newload,editload=@editload,checkload=@checkload,copyload=@copyload Where entityid=@entityid;
+                Update crm_sys_entity Set load=@load Where entityid=@entityid;
             ";
-            string field = string.Empty;
-            var param = new DbParameter[]
+            var log = "   insert INTO crm_sys_ucode_history_log(reccode,codetype,recid,relrecid,recname,oldcode,newcode,reccreator,commitremark,commituserid,commitdate,commithistory)\n" +
+"   VALUES(null,@codetype,@entityid,null,\n" +
+"(select entityname||'实体新增JS' from crm_sys_entity where entityid=@entityid),\n" +
+"  (select @load from crm_sys_entity where entityid=@entityid limit 1),\n" +
+"   @newload,\n" +
+"   @userno,\n" +
+"   @remark,\n" +
+"   @userno,\n" +
+"   now(),\n" +
+"   '{}'::jsonb\n" +
+"   );";
+            DbParameter[] param = new DbParameter[2] { new NpgsqlParameter("entityid", entity.EntityId), null };
+            DbParameter[] paramLog = new DbParameter[5] { new NpgsqlParameter("entityid", entity.EntityId), new NpgsqlParameter("userno", userNumber), null, null, null };
+
+            try
             {
-                    new NpgsqlParameter("newload",entity.NewLoad),
-                    new NpgsqlParameter("editload",entity.EditLoad),
-                    new NpgsqlParameter("checkload", entity.CheckLoad),
-                    new NpgsqlParameter("entityid",entity.EntityId),
-                    new NpgsqlParameter("copyload",entity.CopyLoad)
-            };
-            var result = ExecuteNonQuery(sql, param);
-            if (result == 1)
-            {
+                foreach (var tmp in entity.Details)
+                {
+                    paramLog[3] = new NpgsqlParameter("remark", tmp.Remark);
+
+                    string field = string.Empty;
+                    switch (tmp.Type)
+                    {
+                        case 1://新增
+                            paramLog[2] = new NpgsqlParameter("codetype", "EntityAddNew");
+                            paramLog[4] = param[1] = new NpgsqlParameter("newload", tmp.Load);
+                            ExecuteNonQuery(log.Replace("@load", "newload"), paramLog);
+                            ExecuteNonQuery(sql.Replace("load", "newload"), param);
+                            break;
+                        case 2://查看
+                            paramLog[2] = new NpgsqlParameter("codetype", "EntityView");
+                            paramLog[4] = param[1] = new NpgsqlParameter("checkload", tmp.Load);
+                            ExecuteNonQuery(log.Replace("@load", "checkload"), paramLog);
+                            ExecuteNonQuery(sql, param);
+                            break;
+                        case 3://编辑
+                            paramLog[2] = new NpgsqlParameter("codetype", "EntityEdit");
+                            paramLog[4] = param[1] = new NpgsqlParameter("editload", tmp.Load);
+                            ExecuteNonQuery(log.Replace("@load", "editload"), paramLog);
+                            ExecuteNonQuery(sql, param);
+                            break;
+                        case 4://check
+                            paramLog[2] = new NpgsqlParameter("codetype", "EntityCopyNew");
+                            paramLog[4] = param[1] = new NpgsqlParameter("copyload", tmp.Load);
+                            ExecuteNonQuery(log.Replace("@load", "copyload"), paramLog);
+                            ExecuteNonQuery(sql, param);
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
                 return new OperateResult()
                 {
                     Flag = 1,
                     Msg = "保存全局Js成功"
                 };
             }
-            else
-            {
+            catch (Exception ex) {
                 return new OperateResult()
                 {
                     Msg = "保存全局Js失败"
@@ -344,11 +384,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateEntityFieldExpandJS(EntityFieldExpandJSDataMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_field_expandjs_edit(@fieldid, @expandjs, @userno)
+                SELECT * FROM crm_func_entity_field_expandjs_edit(@fieldid, @expandjs, @remark, @userno)
             ";
             var param = new DynamicParameters();
             param.Add("fieldid", entity.FieldId);
             param.Add("expandjs", entity.ExpandJS);
+            param.Add("remark", entity.Remark);
             param.Add("userno", userNumber);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -357,11 +398,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public OperateResult UpdateEntityFieldFilterJS(EntityFieldFilterJSDataMapper entity, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_entity_field_filterjs_edit(@fieldid, @filterjs, @userno)
+                SELECT * FROM crm_func_entity_field_filterjs_edit(@fieldid, @filterjs,@remark,  @userno)
             ";
             var param = new DynamicParameters();
             param.Add("fieldid", entity.FieldId);
             param.Add("filterjs", entity.FilterJS);
+            param.Add("remark", entity.Remark);
             param.Add("userno", userNumber);
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;

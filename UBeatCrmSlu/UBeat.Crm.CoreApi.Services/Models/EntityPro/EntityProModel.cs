@@ -57,7 +57,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public Guid RelFieldId { get; set; }
 
-        public Dictionary<string,string> EntityName_Lang { get; set; }
+        public Dictionary<string, string> EntityName_Lang { get; set; }
 
         public Dictionary<string, string> ServicesJson { get; set; }
 
@@ -90,18 +90,22 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
     {
         public string FieldId { get; set; }
         public string ExpandJS { get; set; }
+
+        public string Remark { get; set; }
     }
 
     public class EntityFieldFilterJSModel
     {
         public string FieldId { get; set; }
         public string FilterJS { get; set; }
+        public string Remark { get; set; }
     }
 
     /// <summary>
     /// 快速修改字段名称
     /// </summary>
-    public class  EntityFieldUpdateDisplayNameParamInfo {
+    public class EntityFieldUpdateDisplayNameParamInfo
+    {
         public Guid FieldId { get; set; }
         public Dictionary<string, string> DisplayName_Lang { get; set; }
     }
@@ -160,7 +164,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
         public int RecStatus { get; set; }
 
-        public Dictionary<string,string> CategoryName_Lang { get; set; }
+        public Dictionary<string, string> CategoryName_Lang { get; set; }
     }
 
     public class EntityFieldRulesSaveModel
@@ -385,14 +389,22 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
     public class EntityGlobalJsModel
     {
+        public EntityGlobalJsModel()
+        {
+            Details = new List<DetailModel>();
+        }
         public Guid EntityId { get; set; }
-        public string NewLoad { get; set; }
-        public string EditLoad { get; set; }
-        public string CheckLoad { get; set; }
-		public string CopyLoad { get; set; }
+        public ICollection<DetailModel> Details { get; set; }
+    }
 
-	}
-    public class   EntityInputMethodParamInfo{
+    public class DetailModel
+    {
+        public string Load { get; set; }
+        public string Remark { get; set; }
+        public int Type { get; set; }
+    }
+    public class EntityInputMethodParamInfo
+    {
         public Guid EntityId { get; set; }
         public List<EntityInputModeInfo> InputMethods { get; set; }
     }

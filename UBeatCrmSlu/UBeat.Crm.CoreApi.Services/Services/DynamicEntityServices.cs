@@ -47,7 +47,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         //private readonly WorkFlowServices _workflowService; 
 
-		private readonly IMapper _mapper;
+        private readonly IMapper _mapper;
 
         public DynamicEntityServices(IMapper mapper, IDynamicEntityRepository dynamicEntityRepository, IEntityProRepository entityProRepository,
                 IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
@@ -64,8 +64,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dataSourceRepository = dataSourceRepository;
             _customerRepository = customerRepository;
             _javaScriptUtilsServices = javaScriptUtilsServices;
-			//_workflowService = workflowService; 
-		}
+            //_workflowService = workflowService; 
+        }
 
         public OutputResult<object> Add(DynamicEntityAddModel dynamicModel, AnalyseHeader header, int userNumber)
         {
@@ -490,10 +490,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         funccode = "EntityDynamicAdd";
                     }
                     DateTime reportdate;
-                    if (detail.ContainsKey("reportdate")) {
+                    if (detail.ContainsKey("reportdate"))
+                    {
                         reportdate = DateTime.Parse(detail["reportdate"].ToString());
                     }
-                    else{
+                    else
+                    {
                         reportdate = DateTime.Parse(detail["reccreated"].ToString());
                     }
                     var msg = MessageService.GetDailyMsgParameter(reportdate, entityInfotemp, bussinessId, relbussinessId, funccode, userNumber, newMembers, null, msgpParam);
@@ -1191,8 +1193,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                     }
                 }
-                else if (field.ControlType == 30) {
-                    if (field.FieldName == "recrelateid") {
+                else if (field.ControlType == 30)
+                {
+                    if (field.FieldName == "recrelateid")
+                    {
                         tmpField = field;
                         tmpField.FieldName = _entityProRepository.GetEntityInfo(dynamicModel.TypeId).RelFieldName;
                     }
@@ -1203,7 +1207,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("该实体分类没有配置相应字段");
             }
-            fields.Add(tmpField);
+            if (tmpField != null)
+                fields.Add(tmpField);
             return new OutputResult<object>(fields);
         }
 
@@ -3930,9 +3935,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
-				IRuleRepository ruleRepository =  new RuleRepository();
-				IVocationRepository vocationRepository = new VocationRepository();
-				List<IDictionary<string, object>> lst = new List<IDictionary<string, object>>();
+                IRuleRepository ruleRepository = new RuleRepository();
+                IVocationRepository vocationRepository = new VocationRepository();
+                List<IDictionary<string, object>> lst = new List<IDictionary<string, object>>();
 
                 if (DeviceClassic == DeviceClassic.WEB)
                 {
@@ -3944,8 +3949,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 GetUserData(userNumber).Vocations.ForEach(t =>
                 {
-					var relTabRelationList = vocationRepository.GetRelTabs(); 
-					foreach (var tmp in relTabList)
+                    var relTabRelationList = vocationRepository.GetRelTabs();
+                    foreach (var tmp in relTabList)
                     {
                         string uuid = tmp["relid"].ToString();
 
@@ -3957,34 +3962,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             functions = t.Functions.Where(a => a.ParentId == function.FuncId);
                             if (functions.Any(a => a.RelationValue == uuid))
                             {
-								//1.检查职能可见规则
-								//2.检查页签可见规则
-								var hasAccess = true; 
-								var recIds = new List<Guid>();
-								recIds.Add(entityModel.RecId);
+                                //1.检查职能可见规则
+                                //2.检查页签可见规则
+                                var hasAccess = true;
+                                var recIds = new List<Guid>();
+                                recIds.Add(entityModel.RecId);
 
-								var fun = functions.Where(a => a.RelationValue == uuid).FirstOrDefault();
-								var userData = GetUserData(userNumber, false);
-								var sql = userData.RuleSqlFormatForFunction(fun);
-								if(!string.IsNullOrEmpty(sql))
-								{
-									hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
-								}
-								if (hasAccess == true)
-								{
-									if (relTabRelationList != null && relTabRelationList.Any(i => i.RelTabId.ToString() == uuid))
-									{
-										var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
-										sql = userData.RuleSqlFormatForSql(tab.RuleSql);
-										hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
-									}
-								}
+                                var fun = functions.Where(a => a.RelationValue == uuid).FirstOrDefault();
+                                var userData = GetUserData(userNumber, false);
+                                var sql = userData.RuleSqlFormatForFunction(fun);
+                                if (!string.IsNullOrEmpty(sql))
+                                {
+                                    hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+                                }
+                                if (hasAccess == true)
+                                {
+                                    if (relTabRelationList != null && relTabRelationList.Any(i => i.RelTabId.ToString() == uuid))
+                                    {
+                                        var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
+                                        sql = userData.RuleSqlFormatForSql(tab.RuleSql);
+                                        hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+                                    }
+                                }
 
-								if(hasAccess == true)
-								{
-									if (!lst.Contains(tmp))
-										lst.Add(tmp);
-								} 
+                                if (hasAccess == true)
+                                {
+                                    if (!lst.Contains(tmp))
+                                        lst.Add(tmp);
+                                }
                             }
                         }
                     }

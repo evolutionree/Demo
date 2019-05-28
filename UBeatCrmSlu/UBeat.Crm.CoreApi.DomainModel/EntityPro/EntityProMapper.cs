@@ -198,7 +198,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
     {
         public string FieldId { get; set; }
         public string ExpandJS { get; set; }
-
+        public string Remark { get; set; }
         protected override IValidator GetValidator()
         {
             return new EntityFieldExpandJSDataMapperValidator();
@@ -216,7 +216,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
     {
         public string FieldId { get; set; }
         public string FilterJS { get; set; }
-
+        public string Remark { get; set; }
         protected override IValidator GetValidator()
         {
             return new EntityFieldFilterJSDataMapperValidator();
@@ -624,14 +624,17 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         }
     }
 
+    public class DetailMapper
+    {
+        public string Load { get; set; }
+        public string Remark { get; set; }
+        public int Type { get; set; }
+    }
     public class EntityGlobalJsMapper : BaseEntity
     {
         public Guid EntityId { get; set; }
-        public string NewLoad { get; set; }
-        public string EditLoad { get; set; }
-        public string CheckLoad { get; set; }
-		public string CopyLoad { get; set; }
-		protected override IValidator GetValidator()
+        public ICollection<DetailMapper> Details { get; set; }
+        protected override IValidator GetValidator()
         {
             return new EntityGlobalJsMapperValidator();
         }

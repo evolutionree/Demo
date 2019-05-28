@@ -39,7 +39,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
             CreateMap<EntityBaseDataModel, EntityBaseDataMapper>();
             CreateMap<EntityBaseDataFieldModel, EntityBaseDataFieldMapper>();
-
+   CreateMap<DetailModel, DetailMapper> ();
             CreateMap< EntityGlobalJsModel, EntityGlobalJsMapper > ();
         }
     }
