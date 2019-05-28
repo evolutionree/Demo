@@ -1166,6 +1166,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 string id = item["datasourceid"].ToString();
                 allDataSourceDict[id] = item;
             }
+            DynamicEntityDataFieldMapper tmpField = null;
             foreach (DynamicEntityDataFieldMapper field in fields)
             {
                 if (field.ControlType == 18)//数据源控件才处理
@@ -1190,13 +1191,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                     }
                 }
+                else if (field.ControlType == 30) {
+                    if (field.FieldName == "recrelateid") {
+                        tmpField = field;
+                        tmpField.FieldName = _entityProRepository.GetEntityInfo(dynamicModel.TypeId).RelFieldName;
+                    }
+                }
             }
             #endregion 
             if (fields.Count == 0)
             {
                 return ShowError<object>("该实体分类没有配置相应字段");
             }
-
+            fields.Add(tmpField);
             return new OutputResult<object>(fields);
         }
 

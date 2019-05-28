@@ -474,7 +474,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 },
                                 CopyUser = "",
                                 DataType = 1,
-                                HandleUser = "1",
+                                HandleUser = userinfo.UserId.ToString(),
                                 NodeId = result.NodeInfo.NodeId
                             }, userinfo);
                             //获取流程数据信息
