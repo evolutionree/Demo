@@ -194,5 +194,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         void UpdateEntityFieldName(DbTransaction tran, Guid fieldId, Dictionary<string, string> displayName_Lang, int userId);
         void SaveEntityInputMethod(DbTransaction tran, Guid entityId, List<EntityInputModeInfo> inputs, int userId);
         #endregion
+
+        List<Dictionary<string, object>> GetUCodeList(UCodeMapper mapper, DbTransaction dbTran, int userId);
+          List<Dictionary<string, object>> GetUCodeDetail(UCodeMapper mapper, DbTransaction dbTran, int userId);
+
+        OperateResult UpdateGlobalJsHistoryRemark(UCodeMapper mapper, DbTransaction dbTran, int userId);
     }
 }

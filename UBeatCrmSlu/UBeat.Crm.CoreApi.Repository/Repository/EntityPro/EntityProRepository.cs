@@ -163,7 +163,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     Msg = "保存全局Js成功"
                 };
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return new OperateResult()
                 {
                     Msg = "保存全局Js失败"
@@ -2041,5 +2042,79 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #endregion
 
 
+        public OperateResult UpdateGlobalJsHistoryRemark(UCodeMapper mapper, DbTransaction dbTran, int userId)
+        {
+            string strSQL = "update crm_sys_ucode_history_log set commitremark = @commitremark,commituserid=@commituserid where id = @id";
+            DbParameter[] param = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("id",mapper.Id.Value),
+                    new Npgsql.NpgsqlParameter("commitremark",mapper.CommitRemark),
+                    new Npgsql.NpgsqlParameter("commituserid",userId)
+                };
+            int result;
+            if (dbTran == null)
+                result = DBHelper.ExecuteNonQuery("", strSQL, param);
+            else
+                result = DBHelper.ExecuteNonQuery(dbTran, strSQL, param);
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "编辑成功"
+                };
+            }
+            else
+            {
+                return new OperateResult
+                {
+                    Msg = "编辑失败"
+                };
+            }
+        }
+
+        public List<Dictionary<string, object>> GetUCodeList(UCodeMapper mapper, DbTransaction dbTran, int userId)
+        {
+            var sql = "select tmp1.* from (select id,reccode,codetype,commitdate,u.username,length(oldcode) as lenoldcode,length(newcode) as lennewcode,commitremark,commitdate as commitremarkdate,u.username as commitusername\n" +
+" from crm_sys_ucode_history_log l\n" +
+" LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where 1=1 {0}";
+            DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count];
+            string conditionSql = String.Empty;
+            int index = 0;
+            foreach (var tmp in mapper.ColumnFilter)
+            {
+                if (tmp.Value == null || string.IsNullOrEmpty(tmp.Value.ToString()))
+                {
+                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                }
+                else
+                {
+                    conditionSql += string.Format(" and tmp1.{0}  ILIKE '%' || @{1} || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
+                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                }
+                index++;
+            }
+            sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? " order by " + mapper.SearchOrder : string.Empty));
+            if (dbTran == null)
+                return DBHelper.ExecuteQuery("", sql, null);
+
+            var result = DBHelper.ExecuteQuery(dbTran, sql, param);
+            return result;
+        }
+
+        public List<Dictionary<string, object>> GetUCodeDetail(UCodeMapper mapper, DbTransaction dbTran, int userId)
+        {
+            var sql = "select tmp1.* from (select oldcode,newcode,id,reccode,codetype,commitdate,u.username,length(oldcode) as lenoldcode,length(newcode) as lennewcode,commitremark,commitdate as commitremarkdate,u.username as commitusername\n" +
+"from crm_sys_ucode_history_log l\n" +
+"LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where 1=1 and tmp1.id=@id";
+            DbParameter[] param = new DbParameter[1];
+            param[0] = new NpgsqlParameter("id", mapper.Id.Value);
+            string conditionSql = String.Empty;
+            sql = string.Format(sql, conditionSql);
+            if (dbTran == null)
+                return DBHelper.ExecuteQuery("", sql, null);
+
+            var result = DBHelper.ExecuteQuery(dbTran, sql, param);
+            return result;
+        }
     }
 }

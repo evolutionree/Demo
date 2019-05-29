@@ -508,7 +508,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetEntityPageByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "entityid,titlefieldid,subfieldids,(SELECT entityid FROM crm_sys_entity_datasource WHERE datasrcid=(select (fieldconfig#>>'{dataSource,sourceId}')::uuid from crm_sys_entity_fields WHERE fieldid=relfieldid limit 1))relentityid,modules,relfieldid,recstatus";
+            var selectFields = "entityid,titlefieldid,subfieldids,(SELECT entityid FROM crm_sys_entity_datasource WHERE datasrcid=(select (fieldconfig#>>'{dataSource,sourceId}')::uuid from crm_sys_entity_fields WHERE fieldid=relfieldid and (fieldconfig#>>'{dataSource,sourceId}')='network' limit 1))relentityid,modules,relfieldid,recstatus";
             return GetDatasByVersion("crm_sys_entity_page_config", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion

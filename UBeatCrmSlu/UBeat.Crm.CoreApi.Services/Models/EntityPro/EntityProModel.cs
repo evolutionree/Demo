@@ -408,4 +408,21 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public Guid EntityId { get; set; }
         public List<EntityInputModeInfo> InputMethods { get; set; }
     }
+
+    public class UCodeModel
+    {
+        public Guid? Id { get; set; }
+        //public string RecCode { get; set; }
+        //public string CommitDate { get; set; }
+        //public string UserName { get; set; }
+        //public string CommitUserName { get; set; }
+        public string CommitRemark { get; set; }
+        //public string CommitRemarkDate { get; set; }
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+        public string SearchOrder { get; set; }
+        public Dictionary<string, object> ColumnFilter { get; set; }
+
+    }
 }

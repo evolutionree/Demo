@@ -428,6 +428,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var caseid = AddWorkFlowCase(true, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo);
                     //走完审批所有操作，获取下一步数据
                     caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseid);
+                    LoopInfo loopInfo;
+                    var users = LoopApproveUsers(caseInfo, workflowInfo, firstNodeInfo, tran, userinfo, out loopInfo);
+                    if (loopInfo.IsNoneApproverUser)
+                        throw new Exception("所有审批节点均未找到审批人,请检查流程配置");
                     result = GetNextNodeData(tran, caseInfo, workflowInfo, firstNodeInfo, userinfo);
                 }
                 catch (Exception ex)
@@ -518,55 +522,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --跳过流程发起提交--
-        public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo, DbTransaction trans)
-        {
-            if (caseModel == null)
-            {
-                throw new Exception("参数不可为空");
-            }
-
-            var conn = trans.Connection;
-            var tran = trans;
-            try
-            {
-
-                if (!string.IsNullOrEmpty(caseModel.CacheId))
-                {
-                    Guid g = Guid.Parse(caseModel.CacheId);
-                    if (!(_dynamicEntityRepository.ExistsData(g, userinfo.UserId, tran)))
-                        _dynamicEntityRepository.DeleteTemporary(g, userinfo.UserId, tran);
-                }
-                if (caseModel.DataType == 0)
-                {
-                    var entityInfo = _entityProRepository.GetEntityInfo(caseModel.EntityModel.TypeId);
-                    UserData userData = GetUserData(userinfo.UserId);
-
-                    WorkFlowAddCaseModel workFlowAddCaseModel = null;
-                    var entityResult = _dynamicEntityServices.AddEntityData(tran, userData, entityInfo, caseModel.EntityModel, header, userinfo.UserId, out workFlowAddCaseModel);
-                    if (entityResult.Status != 0)
-                    {
-                        return entityResult;
-                    }
-                    caseModel.CaseModel = workFlowAddCaseModel;
-                }
-                if (caseModel.CaseModel == null)
-                {
-                    throw new Exception("流程数据不可为空");
-                }
-                var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseModel.CaseModel.FlowId);
-                if (workflowInfo == null)
-                    throw new Exception("流程配置不存在");
-                WorkFlowNodeInfo firstNodeInfo = null;
-                var caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo);
-                canWriteCaseMessage = true;
-                return new OutputResult<object>(caseid);
-            }
-            catch (Exception ex)
-            {
-                tran.Rollback();
-                throw ex;
-            }
-        }
         public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo)
         {
             if (caseModel == null)
@@ -633,7 +588,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             HandleUser = caseModel.HandleUser,
                             NodeId = model.NodeInfo.NodeId,
                             NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
-                            Suggest = ""
+                            Suggest = "",
+                            IsNotEntrance = true
                         }, userinfo);
                         if (!model.NodeInfo.IsSkip)
                             break;
@@ -1480,6 +1436,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             nodetemp.IsSkipNode = data.IsSkipNode;
                         }
                     }
+                    else
+                    {
+                        nodetemp.IsSkip = false;
+                    }
                     var cpUsers = new List<ApproverInfo>();
                     if (!nodetemp.IsSkipNode)
                     {
@@ -1516,27 +1476,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             switch (nodeDataInfo.NotFound)
             {
                 case 1:
-                    result.Approvers = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nodeDataInfo.NodeId.Value, userinfo.UserId, workflowInfo.FlowType, tran);
+                    result.Approvers = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
                     result.CPUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, nodeDataInfo.NodeId.Value, userinfo.UserId, workflowInfo.FlowType, tran);
                     result.IsSkipNode = true;
                     return result;
                 case 2:
-                    var nodes = _workFlowRepository.GetNodeLinesInfo(workflowInfo.FlowId, workflowInfo.VerNum, tran);
-                    var node = nodes["lines"].FirstOrDefault(t => t["fromnodeid"].ToString() == nodeDataInfo.NodeId.ToString());
-                    flowNodeInfo = _workFlowRepository.GetNodeInfoList(tran, workflowInfo.FlowId, workflowInfo.VerNum).FirstOrDefault(t => t.NodeId == Guid.Parse(node["tonodeid"].ToString()));
-                    var nodeInfo = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, Guid.Parse(node["fromnodeid"].ToString()), caseInfo.VerNum, tran).FirstOrDefault();
-                    var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, flowNodeInfo.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
-                    if (users.Count == 0 && flowNodeInfo.NotFound == 2)
-                    {
-                        node = nodes["lines"].FirstOrDefault(t => t["fromnodeid"].ToString() == nodeDataInfo.NodeId.ToString());
-                        flowNodeInfo = _workFlowRepository.GetNodeInfoList(tran, workflowInfo.FlowId, workflowInfo.VerNum).FirstOrDefault(t => t.NodeId == Guid.Parse(node["tonodeid"].ToString()));
-                        var nextnodes = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, Guid.Parse(node["tonodeid"].ToString()), caseInfo.VerNum, tran);
-                        return LoopWorkFlow(caseInfo, workflowInfo, flowNodeInfo, nextnodes.FirstOrDefault(), userinfo, tran);
-                    }
-                    result.Approvers = users;
-                    result.CPUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, flowNodeInfo.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
+                    LoopInfo loopInfo;
+                    result.Approvers = LoopApproveUsers(caseInfo, workflowInfo, flowNodeInfo, tran, userinfo, out loopInfo);
+                    if (loopInfo.IsBreak)
+                        return LoopWorkFlow(caseInfo, workflowInfo, flowNodeInfo, loopInfo.NodeDataInfo, userinfo, tran);
+                    result.CPUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, loopInfo.NodeDataInfo.NodeId.Value, userinfo.UserId, workflowInfo.FlowType, tran);
                     result.IsSkipNode = true;
-                    result.NodeInfo = nodeInfo;
+                    result.NodeInfo = nodeDataInfo;
                     return result;
                 case 3:
                     throw new Exception("功能未开放");
@@ -1544,6 +1495,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return result;
                 default:
                     throw new Exception("功能异常");
+            }
+        }
+
+        List<ApproverInfo> LoopApproveUsers(WorkFlowCaseInfo caseInfo, WorkFlowInfo workflowInfo, WorkFlowNodeInfo flowNodeInfo, DbTransaction tran, UserInfo userinfo, out LoopInfo loopInfo)
+        {
+            loopInfo = new LoopInfo();
+            var nodes = _workFlowRepository.GetNodeLinesInfo(workflowInfo.FlowId, workflowInfo.VerNum, tran);
+            var node = nodes["lines"].FirstOrDefault(t => t["fromnodeid"].ToString() == flowNodeInfo.NodeId.ToString());
+            flowNodeInfo = _workFlowRepository.GetNodeInfoList(tran, workflowInfo.FlowId, workflowInfo.VerNum).FirstOrDefault(t => t.NodeId == Guid.Parse(node["tonodeid"].ToString()));
+            var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, flowNodeInfo.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
+            if (users.Count > 0)
+            {
+                var nodeInfo = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, Guid.Parse(node["fromnodeid"].ToString()), caseInfo.VerNum, tran).FirstOrDefault();
+                loopInfo.NodeDataInfo = nodeInfo;
+                loopInfo.IsSkip = true;
+                return users;
+            }
+            else
+            {
+                if (flowNodeInfo.NotFound != 2)
+                {
+                    loopInfo.IsBreak = true;
+                    loopInfo.NodeId = flowNodeInfo.NodeId;
+                    loopInfo.IsSkip = false;
+                    var nodeInfo = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, Guid.Parse(node["fromnodeid"].ToString()), caseInfo.VerNum, tran).FirstOrDefault();
+                    loopInfo.NodeDataInfo = nodeInfo;
+                    loopInfo.IsNoneApproverUser = (flowNodeInfo.StepTypeId == NodeStepType.End) ? true : false;
+                    return users;
+                }
+                return LoopApproveUsers(caseInfo, workflowInfo, flowNodeInfo, tran, userinfo, out loopInfo);
             }
         }
 
@@ -1683,9 +1664,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     canWriteCaseMessage = true;
                 }
 
-                while (isSkip)
+                while (isSkip && !caseItemModel.IsNotEntrance)
                 {
                     var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
+                    if (caseItemList.Count == 0) break;
                     var data = SubmitPretreatAudit(new WorkFlowAuditCaseItemModel
                     {
                         CaseId = caseInfo.CaseId,

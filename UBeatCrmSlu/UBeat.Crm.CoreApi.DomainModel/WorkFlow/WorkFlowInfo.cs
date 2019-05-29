@@ -88,4 +88,19 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// </summary>
         public string TitleConfig { get; set; }
     }
+    public class LoopInfo
+    {
+        public Guid NodeId { get; set; }
+        /// <summary>
+        /// 是否强制跳出递归，还是找到用户自然跳出
+        /// </summary>
+        public bool IsBreak { get; set; }
+
+        public bool IsSkip { get; set; } = false;
+        public NextNodeDataInfo NodeDataInfo { get; set; }
+        /// <summary>
+        /// 判断是否所有节点都没有审批人
+        /// </summary>
+        public bool IsNoneApproverUser { get; set; } = false;
+    }
 }

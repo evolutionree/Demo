@@ -23,7 +23,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         private readonly EntityExcelImportServices _entityExcelImportServices;
 
 
-        public EntityProController(EntityProServices entityProService,WebMenuServices webMenuService, EntityExcelImportServices entityExcelImportServices) : base(entityProService)
+        public EntityProController(EntityProServices entityProService, WebMenuServices webMenuService, EntityExcelImportServices entityExcelImportServices) : base(entityProService)
         {
             _entityProService = entityProService;
             _webMenuService = webMenuService;
@@ -170,14 +170,16 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [HttpPost]
         [Route("updateentityfieldname")]
-        public OutputResult<object> UpdateFieldDisplayName([FromBody]EntityFieldUpdateDisplayNameParamInfo paramInfo = null) {
+        public OutputResult<object> UpdateFieldDisplayName([FromBody]EntityFieldUpdateDisplayNameParamInfo paramInfo = null)
+        {
             if (paramInfo == null || paramInfo.FieldId == Guid.Empty)
             {
                 return ResponseError<object>("参数异常");
             }
             else if (paramInfo.DisplayName_Lang == null || paramInfo.DisplayName_Lang.ContainsKey("cn") == false
                || paramInfo.DisplayName_Lang["cn"] == null
-               || paramInfo.DisplayName_Lang["cn"].Length == 0) {
+               || paramInfo.DisplayName_Lang["cn"].Length == 0)
+            {
                 return ResponseError<object>("字段显示名称不能为空");
             }
             try
@@ -185,7 +187,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                 this._entityProService.UpdateFieldName(paramInfo.FieldId, paramInfo.DisplayName_Lang, UserId);
                 return new OutputResult<object>("成功");
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return ResponseError<object>("更新异常:" + ex.Message);
             }
         }
@@ -425,7 +428,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> SaveEntanceGroup([FromBody]ICollection<SaveEntranceGroupModel> entityModel = null)
         {
             if (entityModel == null) return ResponseError<object>("参数格式错误");
-            OutputResult<object> ret =  _entityProService.SaveEntanceGroup(entityModel, UserId);
+            OutputResult<object> ret = _entityProService.SaveEntanceGroup(entityModel, UserId);
             _webMenuService.synchCRMAndOfficeMenus();
             return ret;
         }
@@ -645,16 +648,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("querywithdatasource")]
-        public OutputResult<object> QueryAllEntityWithDataSource() {
-            List < Dictionary<string, object> > datas=  this._entityProService.QueryEntityWithDataSource(UserId);
+        public OutputResult<object> QueryAllEntityWithDataSource()
+        {
+            List<Dictionary<string, object>> datas = this._entityProService.QueryEntityWithDataSource(UserId);
             return new OutputResult<object>(datas);
         }
 
         [HttpPost("getreffieldsbyfield")]
         [AllowAnonymous]
-        public OutputResult<object> QueryAllEntityWithDataSource([FromBody] EntityFieldProModel paramInfo )
+        public OutputResult<object> QueryAllEntityWithDataSource([FromBody] EntityFieldProModel paramInfo)
         {
-            Dictionary<string, object> datas = this._entityProService.getRefFieldsByFieldId(paramInfo.FieldId,UserId);
+            Dictionary<string, object> datas = this._entityProService.getRefFieldsByFieldId(paramInfo.FieldId, UserId);
             return new OutputResult<object>(datas);
         }
 
@@ -677,27 +681,62 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         #region 实体输入方式
         [HttpPost("entityinputmethodquery")]
-        public OutputResult<object> GetEntityInputMethod([FromBody] EntityProInfoModel paramInfo) {
-            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty.ToString()) {
+        public OutputResult<object> GetEntityInputMethod([FromBody] EntityProInfoModel paramInfo)
+        {
+            if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty.ToString())
+            {
                 return ResponseError<object>("参数异常");
             }
             try
             {
                 return this._entityProService.GetEntityInputMethod(paramInfo, UserId);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 return ResponseError<object>(ex.Message);
             }
 
         }
         [HttpPost("entityinputmethodsave")]
-        public OutputResult<object> SaveEntityInputMethod([FromBody] EntityInputMethodParamInfo paramInfo) {
+        public OutputResult<object> SaveEntityInputMethod([FromBody] EntityInputMethodParamInfo paramInfo)
+        {
             if (paramInfo == null || paramInfo.EntityId == null || paramInfo.EntityId == Guid.Empty)
             {
                 return ResponseError<object>("参数异常");
             }
             if (paramInfo.InputMethods == null) paramInfo.InputMethods = new List<DomainModel.EntityPro.EntityInputModeInfo>();
-            return this._entityProService.SaveEntityInputMethod(paramInfo.EntityId, paramInfo.InputMethods,UserId);
+            return this._entityProService.SaveEntityInputMethod(paramInfo.EntityId, paramInfo.InputMethods, UserId);
         }
-        #endregion 
+        #endregion
+
+
+        [HttpPost]
+        [Route("getucodelist")]
+        public OutputResult<object> GetUCodeList([FromBody] UCodeModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.GetUCodeList(dynamicModel, UserId);
+        }
+
+        [HttpPost]
+        [Route("updateglobaljshistoryremark")]
+        public OutputResult<object> UpdateGlobalJsHistoryRemark([FromBody] UCodeModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.UpdateGlobalJsHistoryRemark(dynamicModel, UserId);
+        }
+
+        /// <summary>
+        /// 删除功能按钮列表
+        /// </summary>
+        /// <param name="dynamicModel"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("getucodedetail")]
+        public OutputResult<object> GetUCodeDetail([FromBody] UCodeModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.GetUCodeDetail(dynamicModel, UserId);
+        }
     }
 }

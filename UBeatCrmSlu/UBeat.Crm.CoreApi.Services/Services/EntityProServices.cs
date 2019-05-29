@@ -1501,5 +1501,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+
+        public OutputResult<object> GetUCodeList(UCodeModel model, int userId)
+        {
+            var mapper = _mapper.Map<UCodeModel, UCodeMapper>(model);
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var data = _entityProRepository.GetUCodeList(mapper, transaction, userId);
+                return new OutputResult<object>(data);
+            }, model, userId);
+        }
+
+        public OutputResult<object> UpdateGlobalJsHistoryRemark(UCodeModel model, int userId)
+        {
+            var mapper = _mapper.Map<UCodeModel, UCodeMapper>(model);
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var data = _entityProRepository.UpdateGlobalJsHistoryRemark(mapper, transaction, userId);
+                return new OutputResult<object>(data);
+            }, model, userId);
+        }
+        public OutputResult<object> GetUCodeDetail(UCodeModel model, int userId)
+        {
+            var mapper = _mapper.Map<UCodeModel, UCodeMapper>(model);
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var data = _entityProRepository.GetUCodeDetail(mapper, transaction, userId);
+                return new OutputResult<object>(data);
+            }, model, userId);
+        }
+
     }
 }
