@@ -23,6 +23,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string CopyUser { get; set; }
         public string CacheId { get; set; }
 
+        public bool IsSkip { get; set; } = false;
     }
 
     public class WorkFlowAddCaseModel
@@ -32,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid RecId { get; set; }
         public Guid? RelEntityId { get; set; }
         public Guid? RelRecId { get; set; }
-        public Dictionary<string,object> CaseData { get; set; }
+        public Dictionary<string, object> CaseData { get; set; }
     }
 
     public class WorkFlowNextNodeModel
@@ -41,7 +42,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         /// 流程实体，如果第一次提交流程，为空guid
         /// </summary>
         public Guid CaseId { get; set; }
-        
+
     }
 
     public class WorkFlowAddCaseItemModel
@@ -51,7 +52,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string HandleUser { get; set; }
         public string CopyUser { get; set; }
         public string Remark { get; set; }
-        public Dictionary<string,object> CaseData { get; set; }
+        public Dictionary<string, object> CaseData { get; set; }
     }
 
     public class WorkFlowAuditCaseItemModel
@@ -59,8 +60,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid CaseId { get; set; }
         public int NodeNum { get; set; }
         public string Suggest { get; set; }
-		public Dictionary<string, object> CaseData { get; set; }
-		public int ChoiceStatus { get; set; }
+        public Dictionary<string, object> CaseData { get; set; }
+        public int ChoiceStatus { get; set; }
 
         /// <summary>
         /// 分支流程时，选择的节点id
@@ -73,7 +74,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
     public class GetFreeFlowEventModel
     {
         public Guid FlowId { get; set; }
-       
+
 
     }
     public class FreeFlowEventModel
@@ -155,7 +156,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid FlowId { get; set; }
     }
 
-    public class WorkFlowTitleConfigModel {
+    public class WorkFlowTitleConfigModel
+    {
         public Guid FlowId { get; set; }
         public string TitleConfig { get; set; }
     }
@@ -171,8 +173,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid EntityId { get; set; }
         public int SkipFlag { get; set; }
         public Dictionary<string, string> FlowName_Lang { get; set; }
-		public Dictionary<string, object> Config { get; set; }
-	}
+        public Dictionary<string, object> Config { get; set; }
+    }
 
     public class WorkFlowUpdateModel
     {
@@ -183,10 +185,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public int ExpireDay { get; set; }
         public string Remark { get; set; }
         public int SkipFlag { get; set; }
-        public Dictionary<string,string> FlowName_Lang { get; set; }
+        public Dictionary<string, string> FlowName_Lang { get; set; }
 
-		public Dictionary<string, object> Config { get; set; }
-	}
+        public Dictionary<string, object> Config { get; set; }
+    }
 
     public class WorkFLowDeleteModel
     {
@@ -214,10 +216,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string Remark { get; set; }
         public Dictionary<string, object> CaseData { get; set; }
     }
-    public class WorkFlowRuleQueryParamInfo {
+    public class WorkFlowRuleQueryParamInfo
+    {
         public Guid FlowId { get; set; }
     }
-    public class WorkFlowRuleSaveParamInfo {
+    public class WorkFlowRuleSaveParamInfo
+    {
         public Guid WorkflowId { get; set; }
         public Guid EntityId { get; set; }
 

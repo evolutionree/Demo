@@ -18,6 +18,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public List<ApproverInfo> CPUsers { set; get; }
 
         public int NotFound { get; set; }
+        public bool IsSkipNode { get; set; } = false;
     }
 
 

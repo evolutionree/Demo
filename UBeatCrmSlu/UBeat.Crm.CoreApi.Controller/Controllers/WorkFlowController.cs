@@ -71,8 +71,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> SubmitPretreatAudit([FromBody] WorkFlowAuditCaseItemModel caseItemModel = null)
         {
             if (caseItemModel == null) return ResponseError<object>("参数格式错误");
-            NextNodeDataModel model = null;
-            return _workFlowServices.SubmitPretreatAudit(caseItemModel, LoginUser,out model);
+            return _workFlowServices.SubmitPretreatAudit(caseItemModel, LoginUser );
         }
 
         //审批流程(新审批接口)

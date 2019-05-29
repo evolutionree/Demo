@@ -857,7 +857,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
                     #region --8XX 用户所在部门--
                     case NodeStepType.ApproverDept://8:指定审批人所在团队-用户所在部门-上一步处理人,
-                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @userno AND recstatus = 1 LIMIT 1) ";
+                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @userno AND recstatus = 1 LIMIT 1) "+(string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
                         break;
                     case NodeStepType.ApproverDept_Launcher://801:指定审批人所在团队-用户所在部门-流程发起人,
                         cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @casecreator AND recstatus = 1 LIMIT 1) " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");

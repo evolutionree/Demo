@@ -48,6 +48,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// </summary>
         public int NeedSuccAuditCount { set; get; } = 1;
 
+        public bool IsSkip { get; set; } = false;
+        public bool IsSkipNode { get; set; } = false;
     }
 
 
