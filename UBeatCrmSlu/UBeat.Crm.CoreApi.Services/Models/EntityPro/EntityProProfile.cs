@@ -16,7 +16,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
             CreateMap<EntityTypeQueryModel, EntityTypeQueryMapper>();
             CreateMap<EntityTypeModel, EntityTypeMapper>();
             CreateMap<EntityTypeModel, SaveEntityTypeMapper>();
-             CreateMap<FieldRulesDetailModel, FieldRulesDetailMapper>();
+            CreateMap<FieldRulesDetailModel, FieldRulesDetailMapper>();
             CreateMap<EntityFieldRulesSaveModel, EntityFieldRulesSaveMapper>();
             CreateMap<FieldRulesVocationDetailModel, FieldRulesVocationDetailMapper>();
             CreateMap<EntityFieldRulesVocationSaveModel, EntityFieldRulesVocationSaveMapper>();
@@ -39,11 +39,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
             CreateMap<EntityBaseDataModel, EntityBaseDataMapper>();
             CreateMap<EntityBaseDataFieldModel, EntityBaseDataFieldMapper>();
-   CreateMap<DetailModel, DetailMapper> ();
-            CreateMap< EntityGlobalJsModel, EntityGlobalJsMapper > ();
+            CreateMap<DetailModel, DetailMapper>();
+            CreateMap<EntityGlobalJsModel, EntityGlobalJsMapper>();
 
 
             CreateMap<UCodeModel, UCodeMapper>();
+            CreateMap<PgCodeModel, PgCodeMapper>();
+
         }
+
     }
 }

@@ -1523,6 +1523,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(data);
             }, model, userId);
         }
+        public OutputResult<object> UpdatePgHistoryLogRemark(PgCodeModel model, int userId)
+        {
+            var mapper = _mapper.Map<PgCodeModel, PgCodeMapper>(model);
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var data = _entityProRepository.UpdatePgHistoryLogRemark(mapper, transaction, userId);
+                return new OutputResult<object>(data);
+            }, model, userId);
+        }
         public OutputResult<object> GetUCodeDetail(UCodeModel model, int userId)
         {
             var mapper = _mapper.Map<UCodeModel, UCodeMapper>(model);
@@ -1534,5 +1544,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }, model, userId);
         }
 
+        public OutputResult<object> GetPgLogDetail(PgCodeModel model, int userId)
+        {
+            var mapper = _mapper.Map<PgCodeModel, PgCodeMapper>(model);
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var data = _entityProRepository.GetPgLogDetail(mapper, transaction, userId);
+                return new OutputResult<object>(data);
+            }, model, userId);
+        }
+
+        public OutputResult<object> GetPgLogList(PgCodeModel model, int userId)
+        {
+            var mapper = _mapper.Map<PgCodeModel, PgCodeMapper>(model);
+
+            return ExcuteAction((transaction, arg, userData) =>
+            {
+                var data = _entityProRepository.GetPgLogList(mapper, transaction, userId);
+                return new OutputResult<object>(data);
+            }, model, userId);
+        }
     }
 }

@@ -18,9 +18,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult SaveEntityGlobalJs(EntityGlobalJsMapper entity, int userNumber);
         OperateResult UpdateEntityPro(EntityProSaveMapper entity, int userNumber);
 
-		List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber);
+        List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber);
 
-		OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber);
+        OperateResult DisabledEntityPro(EntityProMapper entity, int userNumber);
         OperateResult DeleteEntityData(DeleteEntityDataMapper entity, int userNumber);
         Dictionary<string, List<IDictionary<string, object>>> EntityOrderbyQuery(EntityOrderbyMapper entity, int userNumber);
         Dictionary<string, List<IDictionary<string, object>>> EntityClassQuery(EntityProMapper entity, int userNumber);
@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
 
         Dictionary<string, List<IDictionary<string, object>>> EntityTypeQuery(EntityTypeQueryMapper entityType, int userNumber);
-        bool CheckAndNestEntityType(string entityid,int userNum);
+        bool CheckAndNestEntityType(string entityid, int userNum);
 
         OperateResult InsertEntityTypePro(SaveEntityTypeMapper entityType, int userNumber);
 
@@ -115,7 +115,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info,int userNumber, DbTransaction trans = null);
+        bool SaveFunctionJson(Guid entityId, FunctionJsonInfo info, int userNumber, DbTransaction trans = null);
 
 
         Dictionary<string, List<IDictionary<string, object>>> SetRepeatList(string entityId, int userId);
@@ -131,7 +131,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, List<IDictionary<string, object>>> PersonalSettingQuery(Guid entityId, int userNumber);
         OperateResult SavePersonalViewSet(List<PersonalViewSetMapper> entities, int userId);
 
-         OperateResult SaveEntityBaseData(List<EntityBaseDataMapper> entity, int userNumber);
+        OperateResult SaveEntityBaseData(List<EntityBaseDataMapper> entity, int userNumber);
 
         Dictionary<string, List<IDictionary<string, object>>> EntityBaseDataFieldQuery(EntityBaseDataFieldMapper entity, int userNumber);
 
@@ -141,7 +141,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="entityid"></param>
         /// <param name="usernumber"></param>
         /// <returns></returns>
-        List<RelateEntity> GetRelateEntityList( Guid entityid, int usernumber);
+        List<RelateEntity> GetRelateEntityList(Guid entityid, int usernumber);
         /// <summary>
         /// 获取实体的菜单列表
         /// </summary>
@@ -155,7 +155,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <param name="entityId"></param>
         /// <returns></returns>
-        Guid GetEntityRelTabId(Guid entityId,string entitytaburl);
+        Guid GetEntityRelTabId(Guid entityId, string entitytaburl);
 
         /// <summary>
         /// 同步实体功能列表到function表
@@ -185,19 +185,22 @@ namespace UBeat.Crm.CoreApi.IRepository
         #region 与实体定义的导入有关的操作
         Dictionary<string, object> GetEntityInfoByEntityName(DbTransaction tran, string entityName, int userId);
         Dictionary<string, object> GetEntityInfoByTableName(DbTransaction tran, string tablename, int userId);
-        
-        Dictionary<string, object> GetFieldInfoByFieldName(DbTransaction tran, string fieldName, Guid entityId,int userId);
+
+        Dictionary<string, object> GetFieldInfoByFieldName(DbTransaction tran, string fieldName, Guid entityId, int userId);
         Dictionary<string, object> GetFieldInfoByDisplayName(DbTransaction tran, string displayName, Guid entityId, int userId);
         void DeleteEntityFieldRules(Guid catelogid, int userId);
         void MapEntityType(Guid subTypeId, Guid mainTypeId);
-        void UpdateEntityFieldName(DbTransaction tran,Guid fieldId, string fieldName, int userId);
+        void UpdateEntityFieldName(DbTransaction tran, Guid fieldId, string fieldName, int userId);
         void UpdateEntityFieldName(DbTransaction tran, Guid fieldId, Dictionary<string, string> displayName_Lang, int userId);
         void SaveEntityInputMethod(DbTransaction tran, Guid entityId, List<EntityInputModeInfo> inputs, int userId);
         #endregion
 
-        List<Dictionary<string, object>> GetUCodeList(UCodeMapper mapper, DbTransaction dbTran, int userId);
-          List<Dictionary<string, object>> GetUCodeDetail(UCodeMapper mapper, DbTransaction dbTran, int userId);
+        PageDataInfo<Dictionary<string, object>> GetUCodeList(UCodeMapper mapper, DbTransaction dbTran, int userId);
+        List<Dictionary<string, object>> GetUCodeDetail(UCodeMapper mapper, DbTransaction dbTran, int userId);
 
         OperateResult UpdateGlobalJsHistoryRemark(UCodeMapper mapper, DbTransaction dbTran, int userId);
+        OperateResult UpdatePgHistoryLogRemark(PgCodeMapper mapper, DbTransaction dbTran, int userId);
+        PageDataInfo<Dictionary<string, object>> GetPgLogList(PgCodeMapper mapper, DbTransaction dbTran, int userId);
+        List<Dictionary<string, object>> GetPgLogDetail(PgCodeMapper mapper, DbTransaction dbTran, int userId);
     }
 }

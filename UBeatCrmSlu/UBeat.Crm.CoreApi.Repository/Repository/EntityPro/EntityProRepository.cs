@@ -2046,7 +2046,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         {
             string strSQL = "update crm_sys_ucode_history_log set commitremark = @commitremark,commituserid=@commituserid where id = @id";
             DbParameter[] param = new DbParameter[] {
-                    new Npgsql.NpgsqlParameter("id",mapper.Id.Value),
+                    new Npgsql.NpgsqlParameter("id",mapper.Id),
                     new Npgsql.NpgsqlParameter("commitremark",mapper.CommitRemark),
                     new Npgsql.NpgsqlParameter("commituserid",userId)
                 };
@@ -2071,13 +2071,42 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 };
             }
         }
-
-        public List<Dictionary<string, object>> GetUCodeList(UCodeMapper mapper, DbTransaction dbTran, int userId)
+        public OperateResult UpdatePgHistoryLogRemark(PgCodeMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = "select tmp1.* from (select id,reccode,codetype,commitdate,u.username,length(oldcode) as lenoldcode,length(newcode) as lennewcode,commitremark,commitdate as commitremarkdate,u.username as commitusername\n" +
+            string strSQL = "update crm_sys_history_pglog_detail set  remark = @remark,marker=@marker,marktime=now() where recid = @id";
+            DbParameter[] param = new DbParameter[] {
+                    new Npgsql.NpgsqlParameter("id",mapper.Id.Value),
+                    new Npgsql.NpgsqlParameter("remark",mapper.Remark),
+                    new Npgsql.NpgsqlParameter("marker",userId)
+                };
+            int result;
+            if (dbTran == null)
+                result = DBHelper.ExecuteNonQuery("", strSQL, param);
+            else
+                result = DBHelper.ExecuteNonQuery(dbTran, strSQL, param);
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "编辑成功"
+                };
+            }
+            else
+            {
+                return new OperateResult
+                {
+                    Msg = "编辑失败"
+                };
+            }
+        }
+
+        public PageDataInfo<Dictionary<string, object>> GetUCodeList(UCodeMapper mapper, DbTransaction dbTran, int userId)
+        {
+            var sql = "select tmp1.* from (select recid,relrecid,oldcode,newcode, id,reccode,codetype,commitdate,u.username,length(oldcode) as lenoldcode,length(newcode) as lennewcode,commitremark,commitdate as commitremarkdate,u.username as commitusername\n" +
 " from crm_sys_ucode_history_log l\n" +
-" LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where 1=1 {0}";
-            DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count];
+" LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where (recid=@recid or relrecid=@recid) {0}";
+            DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count + 1];
             string conditionSql = String.Empty;
             int index = 0;
             foreach (var tmp in mapper.ColumnFilter)
@@ -2093,11 +2122,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 }
                 index++;
             }
+            param[index] = new NpgsqlParameter("recid", mapper.RecId);
             sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? " order by " + mapper.SearchOrder : string.Empty));
             if (dbTran == null)
-                return DBHelper.ExecuteQuery("", sql, null);
+                return ExecuteQueryByPaging(sql, param, mapper.PageSize, mapper.PageIndex, dbTran);
 
-            var result = DBHelper.ExecuteQuery(dbTran, sql, param);
+            var result = ExecuteQueryByPaging( sql, param, mapper.PageSize,mapper.PageIndex,dbTran);
             return result;
         }
 
@@ -2105,9 +2135,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         {
             var sql = "select tmp1.* from (select oldcode,newcode,id,reccode,codetype,commitdate,u.username,length(oldcode) as lenoldcode,length(newcode) as lennewcode,commitremark,commitdate as commitremarkdate,u.username as commitusername\n" +
 "from crm_sys_ucode_history_log l\n" +
-"LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where 1=1 and tmp1.id=@id";
+"LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where 1=1 and tmp1.id=any(@ids)";
             DbParameter[] param = new DbParameter[1];
-            param[0] = new NpgsqlParameter("id", mapper.Id.Value);
+            if (mapper.Id.HasValue)
+            {
+                mapper.Ids = new List<Guid>();
+                mapper.Ids.Add(mapper.Id.Value);
+            }
+            param[0] = new NpgsqlParameter("ids", mapper.Ids);
             string conditionSql = String.Empty;
             sql = string.Format(sql, conditionSql);
             if (dbTran == null)
@@ -2116,5 +2151,79 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             var result = DBHelper.ExecuteQuery(dbTran, sql, param);
             return result;
         }
+
+
+        public PageDataInfo<Dictionary<string, object>> GetPgLogList(PgCodeMapper mapper, DbTransaction dbTran, int userId)
+        {
+            var sql = "select * from (SELECT \n" +
+                    "recid,\n" +
+                    "CASE WHEN objtype='0' THEN '普通函数' WHEN objtype=1 THEN '触发器函数' ELSE '系统函数' END as objtype,\n" +
+                    "CASE WHEN changetype='1' THEN '创建' WHEN changetype=2 THEN '修改' ELSE '删除' END AS changetype,\n" +
+                    "funcname,\n" +
+                    "paramsname,\n" +
+                    "oldsql,\n" +
+                    "newsql,\n" +
+                    "reccreated,\n" +
+                    "remark,\n" +
+                    "marker,\n" +
+                    "marktime,\n" +
+                    "marklog\n" +
+                    "FROM crm_sys_history_pglog_detail) as tmp where 1=1 {0}";
+            DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count];
+            string conditionSql = String.Empty;
+            int index = 0;
+            foreach (var tmp in mapper.ColumnFilter)
+            {
+                if (tmp.Value == null || string.IsNullOrEmpty(tmp.Value.ToString()))
+                {
+                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                }
+                else
+                {
+                    conditionSql += string.Format(" and tmp.{0}  ILIKE '%' || @{1} || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
+                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                }
+                index++;
+            }
+            sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? " order by " + mapper.SearchOrder : string.Empty));
+            if (dbTran == null)
+                return ExecuteQueryByPaging(sql, param, mapper.PageIndex, mapper.PageSize);
+
+            var result = ExecuteQueryByPaging(sql, param, mapper.PageSize, mapper.PageIndex, dbTran);
+            return result;
+        }
+
+        public List<Dictionary<string, object>> GetPgLogDetail(PgCodeMapper mapper, DbTransaction dbTran, int userId)
+        {
+            var sql = "SELECT \n" +
+                             "recid,\n" +
+                             "CASE WHEN objtype='0' THEN '普通函数' WHEN objtype=1 THEN '触发器函数' ELSE '系统函数' END as objtype,\n" +
+                             "CASE WHEN changetype='1' THEN '创建' WHEN changetype=2 THEN '修改' ELSE '删除' END AS changetype,\n" +
+                             "funcname,\n" +
+                             "paramsname,\n" +
+                             "oldsql,\n" +
+                             "newsql,\n" +
+                             "reccreated,\n" +
+                             "remark,\n" +
+                             "marker,\n" +
+                             "marktime,\n" +
+                             "marklog\n" +
+                             "FROM crm_sys_history_pglog_detail where recid=ANY(@ids)";
+            DbParameter[] param = new DbParameter[1];
+            if (mapper.Id.HasValue)
+            {
+                mapper.Ids = new List<Guid>();
+                mapper.Ids.Add(mapper.Id.Value);
+            }
+            param[0] = new NpgsqlParameter("ids", mapper.Ids);
+            string conditionSql = String.Empty;
+            sql = string.Format(sql, conditionSql);
+            if (dbTran == null)
+                return DBHelper.ExecuteQuery("", sql, null);
+
+            var result = DBHelper.ExecuteQuery(dbTran, sql, param);
+            return result;
+        }
+
     }
 }

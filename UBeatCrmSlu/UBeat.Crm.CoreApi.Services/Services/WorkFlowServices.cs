@@ -410,6 +410,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         UserData userData = GetUserData(userinfo.UserId);
 
                         WorkFlowAddCaseModel workFlowAddCaseModel = null;
+                        if (entityInfo.ModelType == EntityModelType.Dynamic)
+                        {
+                            if (!caseModel.EntityModel.FieldData.ContainsKey("recrelateid"))
+                            {
+                                caseModel.EntityModel.FieldData.Add("recrelateid", caseModel.EntityModel.RelRecId);
+                            }
+                        }
                         var entityResult = _dynamicEntityServices.AddEntityData(tran, userData, entityInfo, caseModel.EntityModel, header, userinfo.UserId, out workFlowAddCaseModel);
                         if (entityResult.Status != 0)
                         {
@@ -1166,6 +1173,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <returns></returns>
         public OutputResult<object> SubmitPretreatAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo)
         {
+            bool isSkip = false;
             NextNodeDataModel result = new NextNodeDataModel();
             //获取该实体分类的字段
             var caseItemEntity = _mapper.Map<WorkFlowAuditCaseItemModel, WorkFlowAuditCaseItemMapper>(caseItemModel);
@@ -1262,6 +1270,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     //走完审批所有操作，获取下一步数据
                     result = GetNextNodeData(tran, caseInfo, workflowInfo, flowNodeInfo, userinfo);
+                    var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, flowNodeInfo.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
+                    isSkip = (users.Count == 0 && flowNodeInfo.NotFound == 2);
+                    while (isSkip && !caseItemModel.IsNotEntrance)
+                    {
+                        var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
+                        if (caseItemList.Count == 0) break;
+                        SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
+                        {
+                            CaseId = caseInfo.CaseId,
+                            ChoiceStatus = 1,
+                            CopyUser = caseItemModel.CopyUser,
+                            HandleUser = caseItemModel.HandleUser,
+                            NodeId = result.NodeInfo.NodeId,
+                            NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                            Suggest = ""
+                        }, userinfo);
+                        if (!result.NodeInfo.IsSkip)
+                            break;
+                    }
                     //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
                     tran.Rollback();
                 }

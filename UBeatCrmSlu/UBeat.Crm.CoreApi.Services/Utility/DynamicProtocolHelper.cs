@@ -330,6 +330,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
                         var sysControls = new List<int>
                     {
+                            31,
                         1001,
                         1002,
                         1003,
@@ -361,6 +362,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         }
                         break;
                     }
+
             }
 
             return true;
@@ -695,15 +697,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                                 else
                                 {
-									JObject jo2 = (JObject)Newtonsoft.Json.JsonConvert.DeserializeObject(field.FieldConfig);
-									if (jo2 != null && jo2["dataSource"] != null && jo2["dataSource"]["namefrom"] != null && jo2["dataSource"]["namefrom"].ToString() == "1")
-									{
-										result.FieldData = string.Format(" e.{0}->>'name' ilike '%{1}%'", field.FieldName, dataStr);
-									}
-									else
-									{
-										result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
-									}
+                                    JObject jo2 = (JObject)Newtonsoft.Json.JsonConvert.DeserializeObject(field.FieldConfig);
+                                    if (jo2 != null && jo2["dataSource"] != null && jo2["dataSource"]["namefrom"] != null && jo2["dataSource"]["namefrom"].ToString() == "1")
+                                    {
+                                        result.FieldData = string.Format(" e.{0}->>'name' ilike '%{1}%'", field.FieldName, dataStr);
+                                    }
+                                    else
+                                    {
+                                        result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field, "e"), dataStr);
+                                    }
                                 }
                                 break;
                             }

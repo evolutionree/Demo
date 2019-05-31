@@ -411,6 +411,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
 
     public class UCodeModel
     {
+        public Guid? RecId { get; set; }
         public Guid? Id { get; set; }
         //public string RecCode { get; set; }
         //public string CommitDate { get; set; }
@@ -424,5 +425,15 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public string SearchOrder { get; set; }
         public Dictionary<string, object> ColumnFilter { get; set; }
 
+    }
+
+    public class PgCodeModel
+    {
+        public Guid? Id { get; set; }
+        public int PageIndex { get; set; }
+
+        public int PageSize { get; set; }
+        public string SearchOrder { get; set; }
+        public Dictionary<string, object> ColumnFilter { get; set; }
     }
 }

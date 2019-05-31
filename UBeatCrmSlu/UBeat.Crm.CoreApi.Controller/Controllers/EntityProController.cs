@@ -725,18 +725,36 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             return _entityProService.UpdateGlobalJsHistoryRemark(dynamicModel, UserId);
         }
-
-        /// <summary>
-        /// 删除功能按钮列表
-        /// </summary>
-        /// <param name="dynamicModel"></param>
-        /// <returns></returns>
+        [HttpPost]
+        [Route("updategghistorylogremark")]
+        public OutputResult<object> UpdatePgHistoryLogRemark([FromBody] PgCodeModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.UpdatePgHistoryLogRemark(dynamicModel, UserId);
+        }
         [HttpPost]
         [Route("getucodedetail")]
         public OutputResult<object> GetUCodeDetail([FromBody] UCodeModel dynamicModel = null)
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             return _entityProService.GetUCodeDetail(dynamicModel, UserId);
+        }
+
+        [HttpPost]
+        [Route("getpgcodedetail")]
+        public OutputResult<object> GetPgLogDetail([FromBody] PgCodeModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.GetPgLogDetail(dynamicModel, UserId);
+        }
+
+
+        [HttpPost]
+        [Route("getpgcodelist")]
+        public OutputResult<object> GetPgLogList([FromBody] PgCodeModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _entityProService.GetPgLogList(dynamicModel, UserId);
         }
     }
 }

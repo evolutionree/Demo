@@ -121,6 +121,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var isMobile = header.Device.ToLower().Contains("android")
                            || header.Device.ToLower().Contains("ios");
 
+            if (entityInfo.ModelType == EntityModelType.Dynamic && dynamicModel.FieldData.ContainsKey(entityInfo.RelFieldName))
+            {
+                if (!dynamicModel.FieldData.ContainsKey("recrelateid"))
+                {
+                    dynamicModel.FieldData.Add("recrelateid", dynamicModel.FieldData[entityInfo.RelFieldName]);
+                    dynamicModel.FieldData.Remove(entityInfo.RelFieldName);
+                }
+            }
             //验证字段
             var validResults = DynamicProtocolHelper.ValidData(fields, dynamicModel.FieldData, DynamicProtocolOperateType.Add, isMobile);
 

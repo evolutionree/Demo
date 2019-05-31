@@ -125,7 +125,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
 
     public class UCodeMapper
     {
+        public Guid? RecId { get; set; }
+
         public Guid? Id { get; set; }
+        public List<Guid> Ids { get; set; }
         public string RecCode { get; set; }
         public string CommitDate { get; set; }
         public string UserName { get; set; }
@@ -135,6 +138,20 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string CommitRemarkDate { get; set; }
         public int PageIndex { get; set; }
 
+        public int PageSize { get; set; }
+        public string SearchOrder { get; set; }
+        public Dictionary<string, object> ColumnFilter { get; set; }
+
+    }
+
+
+    public class PgCodeMapper
+    {
+        public List<Guid> Ids { get; set; }
+
+        public Guid? Id { get; set; }
+        public int PageIndex { get; set; }
+        public string Remark { get; set; }
         public int PageSize { get; set; }
         public string SearchOrder { get; set; }
         public Dictionary<string, object> ColumnFilter { get; set; }
