@@ -102,6 +102,18 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         Series = 5
     }
 
+    /// <summary>
+    /// 报表控件类型
+    /// </summary>
+    public enum ReportComponentCtrlType {
+        CommonChart = 1 ,/*普通图控件，包括折线图，柱状图，散点图和饼图*/
+        PCTable = 2 ,/*PC版表格*/
+        Filter = 3,/*过滤控件，可能会有子项*/
+        TextDiv = 7,/*文本组件*/
+        RegionMap = 6,/*客户地图控件，包含分组过滤项的*/
+        MobileTable = 8,/*移动端表格控件*/
+        MapPath =10/*地图路径和地图坐标控件*/
+    }
     public class ReportComponentInfo {
         public int Index { get; set; }
         /// <summary>
@@ -120,6 +132,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public MapComponentInfo MapExtInfo { get; set; }
         public ComponentTitleInfo CompSummaryInfo { get; set; }
         public MobileTableDefineInfo MobileTableInfo { get; set; }
+        /// <summary>
+        /// 定义地图路径和地图坐标图的
+        /// </summary>
+        public MapPathInfo MapPathInfo { get; set; }
         public string DataSourceForSummary { get; set; }
         public MobileUKBarGraphDefineInfo UKBarGraphInfo { get; set; }
         /// <summary>
@@ -401,5 +417,41 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public string DefaultValueScheme { get; set; }
         public int RelateCtrlIndex { get; set; }
         public string RuleID { get; set; }
+    }
+    /// <summary>
+    /// 地图路径和地图坐标控件的详情信息
+    /// </summary>
+    public class MapPathInfo {
+        /// <summary>
+        /// 系列定义
+        /// </summary>
+        public List<MapPathSeriesInfo> series { get; set; }
+    }
+    /// <summary>
+    /// 地图路径和地图坐标控件的系列定义
+    /// </summary>
+    public class MapPathSeriesInfo
+    {
+        /// <summary>
+        /// 暂时类型
+        /// "lines"=地图路径
+        /// "scatter"=地图坐标
+        /// </summary>
+        public string ChartType { get; set; }
+        /// <summary>
+        /// Lat字段名称
+        public string LatFieldName { get; set; }
+        /// <summary>
+        /// Lng字段名称
+        /// </summary>
+        public string LngFieldName { get; set; }
+        /// <summary>
+        /// 系列的名称
+        /// </summary>
+        public string SeriesName { get; set; }
+        /// <summary>
+        /// 鼠标停留的显示规则，用于地图坐标类型，支持##定义
+        /// </summary>
+        public string DetailFormatter { get; set; }
     }
 }
