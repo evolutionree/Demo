@@ -121,7 +121,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 控件类型，详见ReportComponentCtrlType
         /// </summary>
         public int CtrlType { get; set; }
+        /// <summary>
+        /// 控件宽度，如果所有控件都是1或者2，那么整个报表的宽度就是2，如果控件有大于2的宽的，则整个报表的宽度为24，宽度就表示二十四分之Width了
+        /// </summary>
         public int Width { get; set; }
+        /// <summary>
+        /// 如果大于0表示以Px为单位的高度
+        /// 如果小于0，则表示以实际宽度为基准，乘以Height再乘以-1表示实际高度。
+        /// </summary>
         public Decimal Height { get; set; }
         public string DataSourceName { get; set; }
         public Dictionary<string, object> TitleInfo { get; set; }
