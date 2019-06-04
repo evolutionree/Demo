@@ -112,7 +112,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         TextDiv = 7,/*文本组件*/
         RegionMap = 6,/*客户地图控件，包含分组过滤项的*/
         MobileTable = 8,/*移动端表格控件*/
-        MapPath =10/*地图路径和地图坐标控件*/
+        MapPath =10,/*地图路径和地图坐标控件*/
+        OrgComponent = 11/**组织地图***/
     }
     public class ReportComponentInfo {
         public int Index { get; set; }
@@ -120,7 +121,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 控件类型，详见ReportComponentCtrlType
         /// </summary>
         public int CtrlType { get; set; }
+        /// <summary>
+        /// 控件宽度，如果所有控件都是1或者2，那么整个报表的宽度就是2，如果控件有大于2的宽的，则整个报表的宽度为24，宽度就表示二十四分之Width了
+        /// </summary>
         public int Width { get; set; }
+        /// <summary>
+        /// 如果大于0表示以Px为单位的高度
+        /// 如果小于0，则表示以实际宽度为基准，乘以Height再乘以-1表示实际高度。
+        /// </summary>
         public Decimal Height { get; set; }
         public string DataSourceName { get; set; }
         public Dictionary<string, object> TitleInfo { get; set; }
@@ -136,6 +144,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 定义地图路径和地图坐标图的
         /// </summary>
         public MapPathInfo MapPathInfo { get; set; }
+        /// <summary>
+        /// 组织&人员选择控件
+        /// </summary>
+        public OrgComponentInfo OrgComponentInfo { get; set; }
+
         public string DataSourceForSummary { get; set; }
         public MobileUKBarGraphDefineInfo UKBarGraphInfo { get; set; }
         /// <summary>
@@ -439,13 +452,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// </summary>
         public string ChartType { get; set; }
         /// <summary>
-        /// Lat字段名称
-        public string LatFieldName { get; set; }
-        /// <summary>
-        /// Lng字段名称
-        /// </summary>
-        public string LngFieldName { get; set; }
-        /// <summary>
         /// 系列的名称
         /// </summary>
         public string SeriesName { get; set; }
@@ -453,5 +459,35 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 鼠标停留的显示规则，用于地图坐标类型，支持##定义
         /// </summary>
         public string DetailFormatter { get; set; }
+    }
+    /// <summary>
+    /// 组织和人员选择则控件，仅支持pc端
+    /// </summary>
+    public class OrgComponentInfo {
+
+        /// <summary>
+        /// 是否是多选模式
+        /// 0=单选
+        /// 1=多选，
+        /// 其他和没有值表示为单选
+        /// </summary>
+        public int MultiSelect { get; set; }
+        /// <summary>
+        /// 选择模式
+        /// 1=只选人
+        /// 2=只选部门
+        /// 3=选人&部门
+        /// 当=1时，且为多选时，部门节点也是允许选择的，只是意义就是选择部门下的所有人员。
+        /// 默认为1
+        /// </summary>
+        public int SelectMode { get; set;  }
+        /// <summary>
+        /// 最大选择数量，如果没有，但是多选，默认为10个。
+        /// </summary>
+        public int MaxSelectCount { get; set; }
+        /// <summary>
+        /// 输出的参数的列表，支持逗号分隔，支持@号兼容；
+        /// </summary>
+        public string OutParameterName { get; set; }
     }
 }
