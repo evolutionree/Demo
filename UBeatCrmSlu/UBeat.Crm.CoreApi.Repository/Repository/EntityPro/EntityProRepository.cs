@@ -2165,10 +2165,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     "newsql,\n" +
                     "reccreated,\n" +
                     "remark,\n" +
-                    "marker,\n" +
+                    "u.username marker,\n" +
                     "marktime,\n" +
                     "marklog\n" +
-                    "FROM crm_sys_history_pglog_detail) as tmp where 1=1 {0}";
+                    "FROM crm_sys_history_pglog_detail de LEFT JOIN crm_sys_userinfo u on u.userid=de.marker) as tmp where 1=1 {0}";
             DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count];
             string conditionSql = String.Empty;
             int index = 0;
