@@ -108,7 +108,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
 "   VALUES(null,@codetype,@entityid,null,\n" +
 "(select entityname||'实体新增JS' from crm_sys_entity where entityid=@entityid),\n" +
 "  (select @load from crm_sys_entity where entityid=@entityid limit 1),\n" +
-"   @newload,\n" +
+"   @load,\n" +
 "   @userno,\n" +
 "   @remark,\n" +
 "   @userno,\n" +
@@ -130,26 +130,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                         case 1://新增
                             paramLog[2] = new NpgsqlParameter("codetype", "EntityAddNew");
                             paramLog[4] = param[1] = new NpgsqlParameter("newload", tmp.Load);
-                            ExecuteNonQuery(log.Replace("@load", "newload"), paramLog);
+                            ExecuteNonQuery(log.Replace("@load", "@newload"), paramLog);
                             ExecuteNonQuery(sql.Replace("load", "newload"), param);
                             break;
                         case 2://查看
                             paramLog[2] = new NpgsqlParameter("codetype", "EntityView");
                             paramLog[4] = param[1] = new NpgsqlParameter("checkload", tmp.Load);
-                            ExecuteNonQuery(log.Replace("@load", "checkload"), paramLog);
-                            ExecuteNonQuery(sql, param);
+                            ExecuteNonQuery(log.Replace("@load", "@checkload"), paramLog);
+                            ExecuteNonQuery(sql.Replace("load", "checkload"), param);
                             break;
                         case 3://编辑
                             paramLog[2] = new NpgsqlParameter("codetype", "EntityEdit");
                             paramLog[4] = param[1] = new NpgsqlParameter("editload", tmp.Load);
-                            ExecuteNonQuery(log.Replace("@load", "editload"), paramLog);
-                            ExecuteNonQuery(sql, param);
+                            ExecuteNonQuery(log.Replace("@load", "@editload"), paramLog);
+                            ExecuteNonQuery(sql.Replace("load", "editload"), param);
                             break;
                         case 4://check
                             paramLog[2] = new NpgsqlParameter("codetype", "EntityCopyNew");
                             paramLog[4] = param[1] = new NpgsqlParameter("copyload", tmp.Load);
-                            ExecuteNonQuery(log.Replace("@load", "copyload"), paramLog);
-                            ExecuteNonQuery(sql, param);
+                            ExecuteNonQuery(log.Replace("@load", "@copyload"), paramLog);
+                            ExecuteNonQuery(sql.Replace("load", "copyload"), param);
                             break;
 
                         default:
@@ -2156,7 +2156,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public PageDataInfo<Dictionary<string, object>> GetPgLogList(PgCodeMapper mapper, DbTransaction dbTran, int userId)
         {
             var sql = "select * from (SELECT \n" +
-                    "recid,\n" +
+                    "recid,reccode,\n" +
                     "CASE WHEN objtype='0' THEN '普通函数' WHEN objtype=1 THEN '触发器函数' ELSE '系统函数' END as objtype,\n" +
                     "CASE WHEN changetype='1' THEN '创建' WHEN changetype=2 THEN '修改' ELSE '删除' END AS changetype,\n" +
                     "funcname,\n" +

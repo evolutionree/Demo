@@ -71,6 +71,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string CopyUser { get; set; }
 
         public bool IsNotEntrance { get; set; } = false;
+
     }
 
     public class GetFreeFlowEventModel
