@@ -431,7 +431,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
     {
         public Guid? Id { get; set; }
         public int PageIndex { get; set; }
-
+        public string Remark { get; set; }
         public int PageSize { get; set; }
         public string SearchOrder { get; set; }
         public Dictionary<string, object> ColumnFilter { get; set; }
