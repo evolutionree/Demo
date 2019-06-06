@@ -41,5 +41,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
         public bool IsSkip { get; set; }
         public bool IsEnd { get; set; }
+
+        public bool IsNeedToChangeHandleUser { get; set; }
     }
 }

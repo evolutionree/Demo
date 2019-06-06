@@ -762,10 +762,11 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
         public List<NextNodeDataInfo> GetNextNodeDataInfoList(Guid flowid, Guid fromnodeid, int vernum, DbTransaction trans = null)
         {
-            var executeSql = @" SELECT n.nodeid,n.nodename,n.nodetype,n.nodenum,n.steptypeid,n.stepcptypeid,n.notfound
+            var executeSql = @" SELECT n.nodeid,n.nodename,n.nodetype,n.nodenum,n.steptypeid,n.stepcptypeid,n.notfound,wf.flowtype
 								FROM crm_sys_workflow_node AS n
                                 INNER JOIN crm_sys_workflow_node_line AS nl ON nl.vernum=@vernum AND nl.fromnodeid=@fromnodeid AND nl.flowid = @flowid 
 								LEFT JOIN crm_sys_workflow_steptype AS s ON s.steptypeid = n.steptypeid
+                                 LEFT JOIN crm_sys_workflow AS wf ON wf.flowid =@flowid 
 								WHERE n.nodeid = nl.tonodeid ";
 
             var param = new DbParameter[]

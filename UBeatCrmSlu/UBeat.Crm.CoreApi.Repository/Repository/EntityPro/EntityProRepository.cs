@@ -104,8 +104,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             var sql = @"
                 Update crm_sys_entity Set load=@load Where entityid=@entityid;
             ";
-            var log = "   insert INTO crm_sys_ucode_history_log(reccode,codetype,recid,relrecid,recname,oldcode,newcode,reccreator,commitremark,commituserid,commitdate,commithistory)\n" +
-"   VALUES(null,@codetype,@entityid,null,\n" +
+            var log = "   insert INTO crm_sys_ucode_history_log(codetype,recid,relrecid,recname,oldcode,newcode,reccreator,commitremark,commituserid,commitdate,commithistory)\n" +
+"   VALUES(@codetype,@entityid,null,\n" +
 "(select entityname||'实体新增JS' from crm_sys_entity where entityid=@entityid),\n" +
 "  (select @load from crm_sys_entity where entityid=@entityid limit 1),\n" +
 "   @load,\n" +
@@ -2105,29 +2105,44 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         {
             var sql = "select tmp1.* from (select recid,relrecid,oldcode,newcode, id,reccode,codetype,commitdate,u.username,length(oldcode) as lenoldcode,length(newcode) as lennewcode,commitremark,commitdate as commitremarkdate,u.username as commitusername\n" +
 " from crm_sys_ucode_history_log l\n" +
-" LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where (recid=@recid or relrecid=@recid) {0}";
+" LEFT JOIN crm_sys_userinfo u on l.commituserid=u.userid ) as tmp1 where (recid=@recid or relrecid=@recid) {0} {1}";
             DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count + 1];
             string conditionSql = String.Empty;
             int index = 0;
             foreach (var tmp in mapper.ColumnFilter)
             {
+
                 if (tmp.Value == null || string.IsNullOrEmpty(tmp.Value.ToString()))
                 {
-                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                    //to do
+                }
+                else if (tmp.Value.ToString() == "isnull")
+                {
+                    conditionSql += string.Format(" and tmp1.{0} is null ", tmp.Key, tmp.Key);
+                }
+                //else if (tmp.Key == "reccode")
+                //{
+                //    string[] val = tmp.Value.ToString().Split(",");
+                //    conditionSql += string.Format(" and tmp1.{0}>={1} and tmp1.{0}<={2} ", tmp.Key, val[0], val[1]);
+                //}
+                else if (tmp.Key == "commitdate" || tmp.Key == "commitremarkdate")
+                {
+                    string[] val = tmp.Value.ToString().Split(",");
+                    conditionSql += string.Format(" and  tmp1.{0}>='{1}' and tmp1.{0}<='{2}' ", tmp.Key, val[0], val[1]);
                 }
                 else
                 {
-                    conditionSql += string.Format(" and tmp1.{0}  ILIKE '%' || @{1} || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
-                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                    conditionSql += string.Format(" and tmp1.{0} ILIKE '%' || @{1} || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
                 }
+                param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
                 index++;
             }
             param[index] = new NpgsqlParameter("recid", mapper.RecId);
-            sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? " order by " + mapper.SearchOrder : string.Empty));
+            sql = string.Format(sql, conditionSql, (string.IsNullOrEmpty(mapper.SearchOrder) ?  string.Empty: (" order by " + mapper.SearchOrder)));
             if (dbTran == null)
                 return ExecuteQueryByPaging(sql, param, mapper.PageSize, mapper.PageIndex, dbTran);
 
-            var result = ExecuteQueryByPaging( sql, param, mapper.PageSize,mapper.PageIndex,dbTran);
+            var result = ExecuteQueryByPaging(sql, param, mapper.PageSize, mapper.PageIndex, dbTran);
             return result;
         }
 
@@ -2156,19 +2171,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public PageDataInfo<Dictionary<string, object>> GetPgLogList(PgCodeMapper mapper, DbTransaction dbTran, int userId)
         {
             var sql = "select * from (SELECT \n" +
-                    "recid,reccode,\n" +
+                    "de.recid,de.reccode,\n" +
                     "CASE WHEN objtype='0' THEN '普通函数' WHEN objtype=1 THEN '触发器函数' ELSE '系统函数' END as objtype,\n" +
                     "CASE WHEN changetype='1' THEN '创建' WHEN changetype=2 THEN '修改' ELSE '删除' END AS changetype,\n" +
-                    "funcname,\n" +
-                    "paramsname,\n" +
-                    "oldsql,\n" +
-                    "newsql,\n" +
-                    "reccreated,\n" +
-                    "remark,\n" +
+                    "de.funcname,\n" +
+                    "de.paramsname,\n" +
+                    "de.oldsql,\n" +
+                    "de.newsql,\n" +
+                    "de.reccreated,\n" +
+                    "de.remark,\n" +
                     "u.username marker,\n" +
-                    "marktime,\n" +
-                    "marklog\n" +
-                    "FROM crm_sys_history_pglog_detail de LEFT JOIN crm_sys_userinfo u on u.userid=de.marker) as tmp where 1=1 {0}";
+                    "de.marktime,\n" +
+                    "de.marklog\n" +
+                    "FROM crm_sys_history_pglog_detail de LEFT JOIN crm_sys_userinfo u on u.userid=de.marker) as tmp where 1=1 {0} {1}";
             DbParameter[] param = new DbParameter[mapper.ColumnFilter.Count];
             string conditionSql = String.Empty;
             int index = 0;
@@ -2176,16 +2191,26 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             {
                 if (tmp.Value == null || string.IsNullOrEmpty(tmp.Value.ToString()))
                 {
-                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+                    //to do
+                }
+                else if (tmp.Value.ToString() == "isnull")
+                {
+                    conditionSql += string.Format(" and tmp.{0} is null ", tmp.Key, tmp.Key);
+                }
+                else if (tmp.Key == "marktime" || tmp.Key == "reccreated")
+                {
+                    string[] val = tmp.Value.ToString().Split(",");
+                    conditionSql += string.Format(" and  tmp.{0}>='{1}' and tmp.{0}<='{2}' ", tmp.Key, val[0], val[1]);
                 }
                 else
                 {
                     conditionSql += string.Format(" and tmp.{0}  ILIKE '%' || @{1} || '%' ESCAPE '`' ", tmp.Key, tmp.Key);
-                    param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
+
                 }
+                param[index] = new NpgsqlParameter(tmp.Key, tmp.Value);
                 index++;
             }
-            sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? " order by " + mapper.SearchOrder : string.Empty));
+            sql = string.Format(sql, conditionSql, (!string.IsNullOrEmpty(mapper.SearchOrder) ? (" order by " + mapper.SearchOrder) : string.Empty));
             if (dbTran == null)
                 return ExecuteQueryByPaging(sql, param, mapper.PageIndex, mapper.PageSize);
 
