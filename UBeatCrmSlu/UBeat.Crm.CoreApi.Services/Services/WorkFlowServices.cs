@@ -1839,7 +1839,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case 2:
                     LoopInfo loopInfo;
                     result.Approvers = LoopApproveUsers(caseInfo, workflowInfo, flowNodeInfo, tran, userinfo, out loopInfo);
-                    if (loopInfo.IsBreak)
+                    if (loopInfo.IsBreak && !loopInfo.IsBreak)
                         return LoopWorkFlow(caseInfo, workflowInfo, flowNodeInfo, loopInfo.NodeDataInfo, userinfo, tran);
                     result.CPUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, loopInfo.NodeDataInfo.NodeId.Value, userinfo.UserId, workflowInfo.FlowType, tran);
                     result.IsSkipNode = true;
@@ -1881,7 +1881,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     loopInfo.IsBreak = true;
                     loopInfo.NodeId = flowNodeInfo.NodeId;
-                    var nodeInfo = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, node.NodeId.Value, caseInfo.VerNum, tran).FirstOrDefault();
+                    var nodeInfo = _workFlowRepository.GetCurNodeDataInfo(caseInfo.FlowId, flowNodeInfo.NodeId, caseInfo.VerNum, tran).FirstOrDefault();
                     loopInfo.NodeDataInfo = nodeInfo;
                     loopInfo.IsNoneApproverUser = (flowNodeInfo.StepTypeId == NodeStepType.End) ? true : false;
                     if (!loopInfo.IsNoneApproverUser)

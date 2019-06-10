@@ -794,7 +794,22 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             };
             return ExecuteQuery<NextNodeDataInfo>(executeSql, param, trans);
         }
+        public List<NextNodeDataInfo> GetCurNodeDataInfo(Guid flowid, Guid nodeid, int vernum, DbTransaction trans = null)
+        {
+            var executeSql = @" SELECT n.nodeid,n.nodename,n.nodetype,n.nodenum,n.steptypeid,n.stepcptypeid,n.notfound,wf.flowtype
+								FROM crm_sys_workflow_node AS n
+								LEFT JOIN crm_sys_workflow_steptype AS s ON s.steptypeid = n.steptypeid
+                                 LEFT JOIN crm_sys_workflow AS wf ON wf.flowid =@flowid 
+								WHERE n.nodeid = @nodeid ";
 
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("flowid", flowid),
+                new NpgsqlParameter("nodeid", nodeid),
+                new NpgsqlParameter("vernum", vernum),
+            };
+            return ExecuteQuery<NextNodeDataInfo>(executeSql, param, trans);
+        }
         #region --获取下一步节点的审批人列表--
         public List<ApproverInfo> GetFlowNodeApprovers(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null)
         {

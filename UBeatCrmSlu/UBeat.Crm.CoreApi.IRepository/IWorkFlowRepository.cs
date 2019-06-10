@@ -74,6 +74,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<NextNodeDataInfo> GetNextNodeDataInfoList(Guid flowid, Guid fromnodeid, int vernum,  DbTransaction trans = null);
         List<NextNodeDataInfo> GetNodeDataInfo(Guid flowid, Guid nodeid, int vernum, DbTransaction trans = null);
+        List<NextNodeDataInfo> GetCurNodeDataInfo(Guid flowid, Guid nodeid, int vernum, DbTransaction trans = null);
         List<ApproverInfo> GetFlowNodeApprovers(Guid caseId,Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null);
         List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null);
         /// <summary>
