@@ -1531,6 +1531,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     nodetemp.NeedSuccAuditCount = 1;
                     nodetemp.FlowType = WorkFlowType.FixedFlow;
                     var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nodetemp.NodeId.GetValueOrDefault(), userinfo.UserId, workflowInfo.FlowType, tran);
+                    var cpUsers = new List<ApproverInfo>();
                     if (users == null || users.Count == 0 && nodetemp.NodeState == 0)//没有满足下一步审批人条件的选人列表,则获取与自由流程一样返回全公司人员
                     {
                         nodetemp.NodeState = 0;
@@ -1538,6 +1539,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (data.Approvers != null && data.Approvers.Count > 0)
                         {
                             users = data.Approvers;
+                            cpUsers = data.CPUsers;
                             if (data.NodeInfo != null)
                                 nodetemp = data.NodeInfo;
                             nodetemp.IsSkip = true;
@@ -1549,7 +1551,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         nodetemp.IsSkip = false;
                     }
-                    var cpUsers = new List<ApproverInfo>();
                     if (!nodetemp.IsSkipNode)
                     {
                         cpUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, nodetemp.NodeId.GetValueOrDefault(), userinfo.UserId, workflowInfo.FlowType, tran);
@@ -1870,7 +1871,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, flowNodeInfo.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
             if (users.Count > 0)
             {
-                var nodeInfo = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, node.NodeId.Value, caseInfo.VerNum, tran).FirstOrDefault();
+                var nodeInfo = _workFlowRepository.GetNodeDataInfo(caseInfo.FlowId, flowNodeInfo.NodeId, caseInfo.VerNum, tran).FirstOrDefault();
                 loopInfo.NodeDataInfo = nodeInfo;
                 return users;
             }
@@ -2570,11 +2571,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (tmp.NodeId == nodeid)//找到该nodeid证明是在某一分支下，然后返回该索引
                     return loop;
                 var data = _workFlowRepository.GetNextNodeInfoList(trans, caseInfo.FlowId, caseInfo.VerNum, tmp.NodeId);
-                loop++;
                 if (data.Count > 0)
                     return LookUpNextNodeData(trans, caseInfo, data, nodeid);
                 else
+                {
+                    loop++;
                     continue;
+                }
             }
             return loop;
         }
