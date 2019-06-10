@@ -1190,6 +1190,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                     }
                 }
+                else if (field.ControlType == 30)                {                    if (field.FieldName == "recrelateid")                    {                        field.FieldName = _entityProRepository.GetEntityInfo(dynamicModel.TypeId).RelFieldName;                    }                }
             }
             #endregion 
             if (fields.Count == 0)
