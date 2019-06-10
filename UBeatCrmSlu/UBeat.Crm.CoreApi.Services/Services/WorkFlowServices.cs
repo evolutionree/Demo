@@ -404,8 +404,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 					{
 						var entityInfo = _entityProRepository.GetEntityInfo(caseModel.EntityModel.TypeId);
 						UserData userData = GetUserData(userinfo.UserId);
-
-						WorkFlowAddCaseModel workFlowAddCaseModel = null;
+                        if (entityInfo.ModelType == EntityModelType.Dynamic)                        {                            if (!caseModel.EntityModel.FieldData.ContainsKey("recrelateid"))                            {                                caseModel.EntityModel.FieldData.Add("recrelateid", caseModel.EntityModel.RelRecId);                            }                        }
+                        WorkFlowAddCaseModel workFlowAddCaseModel = null;
 						var entityResult = _dynamicEntityServices.AddEntityData(tran, userData, entityInfo, caseModel.EntityModel, header, userinfo.UserId, out workFlowAddCaseModel);
 						if (entityResult.Status != 0)
 						{
@@ -471,8 +471,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 					{
 						var entityInfo = _entityProRepository.GetEntityInfo(caseModel.EntityModel.TypeId);
 						UserData userData = GetUserData(userinfo.UserId);
-
-						WorkFlowAddCaseModel workFlowAddCaseModel = null;
+                        if (entityInfo.ModelType == EntityModelType.Dynamic)                        {                            if (!caseModel.EntityModel.FieldData.ContainsKey("recrelateid"))                            {                                caseModel.EntityModel.FieldData.Add("recrelateid", caseModel.EntityModel.RelRecId);                            }                        }
+                        WorkFlowAddCaseModel workFlowAddCaseModel = null;
 						var entityResult = _dynamicEntityServices.AddEntityData(tran, userData, entityInfo, caseModel.EntityModel, header, userinfo.UserId, out workFlowAddCaseModel);
 						if (entityResult.Status != 0)
 						{
