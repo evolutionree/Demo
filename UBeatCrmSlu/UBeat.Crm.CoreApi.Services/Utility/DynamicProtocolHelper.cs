@@ -330,6 +330,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
                         var sysControls = new List<int>
                     {
+                            31,
                         1001,
                         1002,
                         1003,
