@@ -2023,9 +2023,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo, out isDefaultNode, tran))
                             throw new Exception("下一步审批人不符合分支流程规则");
                     }
-                    AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
                     var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nextnode.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
                     isSkip = (users.Count == 0 && nextnode.NotFound == 2);
+                    string userIds = string.Empty;
+                    if (isSkip)
+                        userIds = userinfo.UserId.ToString();
+                    else
+                        userIds = caseItemModel.HandleUser;
+                    caseItemModel.HandleUser = userIds;
+                    AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
+
                 }
                 if (conn != null)
                 {
@@ -2061,7 +2068,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
 
                 }
-                if (!isSkip&&isNeedToSendMsg!=3)
+                if (!isSkip && isNeedToSendMsg != 3)
                 {
                     isNeedToSendMsg = 2;
                 }
