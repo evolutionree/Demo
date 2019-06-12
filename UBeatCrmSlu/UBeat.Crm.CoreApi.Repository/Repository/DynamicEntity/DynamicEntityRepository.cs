@@ -860,15 +860,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
             else
             {
-                string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
+				string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
                                          inner JOIN crm_sys_entity c on c.entityid=a.relentityid
                                          inner join crm_sys_entity_fields b on  b.fieldid=a.fieldid
-                                          where c.entityid=@entityid ";
-                var param = new DbParameter[]
-                {
-                    new NpgsqlParameter("entityid",config.RelentityId)
-                };
-                parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
+                                          where a.relentityid=@relentityid and a.entityid = @entityid";
+				var param = new DbParameter[]
+				{
+					new NpgsqlParameter("relentityid",config.RelentityId),
+					new NpgsqlParameter("entityid",config.EntityId),
+				};
+				parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
                 string childfieldSql = @"select a.fieldname  from crm_sys_entity_fields a where  a.fieldid=@fieldid";
                 var param1 = new DbParameter[]
                 {
