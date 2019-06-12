@@ -477,7 +477,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 throw new Exception("参数不可为空");
             }
-
+            int isNeedToSendMsg = 0;//0代表不发消息 1代表是跳过流程的时候用handleuser来替换当前用户 2 当前用户
             using (var conn = GetDbConnect())
             {
                 conn.Open();
@@ -512,13 +512,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (workflowInfo == null)
                         throw new Exception("流程配置不存在");
                     WorkFlowNodeInfo firstNodeInfo = null;
-                    var caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo);
+                    var caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo, isNeedToSendMsg);
                     var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseid);
                     var nextnodes = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, firstNodeInfo.NodeId, caseInfo.VerNum, tran);
                     var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nextnodes.FirstOrDefault().NodeId.Value, userinfo.UserId, workflowInfo.FlowType, tran);
                     caseModel.IsSkip = (users.Count == 0 && nextnodes.FirstOrDefault().NotFound == 2);
                     tran.Commit();
-
                     while (caseModel.IsSkip)
                     {
                         var caseItemList = _workFlowRepository.CaseItemList(caseid, userinfo.UserId);
@@ -529,6 +528,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
                         }, userinfo);
                         NextNodeDataModel model = data.DataBody as NextNodeDataModel;
+                        if (model.NodeInfo.IsSkip)
+                            isNeedToSendMsg = 1;
+                        if (model.NodeInfo.NodeType == NodeType.Joint)
+                            isNeedToSendMsg = 3;
                         SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
                         {
                             CaseId = caseid,
@@ -539,7 +542,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                             Suggest = "",
                             IsNotEntrance = true
-                        }, userinfo);
+                        }, userinfo, isNeedToSendMsg: isNeedToSendMsg);
                         if (!model.NodeInfo.IsSkip)
                             break;
                     }
@@ -683,7 +686,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         #region --新增流程case数据--
 
-        private Guid AddWorkFlowCase(bool ispresubmit, DbTransaction tran, WorkFlowCaseAddModel caseModel, WorkFlowInfo workflowInfo, UserInfo userinfo, out WorkFlowNodeInfo firstNodeInfo)
+        private Guid AddWorkFlowCase(bool ispresubmit, DbTransaction tran, WorkFlowCaseAddModel caseModel, WorkFlowInfo workflowInfo, UserInfo userinfo, out WorkFlowNodeInfo firstNodeInfo, int isNeedToSendMsg = 0)
         {
             var caseEntity = _mapper.Map<WorkFlowAddCaseModel, WorkFlowAddCaseMapper>(caseModel.CaseModel);
             if (caseEntity == null || !caseEntity.IsValid())
@@ -759,7 +762,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         HandleUser = caseModel.HandleUser,
                         CopyUser = caseModel.CopyUser
                     };
-                    SubmitWorkFlowAudit(caseItemModel, userinfo, tran);
+                    SubmitWorkFlowAudit(caseItemModel, userinfo, tran, isNeedToSendMsg);
                 }
             }
             else //如果流程跳过标志为1，则直接跳转到结束
@@ -1251,7 +1254,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     NodeId = node.NodeInfo.NodeId,
                                     NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                                     Suggest = ""
-                                }, userinfo, null);
+                                }, userinfo, null, 0);
                                 if (isTranCommit)
                                 {
                                     throw new Exception("审批异常");
@@ -1900,7 +1903,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --提交审批--
 
 
-        public OutputResult<object> SubmitWorkFlowAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran = null)
+        public OutputResult<object> SubmitWorkFlowAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran = null, int isNeedToSendMsg = 0)
         {
             bool isSkip = false;
             //获取该实体分类的字段
@@ -2041,6 +2044,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
                     }, userinfo);
                     NextNodeDataModel model = data.DataBody as NextNodeDataModel;
+                    if (model.NodeInfo.StepTypeId == NodeStepType.End)
+                        break;
                     SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
                     {
                         CaseId = caseInfo.CaseId,
@@ -2051,14 +2056,30 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                         Suggest = ""
                     }, userinfo);
-                    if (model.NodeInfo.StepTypeId == NodeStepType.End)
-                        break;
+
                     if (!model.NodeInfo.IsSkip)
                         break;
 
                 }
+                if (!isSkip&&isNeedToSendMsg!=3)
+                {
+                    isNeedToSendMsg = 2;
+                }
+
                 //写审批消息
-                WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, IsFinishAfterStart);
+                if (isNeedToSendMsg == 1)//跳过流程的时候替换用户
+                {
+                    int userId = 0;
+                    if (userinfo.UserId != Convert.ToInt32(caseItemModel.HandleUser))
+                    {
+                        userId = Convert.ToInt32(caseItemModel.HandleUser);
+                    }
+                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userId, IsFinishAfterStart);
+                }
+                else if (isNeedToSendMsg == 2 || isNeedToSendMsg == 3)
+                {
+                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, IsFinishAfterStart);
+                }
 
             }
             catch (Exception ex)
@@ -2080,7 +2101,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(null);
         }
-        public OutputResult<object> SubmitWorkFlowAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran)
+        public OutputResult<object> SubmitWorkFlowAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran, int isNeedToSendMsg)
         {
             //获取该实体分类的字段
             var caseItemEntity = _mapper.Map<WorkFlowAuditCaseItemModel, WorkFlowAuditCaseItemMapper>(caseItemModel);
@@ -2206,8 +2227,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     tran.Commit();
                     canWriteCaseMessage = true;
                 }
-                //写审批消息
-                WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, IsFinishAfterStart);
+                if (isNeedToSendMsg != 0)
+                    //写审批消息
+                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, IsFinishAfterStart);
 
             }
             catch (Exception ex)
@@ -2586,6 +2608,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --写入添加流程的消息--
 
         bool canWriteCaseMessage = false;
+
         /// <summary>
         /// 写入添加流程的消息
         /// </summary>
@@ -2596,7 +2619,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             Task.Run(() =>
             {
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 20; i++)
                 {
                     if (canWriteCaseMessage) break;
                     try
