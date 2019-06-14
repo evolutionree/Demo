@@ -3965,40 +3965,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!string.IsNullOrEmpty(uuid))
                         {
                             var functions = t.Functions.Where(b => b.EntityId == entity.EntityId && b.RecType == FunctionType.EntityTab && b.DeviceType == (int)DeviceClassic);//拿子节点对上一级 的父节点的id
-                            if (functions.Count() != 1) throw new Exception("职能权限数据异常");
-                            var function = functions.SingleOrDefault();
-                            functions = t.Functions.Where(a => a.ParentId == function.FuncId);
-                            if (functions.Any(a => a.RelationValue == uuid))
-                            {
-                                //1.检查职能可见规则
-                                //2.检查页签可见规则
-                                var hasAccess = true;
-                                var recIds = new List<Guid>();
-                                recIds.Add(entityModel.RecId);
+							if (functions != null && functions.Count() > 0)
+							{
+								var function = functions.SingleOrDefault();
+								functions = t.Functions.Where(a => a.ParentId == function.FuncId);
+								if (functions.Any(a => a.RelationValue == uuid))
+								{
+									//1.检查职能可见规则
+									//2.检查页签可见规则
+									var hasAccess = true;
+									var recIds = new List<Guid>();
+									recIds.Add(entityModel.RecId);
 
-                                var fun = functions.Where(a => a.RelationValue == uuid).FirstOrDefault();
-                                var userData = GetUserData(userNumber, false);
-                                var sql = userData.RuleSqlFormatForFunction(fun);
-                                if (!string.IsNullOrEmpty(sql))
-                                {
-                                    hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
-                                }
-                                if (hasAccess == true)
-                                {
-                                    if (relTabRelationList != null && relTabRelationList.Any(i => i.RelTabId.ToString() == uuid))
-                                    {
-                                        var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
-                                        sql = userData.RuleSqlFormatForSql(tab.RuleSql);
-                                        hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
-                                    }
-                                }
+									var fun = functions.Where(a => a.RelationValue == uuid).FirstOrDefault();
+									var userData = GetUserData(userNumber, false);
+									var sql = userData.RuleSqlFormatForFunction(fun);
+									if (!string.IsNullOrEmpty(sql))
+									{
+										hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+									}
+									if (hasAccess == true)
+									{
+										if (relTabRelationList != null && relTabRelationList.Any(i => i.RelTabId.ToString() == uuid))
+										{
+											var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
+											sql = userData.RuleSqlFormatForSql(tab.RuleSql);
+											hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+										}
+									}
 
-                                if (hasAccess == true)
-                                {
-                                    if (!lst.Contains(tmp))
-                                        lst.Add(tmp);
-                                }
-                            }
+									if (hasAccess == true)
+									{
+										if (!lst.Contains(tmp))
+											lst.Add(tmp);
+									}
+								}
+							} 
                         }
                     }
                 });
