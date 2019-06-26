@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -74,6 +75,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.ReportRelation
         public int PageSize { get; set; }
         public string SearchOrder { get; set; }
         public Dictionary<string, object> ColumnFilter { get; set; }
+    }
+
+    public class ImportReportRelationModel
+    {
+
+        /// <summary>
+        /// true是删除全部再导入，false是增量导入，增量导入包括遇到同一个汇报人的话 会覆盖原本有的
+        /// </summary>
+        public bool IsConvertImport { get; set; }
+        public IFormFile Data { set; get; }
     }
 
 }

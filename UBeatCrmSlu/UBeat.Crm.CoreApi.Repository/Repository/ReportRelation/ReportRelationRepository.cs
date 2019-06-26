@@ -132,7 +132,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
 
         public List<EditReportRelDetailMapper> GetReportRelDetail(QueryReportRelDetailMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = " select * from crm_sys_reportreldetail where 1=1 {0} ";
+            var sql = " select * from crm_sys_reportreldetail where recstatus=1 and 1=1 {0} ";
             var param = new DbParameter[]
            {
                new NpgsqlParameter("reportrelationname",mapper.Name),
@@ -160,12 +160,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
         public OperateResult AddReportRelDetail(AddReportRelDetailMapper add, DbTransaction dbTran, int userId)
         {
             var sql = "INSERT INTO \"public\".\"crm_sys_reportreldetail\" ( \"reportrelationid\", \"reportuser\", \"reportleader\") VALUES (@reportrelationid,@reportuser,@reportleader);";
+            var sqlReportUserExists = "select 1 from (SELECT DISTINCT regexp_split_to_table(reportuser,',')::int4 as userid FROM crm_sys_reportreldetail where reportrelationid=@reportrelationid and recstatus=1) as tmp where userid=any(@reportuserarr) ";
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("reportrelationid",add.ReportRelationId),
-                new NpgsqlParameter("reportuser",add.ReportUser),
-                new NpgsqlParameter("reportleader",add.ReportLeader),
+                    new NpgsqlParameter("reportrelationid",add.ReportRelationId),
+                    new NpgsqlParameter("reportuser",add.ReportUser),
+                     new NpgsqlParameter("reportuserarr",Array.ConvertAll<string,int>(add.ReportUser.Split(","),(s)=>int.Parse(s))),
+                    new NpgsqlParameter("reportleader",add.ReportLeader),
             };
+            var result = this.ExecuteScalar(sqlReportUserExists, param, dbTran);
+            if (result != null)
+                return new OperateResult
+                {
+                    Codes = "001",
+                    Msg = "汇报人不可以重复"
+                };
             this.ExecuteNonQuery(sql, param, dbTran);
             return new OperateResult
             {
@@ -207,7 +216,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
         public OperateResult DeleteReportRelDetail(DeleteReportRelDetailMapper delete, DbTransaction dbTran, int userId)
         {
             var sql = "update  crm_sys_reportreldetail set recstatus=@recstatus where reportreldetailid=@reportreldetailid";
-            // var existSql = "select count(1) from crm_sys_analyse_func as f where  EXISTS(select 1 from crm_sys_analyse_func_active where recstatus=1 and /anafuncid=f.anafuncid) " + "AND anafuncid = @anafuncid";
+
 
             foreach (var tmp in delete.ReportRelDetailIds)
             {
@@ -217,18 +226,6 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
                   new NpgsqlParameter("recstatus", delete.RecStatus)
                 };
                 int result;
-                //if (dbTran == null)
-                //    result = DBHelper.ExecuteQuery<int>("", existSql, param1).FirstOrDefault();
-                //else
-                //    result = DBHelper.ExecuteQuery<int>(dbTran, existSql, param1).FirstOrDefault();
-                //if (result > 0)
-                //{
-                //    return new OperateResult
-                //    {
-                //        Flag = 0,
-                //        Msg = "函数被引用"
-                //    };
-                //}
                 result = 0;
                 if (dbTran == null)
                     result = DBHelper.ExecuteNonQuery("", sql, param1);
@@ -249,10 +246,42 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
                 Msg = "操作成功"
             };
         }
+        public OperateResult DeleteReportRelDetailData(DeleteReportRelDetailMapper delete, DbTransaction dbTran, int userId)
+        {
+            var sql = "update  crm_sys_reportreldetail set recstatus=@recstatus where reportrelationid=@reportrelationid";
 
+
+            foreach (var tmp in delete.ReportRelationIds)
+            {
+                var param1 = new DbParameter[]
+                {
+                  new NpgsqlParameter("reportrelationid", tmp),
+                  new NpgsqlParameter("recstatus", delete.RecStatus)
+                };
+                int result;
+                result = 0;
+                if (dbTran == null)
+                    result = DBHelper.ExecuteNonQuery("", sql, param1);
+                else
+                    result = DBHelper.ExecuteNonQuery(dbTran, sql, param1);
+                if (result < 0)
+                {
+                    return new OperateResult
+                    {
+                        Flag = 0,
+                        Msg = "操作失败"
+                    };
+                }
+            }
+            return new OperateResult
+            {
+                Flag = 1,
+                Msg = "操作成功"
+            };
+        }
         public PageDataInfo<Dictionary<string, object>> GetReportRelDetailListData(QueryReportRelDetailMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = "select tmp1.*,tmp2.reportuser,tmp2.reportuser_name from (\n" +
+            var sql = "select tmp1.*,tmp2.reportuser,tmp2.reportuser_name,tmp3.reportrelationname from (\n" +
 " select * from ( select  tmp.reportreldetailid,tmp.reportrelationid,tmp.reportleader,\n" +
 "array_to_string(array_agg(tmp.reportleader_name),',') as  \n" +
 "reportleader_name from ( \n" +
@@ -277,7 +306,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
 " ) as tmp \n" +
 "  where 1=1   \n" +
 " GROUP BY tmp.reportreldetailid,tmp.reportrelationid,tmp.reportuser ) as tmp1\n" +
-") tmp2  on  tmp2.reportreldetailid=tmp1.reportreldetailid where 1=1 {0} {1}";
+") tmp2  on  tmp2.reportreldetailid=tmp1.reportreldetailid" +
+" left join crm_sys_reportrelation tmp3 on tmp3.reportrelationid=tmp1.reportrelationid where 1=1 {0} {1}";
             var param = new DbParameter[mapper.ColumnFilter.Count];
             string conditionSql = String.Empty;
             int index = 0;

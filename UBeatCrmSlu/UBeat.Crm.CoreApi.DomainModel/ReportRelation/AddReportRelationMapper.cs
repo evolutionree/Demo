@@ -93,7 +93,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.ReportRelation
 
 
     public class DeleteReportRelDetailMapper : BaseEntity
-    {
+    {      public List<Guid> ReportRelationIds { get; set; }
         public List<Guid> ReportRelDetailIds { get; set; }
         public int RecStatus { get; set; }
         protected override IValidator GetValidator()

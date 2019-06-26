@@ -1,4 +1,6 @@
-﻿using System;
+﻿
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using AutoMapper;
@@ -390,6 +392,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --流程预提交--
         public OutputResult<object> PreAddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo)
         {
+            int isNeedToSendMsg = 0;//0代表不发消息 1代表是跳过流程的时候用handleuser来替换当前用户 2 当前用户
+            bool isCommit = false;
             if (caseModel == null)
             {
                 throw new Exception("参数不可为空");
@@ -435,22 +439,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var caseid = AddWorkFlowCase(true, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo);
                     //走完审批所有操作，获取下一步数据
                     caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseid);
-
-                    //bool isCheck = false;
-                    //while (true)
-                    //{
-                    //    if (!CheckNodeData(tran, caseInfo, workflowInfo, firstNodeInfo, userinfo))
-                    //    {
-                    //        isCheck = true;
-                    //        break;
-                    //    }
-                    //}
-                    //if (isCheck)
                     LoopInfo loopInfo;
                     var users = LoopApproveUsers(caseInfo, workflowInfo, firstNodeInfo, tran, userinfo, out loopInfo);
-                    if (loopInfo.IsNoneApproverUser)
-                        throw new Exception("所有审批节点均未找到审批人,请检查流程配置");
-                    result = GetNextNodeData(tran, caseInfo, workflowInfo, firstNodeInfo, userinfo);
+                    if (isCommit = loopInfo.IsNoneApproverUser)
+                        tran.Commit();
+                    else
+                        result = GetNextNodeData(tran, caseInfo, workflowInfo, firstNodeInfo, userinfo);
+                    while (isCommit)
+                    {
+                        var caseItemList = _workFlowRepository.CaseItemList(caseid, userinfo.UserId);
+                        var data = SubmitPretreatAudit(new WorkFlowAuditCaseItemModel
+                        {
+                            CaseId = caseid,
+                            ChoiceStatus = 1,
+                            NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
+                        }, userinfo);
+                        NextNodeDataModel model = data.DataBody as NextNodeDataModel;
+                        if (!model.NodeInfo.IsSkip)
+                            break;
+                    }
+
                 }
                 catch (Exception ex)
                 {
@@ -458,9 +466,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 finally
                 {
-                    //LoopWorkFlow(ref result, caseInfo, workflowInfo, userinfo, tran);
                     //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
-                    tran.Rollback();
+                    if (!isCommit)
+                        tran.Rollback();
                     conn.Close();
                     conn.Dispose();
                 }
@@ -1547,7 +1555,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 nodetemp = data.NodeInfo;
                             nodetemp.IsSkip = true;
                             nodetemp.IsSkipNode = data.IsSkipNode;
-
                         }
                     }
                     else

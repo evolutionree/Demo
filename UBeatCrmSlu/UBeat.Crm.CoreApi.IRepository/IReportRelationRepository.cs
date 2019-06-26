@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
 
         OperateResult DeleteReportRelDetail(DeleteReportRelDetailMapper delete, DbTransaction dbTran, int userId);
-
+        OperateResult DeleteReportRelDetailData(DeleteReportRelDetailMapper delete, DbTransaction dbTran, int userId);
         PageDataInfo<Dictionary<string, object>> GetReportRelDetailListData(QueryReportRelDetailMapper mapper, DbTransaction dbTran, int userId);
 
         List<EditReportRelDetailMapper> GetReportRelDetail(QueryReportRelDetailMapper mapper, DbTransaction dbTran, int userId);
