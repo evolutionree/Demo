@@ -19,6 +19,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
         public int NotFound { get; set; }
         public bool IsSkipNode { get; set; } = false;
+        public bool IsCpShow { get; set; }
     }
 
 

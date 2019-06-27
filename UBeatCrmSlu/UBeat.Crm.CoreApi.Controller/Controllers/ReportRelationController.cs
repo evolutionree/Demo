@@ -100,5 +100,20 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _reportRelationServices.DeleteReportRelation(model, UserId);
             return result;
         }
+        [HttpPost("importreportrelation")]
+        [AllowAnonymous]
+        public OutputResult<object> ImportReportRelation([FromForm] ImportReportRelationModel formData)
+        {
+            try
+            {
+                var result = _reportRelationServices.ImportReportRelation(formData.Data.OpenReadStream(), formData.IsConvertImport, UserId);
+                return new OutputResult<object>(result);
+            }
+            catch (Exception ex)
+            {
+                return ResponseError<object>(ex.Message);
+            }
+        }
+
     }
 }

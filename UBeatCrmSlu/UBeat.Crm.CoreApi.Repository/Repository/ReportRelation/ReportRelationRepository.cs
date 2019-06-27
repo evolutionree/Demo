@@ -15,11 +15,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportRelation
         public OperateResult AddReportRelation(AddReportRelationMapper add, DbTransaction dbTran, int userId)
         {
             var sql = "INSERT INTO \"public\".\"crm_sys_reportrelation\" ( \"reportrelationname\", \"reportremark\") VALUES (@reportrelationname,@reportremark);";
+            var sqlCheck = "select 1 from crm_sys_reportrelation where reportrelationname=@reportrelationname  and recstatus=1;";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("reportrelationname",add.ReportRelationName),
                 new NpgsqlParameter("reportremark",add.ReportreMark)
             };
+            if (this.ExecuteScalar(sqlCheck, param, dbTran) != null)
+                return new OperateResult
+                {
+                    Msg = "汇报名称重复"
+                };
             this.ExecuteNonQuery(sql, param, dbTran);
             return new OperateResult
             {

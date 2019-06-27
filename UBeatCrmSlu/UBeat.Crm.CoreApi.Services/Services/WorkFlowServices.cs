@@ -455,6 +455,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
                         }, userinfo);
                         NextNodeDataModel model = data.DataBody as NextNodeDataModel;
+                        if (model.NodeInfo.StepTypeId == NodeStepType.End)
+                            result = model;
                         if (!model.NodeInfo.IsSkip)
                             break;
                     }
@@ -492,7 +494,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var tran = conn.BeginTransaction();
                 try
                 {
-
+                    if (caseModel.NodeId.HasValue)
+                    {
+                        var workFlowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, caseModel.NodeId.Value);
+                        if (workFlowNodeInfo.StepTypeId == NodeStepType.End)
+                            return new OutputResult<object>();
+                    }
                     if (!string.IsNullOrEmpty(caseModel.CacheId))
                     {
                         Guid g = Guid.Parse(caseModel.CacheId);
@@ -517,6 +524,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         throw new Exception("流程数据不可为空");
                     }
                     var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseModel.CaseModel.FlowId);
+
                     if (workflowInfo == null)
                         throw new Exception("流程配置不存在");
                     WorkFlowNodeInfo firstNodeInfo = null;
@@ -553,13 +561,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }, userinfo, isNeedToSendMsg: isNeedToSendMsg);
                         if (!model.NodeInfo.IsSkip)
                             break;
+                        if (model.NodeInfo.NodeId == caseModel.NodeId)
+                            break;
                     }
                     canWriteCaseMessage = true;
                     return new OutputResult<object>(caseid);
                 }
                 catch (Exception ex)
                 {
-                    tran.Rollback();
+                    if (tran.Connection != null)
+                        tran.Rollback();
                     throw ex;
                 }
                 finally
@@ -1561,13 +1572,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         nodetemp.IsSkip = false;
                     }
+
                     if (!nodetemp.IsSkipNode)
                     {
                         cpUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, nodetemp.NodeId.GetValueOrDefault(), userinfo.UserId, workflowInfo.FlowType, tran);
                         if (cpUsers == null || cpUsers.Count == 0 && nodetemp.NodeState == 0)//没有满足下一步审批人条件的选人列表,则获取与自由流程一样返回全公司人员
                         {
                             nodetemp.NodeState = 0;
-                            cpUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
+                            // cpUsers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, Guid.Empty, userinfo.UserId, WorkFlowType.FreeFlow, tran);
                         }
                     }
                     result = new NextNodeDataModel()
@@ -2014,7 +2026,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         caseItemEntity.ChoiceStatus = 1;
                         IsFinishAfterStart = true;
                     }
-                    _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
+                    var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
+                    int casestatus = -2;
+                    if (caseItemList.Count > 0)
+                        casestatus = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString());
+                    if (casestatus != -1)
+                        _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
 
                     //判断是否有附加函数_event_func
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);

@@ -155,7 +155,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             //var result = DataBaseHelper.QueryStoredProcCursor(procName, param, CommandType.Text);
             //return result;
 
-            var executeSql = @" SELECT i.nodenum,i.stepnum::TEXT AS itemcode, 
+            var executeSql = @" SELECT i.nodenum,i.stepnum::TEXT AS itemcode,i.choicestatus,
                                 (CASE WHEN  i.nodeid = '00000000-0000-0000-0000-000000000000' THEN '发起审批'
 	                                  WHEN  i.nodeid = '00000000-0000-0000-0000-000000000001' THEN '结束审批'
 	                                  WHEN  i.nodeid = '00000000-0000-0000-0000-000000000002' THEN '自选审批'
