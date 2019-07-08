@@ -75,7 +75,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// </summary>
         public string CopyUser { set; get; }
 
-       
+       public int SkipNode { get; set; }
 
 
     }

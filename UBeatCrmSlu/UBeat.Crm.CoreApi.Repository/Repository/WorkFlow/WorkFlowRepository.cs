@@ -167,7 +167,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 			                        LEFT JOIN crm_sys_workflow_case AS c ON i.caseid = c.caseid
 			                        LEFT JOIN crm_sys_workflow_node AS n ON i.nodeid = n.nodeid 
 			                        LEFT JOIN crm_sys_userinfo AS u ON u.userid = i.handleuser 
-			                        WHERE i.caseid = @caseid
+			                        WHERE i.caseid = @caseid and i.skipnode=0
 			                        ORDER BY i.stepnum ASC";
 
             var param = new DbParameter[]
@@ -1707,8 +1707,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 AdditionCopyUsers = "";
             }
             #endregion
-            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseitemid,caseid,nodeid, nodenum,stepnum,choicestatus,suggest, casestatus,casedata,remark,handleuser,copyuser, reccreator, recupdator) 
-                                         VALUES (@caseitemid,@caseid,@nodeid, @nodenum,@stepnum,@choicestatus,@suggest, @casestatus,@casedata,@remark,@handleuser,@copyuser, @userno, @userno);");
+            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseitemid,caseid,nodeid, nodenum,stepnum,choicestatus,suggest, casestatus,casedata,remark,handleuser,copyuser, reccreator, recupdator,skipnode) 
+                                         VALUES (@caseitemid,@caseid,@nodeid, @nodenum,@stepnum,@choicestatus,@suggest, @casestatus,@casedata,@remark,@handleuser,@copyuser, @userno, @userno, @skipnode);");
             List<DbParameter[]> sqlParameters = new List<DbParameter[]>();
 
             foreach (var item in caseitems)
@@ -1735,6 +1735,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 temparm.Add(new NpgsqlParameter("handleuser", item.HandleUser));
                 temparm.Add(new NpgsqlParameter("copyuser", item.CopyUser ?? ""));
                 temparm.Add(new NpgsqlParameter("userno", userno));
+                temparm.Add(new NpgsqlParameter("skipnode", item.SkipNode));
                 sqlParameters.Add(temparm.ToArray());
             }
             ExecuteNonQueryMultiple(sql, sqlParameters, trans);

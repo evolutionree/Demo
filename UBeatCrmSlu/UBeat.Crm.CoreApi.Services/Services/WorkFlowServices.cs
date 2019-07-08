@@ -557,7 +557,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             NodeId = model.NodeInfo.NodeId,
                             NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                             Suggest = "",
-                            IsNotEntrance = true
+                            IsNotEntrance = true,
+                            SkipNode = 1
                         }, userinfo, isNeedToSendMsg: isNeedToSendMsg);
                         if (!model.NodeInfo.IsSkip)
                             break;
@@ -1272,7 +1273,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     HandleUser = userinfo.UserId.ToString(),
                                     NodeId = node.NodeInfo.NodeId,
                                     NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
-                                    Suggest = ""
+                                    Suggest = "",
+                                    SkipNode = 1
                                 }, userinfo, null, 0);
                                 if (isTranCommit)
                                 {
@@ -2051,7 +2053,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     isSkip = (users.Count == 0 && nextnode.NotFound == 2);
                     string userIds = string.Empty;
                     if (isSkip)
+                    {
                         userIds = userinfo.UserId.ToString();
+                        caseItemModel.SkipNode = 1;
+                    }
                     else
                         userIds = caseItemModel.HandleUser;
                     caseItemModel.HandleUser = userIds;
@@ -2085,7 +2090,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         HandleUser = caseItemModel.HandleUser,
                         NodeId = model.NodeInfo.NodeId,
                         NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
-                        Suggest = ""
+                        Suggest = "",
+                        SkipNode = caseItemModel.SkipNode
                     }, userinfo);
 
                     if (!model.NodeInfo.IsSkip)
@@ -2608,7 +2614,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ChoiceStatus = ChoiceStatusType.AddNode,
                     CaseStatus = CaseStatusType.WaitApproval,
                     HandleUser = handlerId,
-                    CopyUser = caseItemModel.CopyUser
+                    CopyUser = caseItemModel.CopyUser,
+                    SkipNode = caseItemModel.SkipNode
                 };
                 caseitems.Add(item);
             }
