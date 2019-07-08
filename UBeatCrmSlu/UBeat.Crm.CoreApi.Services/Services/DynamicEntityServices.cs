@@ -2669,8 +2669,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         var relEntityFields = _dynamicEntityRepository.GetEntityFields(Guid.Parse(entityInfo["relentityid"].ToString()), userNumber);
                         var relField = relEntityFields.FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
-                        if (relResult[relField.FieldName] != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
-                        {
+						if (relField != null && relResult != null && relResult[relField.FieldName] != null && entityInfo != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
+						{
                             if (!detail.ContainsKey(entityInfo["relfieldname"].ToString()))
                             {
                                 detail.Add(entityInfo["relfieldname"].ToString(), relResult[relField.FieldName]);
