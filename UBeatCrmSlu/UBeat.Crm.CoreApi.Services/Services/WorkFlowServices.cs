@@ -1944,6 +1944,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             WorkFlowNodeInfo nextnode = null;
             DbConnection conn = null;
             bool IsFinishAfterStart = false;
+            string handlUser = string.Empty;
+            string curUserIds = string.Empty;
             if (tran == null)
             {
                 conn = GetDbConnect();
@@ -2051,17 +2053,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nextnode.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
                     isSkip = (users.Count == 0 && nextnode.NotFound == 2);
-                    string userIds = string.Empty;
+                    handlUser = caseItemModel.HandleUser;
                     if (isSkip)
                     {
-                        userIds = userinfo.UserId.ToString();
+                        curUserIds = userinfo.UserId.ToString();
                         caseItemModel.SkipNode = 1;
+                        caseItemModel.HandleUser = curUserIds;
                     }
-                    else
-                        userIds = caseItemModel.HandleUser;
-                    caseItemModel.HandleUser = userIds;
                     AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
-
+                    caseItemModel.HandleUser = handlUser;
                 }
                 if (conn != null)
                 {
@@ -2069,7 +2069,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     canWriteCaseMessage = true;
                 }
 
-                while (isSkip && !caseItemModel.IsNotEntrance)
+                while (isSkip && !caseItemModel.IsNotEntrance && caseItemModel.ChoiceStatus == 1)
                 {
                     var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
                     if (caseItemList.Count == 0) break;
@@ -2087,7 +2087,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         CaseId = caseInfo.CaseId,
                         ChoiceStatus = 1,
                         CopyUser = caseItemModel.CopyUser,
-                        HandleUser = caseItemModel.HandleUser,
+                        HandleUser = model.Approvers.Count > 0 && model.NodeInfo.NodeId == caseItemEntity.NodeId ? caseItemModel.HandleUser : curUserIds,
                         NodeId = model.NodeInfo.NodeId,
                         NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                         Suggest = "",
