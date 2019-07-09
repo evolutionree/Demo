@@ -19,7 +19,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult AuditCaseItem(WorkFlowAuditCaseItemMapper caseItemMapper, int userNumber);
 
-        List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber);
+        List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber,int skipnode=-1);
 
         Dictionary<string, List<IDictionary<string, object>>> NodeLineInfo(Guid flowId, int userNumber);
 

@@ -456,7 +456,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }, userinfo);
                         NextNodeDataModel model = data.DataBody as NextNodeDataModel;
                         if (model.NodeInfo.StepTypeId == NodeStepType.End)
+                        {
                             result = model;
+                            break;
+                        }
                         if (!model.NodeInfo.IsSkip)
                             break;
                     }
@@ -558,7 +561,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                             Suggest = "",
                             IsNotEntrance = true,
-                            SkipNode = 1
+                            SkipNode = model.Approvers.Count > 0 && model.NodeInfo.NodeId == caseModel.NodeId ? 0 : 1
                         }, userinfo, isNeedToSendMsg: isNeedToSendMsg);
                         if (!model.NodeInfo.IsSkip)
                             break;
@@ -1238,7 +1241,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
                     tran.Rollback();
                     isDisposed = true;
-                    if (result.NodeInfo.NodeType != NodeType.Joint && result.NodeInfo.NodeState != 1)
+                    if (result.NodeInfo.NodeType != NodeType.Joint && result.NodeInfo.NodeState != 1 && caseItemEntity.ChoiceStatus == 1)
                     {
                         if (result.Approvers == null || result.Approvers.Count == 0)
                         {
@@ -2069,7 +2072,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     canWriteCaseMessage = true;
                 }
 
-                while (isSkip && !caseItemModel.IsNotEntrance && caseItemModel.ChoiceStatus == 1)
+                while (isSkip && (caseItemModel.ChoiceStatus == 1 || caseItemModel.ChoiceStatus == 4))
                 {
                     var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
                     if (caseItemList.Count == 0) break;
@@ -2091,7 +2094,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeId = model.NodeInfo.NodeId,
                         NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                         Suggest = "",
-                        SkipNode = caseItemModel.SkipNode
+                        SkipNode = model.Approvers.Count > 0 && model.NodeInfo.NodeId == caseItemEntity.NodeId ? 0 : caseItemModel.SkipNode
                     }, userinfo);
 
                     if (!model.NodeInfo.IsSkip)
@@ -3122,7 +3125,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>("流程事件ID不能为空");
             }
 
-            var result = _workFlowRepository.CaseItemList(listModel.CaseId, userNumber);
+            var result = _workFlowRepository.CaseItemList(listModel.CaseId, userNumber, 0);
             return new OutputResult<object>(result);
         }
 

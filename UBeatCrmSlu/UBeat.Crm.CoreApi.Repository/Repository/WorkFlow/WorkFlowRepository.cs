@@ -141,7 +141,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             return result;
         }
 
-        public List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber)
+        public List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber, int skipnode = -1)
         {
             //var procName =
             //  "SELECT crm_func_workflow_caseitem_list(@caseId,@userno)";
@@ -167,13 +167,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
 			                        LEFT JOIN crm_sys_workflow_case AS c ON i.caseid = c.caseid
 			                        LEFT JOIN crm_sys_workflow_node AS n ON i.nodeid = n.nodeid 
 			                        LEFT JOIN crm_sys_userinfo AS u ON u.userid = i.handleuser 
-			                        WHERE i.caseid = @caseid and i.skipnode=0
+			                        WHERE i.caseid = @caseid {0}
 			                        ORDER BY i.stepnum ASC";
-
+            executeSql = string.Format(executeSql, skipnode == -1 ? " and i.skipnode!=@skipnode " : " and i.skipnode=@skipnode ");
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("caseid", caseId),
-
+                new NpgsqlParameter("skipnode", skipnode)
             };
 
             return ExecuteQuery(executeSql, param);
@@ -889,7 +889,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
                     #region --8XX 用户所在部门--
                     case NodeStepType.ApproverDept://8:指定审批人所在团队-用户所在部门-上一步处理人,
-                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @userno AND recstatus = 1 LIMIT 1) "+(string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
+                        cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @userno AND recstatus = 1 LIMIT 1) " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
                         break;
                     case NodeStepType.ApproverDept_Launcher://801:指定审批人所在团队-用户所在部门-流程发起人,
                         cmdText += @"  AND ur.deptid =  (SELECT deptid FROM crm_sys_account_userinfo_relate WHERE userid = @casecreator AND recstatus = 1 LIMIT 1) " + (string.IsNullOrEmpty(GetRuleConfigInfo("isleader", flowNodeInfo)) ? "" : " and u.isleader=@isleader");
@@ -1139,7 +1139,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                     {
                                         int index = l2.Count - 1;
                                         string userid = string.Empty;
-                                        if (index > 0)
+                                        if (index >= 0)
                                         {
                                             userid = l2[index]["handleuser"].ToString();
                                             model = new QueryReportRelDetailMapper
