@@ -30,7 +30,6 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [HttpPost]
         [Route("addstatistics")]
-
         public OutputResult<object> AddScriptManager([FromBody]AddStatisticsSettingModel model)
         {
             if (model == null) return ResponseError<object>("参数格式错误");

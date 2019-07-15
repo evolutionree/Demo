@@ -15,6 +15,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.StatisticsSetting
         public Guid? EntityId { get; set; }
         public int AllowInto { get; set; }
         public string AnaFuncName_Lang { get; set; }
+        public int RecOrder { get; set; }
         protected override IValidator GetValidator()
         {
             return new AddStatisticsSettingMapperVal();

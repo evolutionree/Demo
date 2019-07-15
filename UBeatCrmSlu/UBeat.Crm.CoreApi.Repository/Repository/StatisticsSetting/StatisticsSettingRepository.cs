@@ -22,7 +22,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.StatisticsSetting
                 new NpgsqlParameter("entityid",add.EntityId),
                 new NpgsqlParameter("allowinto",add.AllowInto),
                 new NpgsqlParameter("anafuncname_lang",add.AnaFuncName_Lang),
-                new NpgsqlParameter("userno",userId),
+                new NpgsqlParameter("userno",userId)
             };
             this.ExecuteNonQuery(sql, param, dbTran);
             return new OperateResult
@@ -218,7 +218,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.StatisticsSetting
 
         public List<Dictionary<string, object>> GetStatisticsDetailData(QueryStatisticsMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = " select * from crm_sys_analyse_func where anafuncid in (select anafuncid from crm_sys_analyse_func_active where recstatus = 1 and groupmark =@groupmark) ";
+            var sql = " select fu.* ,ac.recorder from crm_sys_analyse_func fu left join crm_sys_analyse_func_active ac on ac.anafuncid=fu.anafuncid where  ac.recstatus = 1 and ac.groupmark =@groupmark order by ac.recorder asc; ";
             var param = new DbParameter[]
            {
                new NpgsqlParameter("groupmark",mapper.GroupName),
