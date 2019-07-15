@@ -139,7 +139,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         public List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "")
         {
             string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder,a.recstatus,a.dictypename_lang  from crm_sys_dictionary_type as a left join
- crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus ";
+ crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus order by a.dictypeid desc;";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
             sql += " order by a.recorder";
