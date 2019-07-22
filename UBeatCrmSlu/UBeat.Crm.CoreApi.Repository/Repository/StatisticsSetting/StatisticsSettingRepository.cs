@@ -204,7 +204,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.StatisticsSetting
 
         public List<Dictionary<string, object>> GetStatisticsData(QueryStatisticsMapper mapper, DbTransaction dbTran, int userId)
         {
-            var sql = "select groupmark,groupmark_lang from crm_sys_analyse_func_active where recstatus=1 GROUP BY groupmark,groupmark_lang ";
+            var sql = "select * from (select groupmark,groupmark_lang from crm_sys_analyse_func_active where recstatus=1  ORDER BY recorder asc) as t GROUP BY groupmark,groupmark_lang;";
             var param = new DbParameter[]
            {
                new NpgsqlParameter("anafuncname",mapper.AnaFuncName),
@@ -266,52 +266,59 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.StatisticsSetting
             var sql = "update  crm_sys_analyse_func_active set recstatus=0  where groupmark=@groupmark";
             var newSql = "INSERT INTO \"public\".\"crm_sys_analyse_func_active\" (\"anafuncid\", \"recorder\", \"groupmark\", \"reccreator\", \"recupdator\",  \"groupmark_lang\") \n" +
  "VALUES (@anafuncid,@recorder,@groupmark,@userno,@userno,@groupmark_lang::jsonb);";
+            var existSql = "SELECT COALESCE(MAX(recorder),0) FROM crm_sys_analyse_func_active where groupmark=@groupmark and recstatus=1 LIMIT 1";
             var param = new DbParameter[]
             {
-                new NpgsqlParameter("groupmark",save.Data.FirstOrDefault().GroupName),
+                new NpgsqlParameter("groupmark",save.Data.FirstOrDefault().GroupName)
             };
-            int result;
+            int recorder = 0;
             if (dbTran == null)
-                result = DBHelper.ExecuteNonQuery("", sql, param);
-            else
-                result = DBHelper.ExecuteNonQuery(dbTran, sql, param);
-            if (result >= 0)
             {
-                if (save.IsDel == 0)
+                recorder = Convert.ToInt32(DBHelper.ExecuteScalar(dbTran, existSql, param));
+                DBHelper.ExecuteNonQuery("", sql, param);
+            }
+            else
+            {
+                recorder = Convert.ToInt32(DBHelper.ExecuteScalar(dbTran, existSql, param));
+                DBHelper.ExecuteNonQuery(dbTran, sql, param);
+            }
+            if (save.IsDel == 0)
+            {
+                save.Data.OrderByDescending(t=>t.RecOrder).ToList().ForEach(t =>
                 {
-                    foreach (var tmp in save.Data)
+                    if (recorder > 0)
                     {
-                        param = new DbParameter[]
-                    {
-                new NpgsqlParameter("groupmark",tmp.GroupName),
-                new NpgsqlParameter("recorder",tmp.RecOrder),
-                new NpgsqlParameter("anafuncid",tmp.AnafuncId==null?null:tmp.AnafuncId),
-                new NpgsqlParameter("userno",userId),
-                new NpgsqlParameter("groupmark_lang",tmp.GroupName_Lang)
-                    };
-                        if (dbTran == null)
-                            result = DBHelper.ExecuteNonQuery("", newSql, param);
-                        else
-                            result = DBHelper.ExecuteNonQuery(dbTran, newSql, param);
-                        if (result <= 0)
-                        {
-                            throw new Exception("保存分组异常");
-                        }
+                        t.RecOrder = recorder;
                     }
+                    else
+                    {
+                        newSql = newSql.Replace("@recorder", "(SELECT (case when count(1)=0 then 0 else (COALESCE(MAX(recorder),0)+1) end) FROM crm_sys_analyse_func_active where recstatus=1 LIMIT 1)");
+                    }
+                    recorder = recorder - 1;
+                });
+                foreach (var tmp in save.Data)
+                {
+                    param = new DbParameter[]
+                    {
+                            new NpgsqlParameter("groupmark",tmp.GroupName),
+                            new NpgsqlParameter("recorder",tmp.RecOrder),
+                            new NpgsqlParameter("anafuncid",tmp.AnafuncId==null?null:tmp.AnafuncId),
+                            new NpgsqlParameter("userno",userId),
+                            new NpgsqlParameter("groupmark_lang",tmp.GroupName_Lang)
+                    };
+                    int count = 0;
+                    if (dbTran == null)
+                        count = DBHelper.ExecuteNonQuery("", newSql, param);
+                    else
+                        count = DBHelper.ExecuteNonQuery(dbTran, newSql, param);
+                    recorder = recorder - 1;
                 }
-                return new OperateResult
-                {
-                    Flag = 1,
-                    Msg = "编辑成功"
-                };
             }
-            else
+            return new OperateResult
             {
-                return new OperateResult
-                {
-                    Msg = "编辑失败"
-                };
-            }
+                Flag = 1,
+                Msg = "编辑成功"
+            };
         }
 
     }
