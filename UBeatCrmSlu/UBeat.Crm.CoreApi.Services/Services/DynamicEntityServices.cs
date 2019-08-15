@@ -1192,6 +1192,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 if (item.ContainsKey("entityid") && item["entityid"] != null)
                                 {
                                     config.DataSource.EntityId = Guid.Parse(item["entityid"].ToString());
+                                    JObject j1 = JObject.Parse(JsonConvert.SerializeObject(config));
+                                    JObject j2 = JObject.Parse(field.FieldConfig);
+                                    j1.Merge(j2);
+                                    var asd = j1.ToString();
                                     field.FieldConfig = JsonConvert.SerializeObject(config);
                                 }
                             }
