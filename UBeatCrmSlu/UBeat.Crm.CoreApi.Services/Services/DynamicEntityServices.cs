@@ -1195,8 +1195,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     JObject j1 = JObject.Parse(JsonConvert.SerializeObject(config));
                                     JObject j2 = JObject.Parse(field.FieldConfig);
                                     j1.Merge(j2);
-                                    var asd = j1.ToString();
-                                    field.FieldConfig = JsonConvert.SerializeObject(config);
+                                    field.FieldConfig = j1.ToString(); 
                                 }
                             }
                         }
