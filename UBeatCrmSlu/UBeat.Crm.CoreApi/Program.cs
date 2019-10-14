@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
+using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,7 @@ namespace UBeat.Crm.CoreApi
         {
             Console.OutputEncoding = Encoding.UTF8;
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            ThreadPool.SetMinThreads(1000, 1000);
 
             // Custom Host Config
             var config = new ConfigurationBuilder()
