@@ -37,8 +37,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDynamicRepository _dynamicRepository;
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
         private readonly DynamicEntityServices _dynamicEntityServices;
+        private readonly RuleTranslatorServices _ruleTranslatorServices;
+        private readonly IAccountRepository _accountRepository;
         private NLog.ILogger _logger = NLog.LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.WorkFlowServices");
-        public WorkFlowServices(IMapper mapper, IWorkFlowRepository workFlowRepository, IRuleRepository ruleRepository, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository, DynamicEntityServices dynamicEntityServices)
+        public WorkFlowServices(IMapper mapper, IWorkFlowRepository workFlowRepository, IRuleRepository ruleRepository, IEntityProRepository entityProRepository, IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository, DynamicEntityServices dynamicEntityServices, IAccountRepository accountRepository, RuleTranslatorServices ruleTranslatorServices)
         {
             _workFlowRepository = workFlowRepository;
             _entityProRepository = entityProRepository;
@@ -47,6 +49,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _mapper = mapper;
             _ruleRepository = ruleRepository;
             _dynamicEntityServices = dynamicEntityServices;
+            _accountRepository = accountRepository;
+            _ruleTranslatorServices = ruleTranslatorServices;
         }
 
         public OutputResult<object> CaseDetail(CaseDetailModel detailModel, int userNumber)
@@ -69,7 +73,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (workflowInfo == null)
                         throw new Exception("流程配置不存在");
                     var copyusersInfo = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId);
-
+                    Guid RealEntityId = caseInfo.EntityId;
                     result.CaseDetail = new WorkFlowCaseInfoExt()
                     {
                         CaseId = caseInfo.CaseId,
@@ -89,7 +93,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         FlowName = workflowInfo.FlowName,
                         BackFlag = workflowInfo.BackFlag,
                         RecCreator_Name = caseInfo.RecCreator_Name,
-                        CopyUser = copyusersInfo
+                        CopyUser = copyusersInfo,
+                        IsAllowTransfer = workflowInfo.IsAllowTransfer,
+                        IsAllowSign = workflowInfo.IsAllowSign,
+                        IsNeedToRepeatApprove = workflowInfo.IsNeedToRepeatApprove,
+                        RecName = caseInfo.RecName,
+                        VerNum = caseInfo.VerNum
                     };
                     #endregion
 
@@ -102,13 +111,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                     result.CaseItem = new CaseItemAuditInfo();
-                    var lastCaseItem = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber).LastOrDefault();
+                    Guid caseItemId = Guid.Empty;
+                    var lastCaseItem = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber).LastOrDefault(t => t["handleuser"].ToString() == userNumber.ToString() && (t["choicestatus"].ToString() == "4" || t["choicestatus"].ToString() == "6"));
                     if (lastCaseItem != null)
                     {
                         var username = lastCaseItem.ContainsKey("username") ? lastCaseItem["username"] : "";
                         var casestatus = lastCaseItem.ContainsKey("casestatus") ? lastCaseItem["casestatus"] : "";
                         result.CaseItem.AuditStatus = string.Format("{0}{1}", username, casestatus);
+                        result.CaseItem.NodeType = Convert.ToInt32(lastCaseItem["nodetype"].ToString());
+                        result.CaseItem.CaseItemId = Guid.Parse(lastCaseItem["caseitemid"].ToString());
                     }
+                    else
+                        caseItemId = caseitems.LastOrDefault().CaseItemId;
                     var notfinishitems = caseitems.Where(m => m.CaseStatus == CaseStatusType.Readed || m.CaseStatus == CaseStatusType.WaitApproval);
                     if (notfinishitems.Count() > 0)
                     {
@@ -116,7 +130,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         result.CaseItem.AuditStep = string.Format("等待{0}处理审批", temptext);
                     }
 
-                    var nowcaseitem = caseitems.Find(m => m.HandleUser == userNumber);
+                    var nowcaseitem = caseitems.Find(m => m.HandleUser == userNumber && (m.CaseStatus == CaseStatusType.WaitApproval || m.CaseStatus == CaseStatusType.Readed) && (m.ChoiceStatus == ChoiceStatusType.AddNode || m.ChoiceStatus == ChoiceStatusType.Edit));
+
                     if (nowcaseitem != null && (nowcaseitem.ChoiceStatus == ChoiceStatusType.Edit || nowcaseitem.ChoiceStatus == ChoiceStatusType.AddNode))
                     {
                         if (caseInfo.NodeNum == -1 || caseInfo.AuditStatus == AuditStatusType.Finished || caseInfo.AuditStatus == AuditStatusType.NotAllowed)
@@ -171,9 +186,95 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 result.CaseItem.IsCanAllow = 1;
                                 result.CaseItem.IsCanReject = 1;
                                 result.CaseItem.IsCanReback = workflowInfo.BackFlag;
+                                if (workflowInfo.Entrance == 1)
+                                {
+                                    result.CaseItem.IsCanLunch = 1;
+                                }
+                            }
+                            var currentNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nowcaseitem.NodeId);
+                            if (currentNodeInfo != null)
+                            {
+                                var json = JObject.Parse(currentNodeInfo.ColumnConfig.ToString());
+                                if (json["stepfieldtype"] != null)
+                                {
+                                    if (json["stepfieldtype"].ToString() == "1" || json["stepfieldtype"].ToString() == "2")
+                                    {
+                                        result.CaseItem.IsCanEdit = 0;
+                                    }
+                                    else
+                                    {
+                                        result.CaseItem.IsCanEdit = 1;
+                                    }
+                                }
                             }
                         }
-
+                    }
+                    if (result.CaseItem.IsCanLunch == 1)
+                    {
+                        var items = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber, tran: tran);
+                        if (items.Count - 2 > 0 && items[items.Count - 2]["nodetype"].ToString() == "0")
+                        {
+                            if (items[items.Count - 2]["isrejectnode"] != null)
+                            {
+                                result.CaseItem.RejectCaseItemId = items[items.Count - 2]["isrejectnode"].ToString() == "1" ? Guid.Parse(items[items.Count - 2]["caseitemid"].ToString()) : new Nullable<Guid>();
+                            }
+                        }
+                    }
+                    if (result.CaseItem.CaseItemId != Guid.Empty)
+                    {
+                        var sign = _workFlowRepository.GetWorkFlowSign(result.CaseItem.CaseItemId, userNumber);
+                        if (sign != null && sign.Count > 0)
+                        {
+                            if (sign.Count == 1)
+                            {
+                                result.CaseItem.OriginalUserId = sign.FirstOrDefault().OriginalUserId;
+                                result.CaseItem.SignStatus = sign.FirstOrDefault().SignStatus;
+                                result.CaseItem.SignCount = 1;
+                            }
+                            else
+                            {
+                                if (sign.FirstOrDefault().OriginalUserId == sign.LastOrDefault().UserId)
+                                {
+                                    result.CaseItem.OriginalUserId = sign.FirstOrDefault().OriginalUserId;
+                                    result.CaseItem.SignStatus = 0;
+                                    result.CaseItem.SignCount = 0;
+                                }
+                                else
+                                {
+                                    result.CaseItem.OriginalUserId = sign.FirstOrDefault().OriginalUserId;
+                                    result.CaseItem.SignStatus = sign.LastOrDefault().SignStatus;
+                                    result.CaseItem.SignCount = 1;
+                                }
+                            }
+                        }
+                    }
+                    if (caseItemId != Guid.Empty)
+                    {
+                        var sign = _workFlowRepository.GetWorkFlowSign(caseItemId, userNumber);
+                        if (sign != null && sign.Count > 0)
+                        {
+                            if (sign.Count == 1)
+                            {
+                                result.CaseItem.OriginalUserId = sign.FirstOrDefault().OriginalUserId;
+                                result.CaseItem.SignStatus = sign.FirstOrDefault().SignStatus;
+                                result.CaseItem.SignCount = 1;
+                            }
+                            else
+                            {
+                                if (sign.FirstOrDefault().OriginalUserId == sign.LastOrDefault().UserId)
+                                {
+                                    result.CaseItem.OriginalUserId = sign.FirstOrDefault().OriginalUserId;
+                                    result.CaseItem.SignStatus = sign.FirstOrDefault().SignStatus;
+                                    result.CaseItem.SignCount = 0;
+                                }
+                                else
+                                {
+                                    result.CaseItem.OriginalUserId = sign.FirstOrDefault().OriginalUserId;
+                                    result.CaseItem.SignStatus = 2;
+                                    result.CaseItem.SignCount = 1;
+                                }
+                            }
+                        }
                     }
 
                     #endregion
@@ -184,12 +285,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //获取 entitydetail
                     var detailMapper = new DynamicEntityDetailtMapper()
                     {
-                        EntityId = caseInfo.EntityId,
+                        EntityId = RealEntityId,
                         RecId = caseInfo.RecId,
                         NeedPower = 0
                     };
                     var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber, tran);
-
+                    var fields = _dynamicEntityRepository.GetTypeFields(RealEntityId, (int)DynamicProtocolOperateType.Detail, userNumber);
 
                     #endregion
 
@@ -208,21 +309,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             var relEntityFields = _dynamicEntityRepository.GetEntityFields(caseInfo.RelEntityId, userNumber);
                             var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(caseInfo.EntityId, userNumber);
-                            var relField = relEntityFields.FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
-                            if (detailtemp[relField.FieldName] != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
+                            if (entityInfo["relfieldid"] != null)
                             {
-                                if (!detail.ContainsKey(entityInfo["relfieldname"].ToString()))
+                                var relField = relEntityFields.FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
+                                if (relField != null && !string.IsNullOrEmpty(relField.FieldName) && detailtemp[relField.FieldName] != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
                                 {
-                                    detail.Add(entityInfo["relfieldname"].ToString(), detailtemp[relField.FieldName]);
-                                    if (detailtemp.ContainsKey(relField.FieldName + "_name"))
+                                    if (!detail.ContainsKey(entityInfo["relfieldname"].ToString()))
                                     {
-                                        if (!detail.ContainsKey(entityInfo["relfieldname"].ToString() + "_name"))
+                                        detail.Add(entityInfo["relfieldname"].ToString(), detailtemp[relField.FieldName]);
+                                        if (detailtemp.ContainsKey(relField.FieldName + "_name"))
                                         {
-                                            detail.Add(entityInfo["relfieldname"].ToString() + "_name", detailtemp[relField.FieldName + "_name"]);
+                                            if (!detail.ContainsKey(entityInfo["relfieldname"].ToString() + "_name"))
+                                            {
+                                                detail.Add(entityInfo["relfieldname"].ToString() + "_name", detailtemp[relField.FieldName + "_name"]);
+                                            }
                                         }
                                     }
                                 }
-
                             }
                         }
                         result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
@@ -235,6 +338,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     tran.Commit();
                 }
+
                 catch (Exception ex)
                 {
                     tran.Rollback();
@@ -392,7 +496,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #region --流程预提交--
         public OutputResult<object> PreAddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo)
         {
-            int isNeedToSendMsg = 0;//0代表不发消息 1代表是跳过流程的时候用handleuser来替换当前用户 2 当前用户
             bool isCommit = false;
             if (caseModel == null)
             {
@@ -441,19 +544,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseid);
                     LoopInfo loopInfo;
                     var users = LoopApproveUsers(caseInfo, workflowInfo, firstNodeInfo, tran, userinfo, out loopInfo);
-                    if (isCommit = loopInfo.IsNoneApproverUser)
-                        tran.Commit();
-                    else
+                    if (!(isCommit = loopInfo.IsNoneApproverUser))
                         result = GetNextNodeData(tran, caseInfo, workflowInfo, firstNodeInfo, userinfo);
                     while (isCommit)
                     {
-                        var caseItemList = _workFlowRepository.CaseItemList(caseid, userinfo.UserId);
+                        var caseItemList = _workFlowRepository.CaseItemList(caseid, userinfo.UserId, tran: tran);
                         var data = SubmitPretreatAudit(new WorkFlowAuditCaseItemModel
                         {
                             CaseId = caseid,
                             ChoiceStatus = 1,
                             NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
-                        }, userinfo);
+                        }, userinfo, tran);
                         NextNodeDataModel model = data.DataBody as NextNodeDataModel;
                         if (model.NodeInfo.StepTypeId == NodeStepType.End)
                         {
@@ -472,7 +573,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 finally
                 {
                     //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
-                    if (!isCommit)
+                    if (tran.Connection != null)
                         tran.Rollback();
                     conn.Close();
                     conn.Dispose();
@@ -497,12 +598,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var tran = conn.BeginTransaction();
                 try
                 {
-                    if (caseModel.NodeId.HasValue)
-                    {
-                        var workFlowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, caseModel.NodeId.Value);
-                        if (workFlowNodeInfo.StepTypeId == NodeStepType.End)
-                            return new OutputResult<object>();
-                    }
+
                     if (!string.IsNullOrEmpty(caseModel.CacheId))
                     {
                         Guid g = Guid.Parse(caseModel.CacheId);
@@ -1139,7 +1235,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="caseItemModel"></param>
         /// <param name="userinfo"></param>
         /// <returns></returns>
-        public OutputResult<object> SubmitPretreatAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo)
+        public OutputResult<object> SubmitPretreatAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo,DbTransaction trans=null)
         {
             bool isDisposed = false;
             NextNodeDataModel result = new NextNodeDataModel();

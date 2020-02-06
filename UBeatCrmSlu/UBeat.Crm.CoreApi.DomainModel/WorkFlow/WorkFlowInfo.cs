@@ -6,6 +6,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 {
     public class WorkFlowInfo
     {
+        public int Entrance { get; set; }
+        public int IsAllowTransfer { get; set; }
+        public int IsAllowSign { get; set; }
+        public int IsNeedToRepeatApprove { get; set; }
         public Guid FlowId { set; get; }
 
         /// <summary>
@@ -102,5 +106,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// 判断是否所有节点都没有审批人
         /// </summary>
         public bool IsNoneApproverUser { get; set; } = false;
+    }
+    public class WorkFlowSign
+    {
+        public int Count { get; set; }
+        public Guid CaseItemId { get; set; }
+        public int Operatetype { get; set; }
+        public int OriginalUserId { get; set; }
+        public int SignStatus { get; set; }
+        public int UserId { get; set; }
     }
 }

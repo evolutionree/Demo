@@ -141,28 +141,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             return result;
         }
 
-        public List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber, int skipnode = -1)
+        public List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber, int skipnode = -1, DbTransaction tran = null, string currentHost = "")
         {
-            //var procName =
-            //  "SELECT crm_func_workflow_caseitem_list(@caseId,@userno)";
-
-            //var param = new
-            //{
-            //    CaseId = caseId,
-            //    UserNo = userNumber
-            //};
-
-            //var result = DataBaseHelper.QueryStoredProcCursor(procName, param, CommandType.Text);
-            //return result;
-
-            var executeSql = @" SELECT i.nodenum,i.stepnum::TEXT AS itemcode,i.choicestatus,
+            var executeSql = @" SELECT (case when (select 1 from crm_sys_workflow_case_item_transfer where caseitemid=i.caseitemid and operatetype=0 limit 1) is null then 0 else 1 end) as isallowtransfer,(case when (select 1 from crm_sys_workflow_case_item_transfer where caseitemid=i.caseitemid and operatetype=1 limit 1) is null then 0 else 1 end) as isallowsign,i.nodenum,i.stepnum::TEXT AS itemcode,i.choicestatus,isrejectnode,
                                 (CASE WHEN  i.nodeid = '00000000-0000-0000-0000-000000000000' THEN '发起审批'
 	                                  WHEN  i.nodeid = '00000000-0000-0000-0000-000000000001' THEN '结束审批'
 	                                  WHEN  i.nodeid = '00000000-0000-0000-0000-000000000002' THEN '自选审批'
                                       ELSE n.nodename END) nodename,
                                 crm_func_entity_protocol_format_workflow_casestatus(i.casestatus,i.choicestatus) AS casestatus,
                                 i.suggest,i.handleuser,i.recupdated,u.username,u.usericon,n.nodetype,n.auditnum,n.auditsucc,
-                                (CASE WHEN n.nodetype = 1 THEN format('当前步骤为会审,需要%s人同意才能通过',n.auditsucc) ELSE NULL END) AS tipsmsg
+                                (CASE WHEN n.nodetype = 1 THEN format('当前步骤为会审,需要%s人同意才能通过',n.auditsucc) ELSE NULL END) AS tipsmsg,i.caseitemid,i.nodeid,i.reccreated,i.casestatus as itemstatus,c.vernum,i.stepnum,i.skipnode
 			                        FROM crm_sys_workflow_case_item AS i
 			                        LEFT JOIN crm_sys_workflow_case AS c ON i.caseid = c.caseid
 			                        LEFT JOIN crm_sys_workflow_node AS n ON i.nodeid = n.nodeid 
@@ -176,7 +164,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                 new NpgsqlParameter("skipnode", skipnode)
             };
 
-            return ExecuteQuery(executeSql, param);
+            return ExecuteQuery(executeSql, param, tran);
 
         }
 
@@ -1979,6 +1967,16 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             {
                 return null;
             }
+        }
+        public List<WorkFlowSign> GetWorkFlowSign(Guid caseItemId, int userId)
+        {
+            var sql = " select  caseitemid,signstatus,originuserid as originaluserid,userid from crm_sys_workflow_case_item_transfer  where caseitemid=@caseitemid  and operatetype=1 order by reccreated asc  ";
+
+            DbParameter[] param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",caseItemId)
+            };
+            var r = ExecuteQuery<WorkFlowSign>(sql, param);
+            return r;
         }
     }
 }

@@ -99,11 +99,21 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string RecCreator_Name { set; get; }
 
         public List<UserInfo> CopyUser { get; set; }
-
+        public int IsAllowTransfer { get; set; }
+        public int IsAllowSign { get; set; }
+        public int IsNeedToRepeatApprove { get; set; }
+        public int VerNum { get; set; }
+        public string RecName { get; set; }
     }
 
     public class CaseItemAuditInfo
     {
+        public int OriginalUserId { get; set; }
+        public int SignStatus { get; set; }
+        public int SignCount { get; set; }
+        public Guid? RejectCaseItemId { get; set; }
+        public Guid CaseItemId { get; set; }
+        public int NodeType { get; set; }
         public Guid NodeId { set; get; }
 
         public string NodeName { set; get; }

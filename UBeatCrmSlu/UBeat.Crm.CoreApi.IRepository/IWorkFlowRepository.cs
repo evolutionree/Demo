@@ -19,7 +19,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         OperateResult AuditCaseItem(WorkFlowAuditCaseItemMapper caseItemMapper, int userNumber);
 
-        List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber,int skipnode=-1);
+        List<Dictionary<string, object>> CaseItemList(Guid caseId, int userNumber, int skipnode = -1, DbTransaction tran = null, string currentHost = "");
 
         Dictionary<string, List<IDictionary<string, object>>> NodeLineInfo(Guid flowId, int userNumber);
 
@@ -42,7 +42,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult DeleteFlow(string flowIds, int userNumber);
         OperateResult UnDeleteFlow(string flowIds, int userNumber);
 
-
+        List<WorkFlowSign> GetWorkFlowSign(Guid caseItemId, int userId);
         WorkFlowCaseInfo GetWorkFlowCaseInfo(DbTransaction trans, Guid caseid);
         WorkFlowInfo GetWorkFlowInfo(DbTransaction trans, Guid flowid);
 
