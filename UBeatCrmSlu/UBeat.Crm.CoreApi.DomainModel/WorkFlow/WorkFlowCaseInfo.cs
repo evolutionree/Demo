@@ -6,6 +6,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 {
     public class WorkFlowCaseInfo
     {
+        public int StepNum { get; set; }
         public string RecName { get; set; }
         /// <summary>
         /// 流程记录ID

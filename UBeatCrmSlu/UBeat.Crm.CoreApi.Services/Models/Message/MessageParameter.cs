@@ -82,6 +82,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Message
         /// </summary>
         public List<int> NoticeUsers { get; set; } = new List<int>();
 
+        /// <summary>
+        /// 接收人id
+        /// </summary>
+        public Dictionary<MessageUserType, List<Receiver>> NewReceivers { set; get; } = new Dictionary<MessageUserType, List<Receiver>>();
 
     }
 }

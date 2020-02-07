@@ -65,6 +65,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
     public class WorkFlowAuditCaseItemMapper : BaseEntity
     {
+        /// <summary>
+        /// 当choicestatus=-1是无意见，1是有意见
+        /// </summary>
+        public int JointStatus { get; set; }
+        public String ActHandleUser { get; set; }
         public Guid CaseId { get; set; }
         public int NodeNum { get; set; }
         public string Suggest { get; set; }

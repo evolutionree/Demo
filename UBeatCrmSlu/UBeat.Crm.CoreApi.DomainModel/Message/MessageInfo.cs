@@ -101,5 +101,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.Message
         public MessageReadStatus ReadStatus { set; get; }
         public int BizStatus { get; set; }
     }
-   
+    public class Receiver
+    {
+        public int UserId { get; set; }
+        public int ActRole { get; set; }
+    }
 }

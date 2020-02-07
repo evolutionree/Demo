@@ -17,6 +17,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// 1会审
         /// </summary>
         Joint = 1,
+        /// <summary>
+        /// 意见征集
+        /// </summary>
+        SpecialJoint = 2,
     }
 
     /// <summary>
@@ -73,6 +77,22 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// 新增节点
         /// </summary>
         AddNode = 6,
+        /// <summary>
+        /// 转办
+        /// </summary>
+        Transfer = 7,
+        /// <summary>
+        /// 加签
+        /// </summary>
+        Sign = 8,
+        /// <summary>
+        /// 回撤
+        /// </summary>
+        WithDraw = 9,
+        /// <summary>
+        /// 驳回原节点
+        /// </summary>
+        RejectNode = 10
     }
 
     /// <summary>

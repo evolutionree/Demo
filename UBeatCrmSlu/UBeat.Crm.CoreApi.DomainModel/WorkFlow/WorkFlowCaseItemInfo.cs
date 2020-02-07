@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FluentValidation;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,6 +7,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 {
     public class WorkFlowCaseItemInfo
     {
+        public int? TransferUserId { get; set; }
+        public int? SignUserId { get; set; }
+        public int NowuserId { get; set; }
+        public int NodeType { get; set; }
         /// <summary>
         /// 步骤明细ID
         /// </summary>
@@ -77,6 +82,125 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
        public int SkipNode { get; set; }
 
+
+    }
+    public class WorkFlowGlobalJsMapper : BaseEntity
+    {
+        public Guid NodeId { get; set; }
+        public Guid FlowId { get; set; }
+        public string Js { get; set; }
+        public string Remark { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new WorkFlowGlobalJsMapperValidator();
+        }
+        class WorkFlowGlobalJsMapperValidator : AbstractValidator<WorkFlowGlobalJsMapper>
+        {
+            public WorkFlowGlobalJsMapperValidator()
+            {
+                RuleFor(d => d.FlowId).NotNull().WithMessage("流程Id不能为空");
+            }
+        }
+
+    }
+    public class CaseItemFileAttach
+    {
+        public Guid CaseItemId { get; set; }
+        public Guid FileId { get; set; }
+        public string FileName { get; set; }
+        public Guid RecId { get; set; }
+    }
+
+    public class CaseItemJoint
+    {
+        public Guid CaseId { get; set; }
+        public Guid NodeId { get; set; }
+        public Guid CaseItemid { get; set; }
+        public int UserId { get; set; }
+        public string Comment { get; set; }
+        public int FlowStatus { get; set; }
+    }
+    public class WorkFlowNodeScheduled
+    {
+        public Guid CaseId { get; set; }
+        public Guid NodeId { get; set; }
+    }
+    public class WorkFlowNodeScheduledList
+    {
+        public Guid CaseId { get; set; }
+        public Guid NodeId { get; set; }
+        public DateTime PointOfTime { get; set; }
+        public int IsDone { get; set; }
+    }
+    public class CaseItemJointTransfer
+    {
+        public int SignStatus { get; set; }
+        public int IsSignOrTransfer { get; set; }
+        public Guid CaseItemid { get; set; }
+        public int OrginUserId { get; set; }
+        public int UserId { get; set; }
+        public string Comment { get; set; }
+        public int FlowStatus { get; set; }
+    }
+    public class CaseItemTransferMapper
+    {
+        public int SignStatus { get; set; }
+        public int ChoiceStatus { get; set; }
+        public string Suggest { get; set; }
+        public List<CaseItemFileAttach> Files { get; set; }
+        public Guid CaseItemId { get; set; }
+        public Guid CaseId { get; set; }
+        public int UserId { get; set; }
+        public int NodeNum { get; set; }
+        public Guid NodeId { get; set; }
+        public int IsSignOrTransfer { get; set; }
+    }
+    public class WorkFlowRepeatApprove
+    {
+        public WorkFlowEntityAddModel EntityModel { set; get; }
+        public Guid RecId { get; set; }
+        public Guid CaseId { get; set; }
+        public Guid EntityId { get; set; }
+        public Guid FlowId { get; set; }
+        public int ModelType { get; set; }
+    }
+    public class WorkFlowEntityAddModel
+    {
+        public Guid TypeId { get; set; }
+        public Dictionary<string, object> FieldData { get; set; }
+        public Dictionary<string, object> ExtraData { get; set; }
+        public List<Dictionary<string, object>> WriteBackData { get; set; }
+        public Guid? FlowId { get; set; }
+        public Guid? RelEntityId { get; set; }
+        public Guid? RelRecId { get; set; }
+        public Guid CacheId { get; set; }
+    }
+    public class InformerRuleMapper
+    {
+        public Guid RuleId { get; set; }
+        public Guid FlowId { get; set; }
+        public int InformerType { get; set; }
+        public int RecStatus { get; set; }
+        public string RuleConfig { get; set; }
+        public int AuditStatus { get; set; } = -1;
+    }
+    public class InformerMapper
+    {
+        public Guid FlowId { get; set; }
+        public List<InformerRuleMapper> InformerRules { get; set; }
+    }
+
+
+    public class WorkFlowCaseItemTransfer
+    {
+
+        public Guid caseitemid { get; set; }
+        public int originuserid { get; set; }
+        public int userid { get; set; }
+        public int flowstatus { get; set; }
+        public string comment { get; set; }
+        public Guid recid { get; set; }
+        public int operatetype { get; set; }
 
     }
 }

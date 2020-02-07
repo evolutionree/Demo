@@ -107,6 +107,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         /// </summary>
         public bool IsNoneApproverUser { get; set; } = false;
     }
+    public class RejectToOrginalNode
+    {
+        public List<CaseItemFileAttach> FileAttachs { get; set; }
+        public string Remark { get; set; }
+        public Guid CaseId { get; set; }
+        public Guid CaseItemId { get; set; }
+        public Guid PreCaseItemId { get; set; }
+        public Dictionary<string, object> CaseData { get; set; }
+    }
     public class WorkFlowSign
     {
         public int Count { get; set; }

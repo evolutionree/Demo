@@ -12,8 +12,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult AddCase(DbTransaction tran, WorkFlowAddCaseMapper caseMapper, int userNumber);
 
         Guid  AddWorkflowCase(DbTransaction tran, WorkFlowInfo workflowinfo, WorkFlowAddCaseMapper caseMapper, int userNumber);
+        List<NextNodeDataInfo> GetNodeDataInfo(Guid flowid, Guid nodeid, int vernum, DbTransaction trans = null);
+        List<NextNodeDataInfo> GetCurNodeDataInfo(Guid flowid, Guid nodeid, int vernum, DbTransaction trans = null);
 
-        Dictionary<string, List<IDictionary<string, object>>> NextNodeData(Guid caseId, int userNumber);
 
         OperateResult AddCaseItem(WorkFlowAddCaseItemMapper caseItemMapper, int userNumber);
 
@@ -23,7 +24,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         Dictionary<string, List<IDictionary<string, object>>> NodeLineInfo(Guid flowId, int userNumber);
 
-        Dictionary<string, List<Dictionary<string, object>>> GetNodeLinesInfo(Guid flowId, int userNumber, DbTransaction trans = null);
+        Dictionary<string, List<Dictionary<string, object>>> GetNodeLinesInfo(Guid flowId, int userNumber, DbTransaction trans = null, int versionNum = -1);
         OperateResult NodeLinesConfig(WorkFlowNodeLinesConfigMapper nodeLineConfig, int userNumber);
 
         void SaveNodeLinesConfig(WorkFlowNodeLinesConfigMapper nodeLineConfig, int userNumber);
@@ -73,10 +74,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         int GetWorkFlowNextNodeNumber(Guid caseId,int nodenum, int userNumber, DbTransaction trans = null);
 
         List<NextNodeDataInfo> GetNextNodeDataInfoList(Guid flowid, Guid fromnodeid, int vernum,  DbTransaction trans = null);
-        List<NextNodeDataInfo> GetNodeDataInfo(Guid flowid, Guid nodeid, int vernum, DbTransaction trans = null);
-        List<NextNodeDataInfo> GetCurNodeDataInfo(Guid flowid, Guid nodeid, int vernum, DbTransaction trans = null);
+ 
         List<ApproverInfo> GetFlowNodeApprovers(Guid caseId,Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null);
         List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null);
+        string GetRuleConfigInfo(string path, string json);
         /// <summary>
         /// 获取流程下一节点连线上的ruleid
         /// </summary>
@@ -118,8 +119,11 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <summary>
         /// 审批已经到达了最后一步,添加最后节点
         /// </summary>
-        bool EndWorkFlowCaseItem(Guid caseid, Guid nodeid, int stepnum, int userNumber, DbTransaction trans = null);
-
+        Object EndWorkFlowCaseItem(Guid caseid, Guid nodeid, int stepnum, int userNumber, DbTransaction trans = null);
+        List<int> GetSubscriber(Guid caseItemId, int auditStatus, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo nodeInfo, DbTransaction tran, int userId);
+        IDictionary<Guid, List<int>> GetInformer(Guid flowId, int auditStatus, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo nodeInfo, DbTransaction tran, int userId);
+        void AuditWorkFlowCaseData(WorkFlowAuditCaseItemMapper auditdata, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null);
+        void AddEndWorkFlowCaseItemCPUser(DbTransaction tran, Guid caseItemId, List<int> cpUserId);
         /// <summary>
         /// 获取流程event函数
         /// </summary>
@@ -173,6 +177,48 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<WorkFlowCaseItemInfo> GetWorkflowCaseWaitingDealItems(DbTransaction tran, Guid caseId);
         List<WorkFlowCaseInfo> GetExpiredWorkflowCaseList(DbTransaction tran, int userId);
         Dictionary<string, object> GetWorkflowByEntityId(DbTransaction p, Guid entityId, int userId);
+
+        OperateResult InsertSpecialJointComment(DbTransaction tran, CaseItemJoint joint, int userId);
+        void UpdateWorkFlowNodeScheduled(DbTransaction trans, WorkFlowNodeScheduled scheduled, int userId);
+        List<WorkFlowNodeScheduledList> GetWorkFlowNodeScheduled(DbTransaction trans, int userId);
+        List<Dictionary<string, object>> GetSpecialJointCommentDetail(DbTransaction tran, Guid caseItemId, int userId, string currentHost = "");
+        OperateResult InsertTransfer(DbTransaction tran, CaseItemJointTransfer transfer, int userId);
+        List<Dictionary<string, object>> GetWorkFlowCaseTransferAtt(DbTransaction tran, Guid caseItemId, int userId, string currentHost = "");
+        OperateResult InsertCaseItemAttach(DbTransaction tran, CaseItemFileAttach attach, int userId);
+        OperateResult TransferToOther(DbTransaction tran, CaseItemTransferMapper transfer, int userId);
+        void CheckIsTransfer(DbTransaction tran, CaseItemJointTransfer transfer, int userId);
+        OperateResult NeedToRepeatApprove(DbTransaction tran, WorkFlowRepeatApprove workFlow, int userId);
+        Guid GetLastestCaseId(DbTransaction tran, WorkFlowRepeatApprove workFlow, int useId);
+        OperateResult CheckIfExistNeedToRepeatApprove(DbTransaction tran, WorkFlowRepeatApprove workFlow, int userId);
+        List<Dictionary<string, object>> GetWorkFlowCaseAtt(DbTransaction tran, Guid caseItemId, int userId, string currentHost = "");
+        void SaveWorkFlowGlobalEditJs(DbTransaction tran, WorkFlowGlobalJsMapper js, int userId);
+        OperateResult SaveWorkflowInformer(DbTransaction tran, InformerRuleMapper informer, int userId);
+        OperateResult UpdateWorkflowInformerStatus(DbTransaction tran, InformerRuleMapper informer, int userId);
+        List<InformerRuleMapper> GetInformerRules(DbTransaction tran, InformerRuleMapper informer, int userId);
+
+        OperateResult RejectToOrginalNode(DbTransaction trans, RejectToOrginalNode reject, int userId);
+
+        List<WorkFlowInfo> GetWorkFlowInfoByCaseItemId(DbTransaction trans, Guid caseitemid);
+
+
+
+        bool WithDrawkWorkFlowByCreator(DbTransaction trans, Guid caseid, int userid);
+        List<WorkFlowCaseItemTransfer> GetWorkFlowCaseItemTransfer(DbTransaction trans, Guid caseitemid);
+
+        int DeleteWorkFlowCaseItemTransfer(DbTransaction trans, Guid caseitemid, int userid);
+        int UpdateWorkFlowCaseitemHandler(DbTransaction trans, Guid caseitemid, int userid);
+
+        List<WorkFlowCaseItemInfo> GetWorkFlowCaseItemOfCase(DbTransaction trans, Guid caseid);
+        int GetWorkFlowCaseItemCout(DbTransaction trans, Guid caseid, Guid caseitemid);
+        int DeleteWorkFlowCaseItems(DbTransaction trans, Guid caseid, Guid caseitemid);
+        int UpdateWorkFlowCaseitemChoicestatus(DbTransaction trans, Guid caseitemid, int choicestatus, int casestatus);
+
+        int UpdateWorkFlowCaseNodeNum(DbTransaction trans, Guid caseid, Guid caseitemid);
+
+        int DeleteWorkFlowCaseItems(DbTransaction trans, Guid caseitemid);
+
+        int UpdateWorkFlowCaseNodeNumNew(DbTransaction trans, Guid caseid, int nodenum);
+
     }
 }
 

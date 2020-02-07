@@ -881,7 +881,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         HandleUser = caseModel.HandleUser,
                         CopyUser = caseModel.CopyUser
                     };
-                    SubmitWorkFlowAudit(caseItemModel, userinfo, tran, isNeedToSendMsg);
+                    SubmitWorkFlowAudit(caseItemModel, userinfo, tran, isNeedToSendMsg, isLaunchNode: firstNodeInfo.StepTypeId == NodeStepType.Launch ? 1 : 0);
                 }
             }
             else //如果流程跳过标志为1，则直接跳转到结束
@@ -1175,6 +1175,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 nodetemp.NodeState = 1;
                             }
                         }
+                        else if (flowNodeInfo.NodeType == NodeType.SpecialJoint)//特殊的会审 pxf
+                        {
+                            //会审审批通过的节点数
+                            var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
+                            nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
+                            if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
+                            {
+                                nodetemp.NodeState = 1;
+                            }
+                        }
                         //检查下一点，获取下一节点信息
                         if (nodetemp.NodeState == 0)
                         {
@@ -1235,7 +1245,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="caseItemModel"></param>
         /// <param name="userinfo"></param>
         /// <returns></returns>
-        public OutputResult<object> SubmitPretreatAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo,DbTransaction trans=null)
+        public OutputResult<object> SubmitPretreatAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran = null, int operatetype = 0)
         {
             bool isDisposed = false;
             NextNodeDataModel result = new NextNodeDataModel();
@@ -1249,110 +1259,127 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int stepnum = 0;
             Guid nodeid = Guid.Empty;
             WorkFlowNodeInfo flowNodeInfo = null;
-            using (var conn = GetDbConnect())
+            DbConnection conn = null;
+            if (tran != null)
+                conn = tran.Connection;
+            else
             {
+                conn = GetDbConnect();
                 conn.Open();
-                var tran = conn.BeginTransaction();
-                try
+                tran = conn.BeginTransaction();
+            }
+
+            try
+            {
+                //获取casedetail
+                var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseItemEntity.CaseId);
+                if (caseInfo == null)
+                    throw new Exception("流程表单数据不存在");
+                var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
+                if (workflowInfo == null)
+                    throw new Exception("流程配置不存在");
+                var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
+                if (caseitems == null || caseitems.Count == 0)
+                    throw new Exception("流程节点不存在");
+                caseitems = caseitems.OrderByDescending(m => m.StepNum).ToList();
+
+                if (caseItemEntity.ChoiceStatus == 2 && caseItemEntity.NodeNum == 0)
                 {
-                    //获取casedetail
-                    var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseItemEntity.CaseId);
-                    if (caseInfo == null)
-                        throw new Exception("流程表单数据不存在");
-                    var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
-                    if (workflowInfo == null)
+                    throw new Exception("第一个节点不可退回");
+                }
+                if (caseitems.FirstOrDefault().NodeType == 2)
+                {
+                    caseItemModel.JointStatus = caseItemEntity.ChoiceStatus == -1 ? 1 : 0;
+                    caseItemEntity.JointStatus = caseItemEntity.ChoiceStatus == -1 ? 1 : 0;
+                    caseItemEntity.ChoiceStatus = 1;
+                    caseItemModel.ChoiceStatus = 1;
+                }
+
+                stepnum = caseitems.FirstOrDefault().StepNum;
+
+                //若非分支流程，则直接返回下一步处理人数据
+                //若是分支流程，则通过预处理数据获取下一步分支节点，并返回下一步处理人数据
+                if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
+                {
+                    bool canAddNextNode = false;
+                    var nowcaseitem = caseitems.FirstOrDefault();
+                    AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, out canAddNextNode);
+                    if (casefinish)
+                    {
+                        //自由流程，uuid值为0作为流程起点，值为1作为流程终点'，值为2作为流程过程节点';
+                        nodeid = freeFlowEndNodeId;
+                    }
+                    else if (caseItemEntity.ChoiceStatus == 2)//0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
+                    {
+                        nodeid = freeFlowBeginNodeId;
+                        canAddNextNode = false;
+                    }
+                    else
+                    {
+                        nodeid = freeFlowNodeId;
+                    }
+                }
+                else //固定流程
+                {
+                    nodeid = caseitems.FirstOrDefault().NodeId;
+                    flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
+                    if (flowNodeInfo == null)
                         throw new Exception("流程配置不存在");
-                    var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
-                    if (caseitems == null || caseitems.Count == 0)
-                        throw new Exception("流程节点不存在");
-                    caseitems = caseitems.OrderByDescending(m => m.StepNum).ToList();
 
-                    if (caseItemEntity.ChoiceStatus == 2 && caseItemEntity.NodeNum == 0)
+                    bool hasNextNode = true;
+                    //获取下一步节点，
+                    var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
+                    if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count == 1 && flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
                     {
-                        throw new Exception("第一个节点不可退回");
+                        hasNextNode = false;
                     }
-
-                    stepnum = caseitems.FirstOrDefault().StepNum;
-
-                    //若非分支流程，则直接返回下一步处理人数据
-                    //若是分支流程，则通过预处理数据获取下一步分支节点，并返回下一步处理人数据
-                    if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
+                    //执行审批逻辑
+                    if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
                     {
-                        bool canAddNextNode = false;
                         var nowcaseitem = caseitems.FirstOrDefault();
-                        AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, out canAddNextNode);
-                        if (casefinish)
-                        {
-                            //自由流程，uuid值为0作为流程起点，值为1作为流程终点'，值为2作为流程过程节点';
-                            nodeid = freeFlowEndNodeId;
-                        }
-                        else if (caseItemEntity.ChoiceStatus == 2)//0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
-                        {
-                            nodeid = freeFlowBeginNodeId;
-                            canAddNextNode = false;
-                        }
-                        else
-                        {
-                            nodeid = freeFlowNodeId;
-                        }
+                        AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, hasNextNode);
                     }
-                    else //固定流程
+                    else if (flowNodeInfo.NodeType == NodeType.Joint)  //会审
                     {
-                        nodeid = caseitems.FirstOrDefault().NodeId;
-                        flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
-                        if (flowNodeInfo == null)
-                            throw new Exception("流程配置不存在");
-
-                        bool hasNextNode = true;
-                        //获取下一步节点，
-                        var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-                        if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count == 1 && flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
-                        {
-                            hasNextNode = false;
-                        }
-                        //执行审批逻辑
-                        if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
-                        {
-                            var nowcaseitem = caseitems.FirstOrDefault();
-                            AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, hasNextNode);
-                        }
-                        else  //会审
-                        {
-                            var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
-                            if (nowcaseitem == null)
-                                throw new Exception("您没有审批当前节点的权限");
-                            AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
-                        }
+                        var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
+                        if (nowcaseitem == null)
+                            throw new Exception("您没有审批当前节点的权限");
+                        AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
                     }
-
-                    //流程审批过程修改实体字段时，更新关联实体的字段数据
-                    _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
-
-                    //判断是否有附加函数_event_func
-                    var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
-                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
-
-                    //走完审批所有操作，获取下一步数据
-                    result = GetNextNodeData(tran, caseInfo, workflowInfo, flowNodeInfo, userinfo);
-                    //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
-                    tran.Rollback();
-                    isDisposed = true;
-                    if (result.NodeInfo.NodeType != NodeType.Joint && result.NodeInfo.NodeState != 1 && caseItemEntity.ChoiceStatus == 1)
+                    else //特殊会审 pxf
                     {
-                        if (result.Approvers == null || result.Approvers.Count == 0)
+                        var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
+                        if (nowcaseitem == null)
+                            throw new Exception("您没有审批当前节点的权限");
+                        AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
+                    }
+                }
+
+                //流程审批过程修改实体字段时，更新关联实体的字段数据
+                _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
+
+                //判断是否有附加函数_event_func
+                var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
+                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+
+                //走完审批所有操作，获取下一步数据
+                result = GetNextNodeData(tran, caseInfo, workflowInfo, flowNodeInfo, userinfo);
+                //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
+                if (result.NodeInfo.NodeType != NodeType.Joint && result.NodeInfo.NodeType != NodeType.SpecialJoint && result.NodeInfo.NodeState == 0 && (caseItemEntity.ChoiceStatus == 1 || caseItemEntity.ChoiceStatus == 4))
+                {
+                    if ((result.Approvers == null || result.Approvers.Count == 0) && result.NodeInfo.NotFound == 2)
+                    {
+                        try
                         {
-                            LoopInfo loopInfo;
-                            var users = LoopApproveUsers(caseInfo, workflowInfo, flowNodeInfo, null, userinfo, out loopInfo);
-                            bool isTranCommit = false;
                             while (true)
                             {
-                                var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
+                                var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId, -1, tran);
                                 var data = SubmitPretreatAuditHelp(new WorkFlowAuditCaseItemModel
                                 {
                                     CaseId = caseInfo.CaseId,
-                                    ChoiceStatus = 1,
+                                    ChoiceStatus = caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1" ? 5 : 1,
                                     NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
-                                }, userinfo);
+                                }, userinfo, tran);
                                 NextNodeDataModel node = data.DataBody as NextNodeDataModel;
                                 if (node.NotFound != 2 && node.Approvers != null && node.Approvers.Count > 0)
                                 {
@@ -1364,32 +1391,56 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     result = node;
                                     break;
                                 }
+                                caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId, -1, tran);
                                 SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
                                 {
                                     CaseId = caseInfo.CaseId,
-                                    ChoiceStatus = 1,
+                                    ChoiceStatus = caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1" ? 5 : 1,
                                     CopyUser = caseItemModel.CopyUser,
                                     HandleUser = userinfo.UserId.ToString(),
                                     NodeId = node.NodeInfo.NodeId,
                                     NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                                     Suggest = "",
                                     SkipNode = 1
-                                }, userinfo, null, 0);
-                                if (isTranCommit)
-                                {
-                                    throw new Exception("审批异常");
-                                }
+                                }, userinfo, tran, 0);
                             }
+                        }
+                        catch (Exception ex)
+                        {
+
+                            throw ex;
                         }
                     }
                 }
-                catch (Exception ex)
+                bool isBreak = false;
+                while (true && operatetype == 0 && (caseItemEntity.ChoiceStatus == 1 || caseItemEntity.ChoiceStatus == 4))
                 {
-                    if (!isDisposed)
-                        tran.Rollback();
-                    throw ex;
+                    this.PreInterceptWorkFlow(caseItemModel, caseInfo, workflowInfo.VerNum, workflowInfo.FlowId, tran, userinfo, out result, out isBreak);
+                    if (isBreak)
+                        break;
                 }
-                finally
+                if (result.NodeInfo.StepTypeId == NodeStepType.End && caseItemEntity.ChoiceStatus != 0)
+                {
+                    MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
+                    tran.Commit();
+                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
+                }
+                if (operatetype == 0)
+                {
+                    if (tran != null && tran.Connection != null)
+                        tran.Rollback();
+                }
+                isDisposed = true;
+            }
+            catch (Exception ex)
+            {
+                if (!isDisposed)
+                    tran.Rollback();
+                throw ex;
+            }
+            finally
+            {
+                if (operatetype == 0)
                 {
                     conn.Close();
                     conn.Dispose();
@@ -1397,7 +1448,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return new OutputResult<object>(result);
         }
-        public OutputResult<object> SubmitPretreatAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo)
+        public OutputResult<object> SubmitPretreatAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction trans)
         {
             NextNodeDataModel result = new NextNodeDataModel();
             //获取该实体分类的字段
@@ -1410,100 +1461,103 @@ namespace UBeat.Crm.CoreApi.Services.Services
             int stepnum = 0;
             Guid nodeid = Guid.Empty;
             WorkFlowNodeInfo flowNodeInfo = null;
-            using (var db = GetDbConnect())
+
+            try
             {
-                db.Open();
-                var trans = db.BeginTransaction();
-                try
-                {
 
-                    //获取casedetail
-                    var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(trans, caseItemEntity.CaseId);
-                    if (caseInfo == null)
-                        throw new Exception("流程表单数据不存在");
-                    var workflowInfo = _workFlowRepository.GetWorkFlowInfo(trans, caseInfo.FlowId);
-                    if (workflowInfo == null)
+                //获取casedetail
+                var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(trans, caseItemEntity.CaseId);
+                if (caseInfo == null)
+                    throw new Exception("流程表单数据不存在");
+                var workflowInfo = _workFlowRepository.GetWorkFlowInfo(trans, caseInfo.FlowId);
+                if (workflowInfo == null)
+                    throw new Exception("流程配置不存在");
+                var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(trans, caseInfo.CaseId, caseInfo.NodeNum);
+                if (caseitems == null || caseitems.Count == 0)
+                    throw new Exception("流程节点不存在");
+                caseitems = caseitems.OrderByDescending(m => m.StepNum).ToList();
+
+                if (caseItemEntity.ChoiceStatus == 2 && caseItemEntity.NodeNum == 0)
+                {
+                    throw new Exception("第一个节点不可退回");
+                }
+
+                stepnum = caseitems.FirstOrDefault().StepNum;
+
+                //若非分支流程，则直接返回下一步处理人数据
+                //若是分支流程，则通过预处理数据获取下一步分支节点，并返回下一步处理人数据
+                if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
+                {
+                    bool canAddNextNode = false;
+                    var nowcaseitem = caseitems.FirstOrDefault();
+                    AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, trans, caseInfo, nowcaseitem, out canAddNextNode);
+                    if (casefinish)
+                    {
+                        //自由流程，uuid值为0作为流程起点，值为1作为流程终点'，值为2作为流程过程节点';
+                        nodeid = freeFlowEndNodeId;
+                    }
+                    else if (caseItemEntity.ChoiceStatus == 2)//0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
+                    {
+                        nodeid = freeFlowBeginNodeId;
+                        canAddNextNode = false;
+                    }
+                    else
+                    {
+                        nodeid = freeFlowNodeId;
+                    }
+                }
+                else //固定流程
+                {
+                    nodeid = caseitems.FirstOrDefault().NodeId;
+                    flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(trans, nodeid);
+                    if (flowNodeInfo == null)
                         throw new Exception("流程配置不存在");
-                    var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(trans, caseInfo.CaseId, caseInfo.NodeNum);
-                    if (caseitems == null || caseitems.Count == 0)
-                        throw new Exception("流程节点不存在");
-                    caseitems = caseitems.OrderByDescending(m => m.StepNum).ToList();
 
-                    if (caseItemEntity.ChoiceStatus == 2 && caseItemEntity.NodeNum == 0)
+                    bool hasNextNode = true;
+                    //获取下一步节点，
+                    var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(trans, caseInfo.FlowId, caseInfo.VerNum, nodeid);
+                    if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count == 1 && flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
                     {
-                        throw new Exception("第一个节点不可退回");
+                        hasNextNode = false;
                     }
-
-                    stepnum = caseitems.FirstOrDefault().StepNum;
-
-                    //若非分支流程，则直接返回下一步处理人数据
-                    //若是分支流程，则通过预处理数据获取下一步分支节点，并返回下一步处理人数据
-                    if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
+                    //执行审批逻辑
+                    if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
                     {
-                        bool canAddNextNode = false;
                         var nowcaseitem = caseitems.FirstOrDefault();
-                        AuditFreeFlow(userinfo, caseItemEntity, ref casefinish, trans, caseInfo, nowcaseitem, out canAddNextNode);
-                        if (casefinish)
-                        {
-                            //自由流程，uuid值为0作为流程起点，值为1作为流程终点'，值为2作为流程过程节点';
-                            nodeid = freeFlowEndNodeId;
-                        }
-                        else if (caseItemEntity.ChoiceStatus == 2)//0拒绝 1通过 2退回 3中止 4编辑 5审批结束 6节点新增
-                        {
-                            nodeid = freeFlowBeginNodeId;
-                            canAddNextNode = false;
-                        }
-                        else
-                        {
-                            nodeid = freeFlowNodeId;
-                        }
+                        AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, trans, caseInfo, nowcaseitem, hasNextNode);
                     }
-                    else //固定流程
+                    else if (flowNodeInfo.NodeType == NodeType.Joint)  //会审
                     {
-                        nodeid = caseitems.FirstOrDefault().NodeId;
-                        flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(trans, nodeid);
-                        if (flowNodeInfo == null)
-                            throw new Exception("流程配置不存在");
-
-                        bool hasNextNode = true;
-                        //获取下一步节点，
-                        var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(trans, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-                        if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count == 1 && flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
-                        {
-                            hasNextNode = false;
-                        }
-                        //执行审批逻辑
-                        if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
-                        {
-                            var nowcaseitem = caseitems.FirstOrDefault();
-                            AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, trans, caseInfo, nowcaseitem, hasNextNode);
-                        }
-                        else  //会审
-                        {
-                            var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
-                            if (nowcaseitem == null)
-                                throw new Exception("您没有审批当前节点的权限");
-                            AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, trans, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
-                        }
+                        var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
+                        if (nowcaseitem == null)
+                            throw new Exception("您没有审批当前节点的权限");
+                        AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, trans, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
                     }
-
-                    //流程审批过程修改实体字段时，更新关联实体的字段数据
-                    _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, trans);
-
-                    //判断是否有附加函数_event_func
-                    var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, trans);
-                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, trans);
-
-                    //走完审批所有操作，获取下一步数据
-                    result = GetNextNodeData(trans, caseInfo, workflowInfo, flowNodeInfo, userinfo);
-                    //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
-                    trans.Rollback();
+                    else  //特殊会审 pxf
+                    {
+                        var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
+                        if (nowcaseitem == null)
+                            throw new Exception("您没有审批当前节点的权限");
+                        AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, trans, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    trans.Rollback();
-                    throw ex;
-                }
+
+                //流程审批过程修改实体字段时，更新关联实体的字段数据
+                _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, trans);
+
+                //判断是否有附加函数_event_func
+                var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, trans);
+                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, trans);
+
+                //走完审批所有操作，获取下一步数据
+                result = GetNextNodeData(trans, caseInfo, workflowInfo, flowNodeInfo, userinfo);
+                //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
+                trans.Rollback();
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                throw ex;
             }
             return new OutputResult<object>(result);
         }
@@ -1591,7 +1645,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     if (flowNodeInfo.NodeType == NodeType.Joint)//会审
                     {
-
+                        //会审审批通过的节点数
+                        var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
+                        nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
+                        if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
+                        {
+                            nodetemp.NodeState = 1;
+                        }
+                    }
+                    else if (flowNodeInfo.NodeType == NodeType.SpecialJoint)// 特殊会审 pxf
+                    {
                         //会审审批通过的节点数
                         var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
                         nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
@@ -1703,6 +1766,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             result.NodeInfo.NodeData = mycaseitems != null ? mycaseitems.Casedata : null;
             return result;
         }
+        #endregion
         public bool CheckNodeData(DbTransaction tran, WorkFlowCaseInfo caseInfo, WorkFlowInfo workflowInfo, WorkFlowNodeInfo flowNodeInfo, UserInfo userinfo)
         {
             var result = new NextNodeDataModel();
@@ -1745,6 +1809,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
 
                 if (flowNodeInfo.NodeType == NodeType.Joint)//会审
+                {
+
+                    //会审审批通过的节点数
+                    var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
+                    nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
+                    if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
+                    {
+                        nodetemp.NodeState = 1;
+                    }
+                }
+                else if (flowNodeInfo.NodeType == NodeType.SpecialJoint)//特殊会审 pxf
                 {
 
                     //会审审批通过的节点数
@@ -1888,6 +1963,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nodetemp.NodeState = 1;
                     }
                 }
+                else if (flowNodeInfo.NodeType == NodeType.SpecialJoint)//会审
+                {
+
+                    //会审审批通过的节点数
+                    var aproval_success_count = caseitems.Where(m => m.ChoiceStatus == ChoiceStatusType.Approval).Count();
+                    nodetemp.NeedSuccAuditCount = flowNodeInfo.AuditSucc - aproval_success_count;
+                    if (aproval_success_count < flowNodeInfo.AuditSucc)//--说明当前节点，其他人还在审批，不能进入下一步
+                    {
+                        nodetemp.NodeState = 1;
+                    }
+                }
             }
             //检查下一点，获取下一节点信息
             if (nodetemp.NodeState == 0)
@@ -2017,13 +2103,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        #endregion
-        #endregion
 
         #region --提交审批--
 
 
-        public OutputResult<object> SubmitWorkFlowAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran = null, int isNeedToSendMsg = 0)
+        public OutputResult<object> SubmitWorkFlowAudit(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran = null, int isNeedToSendMsg = 0, int isLaunchNode = 0)
         {
             bool isSkip = false;
             //获取该实体分类的字段
@@ -2045,7 +2129,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             bool IsFinishAfterStart = false;
             string handlUser = string.Empty;
             string curUserIds = string.Empty;
-            if (tran == null)
+            if (tran == null || tran.Connection == null)
             {
                 conn = GetDbConnect();
                 conn.Open();
@@ -2070,7 +2154,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     throw new Exception("第一个节点不可退回");
                 }
-
+                if (caseitems.FirstOrDefault().NodeType == 2)
+                {
+                    caseItemModel.JointStatus = caseItemEntity.ChoiceStatus == -1 ? 1 : 0;
+                    caseItemEntity.JointStatus = caseItemEntity.ChoiceStatus == -1 ? 1 : 0;
+                    caseItemEntity.ChoiceStatus = 1;
+                    caseItemModel.ChoiceStatus = 1;
+                }
                 stepnum = caseitems.FirstOrDefault().StepNum;
                 WorkFlowEventInfo eventInfo;
 
@@ -2095,6 +2185,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nodeid = caseItemEntity.NodeNum == 0 ? freeFlowBeginNodeId : freeFlowNodeId;
 
                     }
+                    //流程审批过程修改实体字段时，更新关联实体的字段数据
+                    _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
+
                 }
                 else //固定流程
                 {
@@ -2108,17 +2201,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                 }
-                //流程审批过程修改实体字段时，更新关联实体的字段数据
-                _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
-
 
                 //如果不是自由流程，或者自由流程的第一个节点，需要验证是否有附加函数
                 if (workflowInfo.FlowType != WorkFlowType.FreeFlow || nodeid == freeFlowBeginNodeId)
                 {
                     //判断是否有附加函数_event_func
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
-                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
-
+                    if (eventInfo != null && !string.IsNullOrEmpty(eventInfo.FuncName))
+                    {
+                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                    }
                 }
 
                 if (casefinish)//审批已经到达了最后一步
@@ -2134,7 +2226,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (caseItemList.Count > 0)
                         casestatus = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString());
                     if (casestatus != -1)
-                        _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
+                    {
+                        var caseItemId = _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
+                        var subscriber = _workFlowRepository.GetSubscriber(Guid.Parse(caseItemId.ToString()), caseItemEntity.ChoiceStatus, caseInfo, nextnode, tran, userinfo.UserId);
+                        var informer = _workFlowRepository.GetInformer(caseInfo.FlowId, caseItemEntity.ChoiceStatus, caseInfo, nextnode, tran, userinfo.UserId);
+                        foreach (var t in informer)
+                        {
+                            bool result = this.ValidateInformerRule(caseInfo, t.Key, userinfo.UserId, tran);
+                            if (result)
+                            {
+                                subscriber = subscriber.Union(t.Value).ToList();
+                            }
+                        }
+                        _workFlowRepository.AddEndWorkFlowCaseItemCPUser(tran, Guid.Parse(caseItemId.ToString()), subscriber);
+                        //   caseItemEntity.ChoiceStatus = 5;
+                    }
 
                     //判断是否有附加函数_event_func
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);
@@ -2152,15 +2258,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nextnode.NodeId, userinfo.UserId, workflowInfo.FlowType, tran);
                     isSkip = (users.Count == 0 && nextnode.NotFound == 2);
-                    handlUser = caseItemModel.HandleUser;
+                    if (string.IsNullOrEmpty(caseItemModel.ActHandleUser))
+                        caseItemModel.ActHandleUser = caseItemModel.HandleUser;
+
                     if (isSkip)
                     {
                         curUserIds = userinfo.UserId.ToString();
                         caseItemModel.SkipNode = 1;
                         caseItemModel.HandleUser = curUserIds;
                     }
-                    AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
-                    caseItemModel.HandleUser = handlUser;
+                    bool isRefresh = false;
+                    bool isAdd = false;
+                    NextNodeDataModel node = new NextNodeDataModel();
+                    while (true && stepnum != 0)
+                    {
+                        InterceptWorkFlow(caseItemModel, caseInfo, caseInfo.VerNum, workflowInfo.FlowId, tran, userinfo, out node, out isRefresh, out isAdd, service, isNeedToSendMsg, isLaunchNode: isLaunchNode);
+                        if (isRefresh)
+                            break;
+                    }
+                    if (isRefresh || stepnum == 0)
+                    {
+                        if (node != null && node.Approvers != null)
+                        { isSkip = (node.Approvers.Count == 0 && node.NotFound == 2); nodeid = node.NodeInfo.NodeId.Value; }
+                        caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseInfo.CaseId);
+                    }
+                    if (isAdd || stepnum == 0)
+                    {
+                        if (stepnum != 0)
+                        {
+                            caseItemModel.HandleUser = caseItemModel.ActHandleUser;
+                            stepnum = caseInfo.StepNum;
+                        }
+                        caseItemModel.SkipNode = isSkip ? 1 : 0;
+
+                        AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
+                    }
                 }
                 if (conn != null)
                 {
@@ -2170,59 +2302,75 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 while (isSkip && (caseItemModel.ChoiceStatus == 1 || caseItemModel.ChoiceStatus == 4))
                 {
-                    var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
+                    var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId, tran: (conn == null ? tran : null));
                     if (caseItemList.Count == 0) break;
-                    var data = SubmitPretreatAudit(new WorkFlowAuditCaseItemModel
-                    {
-                        CaseId = caseInfo.CaseId,
-                        ChoiceStatus = 1,
-                        NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
-                    }, userinfo);
-                    NextNodeDataModel model = data.DataBody as NextNodeDataModel;
-                    if (model.NodeInfo.StepTypeId == NodeStepType.End)
+                    var nodeDataInfo = _workFlowRepository.GetNodeDataInfo(caseInfo.FlowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), caseInfo.VerNum);
+                    if (nodeDataInfo.Count == 0 && caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1")
                         break;
+                    var branchNode = GetNextNodeBranch(caseInfo, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), userinfo, tran);
+                    if (branchNode.NodeId == Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()))
+                    {
+                        break;
+                    }
+                    var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, branchNode.NodeId.GetValueOrDefault());
+                    var nextNodeData = GetNextNodeData(tran, caseInfo, workflowInfo, flowNodeInfo, userinfo);
                     SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
                     {
+                        ActHandleUser = caseItemModel.ActHandleUser,
                         CaseId = caseInfo.CaseId,
                         ChoiceStatus = 1,
                         CopyUser = caseItemModel.CopyUser,
-                        HandleUser = model.Approvers.Count > 0 && model.NodeInfo.NodeId == caseItemEntity.NodeId ? caseItemModel.HandleUser : curUserIds,
-                        NodeId = model.NodeInfo.NodeId,
+                        HandleUser = nextNodeData.Approvers != null && nextNodeData.Approvers.Count > 0 && branchNode.NodeId == caseItemEntity.NodeId ? (string.IsNullOrEmpty(caseItemModel.HandleUser) ? caseItemModel.ActHandleUser : caseItemModel.HandleUser) : curUserIds,
+                        NodeId = branchNode.NodeId,
                         NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                         Suggest = "",
-                        SkipNode = model.Approvers.Count > 0 && model.NodeInfo.NodeId == caseItemEntity.NodeId ? 0 : caseItemModel.SkipNode
-                    }, userinfo);
-
-                    if (!model.NodeInfo.IsSkip)
+                        SkipNode = nextNodeData.Approvers != null && nextNodeData.Approvers.Count > 0 && branchNode.NodeId == caseItemEntity.NodeId ? 0 : caseItemModel.SkipNode
+                    }, userinfo, service, tran: (conn == null ? tran : null), isNeedToSendMsg: isNeedToSendMsg, isLaunchNode: isLaunchNode);
+                    if (!nextNodeData.IsSkipNode)
                         break;
-
                 }
-                if (!isSkip && isNeedToSendMsg != 3)
+                if (isNeedToSendMsg != 0)
                 {
-                    isNeedToSendMsg = 2;
+                    if (!isSkip && isNeedToSendMsg != 3)
+                    {
+                        isNeedToSendMsg = 2;
+                    }
                 }
-
                 //写审批消息
                 if (isNeedToSendMsg == 1)//跳过流程的时候替换用户
                 {
                     int userId = 0;
-                    if (userinfo.UserId != Convert.ToInt32(caseItemModel.HandleUser))
+                    foreach (var u in caseItemModel.HandleUser.Split(","))
                     {
-                        userId = Convert.ToInt32(caseItemModel.HandleUser);
+                        if (userinfo.UserId != Convert.ToInt32(u))
+                        {
+                            userId = Convert.ToInt32(u);
+                        }
+                        WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, caseInfo.StepNum, userId, IsFinishAfterStart);
+                        isNeedToSendMsg = 0;
                     }
-                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userId, IsFinishAfterStart);
                 }
                 else if (isNeedToSendMsg == 2 || isNeedToSendMsg == 3)
                 {
-                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, IsFinishAfterStart);
+                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, caseInfo.StepNum, userinfo.UserId, IsFinishAfterStart);
+                    isNeedToSendMsg = 0;
                 }
-
             }
             catch (Exception ex)
             {
                 if (conn != null)
                 {
                     tran.Rollback();
+                }
+                StackTrace st = new StackTrace(ex, true);
+                StackFrame[] frames = st.GetFrames();
+
+                // Iterate over the frames extracting the information you need
+                StringBuilder sb = new StringBuilder();
+                foreach (StackFrame frame in frames)
+                {
+                    sb.Append(string.Format("{0}:{1}({2},{3})", frame.GetFileName(), frame.GetMethod().Name, frame.GetFileLineNumber(), frame.GetFileColumnNumber()));
+                    _logger.Error(string.Format("{0}:{1}({2},{3})", frame.GetFileName(), frame.GetMethod().Name, frame.GetFileLineNumber(), frame.GetFileColumnNumber()));
                 }
                 throw ex;
             }
@@ -2234,8 +2382,272 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     conn.Dispose();
                 }
             }
-
             return new OutputResult<object>(null);
+        }
+        NextNodeDataInfo GetNextNodeBranch(WorkFlowCaseInfo caseInfo, Guid nodeId, UserInfo userInfo, DbTransaction tran)
+        {
+            var data = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, nodeId, caseInfo.VerNum, tran);
+            NextNodeDataInfo nodetemp = new NextNodeDataInfo();
+            NextNodeDataModel curNodeTemp = new NextNodeDataModel();
+            List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
+            List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
+            foreach (var m in data)
+            {
+                bool isDefaultNode = false;
+                //验证规则是否符合
+                if (ValidateNextNodeRule(caseInfo, caseInfo.FlowId, nodeId, m.NodeId.GetValueOrDefault(), caseInfo.VerNum, userInfo, out isDefaultNode, tran))
+                {
+                    if (isDefaultNode)
+                    {
+                        defaultConditionNodes.Add(m);
+                    }
+                    else metConditionNodes.Add(m);
+                }
+            }
+            if (defaultConditionNodes.Count > 1)
+                throw new Exception("每个流程只允许配置一条无过滤条件的分支");
+            else if (metConditionNodes.Count == 0 && defaultConditionNodes.Count == 0)
+            {
+                throw new Exception("没有符合分支流程规则的下一步审批人");
+            }
+            else
+            {
+                if (metConditionNodes.Count > 1)
+                    throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
+                else if (metConditionNodes.Count == 1)
+                    nodetemp = metConditionNodes.FirstOrDefault();
+                else nodetemp = defaultConditionNodes.FirstOrDefault();
+            }
+            return nodetemp;
+        }
+        void PreInterceptWorkFlow(WorkFlowAuditCaseItemModel caseItemModel, WorkFlowCaseInfo caseInfo, int vernum, Guid flowId, DbTransaction tran, UserInfo userInfo, IServiceProvider service, out NextNodeDataModel nodeTemp, out bool isBreak)
+        {
+            var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userInfo.UserId, tran: tran);
+            var nextNodes = _workFlowRepository.GetNextNodeDataInfoList(flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), Convert.ToInt32(caseItemList[caseItemList.Count - 1]["vernum"]), tran);
+            isBreak = false;
+            nodeTemp = new NextNodeDataModel();
+            if (caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1")
+            {
+                isBreak = true;
+                nodeTemp.NodeInfo = _workFlowRepository.GetCurNodeDataInfo(flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), caseInfo.VerNum).FirstOrDefault();
+                return;
+            }
+            if (nextNodes.Count == 0) throw new Exception("找不到流程分支");
+            nodeTemp = new NextNodeDataModel();
+            NextNodeDataInfo node = new NextNodeDataInfo();
+            List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
+            List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
+            foreach (var m in nextNodes)
+            {
+                bool isDefaultNode = false;
+                //验证规则是否符合
+                if (ValidateNextNodeRule(caseInfo, flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), m.NodeId.GetValueOrDefault(), caseInfo.VerNum, userInfo, out isDefaultNode, tran))
+                {
+                    if (isDefaultNode)
+                    {
+                        defaultConditionNodes.Add(m);
+                    }
+                    else metConditionNodes.Add(m);
+                }
+            }
+            if (defaultConditionNodes.Count > 1)
+                throw new Exception("每个流程只允许配置一条无过滤条件的分支");
+            else if (metConditionNodes.Count == 0 && defaultConditionNodes.Count == 0)
+            {
+                throw new Exception("没有符合分支流程规则的下一步审批人");
+            }
+            else
+            {
+                if (metConditionNodes.Count > 1)
+                    throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
+                else if (metConditionNodes.Count == 1)
+                    node = metConditionNodes.FirstOrDefault();
+                else node = defaultConditionNodes.FirstOrDefault();
+            }
+            var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
+            var workflowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, node.NodeId.Value);
+            var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, node.NodeId.Value, userInfo.UserId, workflowInfo.FlowType, tran);
+            var cpusers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, node.NodeId.Value, userInfo.UserId, workflowInfo.FlowType, tran);
+
+            if (caseItemList[caseItemList.Count - 1]["handleuser"].ToString() == string.Join(",", users.Select(t => t.UserId).Distinct().ToArray()) && caseItemList[caseItemList.Count - 1]["nodetype"].ToString() == "0")
+            {
+                SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
+                {
+                    CaseId = caseInfo.CaseId,
+                    ChoiceStatus = caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1" ? 5 : 1,
+                    CopyUser = string.Join(",", cpusers.Select(t => t.UserId).Distinct().ToArray()),
+                    HandleUser = string.Join(",", users.Select(t => t.UserId).Distinct().ToArray()),
+                    NodeId = node.NodeId,
+                    NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                    Suggest = caseItemModel.Suggest,
+                    SkipNode = 1
+                }, userInfo, tran, 0);
+                isBreak = false;
+            }
+            else if (node.NotFound == 2 && users.Count == 0)
+            {
+                SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
+                {
+                    CaseId = caseInfo.CaseId,
+                    ChoiceStatus = caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1" ? 5 : 1,
+                    CopyUser = string.Empty,
+                    HandleUser = userInfo.UserId.ToString(),
+                    NodeId = node.NodeId,
+                    NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                    Suggest = "",
+                    SkipNode = 1
+                }, userInfo, tran, 0);
+                if (caseItemList[caseItemList.Count - 1]["nodetype"].ToString() == "1" || caseItemList[caseItemList.Count - 1]["nodetype"].ToString() == "2")
+                {
+                    isBreak = true;
+                }
+            }
+            else
+            {
+                isBreak = true;
+            }
+            if (node.StepTypeId != NodeStepType.End)
+            {
+                var result = SubmitPretreatAuditHelp(new WorkFlowAuditCaseItemModel
+                {
+                    CaseId = caseInfo.CaseId,
+                    ChoiceStatus = caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1" ? 5 : 1,
+                    NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
+                }, userInfo, tran);
+                nodeTemp = result.DataBody as NextNodeDataModel;
+            }
+            else
+            {
+                SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
+                {
+                    CaseId = caseInfo.CaseId,
+                    ChoiceStatus = caseItemList[caseItemList.Count - 1]["nodenum"].ToString() == "-1" ? 5 : 1,
+                    CopyUser = string.Empty,
+                    HandleUser = userInfo.UserId.ToString(),
+                    NodeId = node.NodeId,
+                    NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                    Suggest = caseItemModel.Suggest,
+                    SkipNode = 1
+                }, userInfo, tran, 0);
+                nodeTemp.NodeInfo = node;
+            }
+        }
+        void InterceptWorkFlow(WorkFlowAuditCaseItemModel caseItemModel, WorkFlowCaseInfo caseInfo, int vernum, Guid flowId, DbTransaction tran, UserInfo userInfo, out NextNodeDataModel nodeTemp, out bool isRefresh, out bool isAdd, IServiceProvider service, int isNeedToSendMsg = 0, int isLaunchNode = 0)
+        {
+            var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userInfo.UserId, tran: tran);
+            var nextNodes = _workFlowRepository.GetNextNodeDataInfoList(flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), Convert.ToInt32(caseItemList[caseItemList.Count - 1]["vernum"]), tran);
+            isRefresh = false;
+            isAdd = false;
+            nodeTemp = new NextNodeDataModel();
+            if (nextNodes.Count == 0) throw new Exception("找不到流程分支");
+            NextNodeDataInfo nodetemp = new NextNodeDataInfo();
+            List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
+            List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
+            foreach (var m in nextNodes)
+            {
+                bool isDefaultNode = false;
+                //验证规则是否符合
+                if (ValidateNextNodeRule(caseInfo, flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), m.NodeId.GetValueOrDefault(), caseInfo.VerNum, userInfo, out isDefaultNode, tran))
+                {
+                    if (isDefaultNode)
+                    {
+                        defaultConditionNodes.Add(m);
+                    }
+                    else metConditionNodes.Add(m);
+                }
+            }
+            if (defaultConditionNodes.Count > 1)
+                throw new Exception("每个流程只允许配置一条无过滤条件的分支");
+            else if (metConditionNodes.Count == 0 && defaultConditionNodes.Count == 0)
+            {
+                throw new Exception("没有符合分支流程规则的下一步审批人");
+            }
+            else
+            {
+                if (metConditionNodes.Count > 1)
+                    throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
+                else if (metConditionNodes.Count == 1)
+                    nodetemp = metConditionNodes.FirstOrDefault();
+                else nodetemp = defaultConditionNodes.FirstOrDefault();
+            }
+            var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
+            var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nodetemp.NodeId.Value, userInfo.UserId, workflowInfo.FlowType, tran);
+            var cpusers = _workFlowRepository.GetFlowNodeCPUser(caseInfo.CaseId, nodetemp.NodeId.Value, userInfo.UserId, workflowInfo.FlowType, tran);
+
+            if (caseItemList[caseItemList.Count - 1]["handleuser"].ToString() == string.Join(",", users.Select(t => t.UserId).Distinct().ToArray()) && isLaunchNode != 1 && caseItemList[caseItemList.Count - 1]["nodetype"].ToString() == "0")
+            {
+                SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
+                {
+                    CaseId = caseInfo.CaseId,
+                    ChoiceStatus = 1,
+                    CopyUser = string.Join(",", cpusers.Select(t => t.UserId).Distinct().ToArray()),
+                    HandleUser = string.Join(",", users.Select(t => t.UserId).Distinct().ToArray()),
+                    NodeId = nodetemp.NodeId,
+                    NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                    Suggest = caseItemModel.Suggest,
+                    SkipNode = 1
+                }, userInfo, tran, isNeedToSendMsg);
+            }
+            else
+            {
+                int skipNode = 0;
+                if (nodetemp.NotFound == 2 && users.Count == 0)//跳过节点
+                {
+                    isRefresh = false;
+                    skipNode = 1;
+                }
+                else
+                    isRefresh = true;
+                nodeTemp.NodeInfo = nodetemp;
+                nodeTemp.Approvers = users;
+                if (skipNode == 1)//跳过节点的情况直接跳过
+                    SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
+                    {
+                        CaseId = caseInfo.CaseId,
+                        ChoiceStatus = 1,
+                        CopyUser = string.Join(",", cpusers.Select(t => t.UserId).Distinct().ToArray()),
+                        HandleUser = !isRefresh ? userInfo.UserId.ToString() : string.Join(",", users.Select(t => t.UserId).Distinct().ToArray()),
+                        NodeId = nodetemp.NodeId,
+                        NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                        Suggest = caseItemModel.Suggest,
+                        SkipNode = skipNode
+                    }, userInfo, tran, isNeedToSendMsg);
+                else if ((nodeTemp.Approvers.Count > 0 || nodeTemp.NotFound == 0) && isLaunchNode == 1)//发起后遇到一样发起人和审批人同一个的时候就跳出
+                {
+                    isRefresh = true;
+                    isAdd = true;
+                    SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
+                    {
+                        CaseId = caseInfo.CaseId,
+                        ChoiceStatus = 1,
+                        CopyUser = string.Empty,
+                        HandleUser = userInfo.UserId.ToString(),
+                        NodeId = nodetemp.NodeId,
+                        NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                        Suggest = "",
+                        SkipNode = skipNode
+                    }, userInfo, tran, isNeedToSendMsg, 1);
+                    //var curWorkFlowNode = _workFlowRepository.GetWorkFlowNodeInfo(tran, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()));
+                    //nodeTemp = this.GetNextNodeData(tran, caseInfo, workflowInfo, curWorkFlowNode, userInfo);
+                    nodeTemp.NodeInfo = _workFlowRepository.GetCurNodeDataInfo(flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), caseInfo.VerNum, tran).FirstOrDefault();
+                }
+                else if ((nodeTemp.Approvers.Count > 0 || nodeTemp.NodeInfo.NotFound == 1) && isLaunchNode != 1)//既不是跳过节点，也是不是发起的操作，遇到下个节点要审批的就直接把当前节点审批 然后跳出
+                {
+                    SubmitWorkFlowAuditHelp(new WorkFlowAuditCaseItemModel
+                    {
+                        Files = caseItemModel.Files,
+                        CaseId = caseInfo.CaseId,
+                        ChoiceStatus = 1,
+                        CopyUser = caseItemModel.CopyUser,
+                        HandleUser = caseItemModel.ActHandleUser,
+                        NodeId = nodetemp.NodeId,
+                        NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
+                        Suggest = caseItemModel.Suggest,
+                        SkipNode = skipNode
+                    }, userInfo, tran, isNeedToSendMsg);
+                    isRefresh = true;
+                }
+            }
         }
         public OutputResult<object> SubmitWorkFlowAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran, int isNeedToSendMsg)
         {
@@ -2272,6 +2684,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
                 if (workflowInfo == null)
                     throw new Exception("流程配置不存在");
+                if (caseInfo.NodeNum != caseItemModel.NodeNum)
+                {
+                    caseInfo.NodeNum = caseItemModel.NodeNum;
+                }
                 var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseInfo.CaseId, caseInfo.NodeNum);
                 if (caseitems == null || caseitems.Count == 0)
                     throw new Exception("流程节点不存在");
@@ -2340,11 +2756,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         caseItemEntity.ChoiceStatus = 1;
                         IsFinishAfterStart = true;
                     }
-                    _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
+                    var caseItemId = _workFlowRepository.EndWorkFlowCaseItem(caseInfo.CaseId, lastNodeId, stepnum + 1, userinfo.UserId, tran);
+                    var subscriber = _workFlowRepository.GetSubscriber(Guid.Parse(caseItemId.ToString()), caseItemEntity.ChoiceStatus, caseInfo, nextnode, tran, userinfo.UserId);
+                    var informer = _workFlowRepository.GetInformer(caseInfo.FlowId, caseItemEntity.ChoiceStatus, caseInfo, nextnode, tran, userinfo.UserId);
+                    foreach (var t in informer)
+                    {
+                        bool result = this.ValidateInformerRule(caseInfo, t.Key, userinfo.UserId, tran);
+                        if (result)
+                        {
+                            subscriber = subscriber.Union(t.Value).ToList();
+                        }
+                    }
+                    _workFlowRepository.AddEndWorkFlowCaseItemCPUser(tran, Guid.Parse(caseItemId.ToString()), subscriber.Distinct().ToList());
 
                     //判断是否有附加函数_event_func
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);
-                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                    if (eventInfo != null && !string.IsNullOrEmpty(eventInfo.FuncName))
+                    {
+                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                    }
                 }
                 else if (canAddNextNode) //添加下一步骤审批节点
                 {
@@ -2391,7 +2821,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
         #region --审批固定流程--
-        private bool AuditFixedFlow(Guid nodeid, UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, DbTransaction tran, WorkFlowCaseInfo caseInfo, List<WorkFlowCaseItemInfo> caseitems, out WorkFlowNodeInfo nextnode, out bool canAddNextNode)
+        void LoopNode(WorkFlowCaseInfo caseInfo, Guid nodeId, Guid correctNodeId, int userId, DbTransaction tran, out Guid nextNodeId, List<Dictionary<string, object>> nodeInfos = null)
+        {
+            nodeInfos = nodeInfos ?? _workFlowRepository.GetNodeLinesInfo(caseInfo.FlowId, userId, tran)["lines"];
+            if (nodeInfos.Count > 0)
+            {
+                int index = 0;
+                List<Dictionary<string, object>> chooseNode = new List<Dictionary<string, object>>();
+                while (true)
+                {
+                    if (index >= nodeInfos.Count) break;
+                    var t = nodeInfos[index];
+                    if (t["fromnodeid"].ToString() == nodeId.ToString())
+                    {
+                        if (Guid.Parse(t["tonodeid"].ToString()) == correctNodeId)
+                        {
+                            nextNodeId = Guid.Parse(t["fromnodeid"].ToString());
+                            break;
+                        }
+                        else
+                        {
+                            LoopNode(caseInfo, Guid.Parse(t["tonodeid"].ToString()), correctNodeId, userId, tran, out nextNodeId, nodeInfos);
+                            var sad = string.Empty;
+                        }
+                    }
+                    index++;
+                }
+            }
+        }
+        private bool AuditFixedFlow(Guid nodeid, UserInfo userinfo, WorkFlowAuditCaseItemMapper caseItemEntity, ref bool casefinish, DbTransaction tran, WorkFlowCaseInfo caseInfo, List<WorkFlowCaseItemInfo> caseitems, int userId, out WorkFlowNodeInfo nextnode, out bool canAddNextNode)
         {
             bool isbranchflow = false;
             bool hasNextNode = true;
@@ -2399,31 +2857,95 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
             if (flowNodeInfo == null)
                 throw new Exception("流程配置不存在");
-            //获取下一步节点，
-            var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
-            isbranchflow = flowNextNodeInfos != null && flowNextNodeInfos.Count > 1;//如果配置节点有多个，属于分支流程
-
-
-            if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count == 1 && flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
-            {
-                canAddNextNode = false;
-                hasNextNode = false;
-            }
-            nextnode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
-            if (nextnode == null)
-                nextnode = flowNextNodeInfos.FirstOrDefault();
             if (caseItemEntity.ChoiceStatus == 0 || caseItemEntity.ChoiceStatus == 3)//中止操作，需要获取结束节点
             {
                 var nodelist = _workFlowRepository.GetNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum);
                 nextnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
             }
-
-            if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
+            else
             {
-                canAddNextNode = false;
-                hasNextNode = false;
-            }
+                WorkFlowCaseItemInfo nowcaseitem = null;
+                //执行审批逻辑
+                if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
+                {
+                    nowcaseitem = caseitems.FirstOrDefault();
+                }
+                else if (flowNodeInfo.NodeType == NodeType.Joint || flowNodeInfo.NodeType == NodeType.SpecialJoint)  //会审 or 特殊会审 pxf
+                {
+                    nowcaseitem = caseitems.FirstOrDefault(t => t.HandleUser == userinfo.UserId && (t.ChoiceStatus == ChoiceStatusType.AddNode || t.ChoiceStatus == ChoiceStatusType.Edit));
+                    if (nowcaseitem == null)
+                    {
+                        nowcaseitem = caseitems.FirstOrDefault(t => t.HandleUser == userId);
+                    }
+                }
+                _workFlowRepository.AuditWorkFlowCaseData(caseItemEntity, nowcaseitem, userinfo.UserId, tran);
+                //流程审批过程修改实体字段时，更新关联实体的字段数据
+                _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, caseInfo.NodeNum, userinfo.UserId, tran);
 
+                //获取下一步节点，
+                var flowNextNodeInfos = _workFlowRepository.GetNextNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum, nodeid);
+                isbranchflow = flowNextNodeInfos != null && flowNextNodeInfos.Count > 1;//如果配置节点有多个，属于分支流程
+
+
+                if (flowNextNodeInfos == null || flowNextNodeInfos.Count == 0 || (flowNextNodeInfos.Count == 1 && flowNextNodeInfos.FirstOrDefault().StepTypeId == NodeStepType.End))
+                {
+                    canAddNextNode = false;
+                    hasNextNode = false;
+                }
+                nextnode = flowNextNodeInfos.Find(m => m.NodeId == caseItemEntity.NodeId);
+                if (nextnode == null)
+                    nextnode = flowNextNodeInfos.FirstOrDefault();
+                if (caseItemEntity.ChoiceStatus == 0 || caseItemEntity.ChoiceStatus == 3)//中止操作，需要获取结束节点
+                {
+                    var nodelist = _workFlowRepository.GetNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum);
+                    nextnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
+                }
+
+                if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
+                {
+                    canAddNextNode = false;
+                    hasNextNode = false;
+                }
+                if (flowNextNodeInfos.Count > 1)
+                {
+                    List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
+                    List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
+                    foreach (var m in flowNextNodeInfos)
+                    {
+                        bool isDefaultNode = false;
+                        //验证规则是否符合
+                        if (ValidateNextNodeRule(caseInfo, caseInfo.FlowId, nodeid, m.NodeId, caseInfo.VerNum, userinfo, out isDefaultNode, tran))
+                        {
+                            var nodeDataInfo = _workFlowRepository.GetCurNodeDataInfo(caseInfo.FlowId, m.NodeId, caseInfo.VerNum, tran).FirstOrDefault();
+                            if (isDefaultNode)
+                            {
+                                defaultConditionNodes.Add(nodeDataInfo);
+                            }
+                            else metConditionNodes.Add(nodeDataInfo);
+                        }
+                    }
+                    if (defaultConditionNodes.Count > 1)
+                        throw new Exception("每个流程只允许配置一条无过滤条件的分支");
+                    else if (metConditionNodes.Count == 0 && defaultConditionNodes.Count == 0)
+                    {
+                        throw new Exception("没有符合分支流程规则的下一步审批人");
+                    }
+                    else
+                    {
+                        if (metConditionNodes.Count > 1)
+                            throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
+                        else if (metConditionNodes.Count == 1)
+                            nextnode = flowNextNodeInfos.FirstOrDefault(t => t.NodeId == metConditionNodes.FirstOrDefault().NodeId);
+                        else nextnode = flowNextNodeInfos.FirstOrDefault(t => t.NodeId == defaultConditionNodes.FirstOrDefault().NodeId);
+                    }
+                }
+                else if (flowNextNodeInfos.Count == 0)
+                {
+                    nextnode = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
+                }
+                else
+                    nextnode = flowNextNodeInfos.FirstOrDefault();
+            }
             //执行审批逻辑
             if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
             {
@@ -2431,7 +2953,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 canAddNextNode = AuditNormalFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, nowcaseitem, hasNextNode);
             }
-            else  //会审
+            else if (flowNodeInfo.NodeType == NodeType.Joint)  //会审
+            {
+                var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
+                if (nowcaseitem == null)
+                    throw new Exception("您没有审批当前节点的权限");
+                canAddNextNode = AuditJoinFlow(userinfo, caseItemEntity, ref casefinish, tran, caseInfo, flowNodeInfo, nowcaseitem, hasNextNode);
+            }
+            else//特殊会审 pxf
             {
                 var nowcaseitem = caseitems.Find(m => m.HandleUser == userinfo.UserId);
                 if (nowcaseitem == null)
@@ -2440,9 +2969,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return isbranchflow;
-
-
-
         }
         #endregion
 
@@ -2648,7 +3174,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception("步骤处理人不能为空");
             }
             Guid nodeid = caseItemModel.NodeId.GetValueOrDefault();
-
+            var curNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(trans, fromNodeid);
+            Guid preCaseItemId = Guid.Empty;
+            List<Guid> skipNodes = new List<Guid>();
+            var caseitemlist = _workFlowRepository.GetWorkFlowCaseItemInfo(trans, caseInfo.CaseId, caseInfo.NodeNum);
             if (workFlowInfo.FlowType == WorkFlowType.FixedFlow)//如果是固定流程，则获取对应的node
             {
                 //获取下一步节点，
@@ -2662,36 +3191,56 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WorkFlowNodeInfo flowNodeInfo = null;
                 bool isNull = false;
                 if (nodeid != Guid.Empty)
-                {
-                    if (flowNextNodeInfos.Count > 1)
+                    if (nodeid != Guid.Empty)
                     {
-                        flowNodeInfo = flowNextNodeInfos.Find(m => m.NodeId == nodeid);//找不到证明有跳过节点
-                        if (flowNodeInfo == null)
+                        if (flowNextNodeInfos.Count > 1)
                         {
-                            caseItemModel.HandleUser = userinfo.UserId.ToString();
+                            NextNodeDataInfo nodetemp = new NextNodeDataInfo();
+                            List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
+                            List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
+                            foreach (var m in flowNextNodeInfos)
+                            {
+                                var node = _workFlowRepository.GetNodeDataInfo(caseInfo.FlowId, m.NodeId, caseInfo.VerNum, trans).FirstOrDefault();
+                                bool isDefaultNode = false;
+                                //验证规则是否符合
+                                if (ValidateNextNodeRule(caseInfo, caseInfo.FlowId, fromNodeid, m.NodeId, caseInfo.VerNum, userinfo, out isDefaultNode, trans))
+                                {
+                                    if (isDefaultNode)
+                                    {
+                                        defaultConditionNodes.Add(node);
+                                    }
+                                    else metConditionNodes.Add(node);
+                                }
+                            }
+                            if (defaultConditionNodes.Count > 1)
+                                throw new Exception("每个流程只允许配置一条无过滤条件的分支");
+                            else if (metConditionNodes.Count == 0 && defaultConditionNodes.Count == 0)
+                            {
+                                throw new Exception("没有符合分支流程规则的下一步审批人");
+                            }
+                            else
+                            {
+                                if (metConditionNodes.Count > 1)
+                                    throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
+                                else if (metConditionNodes.Count == 1)
+                                    nodetemp = metConditionNodes.FirstOrDefault();
+                                else nodetemp = defaultConditionNodes.FirstOrDefault();
+                            }
+                            flowNodeInfo = flowNextNodeInfos.FirstOrDefault(t => t.NodeId == nodetemp.NodeId);
                         }
-                        flowNodeInfo = flowNextNodeInfos[LookUpNextNodeData(trans, caseInfo, flowNextNodeInfos, nodeid)];
+                        else
+                            flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
                     }
-                    else
-                        flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
-                }
-                else flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
+                    else flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
                 if (flowNodeInfo == null && !isNull)
                     throw new Exception("下一步节点不可为空");
                 nodeid = flowNodeInfo.NodeId;
-                if (flowNodeInfo.NodeType == NodeType.Joint)//会审
+                if (flowNodeInfo.NodeType == NodeType.Joint || flowNodeInfo.NodeType == NodeType.SpecialJoint)//会审
                 {
-                    //获取当前审批结果
-                    var caseitemlist = _workFlowRepository.GetWorkFlowCaseItemInfo(trans, caseInfo.CaseId, caseInfo.NodeNum);
                     if (caseitemlist == null || caseitemlist.Count == 0)
                         throw new Exception("流程节点异常");
-                    //caseitemlist = caseitemlist.OrderByDescending(m => m.StepNum).ToList();
-
-                    //获取还有人未处理审批
-                    //var aproval_notdeal_count = caseitemlist.Where(m => m.CaseStatus == CaseStatusType.WaitApproval || m.CaseStatus == CaseStatusType.Readed).Count();
-                    //if (aproval_notdeal_count > 0)
-                    //    throw new Exception("该节点其他人还在审批，不能进入下一步");
                 }
+                preCaseItemId = caseitemlist.OrderByDescending(t => t.StepNum).FirstOrDefault().CaseItemId;
             }
 
             var caseitems = new List<WorkFlowCaseItemInfo>();
@@ -2714,31 +3263,53 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     CaseStatus = CaseStatusType.WaitApproval,
                     HandleUser = handlerId,
                     CopyUser = caseItemModel.CopyUser,
-                    SkipNode = caseItemModel.SkipNode
+                    SkipNode = caseItemModel.SkipNode,
+                    Suggest = (caseInfo.NodeNum == 0 && caseitemlist.OrderByDescending(t => t.StepNum).FirstOrDefault().StepNum > 1) ? caseItemModel.Suggest : string.Empty//为了适应驳回后重新发起的时候写入备注，这个需要跟第一次发起流程的时候区别开来
                 };
                 caseitems.Add(item);
             }
             var result = _workFlowRepository.AddCaseItem(caseitems, userinfo.UserId, AuditStatusType.Approving, trans);
-
+            if (curNodeInfo.NodeType == NodeType.SpecialJoint)
+            {
+                _workFlowRepository.InsertSpecialJointComment(trans, new CaseItemJoint
+                {
+                    CaseItemid = preCaseItemId,
+                    Comment = caseItemModel.Suggest,
+                    UserId = userinfo.UserId,
+                    FlowStatus = caseItemModel.JointStatus,
+                }, userinfo.UserId);
+            }
+            //pxf 
+            _workFlowRepository.CheckIsTransfer(trans, new CaseItemJointTransfer
+            {
+                CaseItemid = preCaseItemId,
+                Comment = caseItemModel.Suggest,
+                FlowStatus = caseItemModel.ChoiceStatus,
+                UserId = userinfo.UserId,
+                OrginUserId = userinfo.UserId
+            }, userinfo.UserId);
         }
 
-        int LookUpNextNodeData(DbTransaction trans, WorkFlowCaseInfo caseInfo, List<WorkFlowNodeInfo> flowNextNodeInfos, Guid nodeid)
+        int LookUpNextNodeData(DbTransaction trans, WorkFlowCaseInfo caseInfo, List<WorkFlowNodeInfo> flowNextNodeInfos, Guid nodeid, out bool isReturn, int parentIndex = -1)
         {
-            int loop = 0;
+            isReturn = false;
             foreach (var tmp in flowNextNodeInfos)
             {
                 if (tmp.NodeId == nodeid)//找到该nodeid证明是在某一分支下，然后返回该索引
-                    return loop;
+                {
+                    isReturn = true;
+                    parentIndex++;
+                    break;
+                }
                 var data = _workFlowRepository.GetNextNodeInfoList(trans, caseInfo.FlowId, caseInfo.VerNum, tmp.NodeId);
                 if (data.Count > 0)
-                    return LookUpNextNodeData(trans, caseInfo, data, nodeid);
-                else
                 {
-                    loop++;
-                    continue;
+                    LookUpNextNodeData(trans, caseInfo, data, nodeid, out isReturn, parentIndex);
+                    if (isReturn) { parentIndex++; isReturn = true; break; }
                 }
+                parentIndex++;
             }
-            return loop;
+            return parentIndex;
         }
         #endregion
 
@@ -2752,7 +3323,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="caseId"></param>
         /// <param name="nodeNum"></param>
         /// <param name="userNumber"></param>
-        public void WriteCaseAuditMessage(Guid caseId, int nodeNum, int stepNum, int userNumber, bool isFinishAfterStart = false, bool isAutoTerminal = false)
+        /// <param name="type">代表1加签 3转办 4跳回驳回人等这些类型的消息特殊处理</param>
+        public void WriteCaseAuditMessage(Guid caseId, int nodeNum, int stepNum, int userNumber, bool isFinishAfterStart = false, bool isAutoTerminal = false, int type = 0)
         {
             Task.Run(() =>
             {
@@ -2774,7 +3346,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     try
                     {
-                        List<int> completedApprovers = new List<int>(); //暂时为空，预留字段
+                        List<Receiver> completedApprovers = new List<Receiver>(); //暂时为空，预留字段
                         string allApprovalSuggest = null;
                         bool isAddNextStep = false;//审批是否通过，并进入下一步审批人
 
@@ -2797,14 +3369,91 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             _logger.Error("写工作流消息:无法获取流程实例信息");
                             return;
                         }
+                        if (type != 5)
+                            stepNum = caseInfo.StepNum;
                         var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseInfo.FlowId);
                         if (workflowInfo == null)
                         {
                             _logger.Error("写工作流消息:无法获取流程定义信息");
                             return;
                         }
+                        var caseItems = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber, tran: tran);
+                        bool isReOpenWorkFlow = false;
+                        if (caseItems.Count > 2)
+                        {
+                            var tmpCaseItems = caseItems.OrderByDescending(t => Convert.ToInt32(t["stepnum"])).ToList();
+                            var lastCaseItems = tmpCaseItems.Where(t => t["nodenum"] == tmpCaseItems[tmpCaseItems.Count() - 1]["nodenum"]);
+                            int index = 0;
+                            if (lastCaseItems.Count() == 1)
+                            {
+                                index = caseItems.Count - 2;
+                            }
+                            else if (lastCaseItems.Count() > 1)
+                            {
+                                index = caseItems.Count - 1 - lastCaseItems.Count();
+                            }
+                            isReOpenWorkFlow = caseItems[index]["nodenum"].ToString() == "0";
+                        }
+                        if (type != 1 && type != 3 && type != 4)
+                        {
+                            if (caseInfo.NodeNum != -1)
+                            {
+                                if (nodeNum == 0 || caseInfo.NodeNum == 0)
+                                {
+                                    nodeNum = 0;
+                                }
+                                else
+                                {
+                                    nodeNum = caseInfo.NodeNum - 1;
+                                }
 
-                        var caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, nodeNum, stepNum);
+                                if (stepNum == 0 || caseInfo.StepNum == 0)
+                                {
+                                    stepNum = 0;
+                                }
+                                else if (caseInfo.StepNum == -1)
+                                {
+                                    stepNum = caseInfo.StepNum;
+                                }
+                                else
+                                {
+                                    stepNum = caseInfo.StepNum - 1;
+                                }
+                            }
+                            else
+                            {
+                                ///发消息都是拿当前审批那条节点，然后通过状态判断去发消息，但是发起审批和拒绝审批的时候会产生两个节点需要区分
+                                if (caseInfo.AuditStatus != AuditStatusType.NotAllowed)
+                                {
+                                    nodeNum = -1;
+                                    stepNum = -1;
+                                }
+                                else
+                                {
+                                    var caseItem = caseItems.OrderByDescending(t => Convert.ToInt32(t["stepnum"])).FirstOrDefault(t => t["handleuser"].ToString() == userNumber.ToString() && t["choicestatus"].ToString() == "0");
+                                    nodeNum = Convert.ToInt32(caseItem["nodenum"]);
+                                    stepNum = Convert.ToInt32(caseItem["stepnum"]);
+                                }
+                            }
+                        }
+                        List<WorkFlowCaseItemInfo> caseitems = null;
+
+                        if (nodeNum == 0 && stepNum > nodeNum)//处理退回消息
+                        {
+                            caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, Convert.ToInt32(caseItems[caseItems.Count - 2]["nodenum"]), Convert.ToInt32(caseItems[caseItems.Count - 2]["stepnum"]));
+                        }
+                        else
+                        {
+                            var items = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, caseInfo.NodeNum, caseInfo.StepNum);
+                            if ((items.LastOrDefault().NodeType == 2 || items.LastOrDefault().NodeType == 1) && items.Count != items.Where(t => t.ChoiceStatus == ChoiceStatusType.AddNode).Count())
+                            {
+                                caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, caseInfo.NodeNum, caseInfo.StepNum);
+                            }
+                            else
+                            {
+                                caseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, nodeNum, stepNum);
+                            }
+                        }
                         if (caseitems == null || caseitems.Count == 0)
                         {
                             _logger.Error("写工作流消息:无法获取流程实例节点信息");
@@ -2815,7 +3464,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         WorkFlowCaseItemInfo myAuditCaseItem;
                         if (isAutoTerminal == false)
                         {
-                            myAuditCaseItem = caseitems.FirstOrDefault(m => m.HandleUser == userNumber);
+                            if (type == 1)
+                            {
+                                myAuditCaseItem = caseitems.FirstOrDefault(m => m.TransferUserId == userNumber && m.NowuserId == m.HandleUser);
+                            }
+                            else if (type == 3)
+                            {
+                                myAuditCaseItem = caseitems.FirstOrDefault(m => m.SignUserId == userNumber && m.NowuserId == m.HandleUser);
+                            }
+                            else if (type == 2)
+                            {
+                                myAuditCaseItem = caseitems.LastOrDefault();
+                            }
+                            else
+                            {
+                                myAuditCaseItem = caseitems.FirstOrDefault(m => m.HandleUser == userNumber);
+                                if (myAuditCaseItem == null)
+                                {
+                                    myAuditCaseItem = caseitems.LastOrDefault();
+                                    if (myAuditCaseItem.ChoiceStatus == ChoiceStatusType.AddNode)
+                                        myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Edit;
+                                }
+                            }
                         }
                         else
                         {
@@ -2836,7 +3506,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         var msg = new MessageParameter();
                         allApprovalSuggest = myAuditCaseItem.Suggest;
                         string funcode = null;
-
+                        NodeType nodeType = NodeType.Normal;
                         if (workflowInfo.FlowType == WorkFlowType.FreeFlow)//自由流程
                         {
                             funcode = GetFreeFlowMessageFuncode(myAuditCaseItem, caseInfo, tran, out isAddNextStep);
@@ -2846,55 +3516,153 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             var nodeid = caseitems.FirstOrDefault().NodeId;
                             var flowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, nodeid);
+                            nodeType = flowNodeInfo.NodeType;
                             if (flowNodeInfo == null)
                             {
                                 _logger.Error("写工作流消息:流程节点不存在");
                                 return;
                             }
-                            if (flowNodeInfo.NodeType != NodeType.Joint)//普通审批
+                            if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
                             {
+                                if (type == 1)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Transfer;
+                                }
+                                else if (type == 2 || type == -1)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Edit;
+                                }
+                                else if (type == 3)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Sign;
+                                }
+                                else if (type == 4)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.RejectNode;
+                                }
                                 funcode = GetNormalFlowMessageFuncode(myAuditCaseItem, caseInfo, tran, out isAddNextStep);
-
-
                             }
-                            else //会审
+                            else if (flowNodeInfo.NodeType == NodeType.Joint) //会审
                             {
+                                if (type == 1)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Transfer;
+                                }
+                                if (type == 2)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Edit;
+                                }
+                                else if (type == 3)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Sign;
+                                }
                                 allApprovalSuggest = string.Join(";", caseitems.Select(m => m.Suggest));
                                 funcode = GetJointFlowMessageFuncode(myAuditCaseItem, caseInfo, caseitems, flowNodeInfo, tran, out isAddNextStep);
                             }
-
+                            else //特殊会审 pxf
+                            {
+                                if (type == 1)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Transfer;
+                                }
+                                if (type == 2)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Edit;
+                                }
+                                else if (type == 3)
+                                {
+                                    myAuditCaseItem.ChoiceStatus = ChoiceStatusType.Sign;
+                                }
+                                allApprovalSuggest = string.Join(";", caseitems.Select(m => m.Suggest));
+                                funcode = GetJointFlowMessageFuncode(myAuditCaseItem, caseInfo, caseitems, flowNodeInfo, tran, out isAddNextStep);
+                            }
                         }
                         if (string.IsNullOrEmpty(funcode))//没有有效的消息模板funcode
                         {
                             _logger.Error("写工作流消息:没有有效的消息模板funcode");
                             return;
                         }
-                        msg.FuncCode = funcode;
+                        if (isReOpenWorkFlow && type == 4)
+                        {
+                            msg.FuncCode = "WorkFlowRepOpenLaunch";
+                        }
+                        else
+                            msg.FuncCode = funcode;
 
                         #region --获取审批人和抄送人--
-                        List<int> approvers = new List<int>();//审批人
-                        List<int> copyusers = new List<int>();//抄送人
+                        List<Receiver> approvers = new List<Receiver>();//审批人
+                        List<Receiver> copyusers = new List<Receiver>();//抄送人
                         List<WorkFlowCaseItemInfo> tempcaseitems = caseitems;
                         if (isAddNextStep)//如果审批通过，进入下一步审批，则获取下一步的审批人和抄送人
                         {
-                            tempcaseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, caseInfo.NodeNum, stepNum + 1);
+                            if (caseInfo.NodeNum != nodeNum)
+                            {
+                                tempcaseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, caseInfo.NodeNum, caseInfo.StepNum);
+                                tempcaseitems.ForEach(t =>
+                                {
+                                    if (t.ChoiceStatus == ChoiceStatusType.AddNode)
+                                        t.ChoiceStatus = ChoiceStatusType.Edit;
+                                });
+                            }
+                            else
+                                tempcaseitems = _workFlowRepository.GetWorkFlowCaseItemInfo(tran, caseId, caseInfo.NodeNum, stepNum + 1);
 
                             if (tempcaseitems == null || tempcaseitems.Count == 0)
                                 tempcaseitems = caseitems;
                         }
 
-                        copyusers = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId).Select(m => m.UserId).ToList();
+                        copyusers = _workFlowRepository.GetWorkFlowCopyUser(caseInfo.CaseId).Select(m => new Receiver
+                        {
+                            UserId = m.UserId,
+                            ActRole = 11
+                        }
+                      ).ToList();
                         if (isAddNextStep == false && (funcode.Equals("WorkFlowNodeFinish") || funcode.Equals("WorkFlowNodeReject") ||
                                                         funcode.Equals("WorkFlowNodeStop") || funcode.Equals("WorkFlowNodeJointApproval")
                                                         || funcode.Equals("WorkFlowNodeJointReject")
                                                         || funcode.Equals("WorkFlowNodeJointFallback")))
                         {
-                            completedApprovers.AddRange(tempcaseitems.Select(m => m.HandleUser).Distinct().ToList());
+                            if (myAuditCaseItem.NodeType == 0)
+                            {
+                                completedApprovers.AddRange(tempcaseitems.Select(m => new Receiver { UserId = m.HandleUser, ActRole = 10 }).Distinct().ToList());
+                            }
                         }
                         else
                         {
-                            approvers = tempcaseitems.Select(m => m.HandleUser).Distinct().ToList();
+                            if (type == 1)
+                            {
+                                approvers.Add(new Receiver
+                                {
+                                    UserId = myAuditCaseItem.HandleUser,
+                                    ActRole = nodeType == NodeType.Normal ? 3 : 6
+                                });
+                                //approvers = approvers.Union(tempcaseitems.Where(t => t.HandleUser != myAuditCaseItem.HandleUser).Select(m => new Receiver
+                                //{
+                                //    UserId = m.HandleUser,
+                                //    ActRole = nodeType == NodeType.Normal ? 1 : 4
+                                //}).Distinct()).ToList();
+                            }
+                            else if (type == 3)
+                            {
+                                approvers.Add(new Receiver
+                                {
+                                    UserId = myAuditCaseItem.HandleUser,
+                                    ActRole = nodeType == NodeType.Normal ? 2 : 5
+                                });
+                                //approvers = approvers.Union(tempcaseitems.Where(t => t.HandleUser != myAuditCaseItem.HandleUser).Select(m => new Receiver
+                                //{
+                                //    UserId = m.HandleUser,
+                                //    ActRole = nodeType == NodeType.Normal ? 1 : 4
+                                //}).Distinct()).ToList();
+                            }
+                            else
+                                approvers = tempcaseitems.Select(m => new Receiver
+                                {
+                                    UserId = m.HandleUser,
+                                    ActRole = nodeType == NodeType.Normal ? 1 : 4
+                                }).Distinct().ToList();
                         }
+                        //0实体消息推送，1审批 2 审批加签 3审批转办 4  会审 5会审加签 6会审转办 7 意见收集 8 意见收集加签 9 意见收集转办   10通知 11 抄送 12 传阅 13知会
 
                         #endregion
 
@@ -2907,31 +3675,88 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         msg.RelEntityId = entityInfotemp.RelEntityId;
                         msg.RelEntityName = entityInfotemp.RelEntityName;
                         msg.RelBusinessId = caseInfo.RelRecId;
-                        msg.Receivers = MessageService.GetWorkFlowMessageReceivers(caseInfo.RecCreator, approvers, copyusers, completedApprovers);
+                        var caseItemList = _workFlowRepository.CaseItemList(caseId, userNumber, tran: tran);
+                        var nodeInfos = _workFlowRepository.GetNodeInfoList(tran, caseInfo.FlowId, caseInfo.VerNum);
+                        var nodeInfo = nodeInfos.FirstOrDefault(t => t.NodeId == Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()));
+                        var subscriber = new List<Receiver>();
+                        var informer = new List<Receiver>();
+                        if (nodeInfo != null && nodeInfo.StepTypeId == NodeStepType.End)
+                        {
+                            subscriber = _workFlowRepository.GetSubscriber(myAuditCaseItem.CaseItemId, (int)caseInfo.AuditStatus, caseInfo, nodeInfo, tran, userNumber).Select(t => new Receiver
+                            {
+                                UserId = t,
+                                ActRole = 12
+                            }).ToList();
+                            var informerDic = _workFlowRepository.GetInformer(caseInfo.FlowId, (int)caseInfo.AuditStatus == 2 ? 0 : 1, caseInfo, nodeInfo, tran, userNumber);
+                            foreach (var t in informerDic)
+                            {
+                                bool result = this.ValidateInformerRule(caseInfo, t.Key, userNumber, tran);
+                                if (result)
+                                {
+                                    informer = informer.Union(t.Value.Select(t1 => new Receiver { UserId = t1, ActRole = 13 })).ToList();
+                                }
+                            }
+                            subscriber = subscriber.Where(t => !informer.Select(t1 => t1.UserId).ToList().Contains(t.UserId)).ToList();
+                            copyusers.AddRange(subscriber);
+                            copyusers = copyusers.Distinct().ToList();
+                            copyusers = copyusers.Where(t => !informer.Select(t1 => t1.UserId).ToList().Contains(t.UserId)).ToList();
+                            var caseitemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber);
+                        }
+                        msg.NewReceivers = MessageService.GetWorkFlowMessageReceivers(caseInfo.RecCreator, approvers, copyusers, completedApprovers, informer, subscriber);
+                        if (funcode.Equals("WorkFlowNodeJointApproval") || funcode.Equals("WorkFlowNodeJointReject") || funcode.Equals("WorkFlowNodeJointFallback") || funcode.Equals("WorkFlowNodeApproval"))
+                        {
+                            msg.NewReceivers[MessageUserType.WorkFlowCreateUser] = new List<Receiver>();
+                        }
+                        else if (funcode.Equals("WorkFlowNodeFallback"))
+                        {
+                            msg.NewReceivers[MessageUserType.WorkFlowCreateUser] = new List<Receiver> { new Receiver { UserId = caseInfo.RecCreator, ActRole = 1 } };
+                        }
+                        else if (funcode.Equals("WorkFlowNodeJointFallback") && myAuditCaseItem.NodeType == 1)
+                        {
+                            msg.NewReceivers[MessageUserType.WorkFlowCreateUser] = new List<Receiver> { new Receiver { UserId = caseInfo.RecCreator, ActRole = 4 } };
+                        }
+                        else if (funcode.Equals("WorkFlowNodeJointFallback") && myAuditCaseItem.NodeType == 2)
+                        {
+                            msg.NewReceivers[MessageUserType.WorkFlowCreateUser] = new List<Receiver> { new Receiver { UserId = caseInfo.RecCreator, ActRole = 4 } };
+                        }
+                        if (myAuditCaseItem.ChoiceStatus == ChoiceStatusType.Reback)
+                        {
+                            msg.NewReceivers[MessageUserType.WorkFlowNextApprover] = new List<Receiver>();
+                        }
+                        if (type == 1 || type == 3)
+                        {
+                            msg.NewReceivers[MessageUserType.WorkFlowCreateUser] = new List<Receiver>();
+                        }
                         var msgParamData = new Dictionary<string, object>();
                         msgParamData.Add("caseid", caseInfo.CaseId.ToString());
-                        msgParamData.Add("stepnum", stepNum + 1);
+                        msgParamData.Add("stepnum", (type == 1 || type == 3 || type == 4 ? stepNum : stepNum + 1));
                         msg.ParamData = JsonConvert.SerializeObject(msgParamData);
 
                         var users = new List<int>();
                         users.Add(userNumber);
                         users.Add(caseInfo.RecCreator);
-                        users.AddRange(approvers);
+                        users.AddRange(approvers.Select(t => t.UserId));
+                        if (type == 1 || type == 3)
+                        {
+                            users.Add(myAuditCaseItem.NowuserId);
+                        }
                         var userInfos = MessageService.GetUserInfoList(users.Distinct().ToList());
+
 
                         var paramData = new Dictionary<string, string>();
                         paramData.Add("operator", userInfos.FirstOrDefault(m => m.UserId == userNumber).UserName);
                         paramData.Add("launchUser", userInfos.FirstOrDefault(m => m.UserId == caseInfo.RecCreator).UserName);
-                        paramData.Add("approvalUserNames", string.Join("、", userInfos.Where(m => approvers.Contains(m.UserId)).Select(m => m.UserName)));
+                        paramData.Add("approvalUserNames", string.Join("、", userInfos.Where(m => approvers.Select(t => t.UserId).Contains(m.UserId)).Select(m => m.UserName)));
                         paramData.Add("workflowName", workflowInfo.FlowName);
                         paramData.Add("reccode", caseInfo.RecCode);
                         paramData.Add("approvalSuggest", myAuditCaseItem.Suggest);
                         paramData.Add("allApprovalSuggest", allApprovalSuggest);
 
 
+
                         msg.TemplateKeyValue = paramData;
-                        msg.CopyUsers = copyusers;
-                        msg.ApprovalUsers = approvers;
+                        msg.CopyUsers = copyusers.Select(t => t.UserId).ToList();
+                        msg.ApprovalUsers = approvers.Select(t => t.UserId).ToList();
                         msg.FlowId = caseInfo.FlowId;
                         #endregion
                         //如果是动态实体，则需要发动态，
@@ -2977,7 +3802,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             //发布审批消息到实体动态列表
                             MessageService.WriteMessage(tran, dynamicMsg, userNumber, null, 2);
 
-                            if (entityInfotemp.ModelType == EntityModelType.Dynamic && msg.FuncCode == "WorkFlowLaunch")
+
+                            if (entityInfotemp.ModelType == EntityModelType.Dynamic && (msg.FuncCode == "WorkFlowLaunch" || msg.FuncCode == "WorkFlowNodeTransfer"))
                             {
                                 // 发布关联动态实体的动态消息
                                 var dynamicMsgtemp = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, "EntityDynamicAdd", userNumber, newMembers, null, msgpParam);
@@ -3026,6 +3852,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string funcCode = string.Empty;
             switch (auditCaseItem.ChoiceStatus)
             {
+
                 case ChoiceStatusType.Edit:
                     if (caseInfo.AuditStatus == AuditStatusType.Begin || caseInfo.AuditStatus == AuditStatusType.Approving)//编辑重新发起
                     {
@@ -3071,6 +3898,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string funcCode = string.Empty;
             switch (auditCaseItem.ChoiceStatus)
             {
+                case ChoiceStatusType.AddNode:
                 case ChoiceStatusType.Edit:
                     if (caseInfo.AuditStatus == AuditStatusType.Begin || caseInfo.AuditStatus == AuditStatusType.Approving)//编辑重新发起
                     {
@@ -3118,6 +3946,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case ChoiceStatusType.EndPoint:
                     funcCode = "WorkFlowNodeFinish";
                     break;
+                case ChoiceStatusType.Transfer:
+                    funcCode = "WorkFlowNodeTransfer";
+                    break;
+                case ChoiceStatusType.Sign:
+                    funcCode = "WorkFlowNodeSign";
+                    break;
+                case ChoiceStatusType.WithDraw:
+                    funcCode = "WorkFlowNodeWithDraw";
+                    break;
+                case ChoiceStatusType.RejectNode:
+                    funcCode = "WorkFlowRejectNode";
+                    break;
+
             }
             return funcCode;
         }
@@ -3181,6 +4022,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case ChoiceStatusType.Stop:
                     funcCode = "WorkFlowNodeStop";
                     break;
+                case ChoiceStatusType.Transfer:
+                    funcCode = "WorkFlowNodeTransfer";
+                    break;
+                case ChoiceStatusType.Sign:
+                    funcCode = "WorkFlowNodeSign";
+                    break;
+
             }
             return funcCode;
         }
@@ -3220,9 +4068,91 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("流程事件ID不能为空");
             }
+            var result = _workFlowRepository.CaseItemList(listModel.CaseId, userNumber, listModel.IsSkipNode);
+            List<Dictionary<string, object>> result_ext = new List<Dictionary<string, object>>();
+            var dicCount = result.GroupBy(t => t["nodeid"]).Select(t => new
+            {
+                nodeid = t.Key,
+                count = t.Count()
+            });
+            int index = 0;
+            foreach (var t in result)
+            {
+                if (t["nodenum"].ToString() == "-1" || (t["nodenum"].ToString() == "0" && index == 0)) continue;
+                if (t["nodetype"].ToString() == "2")
+                {
+                    var result_ext_comment = _workFlowRepository.GetSpecialJointCommentDetail(null, Guid.Parse(t["caseitemid"].ToString()), userNumber);
+                    if (result_ext_comment != null && result_ext_comment.Count > 0)
+                    {
+                        result_ext_comment.ForEach(t1 =>
+                        {
+                            var data = t1["filejson"];
+                            if (data != null)
+                                t1["filejson"] = JArray.Parse(data.ToString());
+                        });
+                        result_ext = result_ext_comment.Union(result_ext).ToList();
+                    }
+                    else
+                    {
+                        var caseItemInfo = new Dictionary<string, object>();
+                        caseItemInfo.Add("nodeid", t["nodeid"]);
+                        caseItemInfo.Add("comment", string.Empty);
+                        caseItemInfo.Add("filejson", null);
+                        caseItemInfo.Add("flowstatus", t["casestatus"] == null ? string.Empty : t["casestatus"].ToString());
+                        caseItemInfo.Add("reccreated", t["reccreated"]);
+                        caseItemInfo.Add("username", t["username"]);
+                        caseItemInfo.Add("caseitemid", t["caseitemid"]);
+                        result_ext.Add(caseItemInfo);
+                    }
+                }
 
-            var result = _workFlowRepository.CaseItemList(listModel.CaseId, userNumber, 0);
-            return new OutputResult<object>(result);
+                var result_ext_joint = _workFlowRepository.GetWorkFlowCaseTransferAtt(null, Guid.Parse(t["caseitemid"].ToString()), userNumber);
+                if (result_ext_joint != null && result_ext_joint.Count > 0)
+                {
+                    result_ext_joint.ForEach(t1 =>
+                    {
+                        var data = t1["filejson"];
+                        if (data != null)
+                            t1["filejson"] = JArray.Parse(data.ToString());
+                    });
+                    //var caseItemInfo = new Dictionary<string, object>();
+                    //caseItemInfo.Add("nodeid", t["nodeid"]);
+                    //caseItemInfo.Add("comment", string.Empty);
+                    //caseItemInfo.Add("filejson", null);
+                    //caseItemInfo.Add("flowstatus", t["casestatus"] == null ? string.Empty : t["casestatus"].ToString());
+                    //caseItemInfo.Add("reccreated", t["reccreated"]);
+                    //caseItemInfo.Add("username", t["username"]);
+                    //caseItemInfo.Add("caseitemid", t["caseitemid"]);
+                    //result_ext_joint.Add(caseItemInfo);
+                    result_ext = result_ext_joint.Union(result_ext).ToList();
+                }
+
+                var result_ext_joint_1 = _workFlowRepository.GetWorkFlowCaseAtt(null, Guid.Parse(t["caseitemid"].ToString()), userNumber);
+                if (result_ext_joint_1 != null && result_ext_joint_1.Count > 0)
+                {
+                    result_ext_joint_1.ForEach(t1 =>
+                    {
+                        var data = t1["filejson"];
+                        if (data != null)
+                            t1["filejson"] = JArray.Parse(data.ToString());
+                    });
+                    result_ext = result_ext.Union(result_ext_joint_1).ToList();
+                }
+                if (t["nodetype"].ToString() == "0" || t["nodetype"].ToString() == "1")
+                {
+                    var data = result_ext_joint_1.FirstOrDefault(t1 => t1["caseitemid"].ToString() == t["caseitemid"].ToString());
+                    if (data != null)
+                        t.Add("filejson", data["filejson"]);
+                }
+                if (index == 0)
+                    index++;
+            }
+            var obj = new
+            {
+                result,
+                result_ext
+            };
+            return new OutputResult<object>(obj);
         }
 
         public OutputResult<object> NodeLineInfo(WorkFlowNodeLinesInfoModel nodeLineModel, int userNumber)
@@ -3241,8 +4171,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("流程ID不能为空");
             }
-
-            var result = _workFlowRepository.GetNodeLinesInfo(nodeLineModel.FlowId, userNumber);
+            var result = _workFlowRepository.GetNodeLinesInfo(nodeLineModel.FlowId, userNumber, versionNum: nodeLineModel.VersionNum);
             return new OutputResult<object>(result);
         }
 
@@ -3496,6 +4425,685 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (isOK)
                 WriteCaseAuditMessage(caseId, nodeNum, stepnum, userId, false, true);
             #endregion
+        }
+        public OutputResult<object> TransferToOther(CaseItemTransfer transfer, int userId, IServiceProvider service)
+        {
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var transaction = conn.BeginTransaction();
+                try
+                {
+                    var transferEntity = _mapper.Map<CaseItemTransfer, CaseItemTransferMapper>(transfer);
+                    var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(transaction, transferEntity.CaseId);
+                    var workFlowCaseItem = _workFlowRepository.GetWorkFlowCaseItemInfo(transaction, transferEntity.CaseId, caseInfo.NodeNum);
+                    var nowcaseitem = workFlowCaseItem.Find(m => m.HandleUser == userId);
+                    if (caseInfo.NodeNum == 0 && nowcaseitem != null && (nowcaseitem.ChoiceStatus == ChoiceStatusType.Edit || nowcaseitem.ChoiceStatus == ChoiceStatusType.AddNode))
+                    {
+                        var userInfo = _accountRepository.GetUserInfoById(userId);
+                        this.SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
+                        {
+                            CaseId = transferEntity.CaseId,
+                            NodeNum = transferEntity.NodeNum,
+                            Suggest = transferEntity.Suggest,
+                            CaseData = new Dictionary<string, object>(),
+                            ChoiceStatus = 4,
+                            NodeId = transferEntity.NodeId,
+                            HandleUser = transferEntity.UserId.ToString(),
+                            Files = transfer.Files
+                        }, new UserInfo
+                        {
+                            UserId = userInfo.UserId,
+                            UserName = userInfo.UserName
+                        }, service, transaction);
+                        caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(transaction, transferEntity.CaseId);
+                        workFlowCaseItem = _workFlowRepository.GetWorkFlowCaseItemInfo(transaction, transferEntity.CaseId, caseInfo.NodeNum);
+                        nowcaseitem = workFlowCaseItem.Find(m => m.HandleUser == transferEntity.UserId);
+                        transferEntity.CaseItemId = nowcaseitem.CaseItemId;
+                    }
+
+                    var data = _workFlowRepository.TransferToOther(transaction, transferEntity, userId);
+                    var result = _workFlowRepository.InsertTransfer(transaction, new CaseItemJointTransfer
+                    {
+                        CaseItemid = transferEntity.CaseItemId,
+                        OrginUserId = userId,
+                        UserId = transferEntity.UserId,
+                        Comment = transferEntity.Suggest,
+                        IsSignOrTransfer = transferEntity.IsSignOrTransfer,
+                        FlowStatus = transferEntity.IsSignOrTransfer == 1 ? (transferEntity.ChoiceStatus == 1 ? 17 : (transferEntity.ChoiceStatus == 0 ? 27 : 7)) : 7,
+                        SignStatus = transfer.SignStatus
+                        //加签的情况下，17是同意，27是不同意
+                    }, userId);
+                    foreach (var t in transferEntity.Files)
+                    {
+                        _workFlowRepository.InsertCaseItemAttach(transaction, new CaseItemFileAttach
+                        {
+                            CaseItemId = transferEntity.CaseItemId,
+                            FileId = t.FileId,
+                            FileName = t.FileName,
+                            RecId = Guid.Parse(result.Id)
+                        }, userId);
+                    }
+                    MessageService.UpdateWorkflowNodeMessage(transaction, caseInfo.RecId, caseInfo.CaseId, nowcaseitem.StepNum, 4, userId);
+                    transaction.Commit();
+
+                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, nowcaseitem.StepNum, userId, type: transferEntity.IsSignOrTransfer == 0 ? 1 : 3);
+                    return HandleResult(data);
+                }
+                catch (Exception ex)
+                {
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Rollback();
+                    if (!string.IsNullOrEmpty(ex.Message))
+                        throw new Exception(ex.Message);
+                    throw new Exception("转办异常");
+                }
+            }
+
+        }
+
+        public OutputResult<object> NeedToRepeatApprove(WorkFlowRepeatApproveModel workFlow, int userId)
+        {
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var transaction = conn.BeginTransaction();
+                try
+                {
+                    var workFlowEntity = _mapper.Map<WorkFlowRepeatApproveModel, WorkFlowRepeatApprove>(workFlow);
+                    SimpleEntityInfo entityInfo = null;
+                    if (workFlow.EntityModel.TypeId != Guid.Empty)
+                        entityInfo = _entityProRepository.GetEntityInfo(workFlow.EntityModel.TypeId);
+                    else
+                        entityInfo = _entityProRepository.GetEntityInfo(workFlow.EntityId);
+
+                    UserData userData = GetUserData(userId);
+
+                    WorkFlowAddCaseModel workFlowAddCaseModel = null;
+                    if (entityInfo.ModelType == EntityModelType.Dynamic)
+                    {
+                        if (!workFlow.EntityModel.FieldData.ContainsKey("recrelateid"))
+                        {
+                            workFlow.EntityModel.FieldData.Add("recrelateid", workFlow.EntityModel.RelRecId);
+                        }
+                        workFlow.EntityModel.FlowId = workFlow.FlowId;
+                        workFlow.EntityModel.TypeId = workFlow.EntityId;
+                        var entityResult = _dynamicEntityServices.AddEntityData(transaction, userData, entityInfo, workFlow.EntityModel, header, userId, out workFlowAddCaseModel);
+                        if (entityResult.Status == 1) throw new Exception(entityResult.Message);
+                        workFlowEntity.RecId = workFlowAddCaseModel.RecId;
+                        workFlowEntity.ModelType = (int)EntityModelType.Dynamic;
+                    }
+                    else if (entityInfo.ModelType == EntityModelType.Simple || entityInfo.ModelType == EntityModelType.Independent)
+                    {
+                        _dynamicEntityRepository.DynamicEdit(transaction, workFlow.EntityModel.TypeId, workFlow.EntityModel.RelRecId.Value, workFlow.EntityModel.FieldData, userId);
+                    }
+                    workFlowEntity.CaseId = _workFlowRepository.GetLastestCaseId(transaction, workFlowEntity, userId);
+                    var data = _workFlowRepository.NeedToRepeatApprove(transaction, workFlowEntity, userId);
+                    if (data.Flag == 0)
+                    {
+                        transaction.Rollback();
+                    }
+                    else
+                    {
+                        var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(transaction, Guid.Parse(data.Id));
+                        var workFlowCaseItem = _workFlowRepository.GetWorkFlowCaseItemInfo(transaction, Guid.Parse(data.Id), caseInfo.NodeNum);
+                        var nowcaseitem = workFlowCaseItem.LastOrDefault(t => t.CaseStatus == CaseStatusType.WaitApproval || t.ChoiceStatus == ChoiceStatusType.AddNode);
+                        transaction.Commit();
+                        WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, nowcaseitem.StepNum, userId, type: 2);
+                    }
+
+                    return HandleResult(data);
+                }
+                catch (Exception ex)
+                {
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Rollback();
+                    if (!string.IsNullOrEmpty(ex.Message))
+                        throw new Exception(ex.Message);
+                    throw new Exception("重新发起异常");
+                }
+            }
+        }
+        public OutputResult<object> CheckIfExistNeedToRepeatApprove(WorkFlowRepeatApproveModel workFlow, int userId)
+        {
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var transaction = conn.BeginTransaction();
+                try
+                {
+                    var workFlowEntity = _mapper.Map<WorkFlowRepeatApproveModel, WorkFlowRepeatApprove>(workFlow);
+                    var data = _workFlowRepository.CheckIfExistNeedToRepeatApprove(transaction, workFlowEntity, userId);
+                    if (data.Flag == 0)
+                    {
+                        transaction.Rollback();
+                    }
+                    else
+                    {
+                        transaction.Commit();
+                    }
+                    return HandleResult(data);
+                }
+                catch (Exception ex)
+                {
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Rollback();
+                    if (!string.IsNullOrEmpty(ex.Message))
+                        throw new Exception(ex.Message);
+                    throw new Exception("检查流程是否发起过异常");
+                }
+            }
+        }
+
+        public List<WorkFlowNodeScheduledList> GetWorkFlowNodeScheduled(DbTransaction trans, int userId)
+        {
+            return _workFlowRepository.GetWorkFlowNodeScheduled(trans, userId);
+        }
+
+        public OutputResult<object> SaveWorkflowInformer(InformerModel informerModel, int userId)
+        {
+            _ruleTranslatorServices.header = this.header;
+            foreach (var t in informerModel.InformerRules)
+            {
+                var ruleResult = _ruleTranslatorServices.SaveRule(t.Rule, userId);
+                if (ruleResult.Status == 1) { break; }
+                t.RuleId = Guid.Parse(ruleResult.DataBody.ToString());
+            }
+            var informer = _mapper.Map<InformerModel, InformerMapper>(informerModel);
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var transaction = conn.BeginTransaction();
+                try
+                {
+                    _workFlowRepository.UpdateWorkflowInformerStatus(transaction, new InformerRuleMapper
+                    {
+                        FlowId = informer.FlowId,
+                        RecStatus = 0
+                    }, userId);
+                    foreach (var t in informer.InformerRules)
+                    {
+                        int auditstatus = string.IsNullOrEmpty(_workFlowRepository.GetRuleConfigInfo("endnodeconfig/allpass", t.RuleConfig)) ?
+                            (string.IsNullOrEmpty(_workFlowRepository.GetRuleConfigInfo("endnodeconfig/failed", t.RuleConfig)) ?
+                            (string.IsNullOrEmpty(_workFlowRepository.GetRuleConfigInfo("endnodeconfig/approve", t.RuleConfig)) ? -1 : 1) : 2) : 0;
+                        var result = _workFlowRepository.SaveWorkflowInformer(transaction, new InformerRuleMapper
+                        {
+                            RuleId = t.RuleId,
+                            FlowId = t.FlowId,
+                            InformerType = t.InformerType,
+                            AuditStatus = auditstatus,
+                            RuleConfig = t.RuleConfig
+                        }, userId);
+                        if (result.Flag == 0)
+                        {
+                            transaction.Rollback();
+                            break;
+                        }
+                    }
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Commit();
+                    return HandleResult(new OperateResult { Flag = 1, Msg = "规则保存成功" });
+                }
+                catch (Exception ex)
+                {
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Rollback();
+                    if (!string.IsNullOrEmpty(ex.Message))
+                        throw new Exception(ex.Message);
+                    throw new Exception("规则失败");
+                }
+            }
+        }
+        public OutputResult<object> GetWorkflowInformerRules(InformerRuleModel informerRuleModel, int userId)
+        {
+            var informerRule = _mapper.Map<InformerRuleModel, InformerRuleMapper>(informerRuleModel);
+            var informerRules = _workFlowRepository.GetInformerRules(null, informerRule, userId);
+            List<dynamic> dynamics = new List<dynamic>();
+            foreach (var t in informerRules)
+            {
+                var rule = _ruleRepository.GetRule(t.RuleId, userId);
+                int informertype = 0;
+                int type = 0;
+                string value = _workFlowRepository.GetRuleConfigInfo(string.Format("endnodeconfig/{0}", "allpass"), t.RuleConfig);
+                if (string.IsNullOrEmpty(value))
+                {
+                    value = _workFlowRepository.GetRuleConfigInfo(string.Format("endnodeconfig/{0}", "approve"), t.RuleConfig); informertype = 1;
+                }
+                if (string.IsNullOrEmpty(value))
+                {
+                    value = _workFlowRepository.GetRuleConfigInfo(string.Format("endnodeconfig/{0}", "failed"), t.RuleConfig); informertype = 2;
+                }
+                type = Convert.ToInt32(_workFlowRepository.GetRuleConfigInfo("type", value));
+                string funcName = string.Empty;
+                dynamic dynUser = null;
+                dynamic dynReportRelation = null;
+                switch (type)
+                {
+                    case 1:
+                        dynUser = new
+                        {
+                            userids = _workFlowRepository.GetRuleConfigInfo("userids", value),
+                            usernames = _workFlowRepository.GetRuleConfigInfo("usernames", value)
+                        };
+                        break;
+                    case 2:
+                        funcName = _workFlowRepository.GetRuleConfigInfo("spfuncname", value);
+                        break;
+                    case 3:
+                        dynReportRelation = new
+                        {
+                            type = _workFlowRepository.GetRuleConfigInfo("reportrelation/type", value),
+                            id = _workFlowRepository.GetRuleConfigInfo("reportrelation/id", value),
+                            entityid = _workFlowRepository.GetRuleConfigInfo("reportrelation/entityid", value),
+                            fieldname = _workFlowRepository.GetRuleConfigInfo("reportrelation/fieldname", value),
+                            fieldlabel = _workFlowRepository.GetRuleConfigInfo("reportrelation/fieldlabel", value)
+                        };
+                        break;
+                }
+                dynamic dyn = new
+                {
+                    flowid = informerRule.FlowId,
+                    ruleId = informerRule.RuleId,
+                    informertype = informertype,
+                    type = type,
+                    rules = rule,
+                    user = dynUser,
+                    reportrelation = dynReportRelation,
+                    funcname = funcName
+                };
+                dynamics.Add(dyn);
+            }
+            return new OutputResult<object>(dynamics);
+        }
+        private bool ValidateInformerRule(WorkFlowCaseInfo caseinfo, Guid ruleId, int userId, DbTransaction trans = null)
+        {
+            var ruleInfoList = _ruleRepository.GetRule(ruleId, userId, trans);
+            if (ruleInfoList != null && ruleInfoList.Count > 0)//如果存在合法的rulesql，则进行数据校验
+            {
+                var ruleInfo = ruleInfoList.FirstOrDefault();
+                var temp = ruleInfo.Rulesql;
+                var rulesql = string.IsNullOrEmpty(temp) ? "1=1" : string.Format("({0})", temp);
+                var departid = GetUserData(userId).AccountUserInfo.DepartmentId;
+                var ruleFormatSql = RuleSqlHelper.FormatRuleSql(rulesql, userId, departid);
+
+                return _workFlowRepository.ValidateNextNodeRule(caseinfo, ruleFormatSql, userId, trans);
+            }
+            return true;
+        }
+        public OutputResult<object> RejectToOrginalNode(RejectToOrginalNodeModel rejectToOrginalNodeModel, int userId)
+        {
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var transaction = conn.BeginTransaction();
+                try
+                {
+                    var reject = _mapper.Map<RejectToOrginalNodeModel, RejectToOrginalNode>(rejectToOrginalNodeModel);
+                    var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(transaction, reject.CaseId);
+                    var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userId, tran: transaction);
+                    reject.PreCaseItemId = Guid.Parse(caseItemList[caseItemList.Count - 1]["caseitemid"].ToString());
+                    var nowCaseItem = _workFlowRepository.GetWorkFlowCaseItemInfo(transaction, reject.CaseId, Convert.ToInt32(caseItemList[caseItemList.Count - 2]["nodenum"]));
+                    _workFlowRepository.AuditWorkFlowCaseData(new WorkFlowAuditCaseItemMapper
+                    {
+                        CaseItemId = reject.CaseItemId,
+                        CaseData = reject.CaseData
+                    }, nowCaseItem.FirstOrDefault(), userId, transaction);
+                    //流程审批过程修改实体字段时，更新关联实体的字段数据
+                    _workFlowRepository.ExecuteUpdateWorkFlowEntity(caseInfo.CaseId, Convert.ToInt32(caseItemList[caseItemList.Count - 2]["nodenum"]), Convert.ToInt32(caseItemList[caseItemList.Count - 2]["handleuser"]), transaction);
+                    var result = _workFlowRepository.RejectToOrginalNode(transaction, reject, userId);
+                    MessageService.UpdateWorkflowNodeMessage(transaction, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, 6, userId);
+                    transaction.Commit();
+                    caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(null, reject.CaseId);
+                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, caseInfo.StepNum, userId, type: 4);
+
+                    result.Id = Guid.NewGuid().ToString();
+                    return HandleResult(result);
+                }
+                catch (Exception ex)
+                {
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Rollback();
+                    if (!string.IsNullOrEmpty(ex.Message))
+                        throw new Exception(ex.Message);
+                    throw new Exception("跳到驳回人失败");
+                }
+            }
+        }
+        #endregion
+
+        public OutputResult<object> WorkFlowWithDraw(WithDrawRequestModel withDraw, int userId)
+        {
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var transaction = conn.BeginTransaction();
+                try
+                {
+
+                    var caseid = withDraw.CaseId;
+                    WorkFlowCaseInfo _theCaseInfo = _workFlowRepository.GetWorkFlowCaseInfo(transaction, caseid);
+                    if (_theCaseInfo != null)
+                    {
+                        //审批发起人，在任何时候都可以撤回审批
+                        if (_theCaseInfo.RecCreator == userId)
+                        {
+
+                            //撤回发起人的审批
+                            _workFlowRepository.WithDrawkWorkFlowByCreator(transaction, caseid, userId);
+
+                            transaction.Commit();
+                            return HandleResult(new OperateResult
+                            {
+                                Flag = 1,
+                                Msg = "撤回成功"
+                            });
+                        }
+                    }
+
+
+                    WorkFlowCaseItemInfo caseitemInfo = null;
+                    for (int i = 0; i < 10; i++)
+                    {
+                        bool _canWithDraw = CanWithDrawWorkFlowCaseItem(transaction, caseid, userId, out caseitemInfo);
+
+                        if (_canWithDraw && caseitemInfo != null)
+                        {
+                            var caseitemid = caseitemInfo.CaseItemId;
+                            var nodenum = caseitemInfo.NodeNum;
+
+                            List<WorkFlowCaseItemTransfer> _transfers = _workFlowRepository.GetWorkFlowCaseItemTransfer(transaction, caseitemid);
+                            WorkFlowCaseItemTransfer _theTransfer = _transfers.FirstOrDefault();
+                            if (caseitemInfo.ChoiceStatus == ChoiceStatusType.AddNode && _transfers.Count > 0 && _theTransfer.originuserid == userId)
+                            {
+                                //转发或者加签
+                                //delete transfer
+                                _workFlowRepository.DeleteWorkFlowCaseItemTransfer(transaction, caseitemid, userId);
+                                //update handler
+                                _workFlowRepository.UpdateWorkFlowCaseitemHandler(transaction, caseitemid, userId);
+                                WorkFlowCaseItemInfo caseitemInfo_sub = null;
+                                bool _canWithDraw_sub = CanWithDrawWorkFlowCaseItem(transaction, caseid, userId, out caseitemInfo_sub);
+                                if (_canWithDraw_sub && caseitemInfo_sub != null) { }
+                                else
+                                {
+                                    transaction.Commit();
+                                    return HandleResult(new OperateResult
+                                    {
+                                        Flag = 1,
+                                        Msg = "撤回成功"
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                List<WorkFlowCaseItemInfo> _caseItems = _workFlowRepository.GetWorkFlowCaseItemOfCase(transaction, caseid);
+                                List<WorkFlowCaseItemInfo> _handlerCaseItems = _caseItems.Where(x => x.HandleUser == userId && x.NodeNum != -1 && x.NodeNum <= caseitemInfo.NodeNum).OrderByDescending(x => x.RecCreated).ToList();
+                                WorkFlowCaseItemInfo _theCaseItem = _handlerCaseItems.FirstOrDefault();
+                                int _theHandlerNodeNum = _theCaseItem.NodeNum;
+                                WorkFlowCaseItemInfo _lastCaseItem = _caseItems.FirstOrDefault();
+
+                                if (_lastCaseItem.NodeNum == -1)
+                                {
+                                    //int _theIndex = _caseItems.IndexOf(_theCaseItem);
+                                    //if (_theIndex == 1)
+                                    //{
+                                    //    //delete 最后一个 case item 
+                                    //    //修改倒数第二个caset item choicestatus=6,casestatus=1
+                                    //    //修改case nodenum=4,auditstatus=0
+                                    //    _workFlowRepository.DeleteWorkFlowCaseItems(transaction, _lastCaseItem.CaseItemId);
+                                    //    _workFlowRepository.UpdateWorkFlowCaseItemStatus(transaction, _theCaseItem.CaseItemId, (int)ChoiceStatusType.AddNode,(int)CaseStatusType.Readed);
+                                    //    _workFlowRepository.UpdateWorkFlowCaseStatus(transaction, _theCaseItem.CaseId,_theCaseItem.NodeNum,(int)AuditStatusType.Approving);
+                                    //}
+                                    //transaction.Commit();
+                                    return HandleResult(new OperateResult
+                                    {
+                                        Flag = 0,
+                                        Msg = "不能撤回"
+                                    });
+
+                                }
+                                else
+                                {
+                                    if (_lastCaseItem.NodeNum > _theHandlerNodeNum)
+                                    {
+                                        //delete case item
+                                        int _dealedCaseitemCount = _workFlowRepository.GetWorkFlowCaseItemCout(transaction, caseid, caseitemid);
+                                        if (_dealedCaseitemCount == 0)
+                                        {
+                                            _workFlowRepository.DeleteWorkFlowCaseItems(transaction, caseid, caseitemid);
+
+                                            //update case nodenum
+                                            _workFlowRepository.UpdateWorkFlowCaseNodeNum(transaction, caseid, caseitemid);
+
+                                            //更新处理状态为新加节点  
+                                            _workFlowRepository.UpdateWorkFlowCaseitemChoicestatus(transaction, caseitemid, (int)ChoiceStatusType.AddNode, (int)CaseStatusType.WaitApproval);
+
+                                            //发送撤回的消息，需要发给谁呢？
+                                            //撤回之后该做些什么呢？ 该如何进行 下一步操作？
+                                            //copy caseitem
+                                            //_workFlowRepository.CopyWorkFlowCaseitem(transaction, caseid, caseitemid);
+
+
+                                            //更新caseitem的状态为7,撤回状态
+                                            //_workFlowRepository.UpdateWorkFlowCaseItem(transaction, caseitemid, 7);
+
+                                            WorkFlowCaseItemInfo caseitemInfo_sub = null;
+                                            bool _canWithDraw_sub = CanWithDrawWorkFlowCaseItem(transaction, caseid, userId, out caseitemInfo_sub);
+                                            if (_canWithDraw_sub && caseitemInfo_sub != null) { }
+                                            else
+                                            {
+                                                transaction.Commit();
+                                                return HandleResult(new OperateResult
+                                                {
+                                                    Flag = 1,
+                                                    Msg = "撤回成功"
+                                                });
+                                            }
+                                        }
+                                        else
+                                        {
+                                            throw new Exception("下一步流程已经处理,不可以撤回");
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        if (_lastCaseItem != null)
+                                        {
+                                            _workFlowRepository.DeleteWorkFlowCaseItems(transaction, _lastCaseItem.CaseItemId);
+
+                                            if (_theCaseItem != null)
+                                            {
+                                                _workFlowRepository.UpdateWorkFlowCaseitemChoicestatus(transaction, _theCaseItem.CaseItemId, (int)ChoiceStatusType.AddNode, (int)CaseStatusType.WaitApproval);
+                                                _workFlowRepository.UpdateWorkFlowCaseNodeNumNew(transaction, _theCaseItem.CaseId, _theCaseItem.NodeNum);
+
+                                            }
+                                        }
+                                        WorkFlowCaseItemInfo caseitemInfo_sub = null;
+                                        bool _canWithDraw_sub = CanWithDrawWorkFlowCaseItem(transaction, caseid, userId, out caseitemInfo_sub);
+                                        if (_canWithDraw_sub && caseitemInfo_sub != null) { }
+                                        else
+                                        {
+                                            transaction.Commit();
+                                            return HandleResult(new OperateResult
+                                            {
+                                                Flag = 1,
+                                                Msg = "撤回成功"
+                                            });
+                                        }
+                                    }
+
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            throw new Exception("不可以撤回");
+                        }
+                    }
+                    throw new Exception("撤销过程中存在不可预知的问题，请联系管理员");
+                }
+                catch (Exception ex)
+                {
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Rollback();
+                    if (!string.IsNullOrEmpty(ex.Message))
+                        throw new Exception(ex.Message);
+                    throw new Exception("撤回失败");
+                }
+            }
+        }
+
+        public OutputResult<object> CanWorkFlowWithDraw(WithDrawRequestModel withDraw, int userId)
+        {
+            Guid caseid = withDraw.CaseId;
+            WorkFlowCaseItemInfo caseitemInfo = null;
+            bool _canWithDraw = CanWithDrawWorkFlowCaseItem(null, caseid, userId, out caseitemInfo);
+            if (_canWithDraw)
+            {
+                var _can = new
+                {
+                    canwithdraw = true
+                };
+                return new OutputResult<object>(_can);
+            }
+            else
+            {
+                var _cannot = new
+                {
+                    canwithdraw = false
+                };
+                return new OutputResult<object>(_cannot);
+            }
+        }
+
+        private bool CanWithDrawWorkFlowCaseItem(DbTransaction trans, Guid caseid, int userId, out WorkFlowCaseItemInfo caseitemInfo)
+        {
+
+            caseitemInfo = null;
+
+            bool _canWithDraw = false;
+            try
+            {
+
+                WorkFlowCaseInfo _theCaseInfo = _workFlowRepository.GetWorkFlowCaseInfo(trans, caseid);
+                if (_theCaseInfo != null)
+                {
+                    //如果已经发起审批状态，不可以退回，避免重复退回
+                    if (_theCaseInfo.NodeNum == 0)
+                    {
+                        _canWithDraw = false;
+                        return _canWithDraw;
+                    }
+                }
+
+
+                List<WorkFlowCaseItemInfo> _caseItems = _workFlowRepository.GetWorkFlowCaseItemOfCase(trans, caseid);
+                WorkFlowCaseItemInfo _lastCaseItem = _caseItems.FirstOrDefault();
+                if (_caseItems != null && _caseItems.Count > 0)
+                {
+
+                    //流程审批结束,不可以撤回
+                    if (_lastCaseItem.ChoiceStatus == ChoiceStatusType.EndPoint)
+                    {
+                        _canWithDraw = false;
+                        return _canWithDraw;
+                    }
+
+
+                    List<WorkFlowCaseItemInfo> _handlerCaseitems = _caseItems.Where(x => x.HandleUser == userId && x.NodeNum != -1 && x.NodeNum < _theCaseInfo.NodeNum).OrderByDescending(x => x.NodeNum).ToList();
+                    if (_handlerCaseitems != null && _handlerCaseitems.Count > 0)
+                    {
+                        WorkFlowCaseItemInfo _caseItemInfo = _handlerCaseitems.FirstOrDefault();
+                        int _theNodeNumber = _caseItemInfo.NodeNum;
+
+                        if (_caseItemInfo.NodeType == (int)NodeType.Normal)
+                        {
+                            //最后一个为结束节点
+                            if (_lastCaseItem.NodeNum == -1)
+                            {
+                                //int _theIndex = _caseItems.IndexOf(_caseItemInfo);
+                                //if (_theIndex == 1)
+                                //{
+                                //    _canWithDraw = true;
+                                //    caseitemInfo = _caseItemInfo;
+                                //}
+
+                                _canWithDraw = false;
+
+
+                            }
+                            else
+                            {
+                                //最后一个非结束节点
+                                List<WorkFlowCaseItemInfo> _otherCaseItems = _caseItems.Where(x => x.NodeNum > _theNodeNumber).ToList();
+                                int _theCount = _otherCaseItems.Count;
+                                if (_theCount == 1)
+                                {
+                                    WorkFlowCaseItemInfo _theCaseItem = _otherCaseItems.FirstOrDefault();
+                                    if (_theCaseItem.CaseStatus == CaseStatusType.WaitApproval)
+                                    {
+                                        _canWithDraw = true;
+                                        caseitemInfo = _caseItemInfo;
+
+                                    }
+                                    else if (_theCaseItem.CaseStatus == CaseStatusType.Readed)
+                                    {
+                                        if (_theCaseItem.ChoiceStatus == ChoiceStatusType.AddNode)
+                                        {
+                                            _canWithDraw = true;
+                                            caseitemInfo = _caseItemInfo;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+
+                                    //撤回节点
+                                    if (_lastCaseItem != null && _lastCaseItem.NodeNum < _theNodeNumber)
+                                    {
+                                        _canWithDraw = true;
+                                        caseitemInfo = _caseItemInfo;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+
+                        List<WorkFlowCaseItemInfo> _theCaseitems = _caseItems.OrderByDescending(x => x.NodeNum).ToList();
+                        if (_theCaseitems != null && _theCaseitems.Count > 0)
+                        {
+                            WorkFlowCaseItemInfo _theCaseItem = _theCaseitems.FirstOrDefault();
+                            if (_theCaseItem.ChoiceStatus == ChoiceStatusType.AddNode)
+                            {
+                                List<WorkFlowCaseItemTransfer> _transfers = _workFlowRepository.GetWorkFlowCaseItemTransfer(trans, _theCaseItem.CaseItemId);
+                                WorkFlowCaseItemTransfer _theTransfer = _transfers.FirstOrDefault();
+                                if (_theTransfer != null && _theTransfer.originuserid == userId)
+                                {
+                                    _canWithDraw = true;
+                                    caseitemInfo = _theCaseItem;
+                                }
+                            }
+                        }
+                    }
+
+                    //审批发起人，在任何时候都可以撤回审批
+                    if (_theCaseInfo.RecCreator == userId)
+                    {
+                        _canWithDraw = true;
+                        return _canWithDraw;
+                    }
+
+                }
+            }
+            catch (Exception)
+            {
+                _canWithDraw = false;
+            }
+
+            return _canWithDraw;
         }
     }
 }

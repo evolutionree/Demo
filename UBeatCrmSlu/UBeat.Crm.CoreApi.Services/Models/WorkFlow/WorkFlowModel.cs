@@ -57,6 +57,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
     public class WorkFlowAuditCaseItemModel
     {
+        /// <summary>
+        /// 当choicestatus=-1是无意见，1是有意见
+        /// </summary>
+        public int JointStatus { get; set; }
+        public String ActHandleUser { get; set; }
         public Guid CaseId { get; set; }
         public int NodeNum { get; set; }
         public string Suggest { get; set; }
@@ -71,9 +76,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public string CopyUser { get; set; }
         public int SkipNode { get; set; }
         public bool IsNotEntrance { get; set; } = false;
-
+        public List<CaseItemFileAttachModel> Files { get; set; }
     }
-
+    public class CaseItemFileAttachModel
+    {
+        public Guid FileId { get; set; }
+        public String FileName { get; set; }
+    }
     public class GetFreeFlowEventModel
     {
         public Guid FlowId { get; set; }
@@ -102,6 +111,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
     public class WorkFlowNodeLinesInfoModel
     {
         public Guid FlowId { get; set; }
+        public int VersionNum { get; set; }
     }
 
     public class WorkFlowNodeLinesConfigModel
