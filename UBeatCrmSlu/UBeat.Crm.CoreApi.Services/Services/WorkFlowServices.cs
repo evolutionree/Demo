@@ -25,6 +25,7 @@ using UBeat.Crm.CoreApi.DomainModel.Rule;
 using System.Text.RegularExpressions;
 using UBeat.Crm.CoreApi.Core.Utility;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -2193,7 +2194,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodeid = caseitems.FirstOrDefault().NodeId;
 
-                    isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, out nextnode, out canAddNextNode);
+                    isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, userinfo.UserId, out nextnode, out canAddNextNode);
                     if (casefinish && nextnode != null)
                     {
                         lastNodeId = nextnode.NodeId;
@@ -2272,7 +2273,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     NextNodeDataModel node = new NextNodeDataModel();
                     while (true && stepnum != 0)
                     {
-                        InterceptWorkFlow(caseItemModel, caseInfo, caseInfo.VerNum, workflowInfo.FlowId, tran, userinfo, out node, out isRefresh, out isAdd, service, isNeedToSendMsg, isLaunchNode: isLaunchNode);
+                        InterceptWorkFlow(caseItemModel, caseInfo, caseInfo.VerNum, workflowInfo.FlowId, tran, userinfo, out node, out isRefresh, out isAdd, isNeedToSendMsg, isLaunchNode: isLaunchNode);
                         if (isRefresh)
                             break;
                     }
@@ -2325,7 +2326,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
                         Suggest = "",
                         SkipNode = nextNodeData.Approvers != null && nextNodeData.Approvers.Count > 0 && branchNode.NodeId == caseItemEntity.NodeId ? 0 : caseItemModel.SkipNode
-                    }, userinfo, service, tran: (conn == null ? tran : null), isNeedToSendMsg: isNeedToSendMsg, isLaunchNode: isLaunchNode);
+                    }, userinfo, tran: (conn == null ? tran : null), isNeedToSendMsg: isNeedToSendMsg, isLaunchNode: isLaunchNode);
                     if (!nextNodeData.IsSkipNode)
                         break;
                 }
@@ -2420,7 +2421,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return nodetemp;
         }
-        void PreInterceptWorkFlow(WorkFlowAuditCaseItemModel caseItemModel, WorkFlowCaseInfo caseInfo, int vernum, Guid flowId, DbTransaction tran, UserInfo userInfo, IServiceProvider service, out NextNodeDataModel nodeTemp, out bool isBreak)
+        void PreInterceptWorkFlow(WorkFlowAuditCaseItemModel caseItemModel, WorkFlowCaseInfo caseInfo, int vernum, Guid flowId, DbTransaction tran, UserInfo userInfo, out NextNodeDataModel nodeTemp, out bool isBreak)
         {
             var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userInfo.UserId, tran: tran);
             var nextNodes = _workFlowRepository.GetNextNodeDataInfoList(flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), Convert.ToInt32(caseItemList[caseItemList.Count - 1]["vernum"]), tran);
@@ -2532,7 +2533,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 nodeTemp.NodeInfo = node;
             }
         }
-        void InterceptWorkFlow(WorkFlowAuditCaseItemModel caseItemModel, WorkFlowCaseInfo caseInfo, int vernum, Guid flowId, DbTransaction tran, UserInfo userInfo, out NextNodeDataModel nodeTemp, out bool isRefresh, out bool isAdd, IServiceProvider service, int isNeedToSendMsg = 0, int isLaunchNode = 0)
+        void InterceptWorkFlow(WorkFlowAuditCaseItemModel caseItemModel, WorkFlowCaseInfo caseInfo, int vernum, Guid flowId, DbTransaction tran, UserInfo userInfo, out NextNodeDataModel nodeTemp, out bool isRefresh, out bool isAdd, int isNeedToSendMsg = 0, int isLaunchNode = 0)
         {
             var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userInfo.UserId, tran: tran);
             var nextNodes = _workFlowRepository.GetNextNodeDataInfoList(flowId, Guid.Parse(caseItemList[caseItemList.Count - 1]["nodeid"].ToString()), Convert.ToInt32(caseItemList[caseItemList.Count - 1]["vernum"]), tran);
@@ -2649,7 +2650,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
         }
-        public OutputResult<object> SubmitWorkFlowAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran, int isNeedToSendMsg)
+        public OutputResult<object> SubmitWorkFlowAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction tran, int isNeedToSendMsg, int isAddCaseItem = 0)
         {
             //获取该实体分类的字段
             var caseItemEntity = _mapper.Map<WorkFlowAuditCaseItemModel, WorkFlowAuditCaseItemMapper>(caseItemModel);
@@ -2727,7 +2728,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     nodeid = caseitems.FirstOrDefault().NodeId;
 
-                    isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, out nextnode, out canAddNextNode);
+                    isbranchFlow = AuditFixedFlow(nodeid, userinfo, caseItemEntity, ref casefinish, tran, caseInfo, caseitems, userinfo.UserId, out nextnode, out canAddNextNode);
                     if (casefinish)
                     {
                         lastNodeId = nextnode.NodeId;
@@ -4455,7 +4456,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             UserId = userInfo.UserId,
                             UserName = userInfo.UserName
-                        }, service, transaction);
+                        }, transaction);
                         caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(transaction, transferEntity.CaseId);
                         workFlowCaseItem = _workFlowRepository.GetWorkFlowCaseItemInfo(transaction, transferEntity.CaseId, caseInfo.NodeNum);
                         nowcaseitem = workFlowCaseItem.Find(m => m.HandleUser == transferEntity.UserId);

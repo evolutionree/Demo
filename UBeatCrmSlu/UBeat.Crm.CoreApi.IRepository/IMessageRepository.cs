@@ -42,5 +42,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         PageDataInfo<Dictionary<string, object>> GetDynamicsUnMsg(UnHandleMsgMapper msg, int userId);
         PageDataInfo<Dictionary<string, object>> GetWorkFlowsMsg(UnHandleMsgMapper msg, int userId);
+        List<Dictionary<string, object>> GetMessageCount(DbTransaction tran, int userId);
+    
     }
 }

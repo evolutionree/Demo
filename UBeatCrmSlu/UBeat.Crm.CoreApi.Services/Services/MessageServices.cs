@@ -235,6 +235,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return;
             }
             List<int> receiverIds = new List<int>();
+            List<Receiver> receivers = new List<Receiver>();
+            foreach (var receiverItem in msgparam.NewReceivers)
+            {
+                if (receiverItem.Value != null && receiverItem.Value.Count > 0 && configData.MessageUserType.Contains(receiverItem.Key))
+                {
+                    //receiverIds.AddRange(receiverItem.Value);
+                    foreach (var t in receiverItem.Value)
+                    {
+                        if (receiverItem.Key == MessageUserType.WorkFlowCompletedApprover)
+                        {
+                            msgparam.NoticeUsers.AddRange(receiverItem.Value.Select(t1 => t1.UserId));
+                        }
+                        if (!(receivers.Select(t1 => t1.ActRole).Contains(t.ActRole) && receivers.Select(t2 => t2.UserId).Contains(t.UserId)))
+                            receivers.Add(t);
+                    }
+                }
+            }
+            receivers = receivers.Distinct().ToList();
             foreach (var receiverItem in msgparam.Receivers)
             {
                 if (receiverItem.Value != null && receiverItem.Value.Count > 0 && configData.MessageUserType.Contains(receiverItem.Key))
@@ -246,7 +264,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                 }
             }
-            receiverIds = receiverIds.Distinct().ToList();
 
 
             bool msgSuccess = true;
@@ -296,7 +313,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 //写离线消息
                 if (msgSuccess && typeStatus != 2)
                 {
-                    if (receiverIds.Count > 0)//没有接收人，则不发消息
+                    if (receivers.Count > 0 || receiverIds.Count > 0)//没有接收人，则不发消息
                     {
                         if (tempData == null)
                         {
@@ -326,6 +343,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             MsgContent = msgContent,
                             MsgpParam = tempData == null ? "" : JsonConvert.SerializeObject(tempData),
                             ReceiverIds = receiverIds,
+                            Receivers = receivers
                         };
                         msgSuccess = _msgRepository.WriteMessage(tran, msgInfo, userNumber);
                     }
@@ -360,7 +378,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var date = DateTime.Now;
                     var pushMsg = new AccountsPushExtModel()
                     {
-                        Accounts = receiverIds.Select(m => m.ToString()).ToList(),
+                        Accounts = receivers.Select(t => t.UserId).Select(m => m.ToString()).ToList(),
                         Title = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.TitleTemplate),
                         Message = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.NotifyTemplate),
                         SendTime = date.AddYears(-1).ToString(),
@@ -445,9 +463,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             {
                                                 packageMsg.recevier.Add(tmp);
                                             }
-                                        
+
                                         }
-                                        else {
+                                        else
+                                        {
                                             packageMsg.title = "实体消息";
                                             packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
                                             packageMsg.markdown = packageMsg.markdown + " \r" + pushMsg.Message;
@@ -632,7 +651,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (msg.BizStatus != 0) continue;
                     if (msg.ReceiverId != handlerUserId) { continue; }
-                    msg.BizStatus = 10 + choiceStatus;
+                    msg.BizStatus = 10 + choiceStatus;// 0拒绝(废弃) 1通过 2退回(驳回) 3中止 4编辑 5审批结束 6节点新增
+
                     needChangedMsgList.Add(msg);
 
                 }
@@ -803,7 +823,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             receivers.Add(MessageUserType.EntityOldViewUser, oldMembers.ViewUsers);
             receivers.Add(MessageUserType.EntityViewUserAdd, addViewusers);
             receivers.Add(MessageUserType.EntityViewUserRemove, deleteViewusers);
-            receivers.Add(MessageUserType.EntityMember, newMembers.Members);
+            receivers.Add(MessageUserType.EntityMember, newMembers.Members.Concat(newMembers.CopyUsers).ToList());
             receivers.Add(MessageUserType.EntityOldMember, oldMembers.Members);
             receivers.Add(MessageUserType.EntityFollowUser, newMembers.FollowUsers);
 
@@ -934,16 +954,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="copyusers"></param>
         /// <param name="completedApprovers"></param>
         /// <returns></returns>
-        public Dictionary<MessageUserType, List<int>> GetWorkFlowMessageReceivers(int createUser, List<int> approvers, List<int> copyusers, List<int> completedApprovers = null)
+        public Dictionary<MessageUserType, List<Receiver>> GetWorkFlowMessageReceivers(int createUser, List<Receiver> approvers, List<Receiver> copyusers, List<Receiver> completedApprovers = null, List<Receiver> informer = null, List<Receiver> subscriber = null)
         {
-            var receivers = new Dictionary<MessageUserType, List<int>>();
+            var receivers = new Dictionary<MessageUserType, List<Receiver>>();
 
-            receivers.Add(MessageUserType.WorkFlowCreateUser, new List<int>() { createUser });
+            receivers.Add(MessageUserType.WorkFlowCreateUser, new List<Receiver>() { new Receiver { UserId = createUser, ActRole = 10 } });
             receivers.Add(MessageUserType.WorkFlowCarbonCopyUser, copyusers);
             receivers.Add(MessageUserType.WorkFlowNextApprover, approvers);
             receivers.Add(MessageUserType.WorkFlowCompletedApprover, completedApprovers);
+            receivers.Add(MessageUserType.WorkFlowInformerUser, informer);
+            receivers.Add(MessageUserType.WorkFlowSubscriber, subscriber);
             return receivers;
         }
+
         #endregion
 
         public List<DomainModel.Account.UserInfo> GetUserInfoList(List<int> userids)
@@ -1185,5 +1208,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = _msgRepository.GetWorkFlowsMsg(mapper, userId);
             return new OutputResult<object>(result);
         }
+        public OutputResult<Object> GetMessageCount(int userId)
+        {
+
+            var result = _msgRepository.GetMessageCount(null, userId);
+            return new OutputResult<object>(result);
+        }
+
     }
 }

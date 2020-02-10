@@ -136,6 +136,11 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (data == null) return ResponseError<object>("参数格式错误");
             return _notifyServices.GetWorkFlowsMsg(data, UserId);
         }
-
+        [HttpPost]
+        [Route("getmsgcount")]
+        public OutputResult<object> GetMessageCount()
+        {
+            return _notifyServices.GetMessageCount(UserId);
+        }
     }
 }

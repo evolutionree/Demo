@@ -284,7 +284,73 @@ namespace UBeat.Crm.CoreApi.Controllers
 
 			return new OutputResult<object>(res);
 		}
-		#endregion
-	}
+        #endregion
+
+
+        [HttpPost]
+        [Route("transfer")]
+        public OutputResult<object> TransferToOtherUser([FromBody]CaseItemTransfer transfer)
+        {
+            if (transfer == null) return ResponseError<object>("参数异常");
+            return _workFlowServices.TransferToOther(transfer, UserId, ControllerContext.HttpContext.RequestServices);
+        }
+
+        [HttpPost]
+        [Route("repeatapprove")]
+        public OutputResult<object> NeedToRepeatApprove([FromBody]WorkFlowRepeatApproveModel workFlow)
+        {
+            if (workFlow == null) return ResponseError<object>("参数异常");
+            return _workFlowServices.NeedToRepeatApprove(workFlow, UserId);
+        }
+
+        [HttpPost]
+        [Route("checkrepeatapprove")]
+        public OutputResult<object> CheckIfExistNeedToRepeatApprove([FromBody]WorkFlowRepeatApproveModel workFlow)
+        {
+            if (workFlow == null) return ResponseError<object>("参数异常");
+            return _workFlowServices.CheckIfExistNeedToRepeatApprove(workFlow, UserId);
+        }
+        [HttpPost]
+        [Route("saveinformer")]
+        public OutputResult<object> SaveWorkflowInformer([FromBody]InformerModel informerModel)
+        {
+            if (informerModel == null) return ResponseError<object>("参数异常");
+            if (informerModel.InformerRules.Count == 0) return ResponseError<object>("参数异常");
+            if (informerModel.InformerRules.Exists(t => t.Rule == null)) return ResponseError<object>("规则不能为空");
+            return _workFlowServices.SaveWorkflowInformer(informerModel, UserId);
+        }
+        [HttpPost]
+        [Route("getinformerrule")]
+        public OutputResult<object> GetWorkflowInformerRules([FromBody]InformerRuleModel informerRuleModel)
+        {
+            if (informerRuleModel == null) return ResponseError<object>("参数异常");
+            return _workFlowServices.GetWorkflowInformerRules(informerRuleModel, UserId);
+        }
+        [HttpPost]
+        [Route("jumptorejectnode")]
+        public OutputResult<object> RejectToOrginalNode([FromBody]RejectToOrginalNodeModel rejectToOrginalNodeModel)
+        {
+            if (rejectToOrginalNodeModel == null) return ResponseError<object>("参数异常");
+            return _workFlowServices.RejectToOrginalNode(rejectToOrginalNodeModel, UserId);
+        }
+        //是否可以撤回
+        [HttpPost]
+        [Route("canwithdraw")]
+        public OutputResult<object> CanWithDraw([FromBody]WithDrawRequestModel withDraw)
+        {
+            if (withDraw == null) return ResponseError<object>("参数异常");
+            return _workFlowServices.CanWorkFlowWithDraw(withDraw, UserId);
+        }
+
+        //撤回
+        [HttpPost]
+        [Route("withdraw")]
+        public OutputResult<object> WithDraw([FromBody]WithDrawRequestModel withDraw)
+        {
+            if (withDraw == null) return ResponseError<object>("参数异常");
+            return _workFlowServices.WorkFlowWithDraw(withDraw, UserId);
+        }
+
+    }
 }
  

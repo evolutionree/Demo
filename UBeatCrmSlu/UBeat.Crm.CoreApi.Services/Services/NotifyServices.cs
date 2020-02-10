@@ -187,5 +187,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return MessageService.GetWorkFlowsMsg(data, userNumber);
               
         }
+        public OutputResult<object> GetMessageCount(int userNumber)
+        {
+            return MessageService.GetMessageCount(userNumber);
+
+        }
     }
 }

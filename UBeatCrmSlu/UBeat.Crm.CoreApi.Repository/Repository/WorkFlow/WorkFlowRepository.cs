@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.Department;
 using UBeat.Crm.CoreApi.DomainModel.ReportRelation;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.DomainModel.WorkFlow;
@@ -184,18 +185,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
             return result;
         }
-        public Dictionary<string, List<Dictionary<string, object>>> GetNodeLinesInfo(Guid flowId, int userNumber, DbTransaction trans = null)
+        public Dictionary<string, List<Dictionary<string, object>>> GetNodeLinesInfo(Guid flowId, int userNumber, DbTransaction trans = null, int versionNum = -1)
         {
             var vernumSql = @"SELECT vernum FROM crm_sys_workflow WHERE flowid = @flowid LIMIT 1";
             var vernumSqlParameters = new List<DbParameter>();
             vernumSqlParameters.Add(new NpgsqlParameter("flowid", flowId));
-            var vernumResult = ExecuteScalar(vernumSql, vernumSqlParameters.ToArray(), trans);
-            int vernum = 0;
-            if (vernumResult != null)
-                int.TryParse(vernumResult.ToString(), out vernum);
+            if (versionNum == -1 || versionNum == 0)
+            {
+                var vernumResult = ExecuteScalar(vernumSql, vernumSqlParameters.ToArray(), trans);
+                if (vernumResult != null)
+                    int.TryParse(vernumResult.ToString(), out versionNum);
+            }
 
 
-            var executeSql = @" SELECT n.nodeid,n.nodename,n.auditnum,n.nodetype,n.steptypeid,n.stepcptypeid,n.ruleconfig,n.columnconfig,n.auditsucc,n.nodeconfig ,e.funcname,n.notfound
+
+            var executeSql = @" SELECT n.isscheduled,n.deadline,n.nodeid,n.nodename,n.auditnum,n.nodetype,n.steptypeid,n.stepcptypeid,n.ruleconfig,n.columnconfig,n.auditsucc,n.nodeconfig ,e.funcname,n.notfound
                                 FROM crm_sys_workflow_node AS n
                                 LEFT JOIN crm_sys_workflow_func_event AS e ON e.flowid=n.flowid AND e.nodeid=n.nodeid
                                 WHERE n.flowid = @flowid AND n.vernum = @vernum ;
@@ -209,7 +213,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("flowid", flowId),
-                new NpgsqlParameter("vernum", vernum),
+                new NpgsqlParameter("vernum", versionNum),
             };
             var tabels = ExecuteQueryMultiple(executeSql, param, trans);
             var result = new Dictionary<string, List<Dictionary<string, object>>>();
@@ -268,6 +272,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("vernum", versionValue),
                             new NpgsqlParameter("auditsucc", node.AuditSucc),
                             new NpgsqlParameter("notfound", node.NotFound),
+                            new NpgsqlParameter("deadline", node.DeadLine),
+                            new NpgsqlParameter("isscheduled", node.IsScheduled),
                             new NpgsqlParameter("nodeconfig", JsonConvert.SerializeObject(node.NodeConfig)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb },
                         });
 
@@ -278,8 +284,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.WorkFlow
                             new NpgsqlParameter("nodeid", node.NodeId),
                             new NpgsqlParameter("flowid", nodeLineConfig.FlowId),
                             new NpgsqlParameter("funcname", node.NodeEvent),
-                            new NpgsqlParameter("steptype", node.StepTypeId==0?0:1)
+                            new NpgsqlParameter("steptype", node.StepTypeId==0?0:1),
+                            new NpgsqlParameter("ruleconfig", node.StepTypeId==0?0:1)
                             });
+                        }
+                        if (node.ColumnConfig.Keys.Contains("globaljs") && node.ColumnConfig.Keys.Contains("stepfieldtype") && node.ColumnConfig["globaljs"] != null && !string.IsNullOrEmpty(node.ColumnConfig["globaljs"].ToString()) && node.ColumnConfig["stepfieldtype"] != null && node.ColumnConfig["stepfieldtype"].ToString() == "3")
+                        {
+                            this.SaveWorkFlowGlobalEditJs(tran, new WorkFlowGlobalJsMapper
+                            {
+                                FlowId = nodeLineConfig.FlowId,
+                                Js = node.ColumnConfig["globaljs"].ToString(),
+                                NodeId = node.NodeId
+                            }, userNumber);
                         }
                     }
                     ExecuteNonQueryMultiple(workflow_node_sql, workflow_node_params, tran);
@@ -444,7 +460,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         public OperateResult AddFlow(WorkFlowAddMapper flowMapper, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_workflow_add(@entityId,@flowName,@flowType,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb, @config::jsonb)
+                SELECT * FROM crm_func_workflow_add(@entityId,@flowName,@flowType,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb, @config::jsonb, @isallowtransfer, @isallowsign, @isneedtorepeatapprove)
             ";
 
             var param = new
@@ -459,7 +475,10 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
                 FlowLanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang),
-                Config = JsonConvert.SerializeObject(flowMapper.Config)
+                Config = JsonConvert.SerializeObject(flowMapper.Config),
+                IsNeedToRepeatApprove = flowMapper.IsNeedToRepeatApprove,
+                IsAllowTransfer = flowMapper.IsAllowTransfer,
+                IsAllowSign = flowMapper.IsAllowSign
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -482,7 +501,10 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 SkipFlag = flowMapper.SkipFlag,
                 UserNo = userNumber,
                 flowlanguage = JsonConvert.SerializeObject(flowMapper.FlowName_Lang),
-                Config = JsonConvert.SerializeObject(flowMapper.Config)
+                Config = JsonConvert.SerializeObject(flowMapper.Config),
+                IsAllowTransfer = flowMapper.IsAllowTransfer,
+                IsNeedToRepeatApprove = flowMapper.IsNeedToRepeatApprove,
+                IsAllowSign = flowMapper.IsAllowSign
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
@@ -520,7 +542,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
         public WorkFlowInfo GetWorkFlowInfo(DbTransaction trans, Guid flowid)
         {
-            var executeSql = @"SELECT w.*,e.relentityid,u.username AS RecCreator_name FROM crm_sys_workflow  AS w
+            var executeSql = @"SELECT w.*,(w.config->>'entrance')::int4 as entrance,e.relentityid,u.username AS RecCreator_name FROM crm_sys_workflow  AS w
                                LEFT JOIN crm_sys_entity AS e ON e.entityid = w.entityid 
                                LEFT JOIN crm_sys_userinfo AS u ON u.userid = w.reccreator
                                WHERE flowid=@flowid";
@@ -606,7 +628,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
         public WorkFlowCaseInfo GetWorkFlowCaseInfo(DbTransaction trans, Guid caseid)
         {
-            var executeSql = @" SELECT c.*,w.entityid, er.relentityid,er.relrecid ,u.username AS RecCreator_Name
+            var executeSql = @" SELECT c.*,w.entityid, er.relentityid,er.relrecid ,u.username AS RecCreator_Name,(select stepnum from crm_sys_workflow_case_item where caseid=c.caseid order by stepnum desc  limit 1) as stepnum
                                 FROM crm_sys_workflow_case AS c
                                 LEFT JOIN crm_sys_workflow_case_entity_relation AS er ON er.caseid = c.caseid
                                 LEFT JOIN crm_sys_workflow AS w ON w.flowid = c.flowid
@@ -627,16 +649,18 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             string executeSql = string.Empty;
             if (stepnum <= 0)
             {
-                executeSql = @" SELECT  wci.* ,u.username AS HandleUserName
+                executeSql = @" SELECT  wci.* ,u.username AS HandleUserName,nodeinfo.nodetype
                                 FROM crm_sys_workflow_case_item AS wci
+                                LEFT JOIN crm_sys_workflow_node AS nodeinfo ON nodeinfo.nodeid = wci.nodeid
                                 LEFT JOIN crm_sys_userinfo AS u ON u.userid = wci.handleuser
                                 WHERE wci.recstatus=1 AND wci.nodenum=@nodenum AND wci.caseid=@caseid 
                                 AND wci.stepnum=(SELECT MAX(stepnum) FROM crm_sys_workflow_case_item WHERE recstatus=1 AND nodenum=@nodenum AND caseid=@caseid )";
             }
             else
             {
-                executeSql = @" SELECT  wci.* ,u.username AS HandleUserName
+                executeSql = @" SELECT  wci.* ,u.username AS HandleUserName,nodeinfo.nodetype,(select originuserid from crm_sys_workflow_case_item_transfer where caseitemid=wci.caseitemid and operatetype=0 order by reccreated desc limit 1) as transferuserid,(select originuserid from crm_sys_workflow_case_item_transfer where caseitemid=wci.caseitemid and operatetype=1 order by reccreated desc limit 1) as signuserid,(select userid from crm_sys_workflow_case_item_transfer where caseitemid=wci.caseitemid order by reccreated desc limit 1) as nowuserid
                                 FROM crm_sys_workflow_case_item AS wci
+                                LEFT JOIN crm_sys_workflow_node AS nodeinfo ON nodeinfo.nodeid = wci.nodeid
                                 LEFT JOIN crm_sys_userinfo AS u ON u.userid = wci.handleuser
                                 WHERE wci.recstatus=1 AND wci.nodenum=@nodenum AND wci.caseid=@caseid  AND wci.stepnum=@stepnum";
             }
@@ -1126,14 +1150,14 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                     else
                                     {
                                         int index = l2.Count - 1;
-                                        string userid = string.Empty;
                                         if (index >= 0)
                                         {
-                                            userid = l2[index]["handleuser"].ToString();
+                                            var n = l2[index] == null ? string.Empty : l2[index]["nodeid"].ToString();
+                                            var userIds = l2.Where(t => t["nodeid"].ToString() == n).Select(t => t["handleuser"]).ToList();
                                             model = new QueryReportRelDetailMapper
                                             {
                                                 ReportRelationId = id,
-                                                UserId = Convert.ToInt32(userid)
+                                                UserIds = string.Join(",", userIds)
                                             };
                                             var d2 = reportRelationRepository.GetReportRelDetail(model, trans, userNumber);
                                             cmdText += @" AND u.userid in (" + string.Join(",", (d2.Count == 0 ? new string[] { "-1" } : d2.Select(t => t.ReportLeader))) + ")";
@@ -1210,7 +1234,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
 
         }
 
-        public List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null)
+        public List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null, int auditStatus = -10)
         {
             string cmdText = null;
             var result = new List<ApproverInfo>();
@@ -1319,6 +1343,49 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         {
             var ruleConfig = JObject.Parse(flowNodeInfo.RuleConfig.ToString());
             return ruleConfig[key] != null ? ruleConfig[key] : null;
+        }
+        public string GetRuleConfigInfo(string path, string json)
+        {
+            var ruleConfig = JObject.Parse(json);
+            string[] jsonPath = path.Split("/");
+            foreach (var t in jsonPath)
+            {
+                var j = ruleConfig[t];
+                if (t != null && !string.IsNullOrEmpty(t))
+                {
+                    try
+                    {
+                        ruleConfig = JObject.Parse(j.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        if (j == null) return string.Empty;
+                        if (string.IsNullOrEmpty(j.ToString())) return string.Empty;
+                        return j.ToString();
+                    }
+                }
+                else
+                    break;
+            }
+            return ruleConfig.ToString();
+        }
+
+        private void GetEntityFieldBasicRuleConfigPath(DbTransaction trans, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo flowNodeInfo, string path, out string fieldname, out string entityTableName)
+        {
+            var ruleConfig = JObject.Parse(GetRuleConfigInfo(path, flowNodeInfo.RuleConfig.ToString()));
+            fieldname = ruleConfig["fieldname"] != null ? ruleConfig["fieldname"].ToString() : null;
+            if (String.IsNullOrEmpty(fieldname))
+            {
+                fieldname = ruleConfig["fieldtem"] != null ? ruleConfig["fieldtem"].ToString() : null;
+            }
+            string entityId = ruleConfig["entityid"] != null ? ruleConfig["entityid"].ToString() : null;
+            var entitySql = @"SELECT entitytable FROM crm_sys_entity WHERE entityid = @entityid LIMIT 1";
+            var entityparam = new DbParameter[] { new NpgsqlParameter("entityid", Guid.Parse(entityId)) };
+            object entitytable = ExecuteScalar(entitySql, entityparam, trans);
+
+            entityTableName = entitytable == null ? null : entitytable.ToString();
+            if (entityTableName == null)
+                throw new Exception("实体表不存在");
         }
         #endregion
 
@@ -1463,6 +1530,9 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         /// <summary>
         /// 退回流程节点
         /// </summary>
+        /// <summary>
+        /// 退回流程节点
+        /// </summary>
         public bool RebackWorkFlowCaseItem(WorkFlowCaseInfo caseinfo, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
         {
             var nodeidSql = @"SELECT nodeid FROM crm_sys_workflow_node WHERE flowid=@flowid AND vernum=@vernum AND steptypeid=0";
@@ -1475,7 +1545,8 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 Guid.TryParse(nodeidResult.ToString(), out nodeid);
             int handleuser = caseinfo.RecCreator;
             int stepnum = caseitem.StepNum + 1;
-            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum,nodeid) 
+            string sql = string.Format(@"update crm_sys_workflow_case_item set isrejectnode=1 where caseitemid=@caseitemid;
+                 INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum,nodeid) 
                                          VALUES (@caseid, 0 , 4,@handleuser,  0, @userno,@userno,@stepnum,@nodeid);
                                          UPDATE crm_sys_workflow_case SET nodenum = 0,recupdator = @userno,recupdated=@recupdated WHERE caseid = @caseid;");
 
@@ -1486,7 +1557,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
             sqlParameters.Add(new NpgsqlParameter("stepnum", stepnum));
             sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
-
+            sqlParameters.Add(new NpgsqlParameter("caseitemid", caseitem.CaseItemId));
             var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
 
             return result == 2;
@@ -1507,8 +1578,9 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             }
             else
             {
-                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest = COALESCE(@suggest,''), casedata = @casedata, casestatus = 2,recupdator = @userno ,recupdated=@recupdated WHERE caseitemid = @caseitemid;");
+                sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET choicestatus = @choicestatus,suggest =(case when skipnode=1 then '' else COALESCE(@suggest,'') end), casedata = @casedata, casestatus = 2,recupdator = @userno ,recupdated=@recupdated WHERE caseitemid = @caseitemid;");
                 sqlParameters.Add(new NpgsqlParameter("casedata", JsonConvert.SerializeObject(auditdata.CaseData)) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
+
             }
 
             sqlParameters.Add(new NpgsqlParameter("choicestatus", auditdata.ChoiceStatus));
@@ -1517,10 +1589,33 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             sqlParameters.Add(new NpgsqlParameter("caseitemid", caseitem.CaseItemId));
             sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
             var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
-
+            if (caseitem.NodeType == 2)
+            {
+                this.InsertSpecialJointComment(trans, new CaseItemJoint
+                {
+                    CaseItemid = caseitem.CaseItemId,
+                    Comment = auditdata.Suggest ?? "",
+                    UserId = userNumber,
+                    NodeId = caseitem.NodeId,
+                    CaseId = caseitem.CaseId,
+                    FlowStatus = auditdata.JointStatus
+                }, userNumber);
+            }
+            foreach (var t in auditdata.Files)// pxf 附件上传
+            {
+                InsertCaseItemAttach(trans, new CaseItemFileAttach { CaseItemId = caseitem.CaseItemId, FileId = t.FileId, FileName = t.FileName }, userNumber);
+            }
             return result > 0;
         }
 
+        public void AuditWorkFlowCaseData(WorkFlowAuditCaseItemMapper auditdata, WorkFlowCaseItemInfo caseitem, int userNumber, DbTransaction trans = null)
+        {
+            var sqlParameters = new List<DbParameter>();
+            string sql = string.Format(@" UPDATE crm_sys_workflow_case_item SET casedata = @casedata WHERE caseitemid = @caseitemid;");
+            sqlParameters.Add(new NpgsqlParameter("casedata", JsonConvert.SerializeObject(auditdata.CaseData)) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb });
+            sqlParameters.Add(new NpgsqlParameter("caseitemid", caseitem.CaseItemId));
+            ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
+        }
         /// <summary>
         /// 审批流程时更新流程数据
         /// </summary>
@@ -1562,11 +1657,11 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         /// <summary>
         /// 审批已经到达了最后一步,添加最后节点
         /// </summary>
-        public bool EndWorkFlowCaseItem(Guid caseid, Guid nodeid, int stepnum, int userNumber, DbTransaction trans = null)
+        public Object EndWorkFlowCaseItem(Guid caseid, Guid nodeid, int stepnum, int userNumber, DbTransaction trans = null)
         {
             string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid,nodeid, nodenum,choicestatus,handleuser,suggest, casestatus, reccreator, recupdator,stepnum) 
-                                         VALUES (@caseid,@nodeid, -1, 5,@userno, '', 2, @userno,@userno,@stepnum);");
-
+                                         VALUES (@caseid,@nodeid, -1, 5,@userno, '', 2, @userno,@userno,@stepnum) returning caseitemid;");
+            string sqlStopScheduled = " update crm_sys_workflow_scheduled set isdone=1 where caseid=@caseid;";
             var sqlParameters = new List<DbParameter>();
             sqlParameters.Add(new NpgsqlParameter("stepnum", stepnum));
             sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
@@ -1574,10 +1669,159 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             sqlParameters.Add(new NpgsqlParameter("userno", userNumber));
 
 
-            var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
-
-            return result > 0;
+            var id = ExecuteScalar(sql, sqlParameters.ToArray(), trans);
+            ExecuteScalar(sqlStopScheduled, sqlParameters.ToArray(), trans);
+            return id;
         }
+        #region pxf 特殊会审
+        public List<int> GetSubscriber(Guid caseItemId, int auditStatus, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo nodeInfo, DbTransaction tran, int userId)
+        {
+            List<int> approveUserIds = new List<int>();
+            List<int> failedUserIds = new List<int>();
+            string key = (auditStatus == 1 ? "approve" : "failed");
+            var value = GetRuleConfigInfo(string.Format("endnodeconfig/{0}", key), nodeInfo.RuleConfig.ToString());
+            if (!string.IsNullOrEmpty(value))
+            {
+                var type = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/type", key), nodeInfo.RuleConfig.ToString());
+                switch (type)
+                {
+                    case "1":
+                        var cpUser = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/userids", key), nodeInfo.RuleConfig.ToString());
+                        if (!string.IsNullOrEmpty(cpUser))
+                        {
+                            var userArr = cpUser.Split(",").Distinct().ToArray();
+                            foreach (var t in userArr)
+                            {
+                                approveUserIds.Add(Convert.ToInt32(t));
+                            }
+                        }
+                        break;
+                    case "2":
+                        JToken funcname = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/spfuncname", key), nodeInfo.RuleConfig.ToString());
+                        var param = new DbParameter[] {
+                                            new NpgsqlParameter("ruleconfig", nodeInfo.RuleConfig.ToString()),
+                                            new NpgsqlParameter("userno", userId),
+                                            new NpgsqlParameter("recid", caseInfo.RecId),
+                                            new NpgsqlParameter("relrecid", caseInfo.RelRecId),
+                                            new NpgsqlParameter("caseid", caseInfo.CaseId),
+                                };
+                        var result = ExecuteQuery<ApproverInfo>("select * from " + funcname.ToString() + "(@caseid,@ruleconfig::jsonb,@recid,@relrecid,@userno);", param.ToArray(), tran);
+                        result.ForEach(t =>
+                        {
+                            approveUserIds.Add(t.UserId);
+                        });
+                        break;
+                    case "3":
+                        string cmdText = "SELECT u.userid,u.username,u.usericon,u.namepinyin,ur.deptid,d.deptname   FROM crm_sys_userinfo AS u      LEFT JOIN crm_sys_account_userinfo_relate AS ur ON u.userid = ur.userid AND ur.recstatus = 1              LEFT JOIN crm_sys_department AS d ON ur.deptid = d.deptid   WHERE u.recstatus = 1";
+                        JToken reportRelation = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/reportrelation", key), nodeInfo.RuleConfig.ToString());
+                        if (reportRelation != null)
+                        {
+                            var jo = JObject.Parse(reportRelation.ToString());
+                            Guid id = Guid.Parse(jo["id"].ToString());
+                            int relationType = Convert.ToInt32(jo["type"].ToString());
+                            var reportRelationRepository = ServiceLocator.Current.GetInstance<IReportRelationRepository>();
+                            QueryReportRelDetailMapper model = new QueryReportRelDetailMapper();
+                            switch (relationType)
+                            {
+                                case 1://流程发起人
+                                    var l1 = CaseItemList(caseInfo.CaseId, userId);
+                                    model = new QueryReportRelDetailMapper
+                                    {
+                                        ReportRelationId = id,
+                                        UserId = l1.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l1.FirstOrDefault()["handleuser"].ToString())
+                                    };
+                                    var d1 = reportRelationRepository.GetReportRelDetail(model, tran, userId);
+                                    cmdText += @" AND u.userid in (" + string.Join(",", (d1.Count == 0 ? new string[] { "-1" } : d1.Select(t => t.ReportLeader))) + ")";
+                                    break;
+                                case 2://上一步骤处理人
+                                    var l2 = CaseItemList(caseInfo.CaseId, userId);
+                                    if (l2.Count == 0)
+                                    {
+                                        model = new QueryReportRelDetailMapper
+                                        {
+                                            ReportRelationId = id,
+                                            UserId = l2.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l2.FirstOrDefault()["handleuser"].ToString())
+                                        };
+                                        var d2 = reportRelationRepository.GetReportRelDetail(model, tran, userId);
+                                        cmdText += @" AND u.userid in (" + string.Join(",", (d2.Count == 0 ? new string[] { "-1" } : d2.Select(t => t.ReportLeader))) + ")";
+                                    }
+                                    else
+                                    {
+                                        int index = l2.Count - 1;
+                                        if (index >= 0)
+                                        {
+                                            var n = l2[index] == null ? string.Empty : l2[index]["nodeid"].ToString();
+                                            var userIds = l2.Where(t => t["nodeid"].ToString() == n).Select(t => t["handleuser"]).ToList();
+                                            model = new QueryReportRelDetailMapper
+                                            {
+                                                ReportRelationId = id,
+                                                UserIds = string.Join(",", userIds)
+                                            };
+                                            var d2 = reportRelationRepository.GetReportRelDetail(model, tran, userId);
+                                            cmdText += @" AND u.userid in (" + string.Join(",", (d2.Count == 0 ? new string[] { "-1" } : d2.Select(t => t.ReportLeader))) + ")";
+                                        }
+                                    }
+                                    break;
+                                case 3://表单中的人员
+                                    string f3, e3;
+                                    GetEntityFieldBasicRuleConfigPath(tran, caseInfo, nodeInfo, string.Format("endnodeconfig/{0}", key), out f3, out e3);
+                                    if (GetRuleConfigInfo("entityid", nodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
+                                    {
+                                        cmdText += string.Format(@" AND u.userid in  (select t1.userid from(
+                                            SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail 
+                                            where  reportrelationid='{2}'::uuid and 
+                                            EXISTS (
+                                            select 1 from (
+                                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
+                                            INTERSECT
+                                            select  regexp_split_to_table(reportuser,',') ::int4
+                                            ) as t2)   ) as t1 GROUP BY t1.userid
+                                             )  ", f3, e3, id.ToString());
+                                    }
+                                    else
+                                    {
+                                        cmdText += string.Format(@" AND u.userid in  (select t1.userid from(
+                                            SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail 
+                                            where  reportrelationid='{2}'::uuid and 
+                                            EXISTS (
+                                            select 1 from (
+                                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@recid
+                                            INTERSECT
+                                            select  regexp_split_to_table(reportuser,',') ::int4
+                                            ) as t2)   ) as t1 GROUP BY t1.userid
+                                             )  ", f3, e3, id.ToString());
+                                    }
+                                    break;
+                            }
+                            param = new DbParameter[] {
+                                         new NpgsqlParameter("recid",caseInfo.RecId)
+                                    };
+                            result = ExecuteQuery<ApproverInfo>(cmdText, param, tran);
+                            result.ForEach(t =>
+                            {
+                                approveUserIds.Add(t.UserId);
+                            });
+                        }
+                        break;
+                }
+            }
+            return approveUserIds;
+        }
+
+        public void AddEndWorkFlowCaseItemCPUser(DbTransaction tran, Guid caseItemId, List<int> cpUserId)
+        {
+            foreach (var t in cpUserId)
+            {
+                var sql = " insert into crm_sys_workflow_case_item_receiver(caseitemid,userid) values (@caseitemid,@userid)";
+                var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",caseItemId),
+                new NpgsqlParameter("userid",t)
+            };
+                ExecuteNonQuery(sql, param, tran);
+            }
+        }
+
+        #endregion
 
         #region --获取流程event函数-- +string GetWorkFlowEvent(Guid flowid, Guid nodeid, int steptype, DbTransaction trans = null) 
         /// <summary>
@@ -1609,17 +1853,26 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         /// </summary>
         public void ExecuteWorkFlowEvent(WorkFlowEventInfo eventInfo, Guid caseid, int nodenum, int choicestatus, int userno, DbTransaction trans = null)
         {
+
             if (eventInfo == null || string.IsNullOrEmpty(eventInfo.FuncName))
                 return;
+
+            string funcName = "";
+            var temp = eventInfo.FuncName.IndexOf("&");
+            if (temp == -1)
+                funcName = eventInfo.FuncName;
+            else
+                funcName = eventInfo.FuncName.Substring(0, temp);
+
             string sql = string.Empty;
             var sqlParameters = new List<DbParameter>();
             if (eventInfo.StepType == 0)
             {
-                sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@userno)", eventInfo.FuncName);
+                sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@userno)", funcName);
             }
             else
             {
-                sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@choicestatus,@userno)", eventInfo.FuncName);
+                sql = string.Format(@"SELECT id,flag,msg,stacks,codes FROM {0}(@caseid,@nodenum,@choicestatus,@userno)", funcName);
                 sqlParameters.Add(new NpgsqlParameter("choicestatus", choicestatus));
             }
 
@@ -1671,7 +1924,13 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             var chekResult = ExecuteScalar(check_sql, checkParameters.ToArray(), trans);
             if (chekResult != null && int.Parse(chekResult.ToString()) == 1)
             {
-                throw new Exception("流程步骤不能重复提交");
+                var caseItemList = this.CaseItemList(caseid, userno, tran: trans);
+                if (caseItemList != null && caseItemList.Count > 0)
+                {
+                    var caseItem = caseItemList[caseItemList.Count - 2];
+                    if (!(caseItem["itemstatus"].ToString() == "2"))
+                        throw new Exception("流程步骤不能重复提交");
+                }
             }
 
             #region 临时处理默认抄送问题,读取抄送规则,这是临时规则，在2018年8月-9月会更改为正式的规则
@@ -1725,6 +1984,31 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 temparm.Add(new NpgsqlParameter("userno", userno));
                 temparm.Add(new NpgsqlParameter("skipnode", item.SkipNode));
                 sqlParameters.Add(temparm.ToArray());
+                var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",item.CaseItemId),
+                new NpgsqlParameter("userid",userno),
+                new NpgsqlParameter("comment",item.Suggest),
+                new NpgsqlParameter("nodeid",item.NodeId),
+                new NpgsqlParameter("caseid",item.CaseId)
+                };
+                if (item.NodeNum == 0 || item.NodeNum == -1) continue;
+                var result1 = ExecuteQuery("select nodeid,deadline,isscheduled from crm_sys_workflow_node where nodeid=@nodeid limit 1", param, trans);
+                var resultDetail = result1.FirstOrDefault();
+                if (resultDetail != null)
+                {
+                    if (resultDetail["isscheduled"] != null && Convert.ToInt32(resultDetail["isscheduled"]) == 1)
+                    {
+                        if (ExecuteScalar("select 1 from crm_sys_workflow_scheduled where caseid=@caseid and nodeid=@nodeid limit 1", param, trans) == null)
+                        {
+                            param = new DbParameter[] {
+                                new NpgsqlParameter("caseid",item.CaseId),
+                                new NpgsqlParameter("nodeid",item.NodeId),
+                                new NpgsqlParameter("pointoftime",DateTime.Now.AddHours(Convert.ToInt32(resultDetail["deadline"])))
+                          };
+                            ExecuteNonQuery("insert into crm_sys_workflow_scheduled(caseid,nodeid,pointoftime) values (@caseid,@nodeid,@pointoftime)", param, trans);
+                        }
+                    }
+                }
             }
             ExecuteNonQueryMultiple(sql, sqlParameters, trans);
 
@@ -1854,12 +2138,12 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 string executeSql = string.Empty;
                 if (stepnum <= 0)
                 {
-                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and  handleuser=@handleuser and casestatus=0
+                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1,reccreated=now(),recupdated=now()  where caseid=@caseid and nodenum=@nodenum and  handleuser=@handleuser and casestatus=0
                                 and stepnum=(SELECT MAX(stepnum) FROM crm_sys_workflow_case_item WHERE recstatus=1 AND nodenum=@nodenum AND caseid=@caseid )";
                 }
                 else
                 {
-                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1 where caseid=@caseid and nodenum=@nodenum and stepnum=@stepnum and  handleuser=@handleuser and casestatus=0";
+                    executeSql = @" update crm_sys_workflow_case_item set casestatus=1,reccreated=now(),recupdated=now() where caseid=@caseid and nodenum=@nodenum and stepnum=@stepnum and  handleuser=@handleuser and casestatus=0";
                 }
 
                 ExecuteNonQuery(executeSql, new DbParameter[]
@@ -1874,6 +2158,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             {
             }
         }
+
 
         public string SaveTitleConfig(Guid flowId, string titleConfig, int userId)
         {
@@ -1968,6 +2253,775 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 return null;
             }
         }
+        public OperateResult InsertSpecialJointComment(DbTransaction tran, CaseItemJoint joint, int userId)
+        {
+            var sqlExist = "select 1 from crm_sys_workflow_case_item_joint where caseitemid=@caseitemid;";
+            var sql = " insert into crm_sys_workflow_case_item_joint(caseitemid,userid,comment,nodeid,flowstatus) values (@caseitemid,@userid,@comment,@nodeid,@flowstatus)";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",joint.CaseItemid),
+                new NpgsqlParameter("userid",joint.UserId),
+                new NpgsqlParameter("comment",joint.Comment),
+                new NpgsqlParameter("nodeid",joint.NodeId),
+                new NpgsqlParameter("caseid",joint.CaseId),
+                new NpgsqlParameter("flowstatus",joint.FlowStatus)
+            };
+            int result = 0;
+            if (ExecuteScalar(sqlExist, param, tran) == null)
+            {
+                result = ExecuteNonQuery(sql, param, tran);
+                var result1 = ExecuteQuery("select nodeid,deadline,isscheduled from crm_sys_workflow_node where nodeid=@nodeid limit 1", param, tran);
+                var resultDetail = result1.FirstOrDefault();
+                if (resultDetail != null)
+                {
+                    if (resultDetail["isscheduled"] != null && Convert.ToInt32(resultDetail["isscheduled"]) == 1)
+                    {
+                        if (ExecuteScalar("select 1 from crm_sys_workflow_scheduled where caseid=@caseid and nodeid=@nodeid limit 1", param, tran) == null)
+                        {
+                            param = new DbParameter[] {
+                                new NpgsqlParameter("caseid",joint.CaseId),
+                                new NpgsqlParameter("nodeid",joint.NodeId),
+                                new NpgsqlParameter("pointoftime",DateTime.Now.AddHours(Convert.ToInt32(resultDetail["deadline"])))
+                          };
+                            ExecuteNonQuery("insert into crm_sys_workflow_scheduled(caseid,nodeid,pointoftime) values (@caseid,@nodeid,@pointoftime)", param, tran);
+                        }
+                    }
+                }
+            }
+            if (result > 0)
+                return new OperateResult
+                {
+                    Flag = 1
+                };
+            return new OperateResult
+            {
+
+            };
+        }
+
+        public void UpdateWorkFlowNodeScheduled(DbTransaction trans, WorkFlowNodeScheduled scheduled, int userId)
+        {
+            var sql = " update crm_sys_workflow_scheduled set isdone=1 where caseid=@caseid and nodeid=@nodeid;";
+            List<string> a = new List<string>();
+            a.Select(t => t.Split("")).ToList();
+            var param = new DbParameter[] {
+                new NpgsqlParameter("nodeid",scheduled.NodeId),
+                new NpgsqlParameter("caseid",scheduled.CaseId)
+            };
+            ExecuteNonQuery(sql, param, trans);
+        }
+        public List<WorkFlowNodeScheduledList> GetWorkFlowNodeScheduled(DbTransaction trans, int userId)
+        {
+            var sql = " select * from crm_sys_workflow_scheduled where isdone=0;";
+            return ExecuteQuery<WorkFlowNodeScheduledList>(sql, null, trans);
+        }
+        public List<Dictionary<string, object>> GetSpecialJointCommentDetail(DbTransaction tran, Guid caseItemId, int userId, string currentHost = "")
+        {
+            var _config = ServiceLocator.Current.GetInstance<Microsoft.Extensions.Configuration.IConfigurationRoot>().GetSection("FileServiceSetting");
+            var lngfFilePlugin = _config.GetValue<string>("LngfFilePlugin");
+            string fileUrl = string.Format(lngfFilePlugin, currentHost);
+            var sql = "select tmp.nodeid,(case when caseitem1.casestatus=2 then caseitem1.recupdated else tmp.reccreated end ) as reccreated,tmp.caseitemid,tmp.comment,tmp.flowstatus,tmp.userid,att1.filejson,  tmp.username  from (\n" +
+" select jt.nodeid,jt.reccreated,jt.caseitemid,jt.comment,case when jt.flowstatus=0 then '有意见' else '无意见' end as flowstatus,jt.userid,u.username,n.nodetype from \n" +
+"crm_sys_workflow_case_item_joint jt LEFT JOIN crm_sys_workflow_case_attach \n" +
+"as att on att.caseitemid = jt.caseitemid   LEFT JOIN crm_sys_workflow_node AS n ON jt.nodeid = n.nodeid  left join crm_sys_userinfo as u on u.userid = jt.userid where jt.caseitemid\n" +
+" =@caseitemid \n" +
+"group by jt.comment,jt.flowstatus,jt.caseitemid,jt.reccreated,u.username,jt.nodeid,n.nodetype,jt.userid  ORDER BY jt.reccreated ) as tmp\n" +
+"LEFT JOIN ( \n" +
+"select array_to_json(array_agg(row_to_json(t))) as filejson,t.caseitemid \n" +
+"from ( \n" +
+"  select  '' as fileurl,fileid, filename,caseitemid,recid FROM crm_sys_workflow_case_attach    where caseitemid =@caseitemid  \n" +
+") as t GROUP BY t.caseitemid,recid \n" +
+") as att1 on att1.caseitemid=tmp.caseitemid \n" +
+" inner join crm_sys_workflow_case_item as caseitem1 on caseitem1.caseitemid=tmp.caseitemid " +
+"LEFT JOIN crm_sys_workflow_node AS n ON tmp.nodeid = n.nodeid";
+
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",caseItemId)
+            };
+            var result = ExecuteQuery(sql, param, tran);
+            result.ForEach(t =>
+            {
+                if (t["filejson"] != null)
+                {
+                    var fileJson = t["filejson"].ToString();
+                    var files = JArray.Parse(fileJson);
+                    foreach (var t1 in files)
+                    {
+                        var newFile = t1["fileid"] == null ? string.Empty : (fileUrl + t1["fileid"]);
+                        t1["fileurl"] = newFile;
+                    }
+                    t["filejson"] = files.ToString();
+                }
+            });
+            return result;
+        }
+
+        public OperateResult InsertTransfer(DbTransaction tran, CaseItemJointTransfer transfer, int userId)
+        {
+            // var sqlExist = " select count(1) from crm_sys_workflow_case_item_transfer where caseitemid=@caseitemid";
+            var sql = " insert into crm_sys_workflow_case_item_transfer(caseitemid,originuserid,userid,comment,operatetype,flowstatus,signstatus) values (@caseitemid,@originuserid,@userid,@comment,@operatetype,@flowstatus,@signstatus) returning recid";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",transfer.CaseItemid),
+                new NpgsqlParameter("originuserid",transfer.OrginUserId),
+                new NpgsqlParameter("userid",transfer.UserId),
+                new NpgsqlParameter("comment",transfer.Comment),
+                new NpgsqlParameter("operatetype",transfer.IsSignOrTransfer),
+                new NpgsqlParameter("flowstatus",transfer.FlowStatus==4?new Nullable<int>():transfer.FlowStatus),
+                               new NpgsqlParameter("signstatus",transfer.SignStatus)
+            };
+            //var count = ExecuteScalar(sqlExist, param, tran);
+            //int num = 0;
+            //if (count != null)
+            //    num = Convert.ToInt32(count);
+            //if (num == 1)
+            //{
+            //    ExecuteQuery(" update crm_sys_workflow_case_item_transfer set flowstatus=7 where  recid=(select recid from crm_sys_workflow_case_item_transfer where caseitemid=@caseitemid order by reccreated desc limit 1) ;", param, tran);
+            //}
+            var result = ExecuteScalar(sql, param, tran);
+            if (result != null)
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Id = result.ToString()
+                };
+            return new OperateResult
+            {
+
+            };
+        }
+        public OperateResult InsertCaseItemAttach(DbTransaction tran, CaseItemFileAttach attach, int userId)
+        {
+            var existsSql = " select 1 from crm_sys_workflow_case_attach where caseitemid=@caseitemid and fileid=@fileid;";
+            var sql = " insert into crm_sys_workflow_case_attach(caseitemid,fileid,filename,recid,nodeid) values (@caseitemid,@fileid,@filename,@recid,(select nodeid from crm_sys_workflow_case_item where caseitemid=@caseitemid limit 1))";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",attach.CaseItemId),
+                new NpgsqlParameter("fileid",attach.FileId),
+                new NpgsqlParameter("filename",attach.FileName),
+                new NpgsqlParameter("recid",attach.RecId),
+                new NpgsqlParameter("userno",userId)
+            };
+            if (ExecuteScalar(existsSql, param, tran) == null)
+            {
+                var result = ExecuteNonQuery(sql, param, tran);
+                if (result > 0)
+                    return new OperateResult
+                    {
+                        Flag = 1
+                    };
+            }
+            return new OperateResult
+            {
+
+            };
+        }
+
+        public List<Dictionary<string, object>> GetWorkFlowCaseTransferAtt(DbTransaction tran, Guid caseItemId, int userId, string currentHost = "")
+        {
+            var _config = ServiceLocator.Current.GetInstance<Microsoft.Extensions.Configuration.IConfigurationRoot>().GetSection("FileServiceSetting");
+            var lngfFilePlugin = _config.GetValue<string>("LngfFilePlugin");
+            string fileUrl = string.Format(lngfFilePlugin, currentHost);
+            var sql = "select (select nodeid from crm_sys_workflow_case_item where caseitemid=tmp.caseitemid limit 1) as nodeid,tmp.caseitemid,\n" +
+"tmp.comment,tmp.flowstatus,tmp.recid,tmp.reccreated,att1.filejson,  tmp.username \n" +
+" \n" +
+" from (select tf.caseitemid,tf.comment, (case when operatetype=0 then '转办' when operatetype=1 then (case when flowstatus=7 then '同意加签' when flowstatus=17 then '同意' when flowstatus=27 then '不同意' else '未知' end) else '' end)  as flowstatus,u1.username,att.recid,tf.reccreated,tf.originuserid,n.nodetype\n" +
+"from crm_sys_workflow_case_item_transfer tf LEFT JOIN crm_sys_workflow_case_attach as att on att.recid = tf.recid  \n" +
+" left join crm_sys_userinfo as u1 on u1.userid = tf.originuserid\n" +
+"left join crm_sys_workflow_case_item item on item.caseitemid=tf.caseitemid\n" +
+"LEFT JOIN crm_sys_workflow_node n on n.nodeid=item.nodeid\n" +
+" where tf.caseitemid =@caseitemid  and (tf.flowstatus=7 or tf.flowstatus=17 or tf.flowstatus=27) \n" +
+" group by tf.comment,tf.flowstatus,tf.caseitemid,tf.reccreated,att.recid,u1.username,operatetype,n.nodetype,tf.originuserid ) as tmp\n" +
+"LEFT JOIN (\n" +
+"select array_to_json(array_agg(row_to_json(t))) as filejson,t.caseitemid,t.recid\n" +
+"from (\n" +
+"  select  '' as fileurl,fileid, filename,caseitemid,recid FROM crm_sys_workflow_case_attach    where caseitemid =@caseitemid \n" +
+") as t GROUP BY t.caseitemid,recid\n" +
+") as att1 on att1.caseitemid=tmp.caseitemid and att1.recid=tmp.recid  ORDER BY tmp.reccreated asc";
+
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",caseItemId),
+            };
+            var result = ExecuteQuery(sql, param, tran);
+            result.ForEach(t =>
+            {
+                if (t["filejson"] != null)
+                {
+                    var fileJson = t["filejson"].ToString();
+                    var files = JArray.Parse(fileJson);
+                    foreach (var t1 in files)
+                    {
+                        var newFile = t1["fileid"] == null ? string.Empty : (fileUrl + t1["fileid"]);
+                        t1["fileurl"] = newFile;
+                    }
+                    t["filejson"] = files.ToString();
+                }
+            });
+            return result;
+        }
+
+        public List<Dictionary<string, object>> GetWorkFlowCaseAtt(DbTransaction tran, Guid caseItemId, int userId, string currentHost = "")
+        {
+            var _config = ServiceLocator.Current.GetInstance<Microsoft.Extensions.Configuration.IConfigurationRoot>().GetSection("FileServiceSetting");
+            var lngfFilePlugin = _config.GetValue<string>("LngfFilePlugin");
+            string fileUrl = string.Format(lngfFilePlugin, currentHost);
+            var sqlExists = "select nodetype from crm_sys_workflow_node where nodeid=(select nodeid from crm_sys_workflow_case_item where caseitemid=@caseitemid);";
+            var sql = "select (select nodeid from crm_sys_workflow_case_item where caseitemid = tmp.caseitemid limit 1) as nodeid,tmp.*\n" +
+        " ,att1.filejson::json\n" +
+        " from (select caseitem.caseitemid,caseitem.suggest as comment,(crm_func_entity_protocol_format_workflow_casestatus(caseitem.casestatus,caseitem.choicestatus)) as flowstatus, u.username ,att.recid,caseitem.reccreated,caseitem.handleuser \n" +
+        "from crm_sys_workflow_case_item as caseitem \n" +
+        "{0} JOIN  crm_sys_workflow_case_attach as att on caseitem.caseitemid=att.caseitemid AND  att.recid='00000000-0000-0000-0000-000000000000' \n" +
+        "LEFT JOIN crm_sys_workflow_case as wfcase on wfcase.caseid=caseitem.caseid  LEFT JOIN crm_sys_workflow_node AS n ON caseitem.nodeid = n.nodeid  \n" +
+        " left join crm_sys_userinfo as u on u.userid = caseitem.handleuser where caseitem.caseitemid =@caseitemid \n" +
+        "AND NOT EXISTS(SELECT 1 FROM crm_sys_workflow_case_item_joint where caseitemid=@caseitemid ) \n" +
+        " group by caseitem.choicestatus,u.username,caseitem.caseitemid,caseitem.reccreated,att.recid,caseitem.suggest,n.nodetype,caseitem.handleuser   ORDER BY caseitem.reccreated ) as tmp\n" +
+        "LEFT JOIN (\n" +
+        "select array_to_json(array_agg(row_to_json(t))) as filejson,t.caseitemid,t.recid\n" +
+        "from (\n" +
+        "  select '' as fileurl,fileid, filename,caseitemid,recid FROM crm_sys_workflow_case_attach  where caseitemid =@caseitemid  \n" +
+        ") as t GROUP BY t.caseitemid,recid\n" +
+        ") as att1 on att1.caseitemid=tmp.caseitemid and att1.recid=tmp.recid;";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",caseItemId),
+            };
+            if (ExecuteScalar(sqlExists, param, tran).ToString() == "2")
+            {
+                sql = string.Format(sql, "INNER");
+            }
+            else
+            {
+                sql = string.Format(sql, "LEFT");
+            }
+            var result = ExecuteQuery(sql, param, tran);
+            result.ForEach(t =>
+            {
+                if (t["filejson"] != null)
+                {
+                    var fileJson = t["filejson"].ToString();
+                    var files = JArray.Parse(fileJson);
+                    foreach (var t1 in files)
+                    {
+                        var newFile = t1["fileid"] == null ? string.Empty : (fileUrl + t1["fileid"]);
+                        t1["fileurl"] = newFile;
+                    }
+                    t["filejson"] = files.ToString();
+                }
+            });
+            return result;
+        }
+        public OperateResult TransferToOther(DbTransaction tran, CaseItemTransferMapper transfer, int userId)
+        {
+            var sql = "update crm_sys_workflow_case_item set handleuser=@handleuser,reccreator=@userno,recupdator=@userno,choicestatus=@choicestatus,casestatus=@casestatus,reccreated=now(),recupdated=now()  where caseitemid=@caseitemid;";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("handleuser",transfer.UserId),
+                new NpgsqlParameter("userno",userId),
+                new NpgsqlParameter("caseitemid",transfer.CaseItemId),
+                new NpgsqlParameter("choicestatus",6),
+                new NpgsqlParameter("casestatus",(object)0)
+            };
+            ExecuteNonQuery(sql, param, tran);
+            return new OperateResult
+            {
+                Flag = 1
+            };
+
+        }
+
+        public void CheckIsTransfer(DbTransaction tran, CaseItemJointTransfer transfer, int userId)
+        {
+            var sqlExist = " select 1 from crm_sys_workflow_case_item_transfer where caseitemid=@caseitemid limit 1";
+            var sql = " insert into crm_sys_workflow_case_item_transfer(caseitemid,originuserid,userid,flowstatus,operatetype) values (@caseitemid,@originuserid,@userid,@flowstatus,(select isallowtransfer from crm_sys_workflow where flowid=(select flowid from crm_sys_workflow_case where caseid=(select caseid from crm_sys_workflow_case_item where caseitemid=@caseitemid) LIMIT 1)))";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",transfer.CaseItemid),
+                new NpgsqlParameter("originuserid",transfer.OrginUserId),
+                new NpgsqlParameter("userid",transfer.UserId),
+                new NpgsqlParameter("flowstatus",transfer.FlowStatus)
+            };
+            if (ExecuteScalar(sqlExist, param, tran) != null)
+            {
+                ExecuteNonQuery(sql, param, tran);
+            }
+        }
+        public Guid GetLastestCaseId(DbTransaction tran, WorkFlowRepeatApprove workFlow, int useId)
+        {
+            var sqlEntity = " select modeltype from crm_sys_entity where entityid=(select entityid from crm_sys_workflow where flowid=@flowid limit 1);";
+            var sqlWorkFlow = " SELECT caseid FROM crm_sys_workflow_case where {0} reccreator=@userno and flowid =@flowid and auditstatus = 2 and caseid = (select caseid from crm_sys_workflow_case where flowid = @flowid order by reccreated desc limit 1)" +
+                " {1} order by reccreated desc limit 1; ";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseid",workFlow.CaseId),
+                new NpgsqlParameter("flowid",workFlow.FlowId),
+                new NpgsqlParameter("entityid",workFlow.EntityId),
+                new NpgsqlParameter("relentityid",workFlow.EntityModel.RelEntityId),
+                new NpgsqlParameter("relrecid",workFlow.EntityModel.RelRecId),
+                new NpgsqlParameter("userno",useId),
+                new NpgsqlParameter("recid",workFlow.EntityModel.RelRecId)
+            };
+            var modelType = ExecuteScalar(sqlEntity, param, tran);
+            if (modelType != null)
+            {
+                if (modelType.ToString() == "3")
+                {
+                    sqlWorkFlow = string.Format(sqlWorkFlow, string.Empty, " and exists(select 1 from crm_sys_workflow_case_entity_relation where relentityid=@relentityid and relrecid=@relrecid) ");
+                }
+                else if (modelType.ToString() == "0" || modelType.ToString() == "2")
+                {
+                    sqlWorkFlow = string.Format(sqlWorkFlow, " recid=@recid AND ", string.Empty);
+                }
+            }
+            var result = ExecuteScalar(sqlWorkFlow, param, tran);
+            if (result == null)
+                throw new Exception("找不到历史审批数据");
+            else
+                return Guid.Parse(result.ToString());
+        }
+        public OperateResult NeedToRepeatApprove(DbTransaction tran, WorkFlowRepeatApprove workFlow, int userId)
+        {
+            var sqlWorkFlow = " INSERT INTO crm_sys_workflow_case (caseid,flowid, recid, auditstatus, vernum, nodenum, recstatus, reccreator, recupdator, title) SELECT @caseid,flowid, @recid, 0, vernum, nodenum, recstatus, reccreator, recupdator, title FROM crm_sys_workflow_case where caseid =@precaseid ";
+            var sqlWorkFlowCase = "INSERT INTO crm_sys_workflow_case_item (caseitemid,caseid, nodenum, handleuser, copyuser, choicestatus, suggest, casestatus, casedata, remark, recstatus, reccreator, recupdator, stepnum, nodeid, skipnode) SELECT @caseitemid,@caseid, nodenum, handleuser, copyuser, {0}, '系统重新发起跳过',{1}, casedata, remark, recstatus, reccreator, recupdator, stepnum, nodeid, skipnode FROM crm_sys_workflow_case_item WHERE caseitemid = @precaseitemid and nodenum<>-1 order by reccreated asc;";
+            //var sqlWorkFlowReciver = " insert into crm_sys_workflow_case_item_receiver(caseitemid,userid) select @caseitemid,userid from crm_sys_workflow_case_item_receiver where caseitemid=@precaseitemid;";
+            var sqlJoint = " insert into crm_sys_workflow_case_item_joint (caseitemid,userid,comment,flowstatus,nodeid) select @caseitemid,userid,'系统重新发起跳过',flowstatus,nodeid from crm_sys_workflow_case_item_joint where caseitemid=@precaseitemid;";
+            var sqlTransfer = " insert into crm_sys_workflow_case_item_transfer (caseitemid,originuserid,userid,comment,flowstatus,recid,operatetype) select @caseitemid,originuserid,userid,'系统重新发起跳过',flowstatus,@recid from crm_sys_workflow_case_item_transfer,operatetype where caseitemid=@precaseitemid and recid=@prerecid;";
+            var sqlAtt = " insert into crm_sys_workflow_case_attach (caseitemid,fileid,filename,recid,nodeid) select @caseitemid,fileid,filename,@recid,nodeid from crm_sys_workflow_case_attach where caseitemid=@precaseitemid and recid=@prerecid;";
+            var sqlAtt1 = " insert into crm_sys_workflow_case_attach (caseitemid,fileid,filename,recid,nodeid) select @caseitemid,fileid,filename,recid,nodeid from crm_sys_workflow_case_attach where caseitemid=@precaseitemid and recid='00000000-0000-0000-0000-000000000000';";
+            var sqlCaseEntity = " insert into crm_sys_workflow_case_entity_relation(caseid,relentityid,relrecid) select @caseid,relentityid,relrecid from crm_sys_workflow_case_entity_relation where caseid=@precaseid;";
+            var caseId = Guid.NewGuid();
+            var param = new DbParameter[] {
+                new NpgsqlParameter("precaseid",workFlow.CaseId),
+                new NpgsqlParameter("caseid",caseId),
+                new NpgsqlParameter("recid",workFlow.ModelType==3?workFlow.RecId:workFlow.EntityModel.RelRecId)
+            };
+            var result = ExecuteNonQuery(sqlWorkFlow, param, tran);
+            ExecuteNonQuery(sqlCaseEntity, param, tran);
+            if (result > 0)
+            {
+                var data = ExecuteQuery("select caseitemid,choicestatus,casestatus,nodenum,nodeid from crm_sys_workflow_case_item as caseitem  where caseid=@precaseid and caseitem.nodenum<>-1 order by caseitem.stepnum asc;", param, tran);
+                int index = 0;
+                foreach (var t in data)
+                {
+                    var caseItemId = Guid.NewGuid();
+                    param = new DbParameter[] {
+                        new NpgsqlParameter("precaseitemid",Guid.Parse(t["caseitemid"].ToString())),
+                        new NpgsqlParameter("caseitemid",caseItemId),
+                        new NpgsqlParameter("nodenum",Convert.ToInt32(t["nodenum"])),
+                        new NpgsqlParameter("caseid",caseId),
+                        new NpgsqlParameter("nodeid",Guid.Parse(t["nodeid"].ToString()))
+                    };
+                    index++;
+                    if (data.Count == index)
+                    {
+                        var nodeInfos = ExecuteQuery(" select nodetype from crm_sys_workflow_node where nodeid = @nodeid;", param, tran);
+                        var nodeInfo = nodeInfos.FirstOrDefault();
+                        if (nodeInfo["nodetype"].ToString() == "1")
+                        {
+                            ExecuteNonQuery("update crm_sys_workflow_case_item set casestatus=0,choicestatus=6,suggest='' where caseid=@caseid and nodeid=@nodeid", param, tran);
+                        }
+                        else
+                        {
+                            ExecuteNonQuery("update crm_sys_workflow_case_item set casestatus=0,choicestatus=6 where caseitemid=@caseitemid", param, tran);
+                        }
+                        ExecuteNonQuery(string.Format(sqlWorkFlowCase, 6, 0).Replace("系统重新发起跳过", string.Empty), param, tran);
+                        ExecuteNonQuery("update crm_sys_workflow_case set  nodenum=@nodenum,auditstatus=0 where caseid=@caseid", param, tran);
+                    }
+                    else
+                        ExecuteNonQuery(string.Format(sqlWorkFlowCase, t["choicestatus"].ToString(), t["casestatus"].ToString()), param, tran);
+                    ExecuteNonQuery(sqlJoint, param, tran);
+
+                    var transferData = ExecuteQuery("select caseitemid,recid,originuserid from crm_sys_workflow_case_item_transfer where caseitemid=@precaseitemid order by reccreated asc;", param, tran);
+                    if (data.Count > index)
+                    {
+                        foreach (var t1 in transferData)
+                        {
+                            var recid = Guid.NewGuid();
+                            param = new DbParameter[] {
+                        new NpgsqlParameter("precaseitemid",Guid.Parse(t["caseitemid"].ToString())),
+                        new NpgsqlParameter("recid",recid),
+                        new NpgsqlParameter("prerecid",Guid.Parse(t1["recid"].ToString())),
+                        new NpgsqlParameter("caseitemid",caseItemId)
+                       };
+                            ExecuteNonQuery(sqlTransfer, param, tran);
+                            ExecuteNonQuery(sqlAtt, param, tran);
+                        }
+                    }
+                    else
+                    {
+                        if (transferData.Count > 0)
+                        {
+                            string handleUser = transferData.FirstOrDefault()["originuserid"].ToString();
+                            param = new DbParameter[] {
+                                new NpgsqlParameter("handleuser",Convert.ToInt32(handleUser)),
+                                  new NpgsqlParameter("caseitemid",caseItemId),
+                               };
+                            ExecuteNonQuery("update crm_sys_workflow_case_item set  handleuser=@handleuser where caseitemid=@caseitemid", param, tran);
+                        }
+                    }
+                    param = new DbParameter[] {
+                        new NpgsqlParameter("precaseitemid",Guid.Parse(t["caseitemid"].ToString())),
+                          new NpgsqlParameter("caseitemid",caseItemId),
+                       };
+                    ExecuteNonQuery(sqlAtt1, param, tran);
+                }
+            }
+            if (result > 0)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Id = caseId.ToString(),
+                    Msg = "重新发起成功"
+                };
+            }
+            else
+                return new OperateResult
+                {
+                    Msg = "重新发起失败"
+                };
+        }
+        public OperateResult CheckIfExistNeedToRepeatApprove(DbTransaction tran, WorkFlowRepeatApprove workFlow, int userId)
+        {
+            var sqlEntity = " select modeltype from crm_sys_entity where entityid=@entityid;";
+            var sqlWorkFlow = " SELECT 1 FROM crm_sys_workflow_case where {0} reccreator=@userno and EXISTS(select 1 from crm_sys_workflow where flowid=@flowid and entityid=@entityid  and recstatus=1 limit 1) and flowid =@flowid and auditstatus = 2 and caseid = (select caseid from crm_sys_workflow_case where flowid = @flowid order by reccreated desc limit 1)" +
+                " {1} order by reccreated desc limit 1; ";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseid",workFlow.CaseId),
+                new NpgsqlParameter("flowid",workFlow.FlowId),
+                new NpgsqlParameter("entityid",workFlow.EntityId),
+                new NpgsqlParameter("relentityid",workFlow.EntityModel.RelEntityId),
+                new NpgsqlParameter("relrecid",workFlow.EntityModel.RelRecId),
+                new NpgsqlParameter("userno",userId),
+                new NpgsqlParameter("recid",workFlow.EntityModel.RelRecId)
+            };
+            var modelType = ExecuteScalar(sqlEntity, param, tran);
+            if (modelType != null)
+            {
+                if (modelType.ToString() == "3")
+                {
+                    sqlWorkFlow = string.Format(sqlWorkFlow, string.Empty, " and exists(select 1 from crm_sys_workflow_case_entity_relation where relentityid=@relentityid and relrecid=@relrecid) ");
+                }
+                else if (modelType.ToString() == "0")
+                {
+                    sqlWorkFlow = string.Format(sqlWorkFlow, " recid=@recid AND ", string.Empty);
+                }
+            }
+            var result = ExecuteScalar(sqlWorkFlow, param, tran);
+            if (result != null)
+            {
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Id = result.ToString()
+                };
+            }
+            else
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "找不到可以重新发起的数据,请检查数据"
+                };
+        }
+
+        public void SaveWorkFlowGlobalEditJs(DbTransaction tran, WorkFlowGlobalJsMapper js, int userId)
+        {
+            var sql = "   insert INTO crm_sys_ucode_history_log(codetype,recid,relrecid,recname,oldcode,newcode,reccreator,commitremark,commituserid,commitdate,commithistory)\n" +
+                        "   VALUES('WorkFlowJS',@nodeid,@flowid,\n" +
+                        "(select entityname||'关联流程全局编辑JS' from  crm_sys_entity where entityid=(select entityid from crm_sys_workflow where flowid=@flowid limit 1)),\n" +
+                        "  (select newcode from crm_sys_ucode_history_log where codetype='WorkFlowJS' ORDER BY reccreated DESC LIMIT 1),\n" +
+                        "   @jscode,\n" +
+                        "   @userno,\n" +
+                        "   @remark,\n" +
+                        "   @userno,\n" +
+                        "   now(),\n" +
+                        "   '{}'::jsonb\n" +
+                        "   );";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("flowid",js.FlowId),
+                new NpgsqlParameter("nodeid",js.NodeId),
+                new NpgsqlParameter("jscode",js.Js),
+                new NpgsqlParameter("userno",userId),
+                new NpgsqlParameter("remark",js.Remark)
+            };
+            ExecuteNonQuery(sql, param, tran);
+        }
+
+        #region 知会人
+
+        public OperateResult SaveWorkflowInformer(DbTransaction tran, InformerRuleMapper informer, int userId)
+        {
+            var sql = " INSERT INTO crm_sys_workflow_informer (flowid, ruleid,ruleconfig,auditstatus) VALUES (@flowid, @ruleid, @ruleconfig::jsonb,@auditstatus); ";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("flowid",informer.FlowId),
+                new NpgsqlParameter("ruleid",informer.RuleId),
+                new NpgsqlParameter("ruleconfig",informer.RuleConfig),
+                new NpgsqlParameter("auditstatus",informer.AuditStatus)
+            };
+            ExecuteNonQuery(sql, param, tran);
+            return new OperateResult
+            {
+                Flag = 1,
+                Msg = "保存规则成功"
+            };
+        }
+        public OperateResult UpdateWorkflowInformerStatus(DbTransaction tran, InformerRuleMapper informer, int userId)
+        {
+            var sql = " update crm_sys_workflow_informer set recstatus=@recstatus where flowid=@flowid; ";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("flowid",informer.FlowId),
+                new NpgsqlParameter("recstatus",informer.RecStatus)
+            };
+            ExecuteNonQuery(sql, param, tran);
+            return new OperateResult
+            {
+                Flag = 1,
+                Msg = "停用规则成功"
+            };
+        }
+
+        public List<InformerRuleMapper> GetInformerRules(DbTransaction tran, InformerRuleMapper informer, int userId)
+        {
+            var sql = "select * from crm_sys_workflow_informer where flowid=@flowid {0} and recstatus=1";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("flowid",informer.FlowId),
+                new NpgsqlParameter("auditstatus",informer.AuditStatus)
+            };
+            string condition = string.Empty;
+            if (informer.AuditStatus != -1)
+            {
+                condition += " and (auditstatus=@auditstatus or auditstatus=0 ) ";
+                sql = string.Format(sql, condition);
+            }
+            else
+                sql = string.Format(sql, condition);
+            var result = ExecuteQuery<InformerRuleMapper>(sql, param, tran);
+            return result;
+        }
+        public IDictionary<Guid, List<int>> GetInformer(Guid flowId, int auditStatus, WorkFlowCaseInfo caseInfo, WorkFlowNodeInfo nodeInfo, DbTransaction tran, int userId)
+        {
+            IDictionary<Guid, List<int>> ruleUsers = new Dictionary<Guid, List<int>>();
+            List<int> approveUserIds;
+            var informerRules = this.GetInformerRules(tran, new InformerRuleMapper { FlowId = flowId, AuditStatus = (auditStatus == 0 ? 2 : 1) }, userId);
+            string typeStatus = ((auditStatus == 0 ? 2 : 1) == 1 ? "approve" : "failed");
+            foreach (var rule in informerRules)
+            {
+                approveUserIds = new List<int>();
+                if (rule.AuditStatus != (auditStatus == 0 ? 2 : 1) && rule.AuditStatus != 0) continue;
+                string key = rule.AuditStatus == 0 ? "allpass" : typeStatus;
+                var value = GetRuleConfigInfo(string.Format("endnodeconfig/{0}", key), rule.RuleConfig);
+                if (!string.IsNullOrEmpty(value))
+                {
+                    var type = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/type", key), rule.RuleConfig);
+                    switch (type)
+                    {
+                        case "1":
+                            var cpUser = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/userids", key), rule.RuleConfig);
+                            if (!string.IsNullOrEmpty(cpUser))
+                            {
+                                var userArr = cpUser.Split(",").Distinct().ToArray();
+                                foreach (var t in userArr)
+                                {
+                                    approveUserIds.Add(Convert.ToInt32(t));
+                                }
+                            }
+                            if (approveUserIds.Count > 0)
+                                ruleUsers.Add(rule.RuleId, approveUserIds);
+                            break;
+                        case "2":
+                            JToken funcname = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/spfuncname", key), rule.RuleConfig);
+                            var param = new DbParameter[] {
+                                            new NpgsqlParameter("ruleconfig", rule.RuleConfig),
+                                            new NpgsqlParameter("userno", userId),
+                                            new NpgsqlParameter("recid", caseInfo.RecId),
+                                            new NpgsqlParameter("relrecid", caseInfo.RelRecId),
+                                            new NpgsqlParameter("caseid", caseInfo.CaseId),
+                                };
+                            var result = ExecuteQuery<ApproverInfo>("select * from " + funcname.ToString() + "(@caseid,@ruleconfig::jsonb,@recid,@relrecid,@userno);", param.ToArray(), tran);
+                            result.ForEach(t =>
+                            {
+                                approveUserIds.Add(t.UserId);
+                            });
+                            if (approveUserIds.Count > 0)
+                                ruleUsers.Add(rule.RuleId, approveUserIds);
+                            break;
+                        case "3":
+                            string cmdText = "SELECT u.userid,u.username,u.usericon,u.namepinyin,ur.deptid,d.deptname   FROM crm_sys_userinfo AS u      LEFT JOIN crm_sys_account_userinfo_relate AS ur ON u.userid = ur.userid AND ur.recstatus = 1              LEFT JOIN crm_sys_department AS d ON ur.deptid = d.deptid   WHERE u.recstatus = 1";
+                            JToken reportRelation = GetRuleConfigInfo(string.Format("endnodeconfig/{0}/reportrelation", key), rule.RuleConfig);
+                            if (reportRelation != null)
+                            {
+                                var jo = JObject.Parse(reportRelation.ToString());
+                                Guid id = Guid.Parse(jo["id"].ToString());
+                                int relationType = Convert.ToInt32(jo["type"].ToString());
+                                var reportRelationRepository = ServiceLocator.Current.GetInstance<IReportRelationRepository>();
+                                QueryReportRelDetailMapper model = new QueryReportRelDetailMapper();
+                                switch (relationType)
+                                {
+                                    case 1://流程发起人
+                                        var l1 = CaseItemList(caseInfo.CaseId, userId);
+                                        model = new QueryReportRelDetailMapper
+                                        {
+                                            ReportRelationId = id,
+                                            UserId = l1.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l1.FirstOrDefault()["handleuser"].ToString())
+                                        };
+                                        var d1 = reportRelationRepository.GetReportRelDetail(model, tran, userId);
+                                        cmdText += @" AND u.userid in (" + string.Join(",", (d1.Count == 0 ? new string[] { "-1" } : d1.Select(t => t.ReportLeader))) + ")";
+                                        break;
+                                    case 2://上一步骤处理人
+                                        var l2 = CaseItemList(caseInfo.CaseId, userId);
+                                        if (l2.Count == 0)
+                                        {
+                                            model = new QueryReportRelDetailMapper
+                                            {
+                                                ReportRelationId = id,
+                                                UserId = l2.Count == 0 ? caseInfo.RecCreator : Convert.ToInt32(l2.FirstOrDefault()["handleuser"].ToString())
+                                            };
+                                            var d2 = reportRelationRepository.GetReportRelDetail(model, tran, userId);
+                                            cmdText += @" AND u.userid in (" + string.Join(",", (d2.Count == 0 ? new string[] { "-1" } : d2.Select(t => t.ReportLeader))) + ")";
+                                        }
+                                        else
+                                        {
+                                            int index = l2.Count - 1;
+                                            if (index >= 0)
+                                            {
+                                                var n = l2[index] == null ? string.Empty : l2[index]["nodeid"].ToString();
+                                                var userIds = l2.Where(t => t["nodeid"].ToString() == n).Select(t => t["handleuser"]).ToList();
+                                                model = new QueryReportRelDetailMapper
+                                                {
+                                                    ReportRelationId = id,
+                                                    UserIds = string.Join(",", userIds)
+                                                };
+                                                var d2 = reportRelationRepository.GetReportRelDetail(model, tran, userId);
+                                                cmdText += @" AND u.userid in (" + string.Join(",", (d2.Count == 0 ? new string[] { "-1" } : d2.Select(t => t.ReportLeader))) + ")";
+                                            }
+                                        }
+                                        break;
+                                    case 3://表单中的人员
+                                        string f3, e3;
+                                        GetEntityFieldBasicRuleConfigPath(tran, caseInfo, nodeInfo, string.Format("endnodeconfig/{0}", key), out f3, out e3);
+                                        if (GetRuleConfigInfo("entityid", nodeInfo) == caseInfo.RelEntityId.ToString())//判断是否是主实体还是关联实体
+                                        {
+                                            cmdText += string.Format(@" AND u.userid in  (select t1.userid from(
+                                            SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail 
+                                            where  reportrelationid='{2}'::uuid and 
+                                            EXISTS (
+                                            select 1 from (
+                                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@relrecid
+                                            INTERSECT
+                                            select  regexp_split_to_table(reportuser,',') ::int4
+                                            ) as t2)   ) as t1 GROUP BY t1.userid
+                                             )  ", f3, e3, id.ToString());
+                                        }
+                                        else
+                                        {
+                                            cmdText += string.Format(@" AND u.userid in  (select t1.userid from(
+                                            SELECT regexp_split_to_table(reportleader,',')::int4 as userid from crm_sys_reportreldetail 
+                                            where  reportrelationid='{2}'::uuid and 
+                                            EXISTS (
+                                            select 1 from (
+                                            select regexp_split_to_table({0}::text,',')::int4 as userid from {1} where recid=@recid
+                                            INTERSECT
+                                            select  regexp_split_to_table(reportuser,',') ::int4
+                                            ) as t2)   ) as t1 GROUP BY t1.userid
+                                             )  ", f3, e3, id.ToString());
+                                        }
+                                        break;
+                                }
+                                param = new DbParameter[] {
+                                         new NpgsqlParameter("recid",caseInfo.RecId)
+                                    };
+                                result = ExecuteQuery<ApproverInfo>(cmdText, param, tran);
+                                result.ForEach(t =>
+                                {
+                                    approveUserIds.Add(t.UserId);
+                                });
+                                if (approveUserIds.Count > 0)
+                                    ruleUsers.Add(rule.RuleId, approveUserIds);
+                            }
+                            break;
+                    }
+                }
+            }
+            return ruleUsers;
+        }
+
+
+        #endregion
+
+        public OperateResult RejectToOrginalNode(DbTransaction trans, RejectToOrginalNode reject, int userId)
+        {
+            var sql = "insert into crm_sys_workflow_case_item(caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum,nodeid) select caseid,nodenum,6,handleuser,0,reccreator,recupdator,(select max(stepnum)+1 from crm_sys_workflow_case_item where caseid=item.caseid limit 1),nodeid from crm_sys_workflow_case_item as item where item.caseitemid=@caseitemid;";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",reject.CaseItemId),
+                new NpgsqlParameter("precaseitemid",reject.PreCaseItemId),
+                new NpgsqlParameter("suggest",reject.Remark)
+            };
+            int count = ExecuteNonQuery(sql, param, trans);
+            if (count > 0)
+            {
+                foreach (var t in reject.FileAttachs)
+                {
+                    t.CaseItemId = reject.PreCaseItemId;
+                    this.InsertCaseItemAttach(trans, t, userId);
+                }
+                sql = " update crm_sys_workflow_case_item set suggest=@suggest where caseitemid=@precaseitemid; update crm_sys_workflow_case set nodenum=(select nodenum from crm_sys_workflow_case_item as item where item.caseitemid=@caseitemid) where caseid=(select caseid from crm_sys_workflow_case_item as item where item.caseitemid=@caseitemid);";
+                ExecuteNonQuery(sql, param, trans);
+                return new OperateResult
+                {
+                    Flag = 1,
+                    Msg = "驳回成功"
+                };
+            }
+            else
+                return new OperateResult
+                {
+                    Msg = "驳回失败"
+                };
+        }
+
+
+
+        public List<WorkFlowInfo> GetWorkFlowInfoByCaseItemId(DbTransaction trans, Guid caseitemid)
+        {
+            var sql = @" select f.* from crm_sys_workflow_case_item ci
+                                inner join crm_sys_workflow_case c on ci.caseid = c.caseid
+                                inner join crm_sys_workflow f on f.flowid = c.flowid
+                                where ci.caseitemid =@caseitemid ";
+
+            var param = new DbParameter[] {
+                new NpgsqlParameter("caseitemid",caseitemid)
+            };
+            return ExecuteQuery<WorkFlowInfo>(sql, param, trans);
+        }
+
+        public List<DepartListMapper> GetUserDefaultDepartment(int userid)
+        {
+            var sql = @"       select d.deptid as departid,1 ismaster  from crm_sys_userinfo u 
+                               inner join crm_sys_account_userinfo_relate aur on u.userid=aur.userid
+                               inner join crm_sys_account a on aur.accountid=a.accountid
+                               inner join crm_sys_department d on d.deptid=aur.deptid
+                               where aur.recstatus=1 
+                               and  u.userid=@userid
+                               and a.recstatus=1
+                               ";
+
+            var param = new DbParameter[] {
+                new NpgsqlParameter("userid",userid)
+            };
+
+
+            return ExecuteQuery<DepartListMapper>(sql, param);
+
+        }
+
+
+
+        public List<DepartmentEditMapper> GetUserDepartments(Guid departmentid)
+        {
+            var sql = @" select d.* from crm_sys_department_treepaths t
+                inner join crm_sys_department d on t.ancestor=d.deptid
+                where descendant=@departmentid
+                order by nodepath desc ";
+
+            var param = new DbParameter[] {
+                new NpgsqlParameter("departmentid",departmentid)
+            };
+
+            return ExecuteQuery<DepartmentEditMapper>(sql, param);
+
+        }
         public List<WorkFlowSign> GetWorkFlowSign(Guid caseItemId, int userId)
         {
             var sql = " select  caseitemid,signstatus,originuserid as originaluserid,userid from crm_sys_workflow_case_item_transfer  where caseitemid=@caseitemid  and operatetype=1 order by reccreated asc  ";
@@ -1978,5 +3032,225 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
             var r = ExecuteQuery<WorkFlowSign>(sql, param);
             return r;
         }
+
+        public bool WithDrawkWorkFlowByCreator(DbTransaction trans, Guid caseid, int userid)
+        {
+            WorkFlowCaseInfo caseinfo = GetWorkFlowCaseInfo(null, caseid);
+
+            var nodeidSql = @"SELECT nodeid FROM crm_sys_workflow_node WHERE flowid=@flowid AND vernum=@vernum AND steptypeid=0";
+            var entitySqlParameters = new List<DbParameter>();
+            entitySqlParameters.Add(new NpgsqlParameter("flowid", caseinfo.FlowId));
+            entitySqlParameters.Add(new NpgsqlParameter("vernum", caseinfo.VerNum));
+            var nodeidResult = ExecuteScalar(nodeidSql, entitySqlParameters.ToArray(), trans);
+            Guid nodeid = Guid.Empty;
+            if (nodeidResult != null)
+            {
+                Guid.TryParse(nodeidResult.ToString(), out nodeid);
+            }
+
+            int _stepNum = GetWorkFlowCaseItemInfoMaxStepNum(trans, caseid);
+            int _netStepNum = _stepNum + 1;
+            int handleuser = userid;
+
+
+
+            //更新最新的节点为退回
+            UpdateWorkFlowCaseStatusByStepNum(trans, caseid, _stepNum);
+
+            string sql = string.Format(@"INSERT INTO crm_sys_workflow_case_item (caseid, nodenum,choicestatus,handleuser, casestatus, reccreator, recupdator,stepnum,nodeid) 
+                                         VALUES (@caseid,0,4,@handleuser,0,@userno,@userno,@stepnum,@nodeid);
+                                         UPDATE crm_sys_workflow_case SET nodenum = 0,recupdator=@userno,recupdated=@recupdated WHERE caseid=@caseid;");
+
+
+            var sqlParameters = new List<DbParameter>();
+            sqlParameters.Add(new NpgsqlParameter("caseid", caseid));
+            sqlParameters.Add(new NpgsqlParameter("handleuser", handleuser));
+            sqlParameters.Add(new NpgsqlParameter("nodeid", nodeid));
+            sqlParameters.Add(new NpgsqlParameter("userno", userid));
+            sqlParameters.Add(new NpgsqlParameter("stepnum", _netStepNum));
+            sqlParameters.Add(new NpgsqlParameter("recupdated", DateTime.Now));
+
+            var result = ExecuteNonQuery(sql, sqlParameters.ToArray(), trans);
+
+            return result == 2;
+        }
+
+
+        public int GetWorkFlowCaseItemInfoMaxStepNum(DbTransaction trans, Guid caseid)
+        {
+            string executeSql = " select max(stepnum) from crm_sys_workflow_case_item  where caseid=@caseid  ";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("caseid", caseid),
+
+            };
+
+            int _stepNum = 0;
+            object obj = ExecuteScalar(executeSql, param, trans);
+            if (obj != null)
+            {
+                _stepNum = int.Parse(obj.ToString());
+            }
+
+            return _stepNum;
+        }
+
+        public int UpdateWorkFlowCaseStatusByStepNum(DbTransaction trans, Guid caseid, int stepnum)
+        {
+            string _strSql = @" update crm_sys_workflow_case_item set choicestatus = 2, casestatus = 2 where caseid=@caseid and stepnum=@stepnum ";
+
+            DbParameter[] param = new DbParameter[] {
+                new NpgsqlParameter("@caseid",caseid),
+                new NpgsqlParameter("@stepnum",stepnum),
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+        }
+
+
+        public int DeleteWorkFlowCaseItemTransfer(DbTransaction trans, Guid caseitemid, int userid)
+        {
+            string _strSql = @" delete from  crm_sys_workflow_case_item_transfer  where caseitemid=@caseitemid and originuserid=@originuserid ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid),
+                    new NpgsqlParameter("@originuserid",userid)
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+        }
+
+
+        public int UpdateWorkFlowCaseitemHandler(DbTransaction trans, Guid caseitemid, int userid)
+        {
+            string _strSql = @" update crm_sys_workflow_case_item set handleuser=@handleuser where caseitemid=@caseitemid ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid),
+                    new NpgsqlParameter("@handleuser",userid)
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+
+        }
+        public List<WorkFlowCaseItemInfo> GetWorkFlowCaseItemOfCase(DbTransaction trans, Guid caseid)
+        {
+            string _strSql = @"  select * from crm_sys_workflow_case_item 
+                                where caseid=@caseid order by reccreated desc,nodenum desc ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseid",caseid)
+                };
+
+            return ExecuteQuery<WorkFlowCaseItemInfo>(_strSql, param, trans);
+
+
+        }
+
+        public int UpdateWorkFlowCaseNodeNum(DbTransaction trans, Guid caseid, Guid caseitemid)
+        {
+            string _strSql = @" update crm_sys_workflow_case set nodenum=(select nodenum from crm_sys_workflow_case_item where caseitemid=@caseitemid) where caseid=@caseid ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid),
+                    new NpgsqlParameter("@caseid",caseid)
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+
+        }
+
+
+        public int DeleteWorkFlowCaseItems(DbTransaction trans, Guid caseid, Guid caseitemid)
+        {
+            string _strSql = @"  delete
+                                 from crm_sys_workflow_case_item
+                                 where caseid =@casesid
+                                 and nodenum> (select nodenum from crm_sys_workflow_case_item where caseitemid=@caseitemid)";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid),
+                    new NpgsqlParameter("@casesid",caseid)
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+        }
+
+
+        public int GetWorkFlowCaseItemCout(DbTransaction trans, Guid caseid, Guid caseitemid)
+        {
+            string _strSql = @" select count(1) 
+                                 from crm_sys_workflow_case_item
+                                 where caseid =@casesid
+                                 and casestatus> 1
+                                 and nodenum> (select nodenum from crm_sys_workflow_case_item where caseitemid = @caseitemid)";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid),
+                    new NpgsqlParameter("@casesid",caseid)
+                };
+            object _result = ExecuteScalar(_strSql, param, trans);
+
+            int _theCount = 0;
+            int.TryParse(_result.ToString(), out _theCount);
+            return _theCount;
+
+        }
+
+
+        public int UpdateWorkFlowCaseitemChoicestatus(DbTransaction trans, Guid caseitemid, int choicestatus, int casestatus)
+        {
+            string _strSql = @" update crm_sys_workflow_case_item set casestatus=@casestatus,choicestatus=@choicestatus,suggest='' where caseitemid=@caseitemid ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid),
+                    new NpgsqlParameter("@choicestatus",choicestatus),
+                    new NpgsqlParameter("@casestatus",casestatus)
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+
+        }
+
+        public int UpdateWorkFlowCaseNodeNumNew(DbTransaction trans, Guid caseid, int nodenum)
+        {
+            string _strSql = @" update crm_sys_workflow_case set nodenum=@nodenum where caseid=@caseid ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseid",caseid),
+                    new NpgsqlParameter("@nodenum",nodenum)
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+
+        }
+
+
+        public int DeleteWorkFlowCaseItems(DbTransaction trans, Guid caseitemid)
+        {
+            string _strSql = @"  delete
+                                 from crm_sys_workflow_case_item
+                                 where caseitemid =@caseitemid ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid)
+                };
+            int _result = ExecuteNonQuery(_strSql, param, trans);
+            return _result;
+        }
+
+        public List<WorkFlowCaseItemTransfer> GetWorkFlowCaseItemTransfer(DbTransaction trans, Guid caseitemid)
+        {
+            string _strSql = @"  select * from crm_sys_workflow_case_item_transfer 
+                                where caseitemid=@caseitemid order by reccreated desc ";
+
+            DbParameter[] param = new DbParameter[] {
+                    new NpgsqlParameter("@caseitemid",caseitemid)
+                };
+
+            return ExecuteQuery<WorkFlowCaseItemTransfer>(_strSql, param, trans);
+        }
+
+
     }
 }

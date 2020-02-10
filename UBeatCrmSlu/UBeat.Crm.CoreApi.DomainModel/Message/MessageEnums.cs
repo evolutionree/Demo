@@ -72,8 +72,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Message
         WorkFlowCarbonCopyUser=101,//流程审批抄送人
         WorkFlowNextApprover=102,//流程审批下一步骤审批人
         WorkFlowCompletedApprover=103,//流程审批已完成步骤审批人
+        WorkFlowInformerUser = 105,//流程审批知会人
+        WorkFlowSubscriber = 106,//流程审批传阅人
 
-        DailyCreateUser=200,//周报日报添加人
+        DailyCreateUser =200,//周报日报添加人
         DailyApprover =201,//周报日报批阅人
         DailyCarbonCopyUser =202,//周报日报抄送人
         DailyNewCopyUser = 203,//周报日报新增的抄送人

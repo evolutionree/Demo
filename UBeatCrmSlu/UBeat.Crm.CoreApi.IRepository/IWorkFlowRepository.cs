@@ -76,7 +76,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<NextNodeDataInfo> GetNextNodeDataInfoList(Guid flowid, Guid fromnodeid, int vernum,  DbTransaction trans = null);
  
         List<ApproverInfo> GetFlowNodeApprovers(Guid caseId,Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null);
-        List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null);
+        List<ApproverInfo> GetFlowNodeCPUser(Guid caseId, Guid nodeid, int userNumber, WorkFlowType flowtype, DbTransaction trans = null, int auditStatus = -10);
         string GetRuleConfigInfo(string path, string json);
         /// <summary>
         /// 获取流程下一节点连线上的ruleid

@@ -65,6 +65,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
 
     public class WorkFlowAuditCaseItemMapper : BaseEntity
     {
+        public Guid CaseItemId { get; set; }
         /// <summary>
         /// 当choicestatus=-1是无意见，1是有意见
         /// </summary>
@@ -82,7 +83,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public Guid NodeId { set; get; }
         public string HandleUser { get; set; }
         public string CopyUser { get; set; }
-
+        public List<CaseItemFileAttach> Files { get; set; }
         protected override IValidator GetValidator()
         {
             return new WorkFlowAuditCaseItemMapperValidator();
@@ -165,7 +166,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public int AuditSucc { get; set; }
 
         public string NodeEvent { set; get; }
-
+        public int IsScheduled { get; set; }
+        public int DeadLine { get; set; }
         /// <summary>
         /// 节点配置数据，如位置坐标
         /// </summary>
@@ -231,6 +233,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public string Remark { get; set; }
         public Guid EntityId { get; set; }
         public int SkipFlag { get; set; }
+        public int IsAllowTransfer { get; set; }
+        public int IsAllowSign { get; set; }
+        public int IsNeedToRepeatApprove { get; set; }
         public Dictionary<string, string> FlowName_Lang { get; set; }
 		public Dictionary<string, object> Config { get; set; }
 		protected override IValidator GetValidator()
@@ -266,7 +271,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public int SkipFlag { get; set; }
         public Dictionary<string,string> FlowName_Lang { get; set; }
 		public Dictionary<string, object> Config { get; set; }
-		protected override IValidator GetValidator()
+        public int IsAllowTransfer { get; set; }
+        public int IsAllowSign { get; set; }
+        public int IsNeedToRepeatApprove { get; set; }
+        protected override IValidator GetValidator()
         {
             return new WorkFlowUpdateMapperValidator();
         }

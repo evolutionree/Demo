@@ -33,7 +33,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
             Direction = direction;
             PageSize = pageSize;
         }
-
+        public int MsgType { get; set; }
         /// <summary>
         /// 增量的依据版本号
         /// </summary>

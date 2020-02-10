@@ -393,5 +393,52 @@ select json_array_elements_text(app)::int4 as userid,msgid  from (
 
             return ExecuteQueryByPaging(sql, dbParameters, msg.PageSize, msg.PageIndex);
         }
+        public List<Dictionary<string, object>> GetMessageCount(DbTransaction tran, int userId)
+        {
+            var p1 = new IncrementPageParameter(0, IncrementDirection.None, int.MaxValue);
+            p1.MsgType = 1;
+            var r1 = this.GetMessageList(Guid.Empty, Guid.Empty, new List<MessageGroupType> {
+               MessageGroupType.WorkFlow
+           }, new List<MessageStyleType> {
+               MessageStyleType.WorkflowAudit
+           }, p1, userId);
+            var p2 = new IncrementPageParameter(0, IncrementDirection.None, int.MaxValue);
+            p2.MsgType = 2;
+            var r2 = this.GetMessageList(Guid.Empty, Guid.Empty, new List<MessageGroupType> {
+               MessageGroupType.WorkFlow
+           }, new List<MessageStyleType> {
+               MessageStyleType.WorkflowAudit
+           }, p2, userId);
+            var p3 = new IncrementPageParameter(0, IncrementDirection.None, int.MaxValue);
+            p3.MsgType = 3;
+            var r3 = this.GetMessageList(Guid.Empty, Guid.Empty, new List<MessageGroupType> {
+               MessageGroupType.WorkFlow
+           }, new List<MessageStyleType> {
+               MessageStyleType.WorkflowAudit
+           }, p3, userId);
+            var p4 = new IncrementPageParameter(0, IncrementDirection.None, int.MaxValue);
+            p3.MsgType = 4;
+            var r4 = this.GetMessageList(Guid.Empty, Guid.Empty, new List<MessageGroupType> {
+               MessageGroupType.WorkFlow
+           }, new List<MessageStyleType> {
+               MessageStyleType.WorkflowAudit
+           }, p4, userId);
+
+            List<Dictionary<string, object>> dicResult = new List<Dictionary<string, object>>();
+            var dic1 = new Dictionary<string, object>();
+            dic1.Add("count", r1.DataList.Count);
+            dicResult.Add(dic1);
+            var dic2 = new Dictionary<string, object>();
+            dic2.Add("count", r2.DataList.Count);
+            dicResult.Add(dic2);
+            var dic3 = new Dictionary<string, object>();
+            dic3.Add("count", r3.DataList.Count);
+            dicResult.Add(dic3);
+            var dic4 = new Dictionary<string, object>();
+            dic4.Add("count", r4.DataList.Count);
+            dicResult.Add(dic4);
+            return dicResult;
+        }
+
     }
 }

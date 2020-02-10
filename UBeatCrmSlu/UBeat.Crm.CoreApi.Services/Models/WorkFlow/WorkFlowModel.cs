@@ -1,12 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.DomainModel.WorkFlow;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Rule;
 using UBeat.Crm.CoreApi.Services.Models.Vocation;
 
 namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 {
+
+    public class CaseItemTransfer
+    {
+        public int SignStatus { get; set; }
+        public string Suggest { get; set; }
+        public List<CaseItemFileAttachModel> Files { get; set; }
+        public Guid CaseItemId { get; set; }
+        public Guid CaseId { get; set; }
+        public int UserId { get; set; }
+        public int NodeNum { get; set; }
+        public Guid NodeId { get; set; }
+        public int IsSignOrTransfer { get; set; }
+        public int ChoiceStatus { get; set; }
+    }
+    public class InformerModel
+    {
+        public Guid FlowId { get; set; }
+        public List<InformerRuleModel> InformerRules { get; set; }
+    }
+    public class InformerRuleModel
+    {
+
+        public Guid? RuleId { get; set; }
+        public RuleModel Rule { get; set; }
+        public Guid FlowId { get; set; }
+        public string RuleConfig { get; set; }
+
+    }
+    public class RejectToOrginalNodeModel
+    {
+        public string Remark { get; set; }
+        public List<CaseItemFileAttach> FileAttachs { get; set; }
+        public Guid CaseId { get; set; }
+        public Guid CaseItemId { get; set; }
+        public Dictionary<string, object> CaseData { get; set; }
+    }
+    public class WorkFlowRepeatApproveModel
+    {
+        public DynamicEntityAddModel EntityModel { set; get; }
+        public Guid CaseId { get; set; }
+        public Guid RecId { get; set; }
+        public Guid EntityId { get; set; }
+        public Guid FlowId { get; set; }
+    }
     public class WorkFlowCaseAddModel
     {
         /// <summary>
@@ -83,6 +128,18 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
         public Guid FileId { get; set; }
         public String FileName { get; set; }
     }
+    public class WithDrawRequestModel
+    {
+        public Guid CaseId { get; set; }
+        public Guid CaseItemId { get; set; }
+
+
+        //public int FromUserId { get; set; }
+        //public int ToUserId { get; set; }
+        //public string WithDrawReason { get; set; }
+
+        public int NodeNum { get; set; }
+    }
     public class GetFreeFlowEventModel
     {
         public Guid FlowId { get; set; }
@@ -106,6 +163,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
     public class WorkFlowAuditCaseItemListModel
     {
         public Guid CaseId { get; set; }
+        public int IsSkipNode { get; set; }
     }
 
     public class WorkFlowNodeLinesInfoModel

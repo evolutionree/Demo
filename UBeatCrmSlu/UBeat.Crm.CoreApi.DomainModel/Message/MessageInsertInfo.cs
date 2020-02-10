@@ -56,6 +56,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Message
         /// 接收人id
         /// </summary>
         public List<int> ReceiverIds { set; get; }
+        public List<Receiver> Receivers { get; set; }
     }
 
 }
