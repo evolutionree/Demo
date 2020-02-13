@@ -487,7 +487,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
         public OperateResult UpdateFlow(WorkFlowUpdateMapper flowMapper, int userNumber)
         {
             var sql = @"
-                SELECT * FROM crm_func_workflow_update(@flowId,@flowName,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb, @config::jsonb)
+                SELECT * FROM crm_func_workflow_update(@flowId,@flowName,@backFlag,@resetFlag,@expireDay,@remark,@skipFlag, @userno,@flowlanguage::jsonb, @config::jsonb,@isallowtransfer,@isallowsign,@isneedtorepeatapprove)
             ";
 
             var param = new

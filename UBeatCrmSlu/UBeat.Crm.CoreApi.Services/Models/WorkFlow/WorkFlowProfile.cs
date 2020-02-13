@@ -18,6 +18,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
             CreateMap<WorkFlowLineModel, WorkFlowLineMapper>();
             CreateMap<WorkFlowAddModel, WorkFlowAddMapper>();
             CreateMap<WorkFlowUpdateModel, WorkFlowUpdateMapper>();
+            CreateMap<CaseItemFileAttachModel, CaseItemFileAttach>();
+            CreateMap<CaseItemTransfer, CaseItemTransferMapper>();
+            CreateMap<WorkFlowRepeatApproveModel, WorkFlowRepeatApprove>();
+            CreateMap<InformerRuleModel, InformerRuleMapper>();
+            CreateMap<InformerModel, InformerMapper>();
+            CreateMap<RejectToOrginalNodeModel, RejectToOrginalNode>();
         }
     }
 }
