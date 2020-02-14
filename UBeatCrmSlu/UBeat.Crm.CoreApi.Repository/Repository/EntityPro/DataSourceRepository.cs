@@ -142,7 +142,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
  crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus order by a.dictypeid desc;";
             if (!string.IsNullOrEmpty(dicTypeId))
                 sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
-            sql += " order by a.recorder";
+            //sql += " order by a.recorder";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("recstatus",status)
