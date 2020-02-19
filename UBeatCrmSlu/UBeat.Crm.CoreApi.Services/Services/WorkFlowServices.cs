@@ -3265,7 +3265,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     HandleUser = handlerId,
                     CopyUser = caseItemModel.CopyUser,
                     SkipNode = caseItemModel.SkipNode,
-                    Suggest = (caseInfo.NodeNum == 0 && caseitemlist.OrderByDescending(t => t.StepNum).FirstOrDefault().StepNum > 1) ? caseItemModel.Suggest : string.Empty//为了适应驳回后重新发起的时候写入备注，这个需要跟第一次发起流程的时候区别开来
+                    Suggest = (caseInfo.NodeNum == 0 && caseitemlist.OrderByDescending(t => t.StepNum).FirstOrDefault().StepNum > 1) ?string.Empty : caseItemModel.Suggest //为了适应驳回后重新发起的时候写入备注，这个需要跟第一次发起流程的时候区别开来
                 };
                 caseitems.Add(item);
             }
