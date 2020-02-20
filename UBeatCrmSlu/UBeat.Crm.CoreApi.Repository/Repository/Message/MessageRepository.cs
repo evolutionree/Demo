@@ -25,7 +25,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
         {
             if (msgInfo == null)
                 return false;
-            if (msgInfo.ReceiverIds == null || msgInfo.ReceiverIds.Count == 0)
+            if ((msgInfo.Receivers == null || msgInfo.Receivers.Count == 0) && msgInfo.ReceiverIds.Count == 0)
             {
                 return true;
             }
@@ -57,17 +57,33 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
             List<DbParameter[]> cmdParms = new List<DbParameter[]>();
 
             var userids = msgInfo.ReceiverIds.Distinct();
-            foreach (var userid in userids)
+            var receivers = msgInfo.Receivers.Distinct();
+            foreach (var receiver in receivers)
             {
-                if (userid > 0)
+                if (receiver != null)
                 {
                     cmdParms.Add(new DbParameter[]
                     {
                         new NpgsqlParameter("msgid", msgid),
-                        new NpgsqlParameter("userid", userid)
+                        new NpgsqlParameter("userid", receiver.UserId),
+                        new NpgsqlParameter("actrole", receiver.ActRole)
                     });
                 }
             }
+
+            foreach (var receiver in userids)
+            {
+                if (receiver > 0)
+                {
+                    cmdParms.Add(new DbParameter[]
+                    {
+                        new NpgsqlParameter("msgid", msgid),
+                        new NpgsqlParameter("userid", receiver),
+                        new NpgsqlParameter("actrole", -1)
+                    });
+                }
+            }
+
 
             ExecuteNonQueryMultiple(executeReciverSql, cmdParms, trans);
             return result > 0;
