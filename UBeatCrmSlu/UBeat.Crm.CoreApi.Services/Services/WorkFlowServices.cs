@@ -586,7 +586,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --跳过流程发起提交--
-        public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo)
+        public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo )
         {
             if (caseModel == null)
             {
@@ -599,7 +599,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var tran = conn.BeginTransaction();
                 try
                 {
-
                     if (!string.IsNullOrEmpty(caseModel.CacheId))
                     {
                         Guid g = Guid.Parse(caseModel.CacheId);
@@ -624,48 +623,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         throw new Exception("流程数据不可为空");
                     }
                     var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseModel.CaseModel.FlowId);
-
+                    WorkFlowNodeInfo firstNodeInfo = null;
+                    Guid caseid;
+                    if (caseModel.NodeId.HasValue)
+                    {
+                        var workFlowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, caseModel.NodeId.Value);
+                        if (workFlowNodeInfo.StepTypeId == NodeStepType.End)
+                        {
+                            caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo, isNeedToSendMsg);
+                            _workFlowRepository.AuditWorkFlowCase(caseid, AuditStatusType.Finished, -1, userinfo.UserId, tran);
+                            tran.Commit();
+                            return new OutputResult<object>();
+                        }
+                    }
                     if (workflowInfo == null)
                         throw new Exception("流程配置不存在");
-                    WorkFlowNodeInfo firstNodeInfo = null;
-                    var caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo, isNeedToSendMsg);
-                    var caseInfo = _workFlowRepository.GetWorkFlowCaseInfo(tran, caseid);
-                    var nextnodes = _workFlowRepository.GetNextNodeDataInfoList(caseInfo.FlowId, firstNodeInfo.NodeId, caseInfo.VerNum, tran);
-                    var users = _workFlowRepository.GetFlowNodeApprovers(caseInfo.CaseId, nextnodes.FirstOrDefault().NodeId.Value, userinfo.UserId, workflowInfo.FlowType, tran);
-                    caseModel.IsSkip = (users.Count == 0 && nextnodes.FirstOrDefault().NotFound == 2);
+                    caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo, isNeedToSendMsg);
                     tran.Commit();
-                    while (caseModel.IsSkip)
-                    {
-                        var caseItemList = _workFlowRepository.CaseItemList(caseid, userinfo.UserId);
-                        var data = SubmitPretreatAudit(new WorkFlowAuditCaseItemModel
-                        {
-                            CaseId = caseid,
-                            ChoiceStatus = 1,
-                            NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString())
-                        }, userinfo);
-                        NextNodeDataModel model = data.DataBody as NextNodeDataModel;
-                        if (model.NodeInfo.IsSkip)
-                            isNeedToSendMsg = 1;
-                        if (model.NodeInfo.NodeType == NodeType.Joint)
-                            isNeedToSendMsg = 3;
-                        SubmitWorkFlowAudit(new WorkFlowAuditCaseItemModel
-                        {
-                            CaseId = caseid,
-                            ChoiceStatus = 1,
-                            CopyUser = caseModel.CopyUser,
-                            HandleUser = caseModel.HandleUser,
-                            NodeId = model.NodeInfo.NodeId,
-                            NodeNum = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString()),
-                            Suggest = "",
-                            IsNotEntrance = true,
-                            SkipNode = model.Approvers.Count > 0 && model.NodeInfo.NodeId == caseModel.NodeId ? 0 : 1
-                        }, userinfo, isNeedToSendMsg: isNeedToSendMsg);
-                        if (!model.NodeInfo.IsSkip)
-                            break;
-                        if (model.NodeInfo.NodeId == caseModel.NodeId)
-                            break;
-                    }
                     canWriteCaseMessage = true;
+                    WriteCaseAuditMessage(caseid, 0, 0, userinfo.UserId, type: -1);
                     return new OutputResult<object>(caseid);
                 }
                 catch (Exception ex)
