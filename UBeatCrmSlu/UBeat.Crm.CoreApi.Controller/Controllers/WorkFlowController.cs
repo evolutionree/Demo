@@ -81,7 +81,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (caseItemModel == null) return ResponseError<object>("参数格式错误");
             WriteOperateLog("提交流程审批", caseItemModel);
-            return _workFlowServices.SubmitWorkFlowAudit(caseItemModel, LoginUser);
+            return _workFlowServices.SubmitWorkFlowAudit(caseItemModel, LoginUser,isNeedToSendMsg:1);
         }
 		 
         //选人之后，提交审批明细数据
