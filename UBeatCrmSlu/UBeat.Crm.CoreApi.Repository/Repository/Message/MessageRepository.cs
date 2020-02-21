@@ -433,7 +433,7 @@ select json_array_elements_text(app)::int4 as userid,msgid  from (
                MessageStyleType.WorkflowAudit
            }, p3, userId);
             var p4 = new IncrementPageParameter(0, IncrementDirection.None, int.MaxValue);
-            p3.MsgType = 4;
+            p4.MsgType = 4;
             var r4 = this.GetMessageList(Guid.Empty, Guid.Empty, new List<MessageGroupType> {
                MessageGroupType.WorkFlow
            }, new List<MessageStyleType> {

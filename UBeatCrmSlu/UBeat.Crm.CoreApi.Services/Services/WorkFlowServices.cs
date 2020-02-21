@@ -668,7 +668,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             GenerateWorkflowTitleValueDict(ValueDict, caseModel, workflowInfo, userinfo);
             GenerateEntityTitleValueDict(ValueDict, tran, caseModel.CaseModel.EntityId, caseModel.CaseModel.RecId, userinfo.UserId);
             if (caseModel.CaseModel.RelEntityId != null && caseModel.CaseModel.RelEntityId != Guid.Empty
-                 && caseModel.CaseModel.RelRecId != null && caseModel.CaseModel.RelRecId != Guid.Empty)
+                 && caseModel.CaseModel.RelRecId != null && caseModel.CaseModel.RelRecId != Guid.Empty && caseModel.CaseModel.RelEntityId != caseModel.CaseModel.EntityId)
             {
                 GenerateEntityTitleValueDict(ValueDict, tran, (System.Guid)caseModel.CaseModel.RelEntityId, (System.Guid)caseModel.CaseModel.RelRecId, userinfo.UserId);
             }
@@ -2198,7 +2198,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         caseItemEntity.ChoiceStatus = 1;
                         IsFinishAfterStart = true;
                     }
-                    var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId);
+                    var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userinfo.UserId, tran: tran);
+
                     int casestatus = -2;
                     if (caseItemList.Count > 0)
                         casestatus = Convert.ToInt32(caseItemList[caseItemList.Count - 1]["nodenum"].ToString());
