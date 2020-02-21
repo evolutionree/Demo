@@ -43,6 +43,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Message
         /// 当前增量大数据块大小，默认-1表示不划分数据块，取direction方向的所有数据
         /// </summary>
         public int PageSize { set; get; } = -1;
+        public int MsgType { get; set; }
     }
 
     public class PageMsgsParameter : MsgsParameter

@@ -53,7 +53,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
             if (result <= 0)
                 throw new Exception("插入消息失败");
             //插入消息接收人数据
-            var executeReciverSql = @"INSERT INTO crm_sys_message_receiver (msgid, userid, readstatus) VALUES (@msgid, @userid, 0);";
+            var executeReciverSql = @"INSERT INTO crm_sys_message_receiver (msgid, userid, readstatus,actrole) VALUES (@msgid, @userid, 0,@actrole::int4);";
             List<DbParameter[]> cmdParms = new List<DbParameter[]>();
 
             var userids = msgInfo.ReceiverIds.Distinct();
@@ -154,6 +154,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
             var businessIdSql = string.Empty;
             var msgGroupIdSql = string.Empty;
             var msgStyleTypeSql = string.Empty;
+            var msgTypeSql = string.Empty;
 
             //处理增量参数
             if (incrementPage == null)
@@ -197,18 +198,39 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
                 msgStyleTypeSql = " AND m.msgstyletype = ANY(@msgstyletypes)";
                 dbParams.Add(new NpgsqlParameter("msgstyletypes", msgStyleType.Cast<int>().ToArray()));
             }
-
-
-            var executeSql = string.Format(@"SELECT m.*,mr.bizstatus,mr.readstatus,mr.userid,e.entityname AS EntityName ,e.modeltype AS EntityModel,u.username AS RecCreatorName,u.usericon AS RecCreatorIcon 
+            switch (incrementPage.MsgType)
+            {
+                case 1:
+                    msgTypeSql = " and mr.msgid in (SELECT msgid FROM crm_sys_message_receiver where userid=@userid and actrole in (1,2,3,4,5,6) and bizstatus = 0)  and mr.actrole  in (1,2,3,4,5,6) and bizstatus = 0 ";
+                    break;
+                case 2:
+                    msgTypeSql = " and mr.msgid in (SELECT msgid FROM crm_sys_message_receiver where userid=@userid and actrole in (1,2,3,4,5,6)  and bizstatus<>0)  and mr.actrole  in (1,2,3,4,5,6) and bizstatus <> 0";
+                    break;
+                case 3:
+                    msgTypeSql = " and mr.msgid in (SELECT msgid FROM crm_sys_message_receiver where userid=@userid and actrole in (10,11,12,13) and readstatus = 0)  and mr.actrole  in (10,11,12,13)  and readstatus = 0";
+                    break;
+                case 4:
+                    msgTypeSql = " and mr.msgid in (SELECT msgid FROM crm_sys_message_receiver where userid=@userid and actrole in (10,11,12,13) and (readstatus = 1 or readstatus = 2))  and mr.actrole  in (10,11,12,13)  and (readstatus = 1 or readstatus = 2)";
+                    break;
+            }
+            //0实体消息推送，1审批 2 审批加签 3审批转办 4  会审 5会审加签 6会审转办 7 意见收集 8 意见收集加签 9 意见收集转办   10通知 11 抄送 12 传阅 13知会
+            var executeSql = string.Format(@"SELECT m.*,mr.bizstatus,mr.readstatus,mr.userid,e.entityname AS EntityName ,e.modeltype AS EntityModel,u.username AS RecCreatorName,u.usericon AS RecCreatorIcon,mr.actrole,(case when actrole=1 then '审批' when actrole=2 then '审批-加签' when actrole=3 then '审批-转办' when actrole=4 then '审批' when actrole=5 then '审批-加签' when actrole=6 then '审批-转办' when actrole=7 then '审批' when actrole=8 then '审批-加签' when actrole=9 then '审批-转办' when actrole=10 then '通知' when actrole=11 then '抄送' when actrole=12 then '传阅' when actrole=13 then '知会' else '' end) as actrole_name,(case when item.choicestatus=0 then 10 when item.choicestatus=1 then 11 when item.choicestatus=2 then 12 when item.choicestatus=3 then 13  else 18 end) as newbizstatus,(case when item.choicestatus=0 then '已废弃' when item.choicestatus=1 then '已同意' when item.choicestatus=2 then '已驳回' when item.choicestatus=3 then '已中止' else '进行中' end) as newbizstatus_name
                                 FROM crm_sys_message_receiver AS mr
                                 LEFT JOIN crm_sys_message AS m ON m.msgid= mr.msgid
                                 LEFT JOIN crm_sys_userinfo AS u ON m.reccreator = u.userid
                                 LEFT JOIN crm_sys_entity AS e ON e.entityid = m.entityid
-                                WHERE (mr.userid=@userid and mr.readstatus != 3) {0} {1} {2} {3} {4}
+                                LEFT JOIN crm_sys_workflow_case AS caseinfo ON caseinfo.recid = m.businessid
+																LEFT JOIN(
+																select * from (
+																select  ROW_NUMBER() OVER(PARTITION BY caseid ORDER BY stepnum DESC) AS ranks,
+																caseid,caseitemid,choicestatus from crm_sys_workflow_case_item  ) as t where t.ranks=1
+																) as item ON caseinfo.caseid=item.caseid
+                                WHERE (mr.userid=@userid and mr.readstatus != 3) {0} {1} {2} {3} {4} {7}
                                 ORDER BY m.recversion {5}
-                                {6};", versionSql, entityIdSql, businessIdSql, msgGroupIdSql, msgStyleTypeSql, orderby, limitSql);
+                                {6};", versionSql, entityIdSql, businessIdSql, msgGroupIdSql, msgStyleTypeSql, orderby, limitSql, msgTypeSql);
 
             dbParams.Add(new NpgsqlParameter("userid", userNumber));
+
 
             var result = new IncrementPageDataInfo<MessageInfo>();
             result.DataList = ExecuteQuery<MessageInfo>(executeSql, dbParams.ToArray());
@@ -223,6 +245,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Message
             return result;
         }
         #endregion
+
 
         #region --分页获取消息列表--
         public PageDataInfo<MessageInfo> GetMessageList(Guid entityId, Guid businessId, List<MessageGroupType> msgGroupIds, List<MessageStyleType> msgStyleType, int pageIndex, int pageSize, int userNumber)

@@ -99,6 +99,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>("参数不能为空");
             }
             var incrementPage = new IncrementPageParameter(param.RecVersion, param.Direction, param.PageSize);
+            incrementPage.MsgType = param.MsgType;
             var result = MessageService.GetMessageList(incrementPage, userNumber, param.EntityId, param.BusinessId, param.MsgGroupIds, param.MsgStyleTypes);
 
             Task.Run(() =>
