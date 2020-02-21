@@ -586,7 +586,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --跳过流程发起提交--
-        public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo )
+        public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo)
         {
             if (caseModel == null)
             {
@@ -1529,11 +1529,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 //走完审批所有操作，获取下一步数据
                 result = GetNextNodeData(trans, caseInfo, workflowInfo, flowNodeInfo, userinfo);
                 //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
-                trans.Rollback();
             }
             catch (Exception ex)
             {
-                trans.Rollback();
                 throw ex;
             }
             return new OutputResult<object>(result);
@@ -2764,7 +2762,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!ValidateNextNodeRule(caseInfo, workflowInfo.FlowId, nodeid, nextnode.NodeId, caseInfo.VerNum, userinfo, out isDefaultNode, tran))
                             throw new Exception("下一步审批人不符合分支流程规则");
                     }
-                    AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
+                    if (isAddCaseItem == 0)
+                        AddCaseItem(nodeid, caseItemModel, workflowInfo, caseInfo, stepnum + 1, userinfo, tran);
                 }
                 if (conn != null)
                 {
@@ -3242,7 +3241,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     HandleUser = handlerId,
                     CopyUser = caseItemModel.CopyUser,
                     SkipNode = caseItemModel.SkipNode,
-                    Suggest = (caseInfo.NodeNum == 0 && caseitemlist.OrderByDescending(t => t.StepNum).FirstOrDefault().StepNum > 1) ?string.Empty : caseItemModel.Suggest //为了适应驳回后重新发起的时候写入备注，这个需要跟第一次发起流程的时候区别开来
+                    Suggest = (caseInfo.NodeNum == 0 && caseitemlist.OrderByDescending(t => t.StepNum).FirstOrDefault().StepNum > 1) ? string.Empty : caseItemModel.Suggest //为了适应驳回后重新发起的时候写入备注，这个需要跟第一次发起流程的时候区别开来
                 };
                 caseitems.Add(item);
             }
@@ -3678,7 +3677,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             copyusers.AddRange(subscriber);
                             copyusers = copyusers.Distinct().ToList();
                             copyusers = copyusers.Where(t => !informer.Select(t1 => t1.UserId).ToList().Contains(t.UserId)).ToList();
-                            var caseitemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber);
+                            var caseitemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber, tran: tran);
                         }
                         msg.NewReceivers = MessageService.GetWorkFlowMessageReceivers(caseInfo.RecCreator, approvers, copyusers, completedApprovers, informer, subscriber);
                         if (funcode.Equals("WorkFlowNodeJointApproval") || funcode.Equals("WorkFlowNodeJointReject") || funcode.Equals("WorkFlowNodeJointFallback") || funcode.Equals("WorkFlowNodeApproval"))
@@ -3778,7 +3777,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                             dynamicMsg.TemplateKeyValue = paramData;
                             //发布审批消息到实体动态列表
-                            MessageService.WriteMessage(tran, dynamicMsg, userNumber, null, 2);
+                            MessageService.WriteMessage(tran, dynamicMsg, userNumber, null);
 
 
                             if (entityInfotemp.ModelType == EntityModelType.Dynamic && (msg.FuncCode == "WorkFlowLaunch" || msg.FuncCode == "WorkFlowNodeTransfer"))
@@ -4080,6 +4079,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         caseItemInfo.Add("reccreated", t["reccreated"]);
                         caseItemInfo.Add("username", t["username"]);
                         caseItemInfo.Add("caseitemid", t["caseitemid"]);
+                        caseItemInfo.Add("usericon", t["usericon"]);
                         result_ext.Add(caseItemInfo);
                     }
                 }
@@ -4439,7 +4439,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         nowcaseitem = workFlowCaseItem.Find(m => m.HandleUser == transferEntity.UserId);
                         transferEntity.CaseItemId = nowcaseitem.CaseItemId;
                     }
-
+                    if (nowcaseitem.NodeType == 2 && transferEntity.ChoiceStatus == 0)
+                    {
+                        transferEntity.ChoiceStatus = 4;
+                    }
                     var data = _workFlowRepository.TransferToOther(transaction, transferEntity, userId);
                     var result = _workFlowRepository.InsertTransfer(transaction, new CaseItemJointTransfer
                     {
