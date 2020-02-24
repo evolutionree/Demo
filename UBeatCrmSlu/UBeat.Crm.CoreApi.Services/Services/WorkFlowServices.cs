@@ -260,6 +260,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 result.CaseItem.SignStatus = sign.FirstOrDefault().SignStatus;
                                 result.CaseItem.SignCount = 1;
                             }
+                        }
+                    }
+                    if (caseItemId != Guid.Empty)
+                    {
+                        var sign = _workFlowRepository.GetWorkFlowSign(caseItemId, userNumber);
+                        if (sign != null && sign.Count > 0)
+                        {
+                            if (sign.Count == 1)
+                            {
+                                result.CaseItem.OriginalUserId = sign.FirstOrDefault().OriginalUserId;
+                                result.CaseItem.SignStatus = sign.FirstOrDefault().SignStatus;
+                                result.CaseItem.SignCount = 1;
+                            }
                             else
                             {
                                 if (sign.FirstOrDefault().OriginalUserId == sign.LastOrDefault().UserId)
@@ -3167,48 +3180,48 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 WorkFlowNodeInfo flowNodeInfo = null;
                 bool isNull = false;
+
                 if (nodeid != Guid.Empty)
-                    if (nodeid != Guid.Empty)
+                {
+                    if (flowNextNodeInfos.Count > 1)
                     {
-                        if (flowNextNodeInfos.Count > 1)
+                        NextNodeDataInfo nodetemp = new NextNodeDataInfo();
+                        List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
+                        List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
+                        foreach (var m in flowNextNodeInfos)
                         {
-                            NextNodeDataInfo nodetemp = new NextNodeDataInfo();
-                            List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
-                            List<NextNodeDataInfo> defaultConditionNodes = new List<NextNodeDataInfo>();//默认不设置条件的分支节点，一般情况下只允许一条数据
-                            foreach (var m in flowNextNodeInfos)
+                            var node = _workFlowRepository.GetNodeDataInfo(caseInfo.FlowId, m.NodeId, caseInfo.VerNum, trans).FirstOrDefault();
+                            bool isDefaultNode = false;
+                            //验证规则是否符合
+                            if (ValidateNextNodeRule(caseInfo, caseInfo.FlowId, fromNodeid, m.NodeId, caseInfo.VerNum, userinfo, out isDefaultNode, trans))
                             {
-                                var node = _workFlowRepository.GetNodeDataInfo(caseInfo.FlowId, m.NodeId, caseInfo.VerNum, trans).FirstOrDefault();
-                                bool isDefaultNode = false;
-                                //验证规则是否符合
-                                if (ValidateNextNodeRule(caseInfo, caseInfo.FlowId, fromNodeid, m.NodeId, caseInfo.VerNum, userinfo, out isDefaultNode, trans))
+                                if (isDefaultNode)
                                 {
-                                    if (isDefaultNode)
-                                    {
-                                        defaultConditionNodes.Add(node);
-                                    }
-                                    else metConditionNodes.Add(node);
+                                    defaultConditionNodes.Add(node);
                                 }
+                                else metConditionNodes.Add(node);
                             }
-                            if (defaultConditionNodes.Count > 1)
-                                throw new Exception("每个流程只允许配置一条无过滤条件的分支");
-                            else if (metConditionNodes.Count == 0 && defaultConditionNodes.Count == 0)
-                            {
-                                throw new Exception("没有符合分支流程规则的下一步审批人");
-                            }
-                            else
-                            {
-                                if (metConditionNodes.Count > 1)
-                                    throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
-                                else if (metConditionNodes.Count == 1)
-                                    nodetemp = metConditionNodes.FirstOrDefault();
-                                else nodetemp = defaultConditionNodes.FirstOrDefault();
-                            }
-                            flowNodeInfo = flowNextNodeInfos.FirstOrDefault(t => t.NodeId == nodetemp.NodeId);
+                        }
+                        if (defaultConditionNodes.Count > 1)
+                            throw new Exception("每个流程只允许配置一条无过滤条件的分支");
+                        else if (metConditionNodes.Count == 0 && defaultConditionNodes.Count == 0)
+                        {
+                            throw new Exception("没有符合分支流程规则的下一步审批人");
                         }
                         else
-                            flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
+                        {
+                            if (metConditionNodes.Count > 1)
+                                throw new Exception("存在多条符合条件的分支，请重新配置流程后再发起审批");
+                            else if (metConditionNodes.Count == 1)
+                                nodetemp = metConditionNodes.FirstOrDefault();
+                            else nodetemp = defaultConditionNodes.FirstOrDefault();
+                        }
+                        flowNodeInfo = flowNextNodeInfos.FirstOrDefault(t => t.NodeId == nodetemp.NodeId);
                     }
-                    else flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
+                    else
+                        flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
+                }
+                else flowNodeInfo = flowNextNodeInfos.FirstOrDefault();
                 if (flowNodeInfo == null && !isNull)
                     throw new Exception("下一步节点不可为空");
                 nodeid = flowNodeInfo.NodeId;
@@ -3241,7 +3254,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     HandleUser = handlerId,
                     CopyUser = caseItemModel.CopyUser,
                     SkipNode = caseItemModel.SkipNode,
-                    Suggest = (caseInfo.NodeNum == 0 && caseitemlist.OrderByDescending(t => t.StepNum).FirstOrDefault().StepNum > 1) ? string.Empty : caseItemModel.Suggest //为了适应驳回后重新发起的时候写入备注，这个需要跟第一次发起流程的时候区别开来
+                    Suggest = string.Empty //为了适应驳回后重新发起的时候写入备注，这个需要跟第一次发起流程的时候区别开来
                 };
                 caseitems.Add(item);
             }
