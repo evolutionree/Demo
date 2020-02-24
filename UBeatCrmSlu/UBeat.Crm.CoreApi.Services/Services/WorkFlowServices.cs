@@ -2783,10 +2783,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     tran.Commit();
                     canWriteCaseMessage = true;
                 }
-                if (isNeedToSendMsg != 0)
-                    //写审批消息
-                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, IsFinishAfterStart);
-
+ 
             }
             catch (Exception ex)
             {
