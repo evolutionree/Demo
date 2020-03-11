@@ -984,7 +984,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         foreach (var mdata in pageDataTemp)
                         {
-                            if (mdata.ContainsKey(item.FieldName) == false) continue;//第一层忽略表格内容字段
+                            if (mdata.ContainsKey(item.FieldName) == false
+                                && mdata.ContainsKey(item.FieldName + "_name") == false) continue;//第一层忽略表格内容字段
                             switch (item.FieldType)
                             {
                                 case FieldType.TimeDate:
@@ -1022,7 +1023,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     {
                                         var _namevalues = mdata[item.FieldName + "_name"];
                                         if (mdata.ContainsKey(item.FieldName))
-                                            mdata[item.FieldName] = _namevalues;
+                                        {
+                                            bool isReplaceValue = false;
+                                            if (mdata[item.FieldName] != null)
+                                            {
+                                                try
+                                                {
+                                                    Dictionary<string, object> tmpitem = JsonConvert.DeserializeObject<Dictionary<string, object>>(mdata[item.FieldName].ToString());
+                                                    if (tmpitem != null
+                                                        && tmpitem.ContainsKey("id")
+                                                        && tmpitem.ContainsKey("name")
+                                                        && tmpitem["name"] != null
+                                                        && tmpitem["name"].ToString().Length > 0)
+                                                    {
+
+                                                        mdata[item.FieldName] = tmpitem["name"].ToString();
+                                                        isReplaceValue = true;
+                                                    }
+                                                }
+                                                catch (Exception ex) { }
+                                            }
+                                            if (isReplaceValue == false)
+                                                mdata[item.FieldName] = _namevalues;
+                                        }
                                         else mdata.Add(item.FieldName, _namevalues);
                                     }
                                     break;
@@ -1118,7 +1141,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     {
 
                                         string thisfieldname = item.FieldName.Substring(fieldname.Length + 1);
-                                        if (mdata.ContainsKey(thisfieldname) == false) continue;//第一层忽略表格内容字段
+                                        if (mdata.ContainsKey(thisfieldname) == false
+                                            &&  mdata.ContainsKey(thisfieldname + "_name") == false) continue;//第一层忽略表格内容字段
                                         switch (item.FieldType)
                                         {
                                             case FieldType.TimeDate:
@@ -1156,7 +1180,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                 {
                                                     var _namevalues = mdata[thisfieldname + "_name"];
                                                     if (mdata.ContainsKey(thisfieldname))
-                                                        mdata[thisfieldname] = _namevalues;
+                                                    {
+                                                        bool isReplaceValue = false;
+                                                        if (mdata[thisfieldname] != null)
+                                                        {
+                                                            try
+                                                            {
+                                                                Dictionary<string, object> tmpitem = JsonConvert.DeserializeObject<Dictionary<string, object>>(mdata[thisfieldname].ToString());
+                                                                if (tmpitem != null
+                                                                    && tmpitem.ContainsKey("id")
+                                                                    && tmpitem.ContainsKey("name")
+                                                                    && tmpitem["name"] != null
+                                                                    && tmpitem["name"].ToString().Length > 0)
+                                                                {
+
+                                                                    mdata[thisfieldname] = tmpitem["name"].ToString();
+                                                                    isReplaceValue = true;
+                                                                }
+                                                            }
+                                                            catch (Exception ex) { }
+                                                        }
+                                                        if (isReplaceValue == false)
+                                                            mdata[thisfieldname] = _namevalues;
+                                                    }
                                                     else mdata.Add(thisfieldname, _namevalues);
                                                 }
                                                 break;
