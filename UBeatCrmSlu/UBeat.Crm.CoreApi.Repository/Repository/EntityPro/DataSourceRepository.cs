@@ -136,12 +136,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         #endregion
 
         #region 单选 多选
-        public List<Dictionary<string, object>> SelectFieldDicType(int status,int userNumber, string dicTypeId = "")
+        public List<Dictionary<string, object>> SelectFieldDicType(int status, int userNumber, string dicTypeId = "")
         {
             string sql = @"select a.dictypeid,a.dictypename,a.relatedictypeid,b.dictypename as relatedictypname ,a.isconfig,a.recorder,a.recstatus,a.dictypename_lang  from crm_sys_dictionary_type as a left join
- crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus order by a.dictypeid desc;";
+ crm_sys_dictionary_type as b on a.relatedictypeid = b.dictypeid where a.dictypeid != -1 and a.recstatus = @recstatus {0} order by a.dictypeid desc;";
             if (!string.IsNullOrEmpty(dicTypeId))
-                sql += string.Format(" and a.dictypeid <> {0}", dicTypeId);
+                sql = string.Format(sql, string.Format(" and a.dictypeid <> {0}", dicTypeId));
+            else
+                sql = string.Format(sql, string.Empty);
             //sql += " order by a.recorder";
             var param = new DbParameter[]
             {
@@ -203,7 +205,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             return ExecuteScalar(sql, param, null) == null;
         }
 
-        public bool  HasDicDataVal(string Name,string DicTypeId)
+        public bool HasDicDataVal(string Name, string DicTypeId)
         {
             string sql = @"select dictypeid from crm_sys_dictionary where dataval = @dataval and dictypeid::text = @dictypeid";
             var param = new DbParameter[]
@@ -340,7 +342,7 @@ where dicid = @dicid";
             string sql = "select (coalesce(max(recorder),0)+1) as dictypeid  from crm_sys_dictionary_type";
             return ExecuteScalar(sql, new DbParameter[] { }, null).ToString();
         }
-    
+
         public bool UpdateFieldDicTypeStatus(string[] ids, int status, int userNumber)
         {
             string sql = @"update crm_sys_dictionary_type set recstatus = @recstatus where dictypeid::text = ANY( @dictypeid) ";
@@ -509,7 +511,8 @@ where dicid = @dicid";
                 if (retList == null || retList.Count == 0) return null;
                 return retList[0];
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return null;
             }
         }
@@ -581,7 +584,8 @@ where dicid = @dicid";
                 if (obj == null) return 0;
                 else return int.Parse(obj.ToString());
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return 0;
             }
         }
