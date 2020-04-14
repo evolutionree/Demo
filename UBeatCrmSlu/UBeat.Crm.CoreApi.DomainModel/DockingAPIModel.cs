@@ -62,7 +62,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string Logo { get; set; }
     }
     public class YearReportAPISubResult : APIResult
-    { 
+    {
         public List<YearReport> Items { get; set; }
     }
     public class YearReport
@@ -213,7 +213,10 @@ namespace UBeat.Crm.CoreApi.DomainModel
         [JsonProperty("guarant_scope")]
         public string GuarantScope { get; set; }
     }
-
+    public class LawSuitAPISubResult : APIResult
+    {
+        public List<LawSuit> Items { get; set; }
+    }
     public class LawSuit
     {
         [JsonProperty("type")]
@@ -230,5 +233,41 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string CaseCause { get; set; }
         [JsonProperty("disabled")]
         public string Disabled { get; set; }
+    }
+    public class CaseDetailAPISubResult : APIResult
+    {
+        public List<CaseDetail> Items { get; set; }
+    }
+    public class CaseDetail
+    {
+        [JsonProperty("case_id")]
+        public string CaseId { get; set; }
+        [JsonProperty("hearing_date")]
+        public string HearingDate { get; set; }
+        [JsonProperty("case_no")]
+        public string CaseNo { get; set; }
+        [JsonProperty("start_date")]
+        public string StartDate { get; set; }
+        [JsonProperty("case_status")]
+        public string CaseStatus { get; set; }
+        [JsonProperty("agent")]
+        public string Agent { get; set; }
+        [JsonProperty("assistant")]
+        public string Assistant { get; set; }
+        [JsonProperty("end_date")]
+        public string EndDate { get; set; }
+        [JsonProperty("related_items")]
+        public List<RelatedItems> related_items { get; set; }
+    }
+    public class RelatedItems
+    {
+        [JsonProperty("role")]
+        public string Role { get; set; }
+        [JsonProperty("eid")]
+        public string EId { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        [JsonProperty("entity_type")]
+        public string EntityType { get; set; }
     }
 }

@@ -45,5 +45,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (api == null) return new OutputResult<object>("参数异常");
             return _dockingAPIServices.GetYearReport(api);
         }
+        [HttpPost]
+        [Route("getcasedetail")]
+        public OutputResult<object> GetCaseDetail([FromBody]DockingAPIModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.GetCaseDetail(api);
+        }
     }
 }
