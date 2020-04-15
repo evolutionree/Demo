@@ -270,4 +270,56 @@ namespace UBeat.Crm.CoreApi.DomainModel
         [JsonProperty("entity_type")]
         public string EntityType { get; set; }
     }
+    public class CourtNoticeAPISubResult : APIResult
+    {
+        public List<CourtNotice> Items { get; set; }
+    }
+    public class CourtNotice
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+        [JsonProperty("content")]
+        public string Content { get; set; }
+        [JsonProperty("date")]
+        public string Date { get; set; }
+        [JsonProperty("court")]
+        public string Court { get; set; }
+        [JsonProperty("person")]
+        public string Person { get; set; }
+        [JsonProperty("disabled")]
+        public string Disabled { get; set; }
+    }
+    public class BreakPromiseAPISubResult : APIResult
+    {
+        public List<BreakPromise> Items { get; set; }
+    }
+    public class BreakPromise
+    {
+        [JsonProperty("court")]
+        public string Court { get; set; }
+        [JsonProperty("oper_name")]
+        public string OperName { get; set; }
+        [JsonProperty("province")]
+        public string Province { get; set; }
+        [JsonProperty("doc_number")]
+        public string DocNumber { get; set; }
+        [JsonProperty("date")]
+        public string Date { get; set; }
+        [JsonProperty("case_number")]
+        public string CaseNumber { get; set; }
+        [JsonProperty("ex_department")]
+        public string ExDepartment { get; set; }
+        [JsonProperty("final_duty")]
+        public string FinalDuty { get; set; }
+        [JsonProperty("execution_status")]
+        public string ExecutionStatus { get; set; }
+        [JsonProperty("execution_desc")]
+        public string ExecutionDesc { get; set; }
+        [JsonProperty("publish_date")]
+        public string PublishDate { get; set; }
+        [JsonProperty("number")]
+        public string Number { get; set; }
+        [JsonProperty("disabled")]
+        public string Disabled { get; set; }
+    }
 }

@@ -56,6 +56,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var data = JsonConvert.DeserializeObject<CompanyAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
                 return data.Items ?? new List<CompanySampleInfo>();
             }
+            else if (jObject["status"].ToString() == "105") return null;
             return new List<CompanySampleInfo>();
         }
         CompanyInfo BuildCompanyInfo(DockingAPIModel api)
@@ -108,7 +109,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var data = JsonConvert.DeserializeObject<YearReportAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
                 return data ?? new YearReportAPISubResult();
             }
-            return null;
+            else if (jObject["status"].ToString() == "105") return null;
+            return new YearReportAPISubResult();
         }
 
         public OutputResult<object> GetLawSuit(DockingAPIModel api)
@@ -125,7 +127,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var data = JsonConvert.DeserializeObject<LawSuitAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
                 return data ?? new LawSuitAPISubResult();
             }
-            return null;
+            else if (jObject["status"].ToString() == "105") return null;
+            return new LawSuitAPISubResult();
         }
         public OutputResult<object> GetCaseDetail(DockingAPIModel api)
         {
@@ -141,7 +144,43 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var data = JsonConvert.DeserializeObject<CaseDetailAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
                 return data ?? new CaseDetailAPISubResult();
             }
-            return null;
+            else if (jObject["status"].ToString() == "105") return null;
+            return new CaseDetailAPISubResult();
+        }
+
+        public OutputResult<object> GetCourtNotice(DockingAPIModel api)
+        {
+            var result = BuildCourtNotice(api);
+            return new OutputResult<object>(result);
+        }
+        CourtNoticeAPISubResult BuildCourtNotice(DockingAPIModel api)
+        {
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETNOTICELISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum));
+            var jObject = JObject.Parse(result);
+            if (jObject["status"].ToString() == "200")
+            {
+                var data = JsonConvert.DeserializeObject<CourtNoticeAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
+                return data ?? new CourtNoticeAPISubResult();
+            }
+            else if (jObject["status"].ToString() == "105") return null;
+            return new CourtNoticeAPISubResult();
+        }
+        public OutputResult<object> GetBuildBreakPromise(DockingAPIModel api)
+        {
+            var result = BuildBreakPromise(api);
+            return new OutputResult<object>(result);
+        }
+        BreakPromiseAPISubResult BuildBreakPromise(DockingAPIModel api)
+        {
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETNOTICELISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum));
+            var jObject = JObject.Parse(result);
+            if (jObject["status"].ToString() == "200")
+            {
+                var data = JsonConvert.DeserializeObject<BreakPromiseAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
+                return data ?? new BreakPromiseAPISubResult();
+            }
+            else if (jObject["status"].ToString() == "105") return null;
+            return new BreakPromiseAPISubResult();
         }
     }
 }

@@ -52,5 +52,19 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (api == null) return new OutputResult<object>("参数异常");
             return _dockingAPIServices.GetCaseDetail(api);
         }
+        [HttpPost]
+        [Route("getcourtnotice")]
+        public OutputResult<object> GetCourtNotice([FromBody]DockingAPIModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.GetCourtNotice(api);
+        }
+        [HttpPost]
+        [Route("getbreakpromise")]
+        public OutputResult<object> GetBuildBreakPromise([FromBody]DockingAPIModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.GetBuildBreakPromise(api);
+        }
     }
 }

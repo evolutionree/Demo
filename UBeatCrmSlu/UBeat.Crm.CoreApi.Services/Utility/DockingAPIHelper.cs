@@ -34,5 +34,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         /// 按企业全名或注册号或统一社会信用代码返回裁判文书列表
         /// </summary>
         public static string GETCASEDETAILLISTBYNAME_API = "http://api.qixin.com/APIService/case/getCaseDetailListByName?appkey={0}&keyword={1}";
+        /// <summary>
+        /// 按企业全名或注册号或统一社会信用代码返回法院公告信息
+        /// </summary>
+        public static string GETNOTICELISTBYNAME_API = "http://api.qixin.com/APIService/notice/getNoticeListByName?appkey={0}&name={1}&skip={2}";
     }
 }
