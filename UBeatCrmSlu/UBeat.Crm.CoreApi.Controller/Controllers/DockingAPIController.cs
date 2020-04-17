@@ -28,12 +28,13 @@ namespace UBeat.Crm.CoreApi.Controllers
     public class DockingAPIController : BaseController
     {
         private readonly DockingAPIServices _dockingAPIServices;
-        public DockingAPIController(DockingAPIServices dockingAPIServices) {
+        public DockingAPIController(DockingAPIServices dockingAPIServices)
+        {
             this._dockingAPIServices = dockingAPIServices;
         }
         [HttpPost]
         [Route("getbusinesslist")]
-        public OutputResult<object> GetBusinessList([FromBody]DockingAPIModel api)
+        public OutputResult<object> GetBusinessList([FromBody]CompanyModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
             return _dockingAPIServices.GetBusinessList(api);
@@ -51,6 +52,13 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (api == null) return new OutputResult<object>("参数异常");
             return _dockingAPIServices.GetCaseDetail(api);
+        }
+        [HttpPost]
+        [Route("getlawsuit")]
+        public OutputResult<object> GetLawSuit([FromBody]DockingAPIModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.GetLawSuit(api);
         }
         [HttpPost]
         [Route("getcourtnotice")]

@@ -15,39 +15,44 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             public static string NOTAUTHMESSAGE = "接口未获取授权";
         }
-        public OutputResult<object> GetBusinessList(DockingAPIModel api)
+        public OutputResult<object> GetBusinessList(CompanyModel api)
         {
-            var result = BuildCompanySamples(api);
+            string[] splitStr = api.CompanyName.Split(" ");
             var outResult = new List<CompanyInfo>();
-            foreach (var r in result)
+            foreach (var str in splitStr)
             {
-                var t = BuildCompanyInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
-                if (t == null) continue;
-                var t1 = BuildCompanyContactInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
-                if (t1 != null)
+                api.CompanyName = str;
+                var result = BuildCompanySamples(api);
+                foreach (var r in result)
                 {
-                    t.Telephone = t1.Telephone;
-                    t.Email = t1.Email;
-                    t.Address = t1.Address;
+                    var t = BuildCompanyInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
+                    if (t == null) continue;
+                    var t1 = BuildCompanyContactInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
+                    if (t1 != null)
+                    {
+                        t.Telephone = t1.Telephone;
+                        t.Email = t1.Email;
+                        t.Address = t1.Address;
+                    }
+                    else
+                    {
+                        t.Telephone = StaticMessageTip.NOTAUTHMESSAGE;
+                        t.Email = StaticMessageTip.NOTAUTHMESSAGE;
+                        t.Address = StaticMessageTip.NOTAUTHMESSAGE;
+                    }
+                    var t2 = BuildCompanyLogoInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
+                    if (t2 != null)
+                    {
+                        t.Logo = t2.Logo;
+                    }
+                    else
+                        t.Logo = StaticMessageTip.NOTAUTHMESSAGE;
+                    outResult.Add(t);
                 }
-                else
-                {
-                    t.Telephone = StaticMessageTip.NOTAUTHMESSAGE;
-                    t.Email = StaticMessageTip.NOTAUTHMESSAGE;
-                    t.Address = StaticMessageTip.NOTAUTHMESSAGE;
-                }
-                var t2 = BuildCompanyLogoInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
-                if (t2 != null)
-                {
-                    t.Logo = t2.Logo;
-                }
-                else
-                    t.Logo = StaticMessageTip.NOTAUTHMESSAGE;
-                outResult.Add(t);
             }
-            return new OutputResult<object>(outResult);
+            return new OutputResult<object>(new CompanyInfoAPISubResult { Items = outResult, Total = outResult.Count });
         }
-        List<CompanySampleInfo> BuildCompanySamples(DockingAPIModel api)
+        List<CompanySampleInfo> BuildCompanySamples(CompanyModel api)
         {
             string result = HttpLib.Get(string.Format(DockingAPIHelper.ADVSEARCH_API, api.CompanyName, "name", api.AppKey, api.SkipNum));
             var jObject = JObject.Parse(result);

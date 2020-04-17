@@ -27,6 +27,10 @@ namespace UBeat.Crm.CoreApi.DomainModel
     {
         public string CompanyName { get; set; }
     }
+    public class CompanyModel : APIModel
+    {
+        public string CompanyName { get; set; }
+    }
     public class CompanyAPISubResult : APIResult
     {
         public List<CompanySampleInfo> Items { get; set; }
@@ -35,6 +39,10 @@ namespace UBeat.Crm.CoreApi.DomainModel
     {
         public string Name { get; set; }
         public string Id { get; set; }
+    }
+    public class CompanyInfoAPISubResult : APIResult
+    {
+        public List<CompanyInfo> Items { get; set; }
     }
     public class CompanyInfo
     {
