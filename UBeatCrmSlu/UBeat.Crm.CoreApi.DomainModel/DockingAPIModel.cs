@@ -55,6 +55,20 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string Email { get; set; }
         public string Address { get; set; }
         public string Logo { get; set; }
+        public string EconKind { get; set; }
+        public string EconKindCode { get; set; }
+        public string RegNo { get; set; }
+        public string Scope { get; set; }
+        public string TermStart { get; set; }
+        public string TermEnd { get; set; }
+        public string BelongOrg { get; set; }
+        public string EndDate { get; set; }
+        public string CheckDate { get; set; }
+        public string Status { get; set; }
+        public string OrgNo { get; set; }
+        public string CreditNo { get; set; }
+        public string DistrictCode { get; set; }
+        public string Domain { get; set; }
     }
     public class CompanyContactInfo
     {
