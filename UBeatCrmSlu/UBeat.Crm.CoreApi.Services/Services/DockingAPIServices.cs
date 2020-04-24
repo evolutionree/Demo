@@ -4,9 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Utility;
-
+using System.Linq;
 namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class DockingAPIServices : BaseServices
@@ -15,42 +16,59 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             public static string NOTAUTHMESSAGE = "接口未获取授权";
         }
+        private readonly IDockingAPIRepository _dockingAPIRepository;
+        public DockingAPIServices(IDockingAPIRepository dockingAPIRepository)
+        {
+            _dockingAPIRepository = dockingAPIRepository;
+        }
         public OutputResult<object> GetBusinessList(CompanyModel api)
         {
             string[] splitStr = api.CompanyName.Split(" ");
-            var outResult = new List<CompanyInfo>();
+            var outResult = new List<CompanySampleInfo>();
+            var result = new List<CompanySampleInfo>();
             foreach (var str in splitStr)
             {
                 api.CompanyName = str;
-                var result = BuildCompanySamples(api);
-                foreach (var r in result)
-                {
-                    var t = BuildCompanyInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
-                    if (t == null) continue;
-                    var t1 = BuildCompanyContactInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
-                    if (t1 != null)
-                    {
-                        t.Telephone = t1.Telephone;
-                        t.Email = t1.Email;
-                        t.Address = t1.Address;
-                    }
-                    else
-                    {
-                        t.Telephone = StaticMessageTip.NOTAUTHMESSAGE;
-                        t.Email = StaticMessageTip.NOTAUTHMESSAGE;
-                        t.Address = StaticMessageTip.NOTAUTHMESSAGE;
-                    }
-                    var t2 = BuildCompanyLogoInfo(new DockingAPIModel { CompanyName = r.Name, AppKey = api.AppKey });
-                    if (t2 != null)
-                    {
-                        t.Logo = t2.Logo;
-                    }
-                    else
-                        t.Logo = StaticMessageTip.NOTAUTHMESSAGE;
-                    outResult.Add(t);
-                }
+                result = BuildCompanySamples(api);
+                outResult.AddRange(result);
             }
             return new OutputResult<object>(new CompanyInfoAPISubResult { Items = outResult, Total = outResult.Count });
+        }
+        public OutputResult<object> GetBusinessDetail(CompanyModel api, int userId)
+        {
+            var t = new CompanyInfo();
+            var tmp = _dockingAPIRepository.GetBussinessInfomation("basicinfo", 1, api.CompanyName, userId);
+            if (tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().BasicInfo))
+                return new OutputResult<object>(JsonConvert.DeserializeObject<CompanyInfo>(tmp.FirstOrDefault().BasicInfo.Replace("\\","")));
+            t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
+            if (t != null&&!string.IsNullOrEmpty(t.Id))
+            {
+                var t1 = BuildCompanyContactInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
+                if (t1 != null)
+                {
+                    t.Telephone = t1.Telephone;
+                    t.Email = t1.Email;
+                    t.Address = t1.Address;
+                }
+                else
+                {
+                    t.Telephone = StaticMessageTip.NOTAUTHMESSAGE;
+                    t.Email = StaticMessageTip.NOTAUTHMESSAGE;
+                    t.Address = StaticMessageTip.NOTAUTHMESSAGE;
+                }
+                var t2 = BuildCompanyLogoInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
+                if (t2 != null)
+                {
+                    t.Logo = t2.Logo;
+                }
+                else
+                    t.Logo = StaticMessageTip.NOTAUTHMESSAGE;
+                if (t != null)
+                {
+                    _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(t) }, userId);
+                }
+            }
+            return new OutputResult<object>(t);
         }
         List<CompanySampleInfo> BuildCompanySamples(CompanyModel api)
         {
@@ -100,9 +118,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
 
-        public OutputResult<object> GetYearReport(DockingAPIModel api)
+        public OutputResult<object> GetYearReport(DockingAPIModel api, int userId)
         {
             var result = BuildYearReport(api);
+            if (result != null)
+            {
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+            }
             return new OutputResult<object>(result);
         }
         YearReportAPISubResult BuildYearReport(DockingAPIModel api)
@@ -118,9 +140,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new YearReportAPISubResult();
         }
 
-        public OutputResult<object> GetLawSuit(DockingAPIModel api)
+        public OutputResult<object> GetLawSuit(DockingAPIModel api, int userId)
         {
             var result = BuildLawSuit(api);
+            if (result != null)
+            {
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+            }
             return new OutputResult<object>(result);
         }
         LawSuitAPISubResult BuildLawSuit(DockingAPIModel api)
@@ -135,9 +161,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else if (jObject["status"].ToString() == "105") return null;
             return new LawSuitAPISubResult();
         }
-        public OutputResult<object> GetCaseDetail(DockingAPIModel api)
+        public OutputResult<object> GetCaseDetail(DockingAPIModel api, int userId)
         {
             var result = BuildCaseDetail(api);
+            if (result != null)
+            {
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+            }
             return new OutputResult<object>(result);
         }
         CaseDetailAPISubResult BuildCaseDetail(DockingAPIModel api)
@@ -153,9 +183,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new CaseDetailAPISubResult();
         }
 
-        public OutputResult<object> GetCourtNotice(DockingAPIModel api)
+        public OutputResult<object> GetCourtNotice(DockingAPIModel api, int userId)
         {
             var result = BuildCourtNotice(api);
+            if (result != null)
+            {
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+            }
             return new OutputResult<object>(result);
         }
         CourtNoticeAPISubResult BuildCourtNotice(DockingAPIModel api)
@@ -170,9 +204,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else if (jObject["status"].ToString() == "105") return null;
             return new CourtNoticeAPISubResult();
         }
-        public OutputResult<object> GetBuildBreakPromise(DockingAPIModel api)
+        public OutputResult<object> GetBuildBreakPromise(DockingAPIModel api, int userId)
         {
             var result = BuildBreakPromise(api);
+            if (result != null)
+            {
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+            }
             return new OutputResult<object>(result);
         }
         BreakPromiseAPISubResult BuildBreakPromise(DockingAPIModel api)

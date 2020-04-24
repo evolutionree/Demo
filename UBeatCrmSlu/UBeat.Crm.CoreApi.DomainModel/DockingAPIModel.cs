@@ -7,6 +7,21 @@ using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.DomainModel
 {
+    public class BussinessInformation
+    {
+        public string CompanyName { get; set; }
+        public string BasicInfo { get; set; }
+        public string YearReport { get; set; }
+        public string CaseDetail { get; set; }
+        public string LawSuit { get; set; }
+        public string CourtNotice { get; set; }
+        public string BreakPromise { get; set; }
+    }
+    public class Bussiness
+    {
+        public string CompanyName { get; set; }
+    }
+
     public class APIModel
     {
         public string AppKey { get; set; }
@@ -42,7 +57,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
     }
     public class CompanyInfoAPISubResult : APIResult
     {
-        public List<CompanyInfo> Items { get; set; }
+        public List<CompanySampleInfo> Items { get; set; }
     }
     public class CompanyInfo
     {

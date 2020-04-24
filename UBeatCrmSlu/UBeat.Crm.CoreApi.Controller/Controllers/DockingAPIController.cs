@@ -40,39 +40,46 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dockingAPIServices.GetBusinessList(api);
         }
         [HttpPost]
+        [Route("getbusinessdetail")]
+        public OutputResult<object> GetBusinessDetail([FromBody]CompanyModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.GetBusinessDetail(api,UserId);
+        }
+        [HttpPost]
         [Route("getyearreport")]
         public OutputResult<object> GetYearReport([FromBody]DockingAPIModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetYearReport(api);
+            return _dockingAPIServices.GetYearReport(api, UserId);
         }
         [HttpPost]
         [Route("getcasedetail")]
         public OutputResult<object> GetCaseDetail([FromBody]DockingAPIModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetCaseDetail(api);
+            return _dockingAPIServices.GetCaseDetail(api, UserId);
         }
         [HttpPost]
         [Route("getlawsuit")]
         public OutputResult<object> GetLawSuit([FromBody]DockingAPIModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetLawSuit(api);
+            return _dockingAPIServices.GetLawSuit(api, UserId);
         }
         [HttpPost]
         [Route("getcourtnotice")]
         public OutputResult<object> GetCourtNotice([FromBody]DockingAPIModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetCourtNotice(api);
+            return _dockingAPIServices.GetCourtNotice(api, UserId);
         }
         [HttpPost]
         [Route("getbreakpromise")]
         public OutputResult<object> GetBuildBreakPromise([FromBody]DockingAPIModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetBuildBreakPromise(api);
+            return _dockingAPIServices.GetBuildBreakPromise(api,UserId);
         }
     }
 }
