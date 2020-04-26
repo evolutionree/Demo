@@ -16,6 +16,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string LawSuit { get; set; }
         public string CourtNotice { get; set; }
         public string BreakPromise { get; set; }
+        public string RecUpdated { get; set; }
     }
     public class Bussiness
     {
@@ -84,6 +85,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string CreditNo { get; set; }
         public string DistrictCode { get; set; }
         public string Domain { get; set; }
+        public string RecUpdated { get; set; }
     }
     public class CompanyContactInfo
     {

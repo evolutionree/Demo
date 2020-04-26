@@ -34,15 +34,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return new OutputResult<object>(new CompanyInfoAPISubResult { Items = outResult, Total = outResult.Count });
         }
-        public OutputResult<object> GetBusinessDetail(CompanyModel api, int userId)
+        public OutputResult<object> UpdateBusinessInfomation(CompanyModel api, int userId)
+        {
+            var basicInfo = this.GetBusinessDetail(api, 1, userId);
+            var yearReport = BuildYearReport(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, SkipNum = api.SkipNum });
+            var lawSuit = BuildLawSuit(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, SkipNum = api.SkipNum });
+            var caseDetail = BuildCaseDetail(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, SkipNum = api.SkipNum });
+            var courtNotice = BuildCourtNotice(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, SkipNum = api.SkipNum });
+            var breakPromise = BuildBreakPromise(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, SkipNum = api.SkipNum });
+            _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation
+            {
+                CompanyName = api.CompanyName,
+                BasicInfo = JsonConvert.SerializeObject(basicInfo.DataBody as CompanyInfo),
+                YearReport = JsonConvert.SerializeObject(yearReport),
+                LawSuit = JsonConvert.SerializeObject(lawSuit),
+                CaseDetail = JsonConvert.SerializeObject(caseDetail),
+                CourtNotice = JsonConvert.SerializeObject(courtNotice),
+                BreakPromise = JsonConvert.SerializeObject(breakPromise),
+            }
+                 , userId);
+            return HandleResult(new OperateResult
+            {
+                Flag = 1,
+                Msg = DateTime.Now.ToString("yyyy-MM-dd HH:MM:ss")
+            });
+        }
+        public OutputResult<object> GetBusinessDetail(CompanyModel api, int isRefresh, int userId)
         {
             var t = new CompanyInfo();
             var tmp = _dockingAPIRepository.GetBussinessInfomation("basicinfo", 1, api.CompanyName, userId);
-            if (tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().BasicInfo))
-                return new OutputResult<object>(JsonConvert.DeserializeObject<CompanyInfo>(tmp.FirstOrDefault().BasicInfo.Replace("\\","")));
+            if (isRefresh == 0 && tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().BasicInfo))
+                return new OutputResult<object>(JsonConvert.DeserializeObject<CompanyInfo>(tmp.FirstOrDefault().BasicInfo));
             t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
-            if (t != null&&!string.IsNullOrEmpty(t.Id))
+            if (t != null && !string.IsNullOrEmpty(t.Id))
             {
+                t.RecUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:MM:ss");
                 var t1 = BuildCompanyContactInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
                 if (t1 != null)
                 {
@@ -120,6 +146,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> GetYearReport(DockingAPIModel api, int userId)
         {
+            var tmp = _dockingAPIRepository.GetBussinessInfomation("yearreport", 1, api.CompanyName, userId);
+            if (tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().YearReport))
+                return new OutputResult<object>(JsonConvert.DeserializeObject<YearReportAPISubResult>(tmp.FirstOrDefault().YearReport));
             var result = BuildYearReport(api);
             if (result != null)
             {
@@ -142,6 +171,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> GetLawSuit(DockingAPIModel api, int userId)
         {
+            var tmp = _dockingAPIRepository.GetBussinessInfomation("lawsuit", 1, api.CompanyName, userId);
+            if (tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().LawSuit))
+                return new OutputResult<object>(JsonConvert.DeserializeObject<LawSuitAPISubResult>(tmp.FirstOrDefault().LawSuit));
             var result = BuildLawSuit(api);
             if (result != null)
             {
@@ -163,6 +195,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> GetCaseDetail(DockingAPIModel api, int userId)
         {
+            var tmp = _dockingAPIRepository.GetBussinessInfomation("casedetail", 1, api.CompanyName, userId);
+            if (tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().CaseDetail))
+                return new OutputResult<object>(JsonConvert.DeserializeObject<CaseDetailAPISubResult>(tmp.FirstOrDefault().CaseDetail));
             var result = BuildCaseDetail(api);
             if (result != null)
             {
@@ -185,6 +220,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> GetCourtNotice(DockingAPIModel api, int userId)
         {
+            var tmp = _dockingAPIRepository.GetBussinessInfomation("courtnotice", 1, api.CompanyName, userId);
+            if (tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().CourtNotice))
+                return new OutputResult<object>(JsonConvert.DeserializeObject<CourtNoticeAPISubResult>(tmp.FirstOrDefault().CourtNotice));
             var result = BuildCourtNotice(api);
             if (result != null)
             {
@@ -206,6 +244,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> GetBuildBreakPromise(DockingAPIModel api, int userId)
         {
+            var tmp = _dockingAPIRepository.GetBussinessInfomation("breakpromise", 1, api.CompanyName, userId);
+            if (tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().BreakPromise))
+                return new OutputResult<object>(JsonConvert.DeserializeObject<BreakPromiseAPISubResult>(tmp.FirstOrDefault().BreakPromise));
             var result = BuildBreakPromise(api);
             if (result != null)
             {

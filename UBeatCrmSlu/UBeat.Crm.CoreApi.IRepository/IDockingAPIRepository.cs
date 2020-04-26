@@ -9,6 +9,6 @@ namespace UBeat.Crm.CoreApi.IRepository
     {
         OperateResult InsertBussinessInfomation(BussinessInformation data, int userNumber);
         List<BussinessInformation> GetBussinessInfomation(string selectField, int isLike, string companyName, int userNumber);
-        OperateResult UpdateBussinessInfomation(BussinessInformation data, int userNumber);
+        void UpdateBussinessInfomation(BussinessInformation data, int userNumber);
     }
 }

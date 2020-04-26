@@ -40,11 +40,18 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dockingAPIServices.GetBusinessList(api);
         }
         [HttpPost]
+        [Route("updatebusiinfo")]
+        public OutputResult<object> UpdateBusinessInfomation([FromBody]CompanyModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.UpdateBusinessInfomation(api, UserId);
+        }
+        [HttpPost]
         [Route("getbusinessdetail")]
         public OutputResult<object> GetBusinessDetail([FromBody]CompanyModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetBusinessDetail(api,UserId);
+            return _dockingAPIServices.GetBusinessDetail(api,0, UserId);
         }
         [HttpPost]
         [Route("getyearreport")]
@@ -79,7 +86,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetBuildBreakPromise([FromBody]DockingAPIModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetBuildBreakPromise(api,UserId);
+            return _dockingAPIServices.GetBuildBreakPromise(api, UserId);
         }
     }
 }
