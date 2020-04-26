@@ -64,7 +64,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var t = new CompanyInfo();
             var tmp = _dockingAPIRepository.GetBussinessInfomation("basicinfo", 1, api.CompanyName, userId);
             if (isRefresh == 0 && tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().BasicInfo))
-                return new OutputResult<object>(JsonConvert.DeserializeObject<CompanyInfo>(tmp.FirstOrDefault().BasicInfo));
+            {
+                var data = JsonConvert.DeserializeObject<CompanyInfo>(tmp.FirstOrDefault().BasicInfo);
+                data.RecUpdated = tmp.FirstOrDefault().RecUpdated;
+                return new OutputResult<object>(data);
+            }
+
             t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
             if (t != null && !string.IsNullOrEmpty(t.Id))
             {
