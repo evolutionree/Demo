@@ -145,7 +145,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = BuildLawSuit(api);
             if (result != null)
             {
-                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, LawSuit = JsonConvert.SerializeObject(result) }, userId);
             }
             return new OutputResult<object>(result);
         }
@@ -166,7 +166,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = BuildCaseDetail(api);
             if (result != null)
             {
-                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, CaseDetail = JsonConvert.SerializeObject(result) }, userId);
             }
             return new OutputResult<object>(result);
         }
@@ -188,7 +188,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = BuildCourtNotice(api);
             if (result != null)
             {
-                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, CourtNotice = JsonConvert.SerializeObject(result) }, userId);
             }
             return new OutputResult<object>(result);
         }
@@ -209,7 +209,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var result = BuildBreakPromise(api);
             if (result != null)
             {
-                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, YearReport = JsonConvert.SerializeObject(result) }, userId);
+                _dockingAPIRepository.UpdateBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, BreakPromise = JsonConvert.SerializeObject(result) }, userId);
             }
             return new OutputResult<object>(result);
         }

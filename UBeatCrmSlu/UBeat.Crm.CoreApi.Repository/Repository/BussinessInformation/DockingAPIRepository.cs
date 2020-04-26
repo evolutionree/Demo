@@ -47,35 +47,35 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
             if (!string.IsNullOrEmpty(data.BasicInfo))
             {
                 args.Add("basicinfo", data.BasicInfo);
-                condition = " basicinfo=@basicinfo ";
+                condition = " basicinfo=@basicinfo::jsonb ";
             }
             if (!string.IsNullOrEmpty(data.YearReport))
             {
                 args.Add("yearreport", data.YearReport);
-                condition = " yearreport=@yearreport ";
+                condition = " yearreport=@yearreport::jsonb ";
             }
             if (!string.IsNullOrEmpty(data.CaseDetail))
             {
-                args.Add("lawsuit", data.CaseDetail);
-                condition = " casedetail=@casedetail ";
+                args.Add("casedetail", data.CaseDetail);
+                condition = " casedetail=@casedetail::jsonb ";
             }
             if (!string.IsNullOrEmpty(data.LawSuit))
             {
-                args.Add("courtnotice", data.LawSuit);
-                condition = " lawsuit=@lawsuit ";
+                args.Add("lawsuit", data.LawSuit);
+                condition = " lawsuit=@lawsuit::jsonb ";
             }
             if (!string.IsNullOrEmpty(data.CourtNotice))
             {
                 args.Add("courtnotice", data.CourtNotice);
-                condition = " courtnotice=@courtnotice ";
+                condition = " courtnotice=@courtnotice::jsonb ";
             }
             if (!string.IsNullOrEmpty(data.BreakPromise))
             {
                 args.Add("breakpromise", data.BreakPromise);
-                condition = " breakpromise=@breakpromise ";
+                condition = " breakpromise=@breakpromise::jsonb ";
             }
 
-            return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);
+            return DataBaseHelper.QuerySingle<OperateResult>(string.Format(executeSql, condition), args);
         }
 
         public List<BussinessInformation> GetBussinessInfomation(string selectField, int isLike, string companyName, int userNumber)
