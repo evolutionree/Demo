@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.SoapErp;
 using UBeat.Crm.CoreApi.Services.Utility;
 
@@ -20,9 +21,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private string SOAPPROPERTY = " <{0}>{1}</{0}> ";
 
         private readonly IConfigurationRoot _configurationRoot;
-        public SoapServices(IConfigurationRoot configurationRoot)
+        private readonly DynamicEntityRepository _dynamicEntityRepository;
+        public SoapServices(IConfigurationRoot configurationRoot, DynamicEntityRepository dynamicEntityRepository)
         {
             _configurationRoot = configurationRoot;
+            _dynamicEntityRepository = dynamicEntityRepository;
         }
         public OperateResult ToErpCustomer(Dictionary<string, object> detail, int userId)
         {
@@ -39,7 +42,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             string bodyParam = string.Format(SOAPBODYPARAM, soapConfig.Params[0].ParamName, body);
             string funcParam = string.Format(SOAPFUNCPARM, soapConfig.FunctionName, bodyParam);
-            var result = SoapHttpHelper.SendSoapRequest(soapConfig.SoapUrl, funcParam);
+            var logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { funcParam, soapConfig.SoapUrl }, 1, userId);
+            var result = SoapHttpHelper.SendSoapRequest(soapConfig.SoapUrl, funcParam, logId.ToString(), userId);
             if (result.IsSuccess)
                 return new OperateResult { Flag = 1, Msg = result.Msg };
             return new OperateResult { Flag = 0, Msg = result.Msg };
