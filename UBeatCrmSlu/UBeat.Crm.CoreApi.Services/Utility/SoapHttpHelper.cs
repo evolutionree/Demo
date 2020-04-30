@@ -11,6 +11,8 @@ using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
+using System.Linq;
+using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -19,7 +21,32 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         public bool IsSuccess { get; set; }
         public string Msg { get; set; }
     }
+    public enum DataTypeEnum
+    {
+        SingleChoose = 1,
+        MultiChoose = 2,
+        ChoosePerson = 3
+    }
+    public class DataTypeAttribute : Attribute
+    {
 
+        /// <summary>
+        /// 1单选，2多选 ，3选人.....
+        /// </summary>
+        public DataTypeEnum type { get; set; }
+        public DataTypeAttribute(DataTypeEnum type)
+        {
+            this.type = type;
+        }
+    }
+    public class EntityInfoAttribute : Attribute
+    {
+        public string EntityId { get; set; }
+        public EntityInfoAttribute(string entityId)
+        {
+            this.EntityId = entityId;
+        }
+    }
     public static class SoapHttpHelper
     {
         public static string SOAPTEMPLATE =
@@ -27,6 +54,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
  "<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">" +
  "  <soap12:Body>  " +
  "    <{0} xmlns=\"http://tempuri.org/\">" +
+            "ns2:updateCustomerFromCrm xmlns:ns2="http://erp.service.ceews.ceepcb.com/"+
             "{1}" +
  "    </{0}> " +
  "  </soap12:Body>" +
@@ -69,7 +97,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             catch (Exception ex)
             {
-                Log(new List<string> { "soapexceptionmsg" }, new List<string> { ex.Message+" || "+ex.InnerException.Message }, 0, userId, logId);
+                Log(new List<string> { "soapexceptionmsg" }, new List<string> { ex.Message + " || " + ex.InnerException.Message }, 0, userId, logId);
                 return new SoapRequestStatus { IsSuccess = false, Msg = "【请求异常】：" + ex.Message };
             }
             return new SoapRequestStatus { IsSuccess = true, Msg = "请求:" + soapUrl + "成功" };
@@ -113,6 +141,42 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 return Guid.Parse(recId);
             }
 
+        }
+
+        public static object ValueConvert(string key, Dictionary<string, object> detail, Type type)
+        {
+            if (detail[key] == null) return string.Empty;
+            var property = type.GetProperty(key);
+            var customPro = property.GetCustomAttribute<DataTypeAttribute>();
+            var customCla = type.GetCustomAttribute<EntityInfoAttribute>();
+            if (customPro == null) return detail[key];
+            if (customCla == null) throw new Exception("Soap的DTO实体没有配置EntityInfo");
+            var dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
+            var accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
+            switch (customPro.type)
+            {
+                case DataTypeEnum.SingleChoose:
+                case DataTypeEnum.MultiChoose:
+                    var dicRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
+                    var fields = dynamicRepository.GetEntityFields(Guid.Parse(customCla.EntityId), 1);
+                    var field = fields.FirstOrDefault(t => t.FieldName == key);
+                    if (field == null) return detail[key];
+                    DynamicProtocolFieldConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(field.FieldConfig);
+                    var dicValues = dicRepository.SelectFieldDicVaue(Convert.ToInt32(config.DataSource.SourceId), 1);
+                    var ids = detail[key].ToString().Split(",");
+                    string s = string.Empty;
+                    foreach (var id in ids)
+                    {
+                        var dicValue = dicValues.FirstOrDefault(t => t.DataId == Convert.ToInt32(id));
+                        s += dicValue.ExtField1 + ",";
+                    }
+                    detail[key] = s.Substring(0, s.Length - 2);
+                    break;
+                case DataTypeEnum.ChoosePerson:
+                    var userInfos = accountRepository.GetAllUserInfoList();
+                    break;
+            }
+            return detail[key];
         }
     }
 }

@@ -38,6 +38,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var kv = SoapHttpHelper.GetParamValueKV(type);
             foreach (var d in kv)
             {
+                SoapHttpHelper.ValueConvert(d.Value, detail, type);
                 body += string.Format(SOAPPROPERTY, d.Key, detail[d.Value] ?? "");
             }
             string bodyParam = string.Format(SOAPBODYPARAM, soapConfig.Params[0].ParamName, body);

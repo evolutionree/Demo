@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
 {
@@ -16,6 +17,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string ParamType { get; set; }
         public string ParamName { get; set; }
     }
+    [EntityInfo("f9db9d79-e94b-4678-a5cc-aa6e281c1246")]
     public class ToCustomerSoap
     {
         [JsonProperty("groupcodeid")]
@@ -34,6 +36,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string TaxNumber { get; set; }
         [JsonProperty("creditLimited")]
         public string CreditLine { get; set; }
+        [DataType(DataTypeEnum.MultiChoose)]
         [JsonProperty("paymentMethodId")]
         public string PayInstrument { get; set; }
         [JsonProperty("businessManId")]
@@ -45,6 +48,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string[] InvoiceAttach { get; set; }
         [JsonProperty("saleType")]
         public string SaleType { get; set; }
+        [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("assistantId")]
         public string FollowUser { get; set; }
         [JsonProperty("ename")]
@@ -57,12 +61,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string AreaId { get { return Country + CustRegion; } }
         [JsonProperty("officeAdd")]
         public string CustAddr { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("reditId")]
         public string Level { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("taxId")]
         public string TaxCategory { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("ifTaxPrice")]
         public string IncludTax { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("currencyId")]
         public string Currency { get; set; }
         [JsonProperty("customerId")]
