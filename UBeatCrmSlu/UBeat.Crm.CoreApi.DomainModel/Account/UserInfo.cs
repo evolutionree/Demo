@@ -19,5 +19,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         public string NamePinyin_FistChar { get; set; }
         public String DDUserId { get; set; }
         public String WCUserId { get; set; }
+        public string RelateErpUserId { get; set; }
     }
 }

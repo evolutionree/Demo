@@ -13,6 +13,9 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 using System.Linq;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
+using System.Collections;
+using System.Xml.Serialization;
+using Newtonsoft.Json.Linq;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -20,12 +23,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
     {
         public bool IsSuccess { get; set; }
         public string Msg { get; set; }
+        public object Data { get; set; }
     }
     public enum DataTypeEnum
     {
         SingleChoose = 1,
         MultiChoose = 2,
-        ChoosePerson = 3
+        ChoosePerson = 3,
+        AttachFile = 4,
+        Address = 5
     }
     public class DataTypeAttribute : Attribute
     {
@@ -49,27 +55,24 @@ namespace UBeat.Crm.CoreApi.Services.Utility
     }
     public static class SoapHttpHelper
     {
-        public static string SOAPTEMPLATE =
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
- "<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">" +
- "  <soap12:Body>  " +
- "    <{0} xmlns=\"http://tempuri.org/\">" +
-            "ns2:updateCustomerFromCrm xmlns:ns2="http://erp.service.ceews.ceepcb.com/"+
-            "{1}" +
- "    </{0}> " +
- "  </soap12:Body>" +
- "</soap12:Envelope>";
-        private static readonly IConfigurationRoot configurationRoot = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
 
-        public static SoapRequestStatus SendSoapRequest(string soapUrl, string xmlParam, string logId, int userId)
+        private static readonly IConfigurationRoot configurationRoot = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+        private static readonly string contentType = "text/xml; charset=UTF-8";
+
+        private static void SetWebRequest(HttpWebRequest request)
         {
-            WebRequest request = HttpWebRequest.Create(soapUrl);
+            request.Credentials = CredentialCache.DefaultCredentials;
+            request.Timeout = 10000;
+        }
+        public static SoapRequestStatus SendSoapRequest(string soapUrl, string xmlParam, string xmlPath, string logId, int userId)
+        {
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(soapUrl);
             byte[] bs = Encoding.UTF8.GetBytes(xmlParam);
             request.Method = "POST";
-            request.Timeout = 6000;
-            //SOAP1.1调用时需加上头部信息request.Headers.Add("SOAPAction", "http://tempuri.org/HelloWorld");
-            request.ContentType = "application/soap+xml; charset=UTF-8";
+            request.ContentType = contentType;
+            request.ProtocolVersion = HttpVersion.Version11;
             request.ContentLength = bs.Length;
+            SetWebRequest(request);
             try
             {
                 using (Stream reqStream = request.GetRequestStream())
@@ -85,14 +88,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     String retXml = sr.ReadToEnd();
                     sr.Close();
                     doc.LoadXml(retXml);
-                    Log(new List<string> { "soapresstatus" }, new List<string> { response.StatusCode == HttpStatusCode.OK ? "200:返回成功" : (int)response.StatusCode + ":返回异常" }, 0, userId, logId);
-                    XmlNamespaceManager mgr = new XmlNamespaceManager(doc.NameTable);
-                    //此处是soap1.2，如果是soap1.1就应该如下：mgr.AddNamespace("soap", "http://schemas.xmlsoap.org/soap/envelope/");
-                    mgr.AddNamespace("soap12", "http://www.w3.org/2003/05/soap-envelope");
-                    //解析XML
-                    var xmlNode = doc.SelectSingleNode("//soap12:Body/*", mgr);
-                    Console.WriteLine(xmlNode.FirstChild.InnerText);
-                    Log(new List<string> { "soapresresult" }, new List<string> { xmlNode.FirstChild.InnerText }, 0, userId, logId);
+                    var node = doc.SelectSingleNode(xmlPath, GetNameSpaceManager(doc));
+                    Log(new List<string> { "soapresstatus", "soapresresult" }, new List<string> { response.StatusCode == HttpStatusCode.OK ? "200:返回成功" : (int)response.StatusCode + ":返回异常", doc.OuterXml }, 0, userId, logId);
+                    return new SoapRequestStatus { IsSuccess = true, Msg = "请求:" + soapUrl + "成功", Data = node };
                 }
             }
             catch (Exception ex)
@@ -100,7 +98,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 Log(new List<string> { "soapexceptionmsg" }, new List<string> { ex.Message + " || " + ex.InnerException.Message }, 0, userId, logId);
                 return new SoapRequestStatus { IsSuccess = false, Msg = "【请求异常】：" + ex.Message };
             }
-            return new SoapRequestStatus { IsSuccess = true, Msg = "请求:" + soapUrl + "成功" };
+        }
+        static XmlNamespaceManager GetNameSpaceManager(XmlDocument Document)
+        {
+            XmlNamespaceManager objXmlNamespaceManager = new XmlNamespaceManager(Document.NameTable);
+            objXmlNamespaceManager.AddNamespace("soap", Document.DocumentElement.GetNamespaceOfPrefix("soap"));
+            return objXmlNamespaceManager;
         }
 
         public static Dictionary<string, string> GetParamValueKV(Type t)
@@ -123,7 +126,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         }
         public static Guid Log(List<string> fields, List<string> contents, int isUpdate, int userId, string recId = "")
         {
-            IDynamicEntityRepository dynamicEntityRepository = ServiceLocator.Current.GetInstance<DynamicEntityRepository>();
+            IDynamicEntityRepository dynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
             OperateResult result;
             var fielddata = new Dictionary<string, object>();
             for (int i = 0; i < fields.Count; i++)
@@ -133,7 +136,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             if (isUpdate == 0)
             {
                 result = dynamicEntityRepository.DynamicAdd(null, Guid.Parse("22e0700c-e829-4c1b-bb4a-ec5282d359b7"), fielddata, null, userId);
-                return Guid.Parse(result.Codes);
+                return Guid.Parse(result.Id);
             }
             else
             {
@@ -143,13 +146,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
         }
 
-        public static object ValueConvert(string key, Dictionary<string, object> detail, Type type)
+        public static void ValueConvert(KeyValuePair<string, string> kv, IDictionary<string, object> detail, Type type)
         {
-            if (detail[key] == null) return string.Empty;
-            var property = type.GetProperty(key);
+            if (detail[kv.Key] == null) return;
+            var property = type.GetProperties().FirstOrDefault(t => t.Name.ToLower() == kv.Key);
             var customPro = property.GetCustomAttribute<DataTypeAttribute>();
             var customCla = type.GetCustomAttribute<EntityInfoAttribute>();
-            if (customPro == null) return detail[key];
+            if (customPro == null) return;
             if (customCla == null) throw new Exception("Soap的DTO实体没有配置EntityInfo");
             var dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
             var accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
@@ -159,24 +162,72 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 case DataTypeEnum.MultiChoose:
                     var dicRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
                     var fields = dynamicRepository.GetEntityFields(Guid.Parse(customCla.EntityId), 1);
-                    var field = fields.FirstOrDefault(t => t.FieldName == key);
-                    if (field == null) return detail[key];
+                    var field = fields.FirstOrDefault(t => t.FieldName == kv.Key);
+                    if (field == null) return;
                     DynamicProtocolFieldConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(field.FieldConfig);
                     var dicValues = dicRepository.SelectFieldDicVaue(Convert.ToInt32(config.DataSource.SourceId), 1);
-                    var ids = detail[key].ToString().Split(",");
+                    var ids = detail[kv.Key].ToString().Split(",");
                     string s = string.Empty;
                     foreach (var id in ids)
                     {
                         var dicValue = dicValues.FirstOrDefault(t => t.DataId == Convert.ToInt32(id));
                         s += dicValue.ExtField1 + ",";
                     }
-                    detail[key] = s.Substring(0, s.Length - 2);
+                    detail[kv.Key] = s.Substring(0, s.Length - 1);
                     break;
                 case DataTypeEnum.ChoosePerson:
                     var userInfos = accountRepository.GetAllUserInfoList();
+                    var userInfo = userInfos.FirstOrDefault(t => t.UserId == Convert.ToInt32((detail[kv.Key] ?? 0)));
+                    detail[kv.Key] = userInfo == null ? string.Empty : userInfo.RelateErpUserId;
+                    break;
+                case DataTypeEnum.AttachFile:
+                    var files = new List<string>();
+                    var attach = JArray.Parse((detail[kv.Key] ?? "{}").ToString());
+                    foreach (var t in attach)
+                    {
+                        files.Add(string.Format(configurationRoot.GetSection("FileServiceSetting").GetValue<string>("ReadUrl"), t["fileid"]));
+                    }
+                    detail[kv.Key] = files;
+                    break;
+                case DataTypeEnum.Address:
+                    var addr = JObject.Parse((detail[kv.Key] ?? "{}").ToString());
+                    detail[kv.Key] = addr.HasValues ? addr["address"].ToString() : string.Empty;
                     break;
             }
-            return detail[key];
+            return;
+        }
+        public static T OutPutERPData<T>(IDictionary<string, object> detail)
+        {
+            var instance = CreateInstance<T>(typeof(T));
+            var properties = typeof(T).GetProperties();
+            foreach (var pro in properties)
+            {
+                if (pro.GetCustomAttribute<JsonPropertyAttribute>() == null) continue;
+                pro.SetValue(instance, detail[pro.Name.ToLower()] ?? string.Empty);
+            }
+            return instance;
+        }
+
+        /// <summary>
+        /// 创建对象实例
+        /// </summary>
+        /// <typeparam name="T">要创建对象的类型</typeparam>
+        /// <param name="assemblyName">类型所在程序集名称</param>
+        /// <param name="nameSpace">类型所在命名空间</param>
+        /// <param name="className">类型名</param>
+        /// <returns></returns>
+        static T CreateInstance<T>(Type t)
+        {
+            try
+            {
+                object obj = Activator.CreateInstance(t, true);//根据类型创建实例
+                return (T)obj;//类型转换并返回
+            }
+            catch
+            {
+                //发生异常，返回类型的默认值
+                return default(T);
+            }
         }
     }
 }

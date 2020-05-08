@@ -30,17 +30,47 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
                 var result = GetResponseAsString(rsp, Encoding.UTF8);
                 watch.Stop();
-                Logger.Error("推送返回内容:{0} 耗时:{1}",result,watch.ElapsedMilliseconds);
+                Logger.Error("推送返回内容:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
                 return result;
             }
             catch (Exception ex)
             {
-                Logger.Error(ex,"推送消息异常");
+                Logger.Error(ex, "推送消息异常");
+                return string.Empty;
+            }
+        }
+        public static string Post(string url, string data, WebHeaderCollection headers)
+        {
+            try
+            {
+                Stopwatch watch = new Stopwatch();
+                watch.Start();
+                HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
+                req.ContentType = "application/json";
+                req.Method = "POST";
+                foreach (var t in headers)
+                {
+                    req.Headers.Add(t.ToString(), headers[t.ToString()]);
+                }
+                byte[] postData = Encoding.UTF8.GetBytes(data);
+                Stream reqStream = req.GetRequestStreamAsync().Result;
+                reqStream.Write(postData, 0, postData.Length);
+                reqStream.Dispose();
+
+                var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
+                var result = GetResponseAsString(rsp, Encoding.UTF8);
+                watch.Stop();
+                Logger.Error("推送返回内容:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "推送消息异常");
                 return string.Empty;
             }
         }
 
-        public static string Post(string url, byte[] postData,string requestHost,string contentType)
+        public static string Post(string url, byte[] postData, string requestHost, string contentType)
         {
             try
             {
@@ -78,7 +108,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 Stopwatch watch = new Stopwatch();
                 watch.Start();
                 HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
-             
+
                 req.ContentType = "application/json;charset=utf-8;";
                 req.Method = "POST";
                 req.Headers["Authorization"] = authOfHeader;

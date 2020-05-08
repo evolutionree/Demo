@@ -6,16 +6,29 @@ using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
 {
+    public class ErpSoapInterfaces
+    {
+        public SoapConfig AuthSoap { get; set; }
+        public SoapConfig CustomerSoap { get; set; }
+    }
+    public class SoapInterfacesCollection
+    {
+        public string SoapBasicUrl { get; set; }
+        public List<SoapConfig> Interfaces { get; set; }
+    }
     public class SoapConfig
     {
         public string SoapUrl { get; set; }
         public string FunctionName { get; set; }
         public List<SoapParam> Params { get; set; }
+        public int IsSingleParam { get; set; }
     }
     public class SoapParam
     {
+        public int IsComplex { get; set; }
         public string ParamType { get; set; }
         public string ParamName { get; set; }
+        public string DefaultValue { get; set; }
     }
     [EntityInfo("f9db9d79-e94b-4678-a5cc-aa6e281c1246")]
     public class ToCustomerSoap
@@ -39,13 +52,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [DataType(DataTypeEnum.MultiChoose)]
         [JsonProperty("paymentMethodId")]
         public string PayInstrument { get; set; }
+        [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("businessManId")]
         public string RecManager { get; set; }
-
-        [JsonProperty("attach")]
+        [JsonIgnore]
+        //   [JsonProperty("attach")]
         public string[] Attach { get; set; }
-        [JsonProperty("invoiceattach")]
+        // [JsonProperty("invoiceattach")]
+        [JsonIgnore]
         public string[] InvoiceAttach { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("saleType")]
         public string SaleType { get; set; }
         [DataType(DataTypeEnum.ChoosePerson)]
@@ -53,12 +69,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string FollowUser { get; set; }
         [JsonProperty("ename")]
         public string EnglishName { get; set; }
-        //  [JsonProperty("precustomer")]
-        public string Country { get; set; }
         //       [JsonProperty("precustomer")]
+        [JsonIgnore]
         public string CustRegion { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("areaid")]
-        public string AreaId { get { return Country + CustRegion; } }
+        public string Country { get; set; }
+        [DataType(DataTypeEnum.Address)]
         [JsonProperty("officeAdd")]
         public string CustAddr { get; set; }
         [DataType(DataTypeEnum.SingleChoose)]
@@ -73,7 +90,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("currencyId")]
         public string Currency { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("customerId")]
         public string TaoZhang { get; set; }
+        [DataType(DataTypeEnum.ChoosePerson)]
+        [JsonProperty("operator")]
+        public string RecCreator { get; set; }
     }
 }

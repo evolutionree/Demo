@@ -61,7 +61,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             return isBinded;
         }
 
-        public void AddDeviceBind(string deviceModel,string osVersion, string uniqueId, int userNumber)
+        public void AddDeviceBind(string deviceModel, string osVersion, string uniqueId, int userNumber)
         {
             var sql = @"select * from crm_sys_device_bind(@devicemodel, @osversion, @uniqueid, @userid)";
 
@@ -72,7 +72,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
                 uniqueid = uniqueId,
                 userid = userNumber
             };
-             DataBaseHelper.QuerySingle<OperateResult>(sql, param);
+            DataBaseHelper.QuerySingle<OperateResult>(sql, param);
         }
 
         public bool UnDeviceBind(string recordIds, int userNumber)
@@ -89,7 +89,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
         public Dictionary<string, List<IDictionary<string, object>>> DeviceBindList(DeviceBindInfo deviceBindQuery, int userNumber)
         {
-            var procName ="SELECT crm_func_devicebind_list(@devicemodel, @osversion, @uniqueid, @username, @status, @pageindex, @pagesize, @userno)";
+            var procName = "SELECT crm_func_devicebind_list(@devicemodel, @osversion, @uniqueid, @username, @status, @pageindex, @pagesize, @userno)";
 
             var dataNames = new List<string> { "PageData", "PageCount" };
             var param = new
@@ -135,7 +135,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
                 Tel = registEntity.Tel,
                 Status = registEntity.Status,
                 WorkCode = registEntity.WorkCode,
-                NextMustChangePwd  = registEntity.NextMustChangePwd,
+                NextMustChangePwd = registEntity.NextMustChangePwd,
                 UserNo = userNumber
             };
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
@@ -311,7 +311,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             return result;
         }
 
-        public Dictionary<string, List<IDictionary<string, object>>> GetUserInfo(int userNumber,int currentUserId)
+        public Dictionary<string, List<IDictionary<string, object>>> GetUserInfo(int userNumber, int currentUserId)
         {
             var procName =
                "SELECT crm_func_account_userinfo_fetch(@userNo,@CurrentUserId)";
@@ -445,8 +445,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
         public List<UserInfo> GetAllUserInfoList()
         {
-            var sql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo";
-          
+            var sql = @"SELECT u.userid, u.username,u.namepinyin,u.usericon,u.usersex,u1.relateerpuserid FROM crm_sys_userinfo as u left join crm_sys_crmtoerp_user as u1 on u1.userid=u.userid and u1.recstatus=1";
+
             return ExecuteQuery<UserInfo>(sql, null);
         }
         public List<UserInfo> GetUserInfoList(List<int> userids)
@@ -481,13 +481,13 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         /// <param name="iSubVersion"></param>
         /// <param name="iBuildCode"></param>
         /// <param name="userNum"></param>
-        public void UpdateSoftwareVersion(DbTransaction tran, string apkName, int iMainVersion, int iSubVersion, int iBuildCode, string serverUrl ,int userNum)
+        public void UpdateSoftwareVersion(DbTransaction tran, string apkName, int iMainVersion, int iSubVersion, int iBuildCode, string serverUrl, int userNum)
         {
             var sql = string.Format(@"
                insert into crm_sys_updatesoftware(
                     clienttype,clienttypename,versionno,versionname,updateurl,
                     enforceupdate,buildno,versionstatus,remark) 
-               values(2,'Android',{0},'V{0}.{1}.{2}','http://{4}/deploy/{3}','f',{2},1,'[""修复Bugs""]')", iMainVersion,iSubVersion,iBuildCode,apkName,serverUrl);
+               values(2,'Android',{0},'V{0}.{1}.{2}','http://{4}/deploy/{3}','f',{2},1,'[""修复Bugs""]')", iMainVersion, iSubVersion, iBuildCode, apkName, serverUrl);
 
             ExecuteNonQuery(sql, new DbParameter[] { }, tran);
         }
@@ -501,7 +501,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         {
             var sql = @"SELECT * FROM crm_sys_enterprise LIMIT 1";
 
-           
+
             return ExecuteQuery<EnterpriseInfo>(sql, null).FirstOrDefault();
         }
 
@@ -512,7 +512,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         /// <param name="userNumber"></param>
         /// <param name="tran"></param>
         /// <returns></returns>
-        public Dictionary<string,object> GetPwdPolicy(int userNumber, DbTransaction tran)
+        public Dictionary<string, object> GetPwdPolicy(int userNumber, DbTransaction tran)
         {
             string sql = @"select * from crm_sys_security_pwdpolicy";
             return ExecuteQuery(sql, new DbParameter[] { }, tran).FirstOrDefault();
@@ -551,10 +551,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public List<HistoryPwd> GetHistoryPwd(int count,int userId)
+        public List<HistoryPwd> GetHistoryPwd(int count, int userId)
         {
-            if (count <= 0) count =3; 
-            string sql = @"select * from crm_sys_security_historypwd where userid = @userid order by reccreated desc limit "+ count;
+            if (count <= 0) count = 3;
+            string sql = @"select * from crm_sys_security_historypwd where userid = @userid order by reccreated desc limit " + count;
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("userid",userId)
@@ -569,15 +569,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
                 string ids = string.Join(',', userList);
                 string strSQL = @"update crm_sys_account a  set nextmustchangepwd =1 where a.accountid  in (
                                     select b.accountid from crm_sys_account_userinfo_relate b
-                                    where b.recstatus = 1 and b.userid in ("+ ids+ @")
+                                    where b.recstatus = 1 and b.userid in (" + ids + @")
                                     ) ";
                 DbParameter[] ps = new DbParameter[] {
-                    
+
                 };
                 ExecuteNonQuery(strSQL, ps, tran);
             }
-            catch (Exception ex) {
-                
+            catch (Exception ex)
+            {
+
             }
         }
 
@@ -620,8 +621,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
         public int GetLicenseUserCount()
         {
-			//accountid = 1默认是系统管理员
-			var sql = @"select count(1) nums from crm_sys_account  where recstatus = 1 and accesstype <>'99' and accountid <> 1 ";
+            //accountid = 1默认是系统管理员
+            var sql = @"select count(1) nums from crm_sys_account  where recstatus = 1 and accesstype <>'99' and accountid <> 1 ";
             var count = DataBaseHelper.QuerySingle<int>(sql);
             return count;
         }

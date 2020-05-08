@@ -27,18 +27,35 @@ namespace UBeat.Crm.CoreApi.Controllers
     {
         private readonly AccountServices _accountServices;
         private readonly SalesTargetServices _salesTargetServices;
+        private readonly SoapServices _soapServices;
 
-
-        public AccountController(AccountServices accountServices, SalesTargetServices salesTargetServices) : base(accountServices)
+        public AccountController(AccountServices accountServices, SalesTargetServices salesTargetServices, SoapServices soapServices) : base(accountServices)
         {
             _accountServices = accountServices;
             _salesTargetServices = salesTargetServices;
+            _soapServices = soapServices;
         }
-
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("t1")]
+        public OutputResult<object> AuthErp()
+        {
+            var result = _soapServices.AuthErp( UserId);
+            return new OutputResult<object>(result);
+        }
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("t2")]
+        public OutputResult<object> ToErpCustomer()
+        {
+            var result = _soapServices.ToErpCustomer(null, "saveCustomerFromCrm", "新增客户", 1);
+            return new OutputResult<object>(result);
+        }
         [AllowAnonymous]
         [HttpPost]
         [Route("redisstatus")]
-        public OutputResult<object> GetRedisStatus() {
+        public OutputResult<object> GetRedisStatus()
+        {
             string status = CacheService.RedisServerStatus();
             return new OutputResult<object>(status);
         }
@@ -68,7 +85,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             long requestTimeStamp = 0;
             if (loginModel.EncryptType == 1) //RSA加密算法
             {
-                loginModel.AccountPwd = _accountServices.DecryptAccountPwd(loginModel.AccountPwd, out requestTimeStamp,true);
+                loginModel.AccountPwd = _accountServices.DecryptAccountPwd(loginModel.AccountPwd, out requestTimeStamp, true);
             }
 
             var handleResult = _accountServices.Login(loginModel, header);
@@ -111,7 +128,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (isMobile)
             {
 
-                SetLoginSession(MobileLoginSessionKey, token, header.DeviceId, expiration - DateTime.UtcNow, requestTimeStamp, header.SysMark,header.Device,false);
+                SetLoginSession(MobileLoginSessionKey, token, header.DeviceId, expiration - DateTime.UtcNow, requestTimeStamp, header.SysMark, header.Device, false);
 
                 //Cache.Remove(userInfo.UserId.ToString());
                 //CacheService.Repository.Add($"MOBILE_{userInfo.UserId.ToString()}", $"Bearer {token}_{header.DeviceId}", expiration - DateTime.UtcNow);
@@ -149,19 +166,24 @@ namespace UBeat.Crm.CoreApi.Controllers
                 try
                 {
                     PwdPolicy policy = this._accountServices.GetPwdPolicy(userInfo.UserId);
-                    if (policy != null && policy.IsUserPolicy == 1) {
+                    if (policy != null && policy.IsUserPolicy == 1)
+                    {
                         //密码策略存在且已经启用了
-                        if (policy.IsPwdExpiry == 1 && userInfo.LastChangedPwdTime != null ) {
+                        if (policy.IsPwdExpiry == 1 && userInfo.LastChangedPwdTime != null)
+                        {
                             if ((System.DateTime.Now - userInfo.LastChangedPwdTime).TotalDays >= policy.PwdExpiry)
                             {
                                 //已经过期
                                 policy_reuslt = 2;
                                 policy_msg = "您的密码已经过期， 请修改密码后再使用系统";
                             }
-                            else {
-                                if (policy.IsCueUserDate == 1 && userInfo.LastChangedPwdTime != null) {
+                            else
+                            {
+                                if (policy.IsCueUserDate == 1 && userInfo.LastChangedPwdTime != null)
+                                {
                                     int totalDay = (int)(System.DateTime.Now - userInfo.LastChangedPwdTime).TotalDays;
-                                    if (totalDay >= policy.CueUserDate) {
+                                    if (totalDay >= policy.CueUserDate)
+                                    {
 
                                         policy_reuslt = 1;
                                         policy_msg = "您的密码即将过期， 请尽快修改个人密码";
@@ -171,12 +193,13 @@ namespace UBeat.Crm.CoreApi.Controllers
                         }
                     }
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
 
                 }
 
             }
-            
+
             #endregion
             //result
             var result = (handleResult.DataBody as AccountUserMapper);
@@ -186,7 +209,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                 AccessType = result.AccessType,
                 usernumber = userInfo.UserId,
                 servertime = DateTime.Now,
-                security = new {
+                security = new
+                {
                     policy_reuslt = policy_reuslt,
                     policy_msg = policy_msg
                 }
@@ -262,8 +286,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             return true;
         }
 
-        private void SetLoginSession(string sessionKey, string token, string deviceId, TimeSpan expiration, long requestTimeStamp, 
-                            string SysMark ,string DeviceType,
+        private void SetLoginSession(string sessionKey, string token, string deviceId, TimeSpan expiration, long requestTimeStamp,
+                            string SysMark, string DeviceType,
                             bool isMultipleLogin = true)
         {
             LoginSessionModel loginSession = null;
@@ -292,7 +316,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 loginSession.Sessions[deviceId] = new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp, deviceId, DeviceType, SysMark);
             }
-            else loginSession.Sessions.Add(deviceId, new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp,deviceId,DeviceType,SysMark));
+            else loginSession.Sessions.Add(deviceId, new TokenInfo(token, DateTime.UtcNow + expiration, requestTimeStamp, deviceId, DeviceType, SysMark));
 
             if (isExist)
                 CacheService.Repository.Replace(sessionKey, loginSession, expiration);
@@ -336,7 +360,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                         deviceId = requestToken;
                     }
                     var loginSession = CacheService.Repository.Get<LoginSessionModel>(WebLoginSessionKey);
-                    if(loginSession != null) ClearExpiredSession(loginSession);//清除已经过期的session
+                    if (loginSession != null) ClearExpiredSession(loginSession);//清除已经过期的session
                     if (loginSession != null && loginSession.Sessions.ContainsKey(deviceId))
                     {
                         loginSession.Sessions.Remove(deviceId);
@@ -354,12 +378,15 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// 清除已经过期的数据
         /// </summary>
         /// <param name="sessions"></param>
-        private void ClearExpiredSession(LoginSessionModel sessions ) {
+        private void ClearExpiredSession(LoginSessionModel sessions)
+        {
             List<string> ExpiredSession = new List<string>();
-            foreach (string key in sessions.Sessions.Keys) {
+            foreach (string key in sessions.Sessions.Keys)
+            {
                 if (sessions.Sessions[key].Expiration < System.DateTime.Now) ExpiredSession.Add(key);
             }
-            foreach (string key in ExpiredSession) {
+            foreach (string key in ExpiredSession)
+            {
                 sessions.Sessions.Remove(key);
             }
         }
@@ -426,14 +453,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("userinfo")]
         public OutputResult<object> UserInfo()
         {
-            return _accountServices.GetUserInfo(UserId,UserId);
+            return _accountServices.GetUserInfo(UserId, UserId);
         }
         [HttpPost]
         [Route("getuserinfo")]
         public OutputResult<object> GetUserInfo([FromBody]UserInfoModel queryModel = null)
         {
             if (queryModel == null) return ResponseError<object>("参数格式错误");
-            return _accountServices.GetUserInfo(queryModel.UserId,UserId);
+            return _accountServices.GetUserInfo(queryModel.UserId, UserId);
         }
 
         [HttpPost]
@@ -550,8 +577,9 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _accountServices.AuthLicenseInfo();
         }
         [HttpPost("updatelicense")]
-        [UKWebApi("更新许可文件",Description ="更新许可文件的接口")]
-        public OutputResult<object> UploadLicenseFile([FromBody] LinceseImportParamInfo paramInfo = null) {
+        [UKWebApi("更新许可文件", Description = "更新许可文件的接口")]
+        public OutputResult<object> UploadLicenseFile([FromBody] LinceseImportParamInfo paramInfo = null)
+        {
             if (paramInfo == null) return new OutputResult<object>("参数异常");
             try
             {
@@ -562,7 +590,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                 var bytes = MessagePackSerializer.FromJson(jsonLicense);
                 LicenseConfig tmpConfig = MessagePackSerializer.Deserialize<LicenseConfig>(bytes, ContractlessStandardResolver.Instance);
                 if (tmpConfig == null) throw (new Exception("解析文件异常"));
-                if (paramInfo.IsImport == 1) {
+                if (paramInfo.IsImport == 1)
+                {
                     //需要保存，则需要先把原来的备份
 
                     string tmpFileName = System.DateTime.Now.Ticks.ToString();
@@ -573,10 +602,11 @@ namespace UBeat.Crm.CoreApi.Controllers
                     }
                     path = path + "//encryptdata.dat";
                     FileInfo fs = new FileInfo(path);
-                    if (fs.Exists) {
+                    if (fs.Exists)
+                    {
                         fs.MoveTo(path + "." + tmpFileName);
                     }
-                    FileStream fout = new FileStream(path,FileMode.OpenOrCreate);
+                    FileStream fout = new FileStream(path, FileMode.OpenOrCreate);
                     StreamWriter wr = new StreamWriter(fout);
                     wr.Write(encryptData);
                     wr.Close();
@@ -586,13 +616,15 @@ namespace UBeat.Crm.CoreApi.Controllers
                 }
                 return _accountServices.AuthLicenseInfo(tmpConfig);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return ResponseError<object>(ex.Message);
             }
 
         }
         [HttpPost("importlicense")]
-        public OutputResult<object> ImportLicenseFile() {
+        public OutputResult<object> ImportLicenseFile()
+        {
             return null;
         }
         [Route("requireToken")]
@@ -711,7 +743,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                     webexpiration = new TimeSpan(0, 0, seconds);
                 }
 
-                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration,0, header.SysMark, header.Device, true);
+                SetLoginSession(WebLoginSessionKey, token, deviceId, webexpiration, 0, header.SysMark, header.Device, true);
                 //CacheService.Repository.Add($"WEB_{userInfo.UserId.ToString()}", $"Bearer {token}", expiration - DateTime.UtcNow);
             }
             //result
@@ -725,7 +757,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             _accountServices.GetUserData(userInfo.UserId, true);
             return new OutputResult<object>(response);
         }
-        
+
         private string GetMD5HashToUpper(String inputValue)
         {
             using (var md5 = MD5.Create())
@@ -764,17 +796,21 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _accountServices.SavePwdPolicy(data, UserId);
         }
         [HttpPost("forcelogout")]
-        public OutputResult<object> ForUseLogout([FromBody] List<ForceUserLogoutParamInfo> paramList) {
-            if (paramList == null || paramList.Count == 0) {
+        public OutputResult<object> ForUseLogout([FromBody] List<ForceUserLogoutParamInfo> paramList)
+        {
+            if (paramList == null || paramList.Count == 0)
+            {
                 return ResponseError<object>("参数异常或者未提供参数");
             }
             string requestAuthorization = HttpContext.Request.Headers["Authorization"];
-            int totalCount = this._accountServices.ForUserLogout(paramList, requestAuthorization,UserId);
-            return new OutputResult<object>("共注销"+ totalCount.ToString() +"个登录");
+            int totalCount = this._accountServices.ForUserLogout(paramList, requestAuthorization, UserId);
+            return new OutputResult<object>("共注销" + totalCount.ToString() + "个登录");
         }
         [HttpPost("passwordvalid")]
-        public OutputResult<object> PasswordValid([FromBody] List<int> UserList) {
-            if (UserList == null || UserList.Count == 0) {
+        public OutputResult<object> PasswordValid([FromBody] List<int> UserList)
+        {
+            if (UserList == null || UserList.Count == 0)
+            {
                 return ResponseError<object>("参数异常或者未提供参数");
             }
             this._accountServices.SetPasswordInvalid(UserList, UserId);
@@ -789,5 +825,5 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         #endregion
     }
-    
+
 }
