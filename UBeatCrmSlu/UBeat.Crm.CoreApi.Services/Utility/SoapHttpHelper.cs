@@ -262,34 +262,17 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             var field = fields.FirstOrDefault(t1 => t1.FieldName == p.GetCustomAttribute<EntityFieldAttribute>().FieldName);
                             DynamicProtocolFieldConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(field.FieldConfig);
                             var dicValues = dicRepository.SelectFieldDicVaue(Convert.ToInt32(config.DataSource.SourceId), 1);
-                            var value = p.GetValue(dto);
+                            var value = p.GetValue(t);
                             if (value != null)
                             {
                                 var dicValue = dicValues.FirstOrDefault(t1 => t1.ExtField1 == value.ToString());
-                                p.SetValue(instance, dicValue.DataId);
+                                p.SetValue(instance, dicValue == null ? 0 : dicValue.DataId);
                             }
                             break;
                         case DataTypeEnum.DataSouce:
-                            var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
+                            if (typeof(T).GetCustomAttribute<EntityInfoAttribute>().EntityId == "59cf141c-4d74-44da-bca8-3ccf8582a1f2")
                             {
-                                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
-                                ExtraData = null,
-                                ViewType = 0,
-                                MenuId = "f3219ea4-7701-4a19-87d8-1ecf1d27ca38",
-                                NeedPower = 0,
-                                SearchQuery = " AND custcode='" + p.GetValue(t) + "'"
-                            }, userId);
-                            var pageData = dataList["PageData"];
-                            if (pageData != null)
-                            {
-                                var tmpData = pageData.FirstOrDefault();
-                                var detail = dynamicRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
-                                {
-                                    EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
-                                    NeedPower = 0,
-                                    RecId = Guid.Parse(tmpData["recid"].ToString())
-                                }, userId);
-                                p.SetValue(instance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
+                                CustProductDataSource(p, t,instance, dynamicRepository, userId);
                             }
                             break;
                     }
@@ -298,6 +281,32 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             return actData;
         }
+        #region  产品
+        static void CustProductDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        {
+            var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
+            {
+                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
+                ExtraData = null,
+                ViewType = 0,
+                MenuId = "f3219ea4-7701-4a19-87d8-1ecf1d27ca38",
+                NeedPower = 0,
+                SearchQuery = " AND custcode='" + p.GetValue(oldinstance) + "'"
+            }, userId);
+            var pageData = dataList["PageData"];
+            if (pageData != null)
+            {
+                var tmpData = pageData.FirstOrDefault();
+                var detail = dynamicRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+                {
+                    EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
+                    NeedPower = 0,
+                    RecId = Guid.Parse(tmpData["recid"].ToString())
+                }, userId);
+                p.SetValue(newinstance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
+            }
+        }
+        #endregion
         public static OperateResult PersistenceEntityData<T>(string data, int userId, string logId)
         {
             var tData = ConvertDataFormat<T>(data, userId);
