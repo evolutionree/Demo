@@ -16,6 +16,8 @@ using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using System.Collections;
 using System.Xml.Serialization;
 using Newtonsoft.Json.Linq;
+using UBeat.Crm.CoreApi.Services.Models.SoapErp;
+using UBeat.Crm.CoreApi.Repository.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -31,7 +33,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         MultiChoose = 2,
         ChoosePerson = 3,
         AttachFile = 4,
-        Address = 5
+        Address = 5,
+        DataSouce = 6
     }
     public class DataTypeAttribute : Attribute
     {
@@ -51,6 +54,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         public EntityInfoAttribute(string entityId)
         {
             this.EntityId = entityId;
+        }
+    }
+    public class EntityFieldAttribute : Attribute
+    {
+        public string FieldName { get; set; }
+        public EntityFieldAttribute(string fieldName)
+        {
+            this.FieldName = fieldName;
         }
     }
     public static class SoapHttpHelper
@@ -202,7 +213,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             var properties = typeof(T).GetProperties();
             foreach (var pro in properties)
             {
-                if (pro.GetCustomAttribute<JsonPropertyAttribute>() == null) continue;
+                if (pro.GetCustomAttribute<JsonPropertyAttribute>() == null && !detail.Keys.Contains(pro.Name.ToLower())) continue;
                 pro.SetValue(instance, detail[pro.Name.ToLower()] ?? string.Empty);
             }
             return instance;
@@ -228,6 +239,104 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 //发生异常，返回类型的默认值
                 return default(T);
             }
+        }
+        public static List<T> ConvertDataFormat<T>(string data, int userId)
+        {
+            var dto = JsonConvert.DeserializeObject<List<T>>(data);
+            var properties = typeof(T).GetProperties();
+            var customCla = typeof(T).GetCustomAttribute<EntityInfoAttribute>();
+            List<T> actData = new List<T>();
+            foreach (var t in dto)
+            {
+                var instance = CreateInstance<T>(typeof(T));
+                foreach (var p in properties)
+                {
+                    var customPro = p.GetCustomAttribute<DataTypeAttribute>();
+                    if (customPro == null) continue;
+                    var dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
+                    switch (customPro.type)
+                    {
+                        case DataTypeEnum.SingleChoose:
+                            var dicRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
+                            var fields = dynamicRepository.GetEntityFields(Guid.Parse(customCla.EntityId), 1);
+                            var field = fields.FirstOrDefault(t1 => t1.FieldName == p.GetCustomAttribute<EntityFieldAttribute>().FieldName);
+                            DynamicProtocolFieldConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(field.FieldConfig);
+                            var dicValues = dicRepository.SelectFieldDicVaue(Convert.ToInt32(config.DataSource.SourceId), 1);
+                            var value = p.GetValue(dto);
+                            if (value != null)
+                            {
+                                var dicValue = dicValues.FirstOrDefault(t1 => t1.ExtField1 == value.ToString());
+                                p.SetValue(instance, dicValue.DataId);
+                            }
+                            break;
+                        case DataTypeEnum.DataSouce:
+                            var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
+                            {
+                                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
+                                ExtraData = null,
+                                ViewType = 0,
+                                MenuId = "f3219ea4-7701-4a19-87d8-1ecf1d27ca38",
+                                NeedPower = 0,
+                                SearchQuery = " AND custcode='" + p.GetValue(t) + "'"
+                            }, userId);
+                            var pageData = dataList["PageData"];
+                            if (pageData != null)
+                            {
+                                var tmpData = pageData.FirstOrDefault();
+                                var detail = dynamicRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+                                {
+                                    EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
+                                    NeedPower = 0,
+                                    RecId = Guid.Parse(tmpData["recid"].ToString())
+                                }, userId);
+                                p.SetValue(instance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
+                            }
+                            break;
+                    }
+                }
+                actData.Add(instance);
+            }
+            return actData;
+        }
+        public static OperateResult PersistenceEntityData<T>(string data, int userId, string logId)
+        {
+            var tData = ConvertDataFormat<T>(data, userId);
+            var dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
+            var customCla = typeof(T).GetCustomAttribute<EntityInfoAttribute>();
+            if (customCla == null) throw new Exception("Soap的DTO实体没有配置EntityInfo");
+            var fieldData = new Dictionary<string, object>();
+            var properties = typeof(T).GetProperties();
+            OperateResult result = new OperateResult();
+            var db = new PostgreHelper();
+            var conn = db.GetDbConnect();
+            var trans = conn.BeginTransaction();
+            try
+            {
+                foreach (var t in tData)
+                {
+                    foreach (var p in properties)
+                    {
+                        fieldData.Add(p.GetCustomAttribute<JsonPropertyAttribute>().PropertyName, p.GetValue(tData));
+                    }
+                    result = dynamicRepository.DynamicAdd(trans, Guid.Parse(customCla.EntityId), fieldData, null, userId);
+                    if (result.Flag == 0)
+                    {
+                        trans.Rollback();
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(new List<string> { }, new List<string> { }, 1, userId, logId);
+                trans.Rollback();
+            }
+            finally
+            {
+                trans.Dispose();
+                conn.Close();
+            }
+            return result;
         }
     }
 }

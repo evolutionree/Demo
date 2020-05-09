@@ -161,7 +161,40 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 return string.Empty;
             }
         }
+        public static string Get(string url, WebHeaderCollection headers)
+        {
+            try
+            {
+                //Stopwatch watch = new Stopwatch();
+                //watch.Start();
+                //HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
 
+                //req.ContentType = "application/json;charset=utf-8;";
+                //req.Method = "GET";
+                //req.Headers["Accept"] = "application/json;";
+
+                //var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
+                //var result = GetResponseAsString(rsp, Encoding.UTF8);
+                //watch.Stop();
+                //Logger.Error("获取实时定位信息:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
+                //return result;
+
+                using (HttpClient client = new HttpClient())
+                {
+                    foreach (var t in headers)
+                    {
+                        client.DefaultRequestHeaders.Add(t.ToString(), headers[t.ToString()]);
+                    }
+                    Byte[] resultBytes = client.GetByteArrayAsync(url).Result;
+                    return Encoding.UTF8.GetString(resultBytes);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "GET请求异常");
+                return string.Empty;
+            }
+        }
         public static string GetResponseAsString(HttpWebResponse rsp, Encoding encoding)
         {
             Stream stream = null;

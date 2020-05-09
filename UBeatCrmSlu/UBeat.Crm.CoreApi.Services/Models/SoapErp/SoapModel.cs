@@ -97,4 +97,33 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [JsonProperty("operator")]
         public string RecCreator { get; set; }
     }
+
+    public class FromProductParam
+    {
+        public string startDate { get; set; }
+        public string endDate { get; set; }
+    }
+    [EntityInfo("59cf141c-4d74-44da-bca8-3ccf8582a1f2")]
+    public class FromProductSoap
+    {
+        [EntityField("customermodel")]
+        public string salesPartName { get; set; }
+        [DataType(DataTypeEnum.DataSouce)]
+        [EntityField("cust")]
+        public string code { get; set; }
+        [EntityField("productcode")]
+        public string salesPartNum { get; set; }
+        [EntityField("productprice")]
+        public string averageCostByMonthCurrent { get; set; }
+        [EntityField("productdesciption")]
+        public string jobSpec { get; set; }
+        [EntityField("note")]
+        public string note { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
+        [EntityField("class")]
+        public string textValue { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
+        [EntityField("subclass")]
+        public string appCategory { get; set; }
+    }
 }

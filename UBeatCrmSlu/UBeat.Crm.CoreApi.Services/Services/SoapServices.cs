@@ -86,6 +86,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OperateResult { Flag = 0, Msg = ex.Message };
             }
         }
+
+        public OperateResult FromErpProduct(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
+        {
+            string logId = string.Empty;
+            try
+            {
+                var config = ValidConfig("ProductSoap", filterKey, orignalName);
+                if (config.Flag == 0) return config;
+                var interfaces = (config.Data as SoapInterfacesCollection).Interfaces;
+                var soapConfig = interfaces.FirstOrDefault(t => t.FunctionName == filterKey);
+                WebHeaderCollection headers = new WebHeaderCollection();
+                headers.Add("token", AuthToLoginERP(userId));
+                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
+                var result = HttpLib.Get(soapConfig.SoapUrl+ "?startDate=20191229&endDate=20200108", headers);
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
+                var subResult = ParseResult(result) as SubOperateResult;
+                var dealData = SoapHttpHelper.PersistenceEntityData<FromProductSoap>(subResult.Data.ToString(), userId,logId);
+                return ParseResult(result);
+            }
+            catch (Exception ex)
+            {
+                int isUpdate = 0;
+                if (!string.IsNullOrEmpty(logId))
+                    isUpdate = 1;
+                else
+                    isUpdate = 0;
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message }, isUpdate, userId, logId);
+                return new OperateResult { Flag = 0, Msg = ex.Message };
+            }
+        }
+
+
         OperateResult ParseResult(string result)
         {
             JObject jObject = JObject.Parse(result);
@@ -102,9 +134,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             else
             {
                 ICollection key = ht.Keys;
-                foreach (string k in key)
+                foreach (object k in key)
                 {
-                    System.TimeSpan t3 = DateTime.Now - DateTime.Parse(k);
+                    System.TimeSpan t3 = DateTime.Now - DateTime.Parse(k.ToString());
                     if (t3.TotalSeconds >= 2 * 60 * 60)
                         isNeedToAuth = true;
                     else

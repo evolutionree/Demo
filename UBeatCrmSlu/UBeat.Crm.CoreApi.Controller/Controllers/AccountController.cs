@@ -53,6 +53,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [AllowAnonymous]
         [HttpPost]
+        [Route("t3")]
+        public OutputResult<object> FromErpProducts()
+        {
+            var result = _soapServices.FromErpProduct(null, "getSalesPartList", "同步产品", 1);
+            return new OutputResult<object>(result);
+        }
+        [AllowAnonymous]
+        [HttpPost]
         [Route("redisstatus")]
         public OutputResult<object> GetRedisStatus()
         {
