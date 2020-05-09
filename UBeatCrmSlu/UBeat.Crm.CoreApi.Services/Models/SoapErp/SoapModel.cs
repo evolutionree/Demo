@@ -109,7 +109,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [EntityField("customermodel")]
         public string salesPartName { get; set; }
         [DataType(DataTypeEnum.DataSouce)]
-        [EntityField("cust")]
+        [EntityField("cust", FieldTypeEnum.Jsonb)]
         public string code { get; set; }
         [EntityField("productcode")]
         public string salesPartNum { get; set; }
@@ -120,10 +120,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [EntityField("note")]
         public string note { get; set; }
         [DataType(DataTypeEnum.SingleChoose)]
-        [EntityField("class")]
+        [EntityField("class", FieldTypeEnum.Int)]
         public string textValue { get; set; }
         [DataType(DataTypeEnum.SingleChoose)]
-        [EntityField("subclass")]
+        [EntityField("subclass", FieldTypeEnum.Int)]
         public string appCategory { get; set; }
     }
 }

@@ -111,7 +111,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
         /// <param name="productSetId"></param>
         /// <param name="userNum"></param>
         /// <returns></returns>
-        public dynamic GetProductSeriesDetail(DbTransaction trans, Guid productSetId, int userNum) {
+        public dynamic GetProductSeriesDetail(DbTransaction trans, Guid productSetId, int userNum)
+        {
             var sql = string.Format(@"SELECT
 	                    C .productsetid,
 	                    C .pproductsetid,
@@ -203,7 +204,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                                  aa order by aa.SetOrProduct ,aa.productsetname";
                 return ExecuteQuery(strSQL, new DbParameter[] { }, trans);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return new List<Dictionary<string, object>>();
             }
         }
@@ -224,8 +226,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                                     (
                                     select  max(recversion) fieldversion from crm_sys_entity_listview_viewcolumn where viewtype = 1 and entityid ='59cf141c-4d74-44da-bca8-3ccf8582a1f2' 
                                     ) fields";
-                List<Dictionary<string, object>>  list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
-                if (list != null || list.Count> 0)
+                List<Dictionary<string, object>> list = ExecuteQuery(strSQL, new DbParameter[] { }, tran);
+                if (list != null || list.Count > 0)
                 {
                     if (list[0]["productversion"] != null)
                     {
@@ -242,7 +244,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 productVersion = 0;
                 fieldVersion = 0;
                 setVersion = 0;
@@ -252,7 +255,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 
         public dynamic GetProductSeriesDetail(DbTransaction trans, List<Guid> productSetId, int userNum)
         {
-            
+
             string tmp = string.Join("','", productSetId);
             tmp = "'" + tmp + "'";
             var sql = string.Format(@"SELECT
@@ -267,8 +270,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 	                    crm_sys_products_series AS C
                     WHERE
 	                    C .recstatus = 1
-	                    AND c.productsetid in ({0})",tmp);
-            return ExecuteQuery(sql, new DbParameter[] {}, trans);
+	                    AND c.productsetid in ({0})", tmp);
+            return ExecuteQuery(sql, new DbParameter[] { }, trans);
+        }
+
+        public object IsProductExists(DbTransaction trans, string productcode, int userId)
+        {
+            var sql = " select recid from  crm_sys_product where productcode=@productcode";
+            var dbParam = new DbParameter[] {
+                new NpgsqlParameter("productcode",productcode)
+            };
+            var result = ExecuteScalar(sql, dbParam, trans);
+            if (result != null)
+                return result;
+            return string.Empty;
         }
     }
 }

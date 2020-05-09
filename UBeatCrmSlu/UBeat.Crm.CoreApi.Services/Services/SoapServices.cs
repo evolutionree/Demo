@@ -3,18 +3,18 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Xml;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.IRepository;
-using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
-using UBeat.Crm.CoreApi.Services.Models.Reminder;
 using UBeat.Crm.CoreApi.Services.Models.SoapErp;
 using UBeat.Crm.CoreApi.Services.Utility;
 using System.Linq;
 using System.Net;
 using Newtonsoft.Json.Linq;
+using System.Data.Common;
+using UBeat.Crm.CoreApi.Repository.Utility;
+using System.Reflection;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -99,11 +99,51 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
-                var result = HttpLib.Get(soapConfig.SoapUrl+ "?startDate=20191229&endDate=20200108", headers);
+                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=20191229&endDate=20200108", headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
-                var dealData = SoapHttpHelper.PersistenceEntityData<FromProductSoap>(subResult.Data.ToString(), userId,logId);
-                return ParseResult(result);
+                var dealData = SoapHttpHelper.PersistenceEntityData<FromProductSoap>(subResult.Data.ToString(), userId, logId);
+                OperateResult dataResult = new OperateResult();
+                var db = new PostgreHelper();
+                var conn = db.GetDbConnect();
+                conn.Open();
+                DbTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    var productRepository = ServiceLocator.Current.GetInstance<IProductsRepository>();
+                    var entityId = typeof(FromProductSoap).GetCustomAttribute<EntityInfoAttribute>().EntityId;
+                    foreach (var t in dealData)
+                    {
+                        var recid = productRepository.IsProductExists(trans, t["productcode"].ToString(), userId);
+                        if (recid != null && !string.IsNullOrEmpty(recid.ToString()))
+                            dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid.ToString()), t, userId);
+                        else
+                            dataResult = _dynamicEntityRepository.DynamicAdd(trans, Guid.Parse(entityId), t, null, userId);
+                        if (dataResult.Flag == 0)
+                        {
+                            trans.Rollback();
+                            break;
+                        }
+                    }
+                    trans.Commit();
+                    SoapHttpHelper.Log(new List<string> { "finallyresult" }, new List<string> { "erp产品同步到CRM成功" + JsonConvert.SerializeObject(dealData) }, 1, userId, logId);
+                }
+                catch (Exception ex)
+                {
+                    int isUpdate = 0;
+                    if (!string.IsNullOrEmpty(logId))
+                        isUpdate = 1;
+                    else
+                        isUpdate = 0;
+                    SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message }, isUpdate, userId, logId);
+                    trans.Rollback();
+                }
+                finally
+                {
+                    trans.Dispose();
+                    conn.Close();
+                }
+                return dataResult;
             }
             catch (Exception ex)
             {
