@@ -45,6 +45,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 NeedPower = 0,
                 RecId = Guid.Parse("0320535d-35e0-41c1-8ac4-0bb39c5e06c7")
             }, userId, null);
+            var _dynamicEntityServices = ServiceLocator.Current.GetInstance<DynamicEntityServices>();
+            Dictionary<string, object> relinfo = new Dictionary<string, object>();
+            relinfo.Add("recid", detail["recid"]);
+            relinfo.Add("relid", "0dc586b0-c721-4319-af6c-c7d4639638d7");
+            var custaddr = _dynamicEntityServices.DataList(new Models.DynamicEntity.DynamicEntityListModel
+            {
+                EntityId = Guid.Parse("689bc59b-f60d-4084-b99d-b0a3e406e873"),
+                MenuId = "f38b01b0-f072-471c-acbd-c8f890c9cab9",
+                RelInfo = relinfo,
+                PageIndex = 1,
+                PageSize = int.MaxValue,
+                ViewType = 0,
+                SearchOrder = ""
+            }, false, userId);
+            var subdata = (custaddr.DataBody as Dictionary<string, List<IDictionary<string, object>>>)["PageData"];
+            subdata.ForEach(t =>
+            t.Add("custcode", detail["custcode"])
+            );
+            detail.Add("customerAddress".ToLower(), subdata);
             string logId = string.Empty;
             try
             {

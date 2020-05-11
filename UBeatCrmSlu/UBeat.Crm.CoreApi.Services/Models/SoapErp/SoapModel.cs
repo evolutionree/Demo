@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [JsonProperty("taxRegNo")]
         public string TaxNumber { get; set; }
         [JsonProperty("creditLimited")]
-        public string CreditLine { get; set; }
+        public decimal CreditLine { get; set; }
         [DataType(DataTypeEnum.MultiChoose)]
         [JsonProperty("paymentMethodId")]
         public string PayInstrument { get; set; }
@@ -96,8 +96,62 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("operator")]
         public string RecCreator { get; set; }
-    }
+        [DataType(DataTypeEnum.RelateEntity, typeof(CustomerAddress))]
+        [JsonProperty("customerAddress")]
+        public List<IDictionary<string, object>> customerAddress { get; set; }
 
+    }
+    [EntityInfo("689bc59b-f60d-4084-b99d-b0a3e406e873")]
+    public class CustomerAddress
+    {
+        [DataType(DataTypeEnum.DataSouce)]
+        [JsonProperty("custcode")]
+        public int customer { get; set; }
+        [JsonProperty("location")]
+        public string addressname { get; set; }
+        [JsonProperty("shipToAddress")]
+        public string address { get; set; }
+        [JsonProperty("shipToContact")]
+        public string contact { get; set; }
+        [JsonProperty("shipToPhone")]
+        public string phone { get; set; }
+        [JsonProperty("tax")]
+        [DataType(DataTypeEnum.SingleChoose)]
+        public string tax { get; set; }
+        [JsonProperty("shipping")]
+        [DataType(DataTypeEnum.SingleChoose)]
+        public string transportway { get; set; }
+        [JsonProperty("currency")]
+        [DataType(DataTypeEnum.SingleChoose)]
+        public string currency { get; set; }
+        [JsonProperty("leadTime")]
+        public int transporttime { get; set; }
+        [JsonProperty("fob")]
+        [DataType(DataTypeEnum.SingleChoose)]
+        public int tradeway { get; set; }
+        [JsonProperty("pctOverShip")]
+        public decimal yzl { get; set; }
+        [JsonProperty("qtyOverShip")]
+        public decimal yzsl { get; set; }
+        [JsonProperty("packRequirements")]
+        public string bzyq { get; set; }
+        [JsonProperty("inPackingReportUrl")]
+        public string khbbq { get; set; }
+        [JsonProperty("outPackingReportUrl")]
+        public string khxbq { get; set; }
+        [JsonProperty("ifActive")]
+        [DataType(DataTypeEnum.SingleChoose)]
+        [EntityField("ifActive", FieldTypeEnum.Int)]
+        public int activate { get; set; }
+        [JsonProperty("ifConsignment")]
+        [DataType(DataTypeEnum.SingleChoose)]
+        [EntityField("ifConsignment", FieldTypeEnum.Int)]
+        public int consign { get; set; }
+        [JsonProperty("custaddrid")]
+        [EntityField("custaddrid", FieldTypeEnum.Text)]
+        public string custaddrid { get; set; }
+
+    }
     public class FromProductParam
     {
         public string startDate { get; set; }

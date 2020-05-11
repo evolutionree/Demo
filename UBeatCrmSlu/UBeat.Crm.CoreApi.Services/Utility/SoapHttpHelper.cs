@@ -35,7 +35,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         ChoosePerson = 3,
         AttachFile = 4,
         Address = 5,
-        DataSouce = 6
+        DataSouce = 6,
+        RelateEntity = 7,
+        Default = 0
     }
     public enum FieldTypeEnum
     {
@@ -50,9 +52,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         /// 1单选，2多选 ，3选人.....
         /// </summary>
         public DataTypeEnum type { get; set; }
+        public Type relateEntity { get; set; }
         public DataTypeAttribute(DataTypeEnum type)
         {
             this.type = type;
+        }
+        public DataTypeAttribute(DataTypeEnum type, Type relateEntity)
+        {
+            this.type = type;
+            this.relateEntity = relateEntity;
         }
     }
     public class EntityInfoAttribute : Attribute
@@ -172,11 +180,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
         public static void ValueConvert(KeyValuePair<string, string> kv, IDictionary<string, object> detail, Type type)
         {
-            if (detail[kv.Key] == null) return;
+            if (detail[kv.Key] == null) { detail[kv.Key] = detail[kv.Key] ?? string.Empty; }
             var property = type.GetProperties().FirstOrDefault(t => t.Name.ToLower() == kv.Key);
             var customPro = property.GetCustomAttribute<DataTypeAttribute>();
             var customCla = type.GetCustomAttribute<EntityInfoAttribute>();
-            if (customPro == null) return;
+            if (customPro == null)
+            {
+                customPro = new DataTypeAttribute(DataTypeEnum.Default);
+            }
             if (customCla == null) throw new Exception("Soap的DTO实体没有配置EntityInfo");
             var dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
             var accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
@@ -198,12 +209,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         s += dicValue.ExtField1 + ",";
                     }
                     detail[kv.Key] = s.Substring(0, s.Length - 1);
-                    break;
+                    TypeConvert(property, detail, kv);
+                    return;
                 case DataTypeEnum.ChoosePerson:
                     var userInfos = accountRepository.GetAllUserInfoList();
-                    var userInfo = userInfos.FirstOrDefault(t => t.UserId == Convert.ToInt32((detail[kv.Key] ?? 0)));
+                    var userInfo = userInfos.FirstOrDefault(t => t.UserId == (string.IsNullOrEmpty(detail[kv.Key].ToString()) ? 0 : Convert.ToInt32(detail[kv.Key].ToString())));
                     detail[kv.Key] = userInfo == null ? string.Empty : userInfo.RelateErpUserId;
-                    break;
+                    return;
                 case DataTypeEnum.AttachFile:
                     var files = new List<string>();
                     var attach = JArray.Parse((detail[kv.Key] ?? "{}").ToString());
@@ -212,13 +224,67 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         files.Add(string.Format(configurationRoot.GetSection("FileServiceSetting").GetValue<string>("ReadUrl"), t["fileid"]));
                     }
                     detail[kv.Key] = files;
-                    break;
+                    return;
                 case DataTypeEnum.Address:
                     var addr = JObject.Parse((detail[kv.Key] ?? "{}").ToString());
                     detail[kv.Key] = addr.HasValues ? addr["address"].ToString() : string.Empty;
                     break;
+                case DataTypeEnum.DataSouce:
+                    var ds = JObject.Parse((detail[kv.Key] ?? "{}").ToString());
+                    detail[kv.Key] = ds.HasValues ? ds["name"].ToString() : string.Empty;
+                    break;
+                case DataTypeEnum.RelateEntity:
+                    var proType = property.GetCustomAttribute<DataTypeAttribute>();
+                    if (proType != null)
+                    {
+                        Type genericArgTypes = proType.relateEntity;
+                        var t = GetParamValueKV(genericArgTypes);
+                        if (detail[kv.Key] is List<IDictionary<string, object>>)
+                        {
+                            var p = detail[kv.Key] as List<IDictionary<string, object>>;
+                            for (int i = 0; i < p.Count; i++)
+                            {
+                                IDictionary<string, object> dicVal = new Dictionary<string, object>();
+                                foreach (var k in t)
+                                {
+                                    ValueConvert(k, p[i], genericArgTypes);
+                                    dicVal.Add(k.Value, p[i][k.Key]);
+                                }
+                                p[i] = dicVal;
+                            }
+                        }
+                        else if (detail[kv.Key] is IDictionary<string, object>)
+                        {
+                            var p = detail[kv.Key] as IDictionary<string, object>;
+                            foreach (var k in t)
+                            {
+                                ValueConvert(k, p, genericArgTypes);
+                            }
+                        }
+                    }
+                    return;
+                case DataTypeEnum.Default:
+                    TypeConvert(property, detail, kv);
+                    break;
             }
-            return;
+
+        }
+        static void TypeConvert(PropertyInfo property, IDictionary<string, object> detail, KeyValuePair<string, string> kv)
+        {
+            var entityField = property.GetCustomAttribute<EntityFieldAttribute>();
+            if (entityField != null)
+            {
+                switch (entityField.FieldType)
+                {
+                    case FieldTypeEnum.Int:
+                        detail[kv.Key] = (string.IsNullOrEmpty(detail[kv.Key].ToString())) ? 0 : Convert.ToInt32(detail[kv.Key].ToString());
+                        return;
+                    case FieldTypeEnum.Text:
+                        detail[kv.Key] = (string.IsNullOrEmpty(detail[kv.Key].ToString())) ? string.Empty : detail[kv.Key].ToString();
+                        return;
+                }
+
+            }
         }
         public static T OutPutERPData<T>(IDictionary<string, object> detail)
         {
@@ -226,6 +292,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             var properties = typeof(T).GetProperties();
             foreach (var pro in properties)
             {
+                if (pro.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
                 if (pro.GetCustomAttribute<JsonPropertyAttribute>() == null && !detail.Keys.Contains(pro.Name.ToLower())) continue;
                 pro.SetValue(instance, detail[pro.Name.ToLower()] ?? string.Empty);
             }
