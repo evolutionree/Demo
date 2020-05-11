@@ -19,6 +19,7 @@ using System.IO;
 using UBeat.Crm.LicenseCore;
 using MessagePack;
 using MessagePack.Resolvers;
+using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Controllers
 {
@@ -40,7 +41,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("t1")]
         public OutputResult<object> AuthErp()
         {
-            var result = _soapServices.AuthErp( UserId);
+            var result = _soapServices.AuthErp(UserId);
             return new OutputResult<object>(result);
         }
         [AllowAnonymous]
@@ -56,6 +57,16 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("t3")]
         public OutputResult<object> FromErpProducts()
         {
+            var result = _soapServices.FromErpProduct(null, "getSalesPartList", "同步产品", 1);
+            return new OutputResult<object>(result);
+        }
+     
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("t4")]
+        public OutputResult<object> a()
+        {
+
             var result = _soapServices.FromErpProduct(null, "getSalesPartList", "同步产品", 1);
             return new OutputResult<object>(result);
         }
