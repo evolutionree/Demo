@@ -180,6 +180,49 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [EntityField("subclass", FieldTypeEnum.Int)]
         public string appCategory { get; set; }
     }
+    public class FromOrderParam
+    {
+        public string startDate { get; set; }
+        public string endDate { get; set; }
+    }
+    [EntityInfo("af949c2d-a101-46d5-a125-a9d0659959f0")]
+    public class FromOrder
+    {
+        [EntityField("orderid")]
+        public int recId { get; set; }
+        [EntityField("contractdate")]
+        public DateTime contractDate { get; set; }
+        [EntityField("contractno")]
+        public String contractNo { get; set; }
+        [EntityField("factorycode")]
+        public String factoryCode { get; set; }
+        [DataType(DataTypeEnum.RelateEntity, typeof(FromPackingShipDetail))]
+        [EntityField("detail")]
+        public List<FromOrderDetail> packingSlipItem { get; set; }
+    }
+    [EntityInfo("0d6d41d5-f913-4ccf-8ffd-1414fd9ed736")]
+    public class FromOrderDetail
+    {
+        [EntityField("packingshipdetailid")]
+        public int recId { get; set; }
+        [EntityField("orderid")]
+        public int contractId { get; set; }
+        [EntityField("quantity")]
+        public int quantity { get; set; }
+        //[EntityField("orderno")]
+        //public String soNumber { get; set; }
+        //[EntityField("customercontractno")]
+        //public String salesPartNum { get; set; }
+        //[EntityField("customercontractno")]
+        //public String salesPartName { get; set; }
+        [EntityField("quantity")]
+        public String qtyOfPcsAssigned { get; set; }
+        [EntityField("units")]
+        public string unit { get; set; }
+
+    }
+
+
 
     public class FromPackingShipParam
     {
@@ -215,8 +258,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public int packingSlipId { get; set; }
         [EntityField("customercontractno")]
         public String contractNumber { get; set; }
-        [EntityField("orderno")]
-        public String soNumber { get; set; }
+        //[EntityField("orderno")]
+        //public String soNumber { get; set; }
         //[EntityField("customercontractno")]
         //public String salesPartNum { get; set; }
         //[EntityField("customercontractno")]

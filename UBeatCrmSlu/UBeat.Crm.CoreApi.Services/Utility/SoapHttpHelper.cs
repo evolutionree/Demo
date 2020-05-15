@@ -416,7 +416,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     val = p.GetValue(data);
                     if (val == null)
                         return JObject.Parse("{}");
-                    return (object)(JObject.Parse(val.ToString()));
+                    return (object)(val.ToString());
                 default:
                     val = p.GetValue(data);
                     return val;
@@ -491,7 +491,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         {
                             var t1Data = pData as List<T1>;
                             var subDicVal = RecircleData<T1, T>(t1Data, new List<PropertyInfo>());
-                            fieldData.Add(entityField.FieldName, ConvertFieldValue(p, t));
+                            fieldData.Add(entityField.FieldName, subDicVal);
                         }
                     }
                     else

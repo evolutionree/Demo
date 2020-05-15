@@ -177,7 +177,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OperateResult { Flag = 0, Msg = ex.Message };
             }
         }
-        public OperateResult FromErpPackingShip(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
+
+        /// <summary>
+        /// 订单
+        /// </summary>
+        /// <param name="detail"></param>
+        /// <param name="filterKey"></param>
+        /// <param name="orignalName"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OperateResult FromErpOrder(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
         {
             string logId = string.Empty;
             try
@@ -189,7 +198,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
-                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=20200501&endDate=20200513", headers);
+                var result = "{\"code\": 200, 	\"message\": \"success\", 	\"data\": [{ 			\"recId\": 38469, 			\"shipingNotesNumer\": \"DP20050600004\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-06 12:00:00\", 			\"packingSlipItem\": [{ 				\"recId\": 104149, 				\"packingSlipId\": 38469, 				\"contractNumber\": \"SO20032101892\", 				\"soNumber\": \"SO2003210189201\", 				\"salesPartNum\": \"MN30692G040058B\", 				\"salesPartName\": \"19K-514-6901R\", 				\"qtyOfPcsAssigned\": 48, 				\"unit\": \"PCS\" 			}] 		}, 		{ 			\"recId\": 38470, 			\"shipingNotesNumer\": \"DP20050600005\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-11 14:45:26\", 			\"packingSlipItem\": [{ 				\"recId\": 104150, 				\"packingSlipId\": 38470, 				\"contractNumber\": \"190447-001\", 				\"soNumber\": \"190447-001\", 				\"salesPartNum\": \"MH30692J040122A\", 				\"salesPartName\": \"19K-516-5100R\", 				\"qtyOfPcsAssigned\": 0, 				\"unit\": \"PCS\" 			}] 		} 	] }";
+                //HttpLib.Get(soapConfig.SoapUrl + "?startDate=20200501&endDate=20200513", headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
                 var dealData = SoapHttpHelper.PersistenceEntityData<FromPackingShip, FromPackingShipDetail>(subResult.Data.ToString(), userId, logId);
@@ -206,16 +216,109 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         if (subEntityId != null)
                         {
-                            var subDetail = t["detail"] as List<FromPackingShipDetail>;
+                            var subDetail = t["detail"] as List<Dictionary<string, object>>;
                             var newSubDetail = new List<Dictionary<string, object>>();
                             foreach (var t1 in subDetail)
                             {
                                 var buidlerDetail = new Dictionary<string, object>();
                                 buidlerDetail.Add("TypeId", subEntityId);
-                                buidlerDetail.Add("FieldData", JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(t1)));
+                                buidlerDetail.Add("FieldData", t1);
                                 newSubDetail.Add(buidlerDetail);
                             }
-                            t["detail"] = newSubDetail;
+                            t["detail"] = JsonConvert.SerializeObject(newSubDetail);
+                        }
+                        var recid = _toERPRepository.IsExistsPackingShipOrder(t["packingshipid"].ToString());
+                        if (!string.IsNullOrEmpty(recid))
+                            dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid), t, userId);
+                        else
+                            dataResult = _dynamicEntityRepository.DynamicAdd(trans, Guid.Parse(entityId), t, null, userId);
+                        if (dataResult.Flag == 0)
+                        {
+                            trans.Rollback();
+                            break;
+                        }
+                    }
+
+                    trans.Commit();
+                    SoapHttpHelper.Log(new List<string> { "finallyresult" }, new List<string> { "erp产品同步到CRM成功" + JsonConvert.SerializeObject(dealData) }, 1, userId, logId);
+                }
+                catch (Exception ex)
+                {
+                    int isUpdate = 0;
+                    if (!string.IsNullOrEmpty(logId))
+                        isUpdate = 1;
+                    else
+                        isUpdate = 0;
+                    SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message }, isUpdate, userId, logId);
+                    trans.Rollback();
+                }
+                finally
+                {
+                    trans.Dispose();
+                    conn.Close();
+                }
+                return dataResult;
+            }
+            catch (Exception ex)
+            {
+                int isUpdate = 0;
+                if (!string.IsNullOrEmpty(logId))
+                    isUpdate = 1;
+                else
+                    isUpdate = 0;
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message }, isUpdate, userId, logId);
+                return new OperateResult { Flag = 0, Msg = ex.Message };
+            }
+        }
+
+        /// <summary>
+        /// 发货单
+        /// </summary>
+        /// <param name="detail"></param>
+        /// <param name="filterKey"></param>
+        /// <param name="orignalName"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OperateResult FromErpPackingShip(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
+        {
+            string logId = string.Empty;
+            try
+            {
+                var config = ValidConfig("PackingShipSoap", filterKey, orignalName);
+                if (config.Flag == 0) return config;
+                var interfaces = (config.Data as SoapInterfacesCollection).Interfaces;
+                var soapConfig = interfaces.FirstOrDefault(t => t.FunctionName == filterKey);
+                WebHeaderCollection headers = new WebHeaderCollection();
+                headers.Add("token", AuthToLoginERP(userId));
+                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
+                var result = "{\"code\": 200, 	\"message\": \"success\", 	\"data\": [{ 			\"recId\": 38469, 			\"shipingNotesNumer\": \"DP20050600004\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-06 12:00:00\", 			\"packingSlipItem\": [{ 				\"recId\": 104149, 				\"packingSlipId\": 38469, 				\"contractNumber\": \"SO20032101892\", 				\"soNumber\": \"SO2003210189201\", 				\"salesPartNum\": \"MN30692G040058B\", 				\"salesPartName\": \"19K-514-6901R\", 				\"qtyOfPcsAssigned\": 48, 				\"unit\": \"PCS\" 			}] 		}, 		{ 			\"recId\": 38470, 			\"shipingNotesNumer\": \"DP20050600005\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-11 14:45:26\", 			\"packingSlipItem\": [{ 				\"recId\": 104150, 				\"packingSlipId\": 38470, 				\"contractNumber\": \"190447-001\", 				\"soNumber\": \"190447-001\", 				\"salesPartNum\": \"MH30692J040122A\", 				\"salesPartName\": \"19K-516-5100R\", 				\"qtyOfPcsAssigned\": 0, 				\"unit\": \"PCS\" 			}] 		} 	] }";
+                //HttpLib.Get(soapConfig.SoapUrl + "?startDate=20200501&endDate=20200513", headers);
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
+                var subResult = ParseResult(result) as SubOperateResult;
+                var dealData = SoapHttpHelper.PersistenceEntityData<FromPackingShip, FromPackingShipDetail>(subResult.Data.ToString(), userId, logId);
+                OperateResult dataResult = new OperateResult();
+                var db = new PostgreHelper();
+                var conn = db.GetDbConnect();
+                conn.Open();
+                DbTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    var entityId = typeof(FromPackingShip).GetCustomAttribute<EntityInfoAttribute>().EntityId;
+                    var subEntityId = typeof(FromPackingShipDetail).GetCustomAttribute<EntityInfoAttribute>().EntityId;
+                    foreach (var t in dealData)
+                    {
+                        if (subEntityId != null)
+                        {
+                            var subDetail = t["detail"] as List<Dictionary<string, object>>;
+                            var newSubDetail = new List<Dictionary<string, object>>();
+                            foreach (var t1 in subDetail)
+                            {
+                                var buidlerDetail = new Dictionary<string, object>();
+                                buidlerDetail.Add("TypeId", subEntityId);
+                                buidlerDetail.Add("FieldData", t1);
+                                newSubDetail.Add(buidlerDetail);
+                            }
+                            t["detail"] = JsonConvert.SerializeObject(newSubDetail);
                         }
                         var recid = _toERPRepository.IsExistsPackingShipOrder(t["packingshipid"].ToString());
                         if (!string.IsNullOrEmpty(recid))
