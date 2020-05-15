@@ -63,11 +63,10 @@ namespace UBeat.Crm.CoreApi.Controllers
      
         [AllowAnonymous]
         [HttpPost]
-        [Route("t4")]
+        [Route("t5")]
         public OutputResult<object> a()
         {
-
-            var result = _soapServices.FromErpProduct(null, "getSalesPartList", "同步产品", 1);
+            var result = _soapServices.FromErpPackingShip(null, "getPackingSlipList", "同步产品单", 1);
             return new OutputResult<object>(result);
         }
         [AllowAnonymous]

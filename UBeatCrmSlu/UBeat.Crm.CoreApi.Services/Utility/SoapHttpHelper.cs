@@ -37,6 +37,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         Address = 5,
         DataSouce = 6,
         RelateEntity = 7,
+        DateTime = 8,
         Default = 0
     }
     public enum FieldTypeEnum
@@ -90,7 +91,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
         private static readonly IConfigurationRoot configurationRoot = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
         private static readonly string contentType = "text/xml; charset=UTF-8";
-
+        private static readonly string[] entityIds = new string[] {
+            "59cf141c-4d74-44da-bca8-3ccf8582a1f2",//产品
+            "b56a7264-46b2-43d2-b22e-e5d777fb00db"//发货单
+        };
         private static void SetWebRequest(HttpWebRequest request)
         {
             request.Credentials = CredentialCache.DefaultCredentials;
@@ -340,6 +344,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     var dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
                     switch (customPro.type)
                     {
+                        case DataTypeEnum.DateTime:
+                            p.SetValue(instance, Convert.ToDateTime(p.GetValue(t)));
+                            break;
                         case DataTypeEnum.SingleChoose:
                             var dicRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
                             var fields = dynamicRepository.GetEntityFields(Guid.Parse(customCla.EntityId), 1);
@@ -354,10 +361,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                             break;
                         case DataTypeEnum.DataSouce:
-                            if (typeof(T).GetCustomAttribute<EntityInfoAttribute>().EntityId == "59cf141c-4d74-44da-bca8-3ccf8582a1f2")
+                            if (entityIds.Contains(typeof(T).GetCustomAttribute<EntityInfoAttribute>().EntityId))
                             {
-                                CustProductDataSource(p, t, instance, dynamicRepository, userId);
+                                CustDataSource(p, t, instance, dynamicRepository, userId);
                             }
+                            break;
+                        case DataTypeEnum.RelateEntity:
+                            p.SetValue(instance, p.GetValue(t));
                             break;
                     }
                 }
@@ -366,7 +376,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return actData;
         }
         #region  产品
-        static void CustProductDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        static void CustDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
             var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
             {
@@ -427,6 +437,65 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 foreach (var p in properties)
                 {
                     fieldData.Add(p.GetCustomAttribute<EntityFieldAttribute>().FieldName, ConvertFieldValue(p, t));
+                }
+                dic.Add(fieldData);
+            }
+            return dic;
+        }
+        public static List<Dictionary<string, object>> PersistenceEntityData<T, T1>(string data, int userId, string logId)
+        {
+            var tData = ConvertDataFormat<T>(data, userId);
+            var propertyInfos = GetSubDetailPros<T, T1>();
+            foreach (var p in propertyInfos)
+            {
+                foreach (var t in tData)
+                {
+                    var proData = p.GetValue(t);
+                    p.SetValue(t, ConvertDataFormat<T1>(Newtonsoft.Json.JsonConvert.SerializeObject(proData), userId));
+                }
+            }
+            var properties = typeof(T).GetProperties();
+            List<Dictionary<string, object>> dic = RecircleData<T, T1>(tData, propertyInfos);
+            return dic;
+        }
+        static List<PropertyInfo> GetSubDetailPros<T, T1>()
+        {
+            var pros = typeof(T).GetProperties();
+            List<PropertyInfo> propertyInfos = new List<PropertyInfo>();
+            foreach (var d in pros)
+            {
+                var customAttr = d.GetCustomAttribute<DataTypeAttribute>();
+                if (customAttr == null) continue;
+                var isAdapter = customAttr.type == DataTypeEnum.RelateEntity && customAttr.relateEntity == typeof(T1);
+                if (!isAdapter) continue;
+                propertyInfos.Add(d);
+            }
+            return propertyInfos;
+        }
+        static List<Dictionary<string, object>> RecircleData<T, T1>(List<T> tData, List<PropertyInfo> innerPros)
+        {
+            var properties = typeof(T).GetProperties();
+            Dictionary<string, object> fieldData;
+            List<Dictionary<string, object>> dic = new List<Dictionary<string, object>>();
+            foreach (var t in tData)
+            {
+                fieldData = new Dictionary<string, object>();
+                foreach (var p in properties)
+                {
+                    var entityField = p.GetCustomAttribute<EntityFieldAttribute>();
+                    if (entityField == null) continue;
+                    if (innerPros.Contains(p))
+                    {
+                        var pData = p.GetValue(t);
+                        if (pData is List<T1>)
+                        {
+                            var t1Data = pData as List<T1>;
+                            var subDicVal = RecircleData<T1, T>(t1Data, new List<PropertyInfo>());
+                            fieldData.Add(entityField.FieldName, ConvertFieldValue(p, t));
+                        }
+                    }
+                    else
+                        fieldData.Add(entityField.FieldName, ConvertFieldValue(p, t));
                 }
                 dic.Add(fieldData);
             }

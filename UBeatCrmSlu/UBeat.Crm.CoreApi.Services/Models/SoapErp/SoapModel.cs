@@ -180,4 +180,51 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [EntityField("subclass", FieldTypeEnum.Int)]
         public string appCategory { get; set; }
     }
+
+    public class FromPackingShipParam
+    {
+        public string startDate { get; set; }
+        public string endDate { get; set; }
+    }
+    [EntityInfo("b56a7264-46b2-43d2-b22e-e5d777fb00db")]
+    public class FromPackingShip
+    {
+        [EntityField("packingshipid")]
+        public int recId { get; set; }
+        [EntityField("shippingorderno")]
+        public String shipingNotesNumer { get; set; }
+        [DataType(DataTypeEnum.DataSouce)]
+        [EntityField("customer", FieldTypeEnum.Jsonb)]
+        public String customerCode { get; set; }
+        public String customerName { get; set; }
+        [EntityField("address")]
+        public String shippingAddress { get; set; }
+        [DataType(DataTypeEnum.DateTime)]
+        [EntityField("shippingdate")]
+        public DateTime shippedDate { get; set; }
+        [DataType(DataTypeEnum.RelateEntity, typeof(FromPackingShipDetail))]
+        [EntityField("detail")]
+        public List<FromPackingShipDetail> packingSlipItem { get; set; }
+    }
+    [EntityInfo("658159ab-9ace-405b-ae06-00619230aa92")]
+    public class FromPackingShipDetail
+    {
+        [EntityField("packingshipdetailid")]
+        public int recId { get; set; }
+        [EntityField("packingshipid")]
+        public int packingSlipId { get; set; }
+        [EntityField("customercontractno")]
+        public String contractNumber { get; set; }
+        [EntityField("orderno")]
+        public String soNumber { get; set; }
+        //[EntityField("customercontractno")]
+        //public String salesPartNum { get; set; }
+        //[EntityField("customercontractno")]
+        //public String salesPartName { get; set; }
+        [EntityField("quantity")]
+        public String qtyOfPcsAssigned { get; set; }
+        [EntityField("units")]
+        public string unit { get; set; }
+
+    }
 }
