@@ -104,7 +104,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
     [EntityInfo("689bc59b-f60d-4084-b99d-b0a3e406e873")]
     public class CustomerAddress
     {
-        [DataType(DataTypeEnum.DataSouce)]
+        [DataType(DataTypeEnum.DataSouce, "CustDataSource")]
         [JsonProperty("custcode")]
         public int customer { get; set; }
         [JsonProperty("location")]
@@ -162,7 +162,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
     {
         [EntityField("customermodel")]
         public string salesPartName { get; set; }
-        [DataType(DataTypeEnum.DataSouce)]
+        [DataType(DataTypeEnum.DataSouce, "CustDataSource")]
         [EntityField("cust", FieldTypeEnum.Jsonb)]
         public string code { get; set; }
         [EntityField("productcode")]
@@ -196,30 +196,39 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public String contractNo { get; set; }
         [EntityField("factorycode")]
         public String factoryCode { get; set; }
-        [DataType(DataTypeEnum.RelateEntity, typeof(FromPackingShipDetail))]
+        [DataType(DataTypeEnum.RelateEntity, typeof(FromOrderDetail))]
         [EntityField("detail")]
-        public List<FromOrderDetail> packingSlipItem { get; set; }
+        public List<FromOrderDetail> contractItem { get; set; }
     }
     [EntityInfo("0d6d41d5-f913-4ccf-8ffd-1414fd9ed736")]
     public class FromOrderDetail
     {
-        [EntityField("packingshipdetailid")]
+        [EntityField("orderdetailid")]
         public int recId { get; set; }
         [EntityField("orderid")]
         public int contractId { get; set; }
         [EntityField("quantity")]
         public int quantity { get; set; }
-        //[EntityField("orderno")]
-        //public String soNumber { get; set; }
-        //[EntityField("customercontractno")]
-        //public String salesPartNum { get; set; }
-        //[EntityField("customercontractno")]
-        //public String salesPartName { get; set; }
-        [EntityField("quantity")]
-        public String qtyOfPcsAssigned { get; set; }
-        [EntityField("units")]
-        public string unit { get; set; }
-
+        [EntityField("deliveredquantity")]
+        public int deliveredQuantity { get; set; }
+        [EntityField("requireddate")]
+        public DateTime requiredDate { get; set; }
+        [EntityField("marketdate")]
+        public DateTime marketDate { get; set; }
+        [EntityField("plandate")]
+        public DateTime planDate { get; set; }
+        [EntityField("price")]
+        public decimal price { get; set; }
+        [DataType(DataTypeEnum.DataSouce, "CustDataSource")]
+        [EntityField("customer", FieldTypeEnum.Jsonb)]
+        public String customer { get; set; }
+        [EntityField("customermodel")]
+        public string customerModel { get; set; }
+        [DataType(DataTypeEnum.DataSouce, "ProductDataSource")]
+        [EntityField("product")]
+        public string productCode { get; set; }
+        [EntityField("custproductcode")]
+        public string custproductcode { get; set; }
     }
 
 
@@ -236,7 +245,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public int recId { get; set; }
         [EntityField("shippingorderno")]
         public String shipingNotesNumer { get; set; }
-        [DataType(DataTypeEnum.DataSouce)]
+        [DataType(DataTypeEnum.DataSouce, "CustDataSource")]
         [EntityField("customer", FieldTypeEnum.Jsonb)]
         public String customerCode { get; set; }
         public String customerName { get; set; }

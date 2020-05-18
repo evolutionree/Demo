@@ -54,6 +54,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         /// </summary>
         public DataTypeEnum type { get; set; }
         public Type relateEntity { get; set; }
+        public string bindingMethod { get; set; }
         public DataTypeAttribute(DataTypeEnum type)
         {
             this.type = type;
@@ -62,6 +63,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         {
             this.type = type;
             this.relateEntity = relateEntity;
+        }
+        public DataTypeAttribute(DataTypeEnum type, string bindingMethod)
+        {
+            this.type = type;
+            this.bindingMethod = bindingMethod;
         }
     }
     public class EntityInfoAttribute : Attribute
@@ -88,12 +94,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
     }
     public static class SoapHttpHelper
     {
-
         private static readonly IConfigurationRoot configurationRoot = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
         private static readonly string contentType = "text/xml; charset=UTF-8";
-        private static readonly string[] entityIds = new string[] {
+        private static readonly string[] custEntityIds = new string[] {
             "59cf141c-4d74-44da-bca8-3ccf8582a1f2",//产品
-            "b56a7264-46b2-43d2-b22e-e5d777fb00db"//发货单
+            "b56a7264-46b2-43d2-b22e-e5d777fb00db",//发货单
+            "0d6d41d5-f913-4ccf-8ffd-1414fd9ed736"
+        };
+        private static readonly string[] productEntityIds = new string[] {
+            "0d6d41d5-f913-4ccf-8ffd-1414fd9ed736"
         };
         private static void SetWebRequest(HttpWebRequest request)
         {
@@ -361,10 +370,13 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                             break;
                         case DataTypeEnum.DataSouce:
-                            if (entityIds.Contains(typeof(T).GetCustomAttribute<EntityInfoAttribute>().EntityId))
-                            {
-                                CustDataSource(p, t, instance, dynamicRepository, userId);
-                            }
+                            var thisType = typeof(SoapHttpHelper);
+                            var methods = thisType.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+.Where(m => !m.IsSpecialName);
+                            var method = methods.FirstOrDefault(t1 => t1.Name == customPro.bindingMethod);
+                            if (method == null) throw new Exception("数据源配置为空");
+                            var genMethod = method.MakeGenericMethod(t.GetType());
+                            genMethod.Invoke(thisType, new object[5] { p, t, instance, dynamicRepository, userId });
                             break;
                         case DataTypeEnum.RelateEntity:
                             p.SetValue(instance, p.GetValue(t));
@@ -388,7 +400,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 SearchQuery = " AND custcode='" + p.GetValue(oldinstance) + "'"
             }, userId);
             var pageData = dataList["PageData"];
-            if (pageData != null)
+            if (pageData != null && pageData.Count > 0)
             {
                 var tmpData = pageData.FirstOrDefault();
                 var detail = dynamicRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
@@ -398,6 +410,25 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     RecId = Guid.Parse(tmpData["recid"].ToString())
                 }, userId);
                 p.SetValue(newinstance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
+            }
+        }
+        static void ProductDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        {
+            IProductsRepository _productRepository = ServiceLocator.Current.GetInstance<IProductsRepository>();
+            var dataList = _productRepository.GetProducts(null, " 1=1 ", new PageParam { PageIndex = 1, PageSize = 10 }, new DomainModel.Products.ProductList
+            {
+                IsAllProduct = true,
+                ProductSeriesId = Guid.Parse("7f74192d-b937-403f-ac2a-8be34714278b"),
+                RecStatus = 1,
+                RecVersion = 0
+            }, string.Empty, userId);
+            var pageData = dataList["pagedata"];
+            if (pageData != null)
+            {
+                var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
+                var tmpData = (pageData as List<Dictionary<string, object>>).FirstOrDefault(t => (t["productCode"] == null ? string.Empty : t["productCode"].ToString()) == oldVal);
+
+                p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["recid"].ToString());
             }
         }
         #endregion

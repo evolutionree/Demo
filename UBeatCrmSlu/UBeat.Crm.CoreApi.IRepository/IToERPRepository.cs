@@ -6,6 +6,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 {
     public interface IToERPRepository
     {
-          string IsExistsPackingShipOrder(string packingshipid);
+        string IsExistsPackingShipOrder(string packingshipid);
+        string IsExistsOrder(string orderId);
     }
 }

@@ -71,6 +71,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
         [AllowAnonymous]
         [HttpPost]
+        [Route("t6")]
+        public OutputResult<object> b()
+        {
+            var result = _soapServices.FromErpOrder(null, "getContractList", "同步产品单", 1);
+            return new OutputResult<object>(result);
+        }
+        [AllowAnonymous]
+        [HttpPost]
         [Route("redisstatus")]
         public OutputResult<object> GetRedisStatus()
         {
