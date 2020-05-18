@@ -89,6 +89,7 @@
     <ProjectReference Include="..\UBeat.Crm.CoreApi.Desktop\UBeat.Crm.CoreApi.Desktop.csproj" />
     <ProjectReference Include="..\UBeat.Crm.CoreApi.DevAssist\UBeat.Crm.CoreApi.DevAssist.csproj" />
     <ProjectReference Include="..\UBeat.Crm.CoreApi.DingTalk\UBeat.Crm.CoreApi.DingTalk.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.ZJ\UBeat.Crm.CoreApi.ZJ.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="NLog.config">

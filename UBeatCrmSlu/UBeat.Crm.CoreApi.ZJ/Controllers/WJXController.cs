@@ -8,7 +8,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
 
-namespace UBeat.Crm.CoreApi.ZJ.Controllers
+namespace UBeat.Crm.CoreApi.Controllers
 {
 
     [Route("api/zj/[controller]")]
@@ -24,6 +24,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
 
         [Route("getwjxquestionlist")]
         [HttpPost]
+        [AllowAnonymous]
         public OutputResult<object> GetWJXQuestionList([FromBody]  DynamicEntityListModel dynamicModel = null) {
             return _wjxServices.GetWJXQuestionList();
         }
