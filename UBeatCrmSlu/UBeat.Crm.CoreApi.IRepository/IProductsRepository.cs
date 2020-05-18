@@ -62,7 +62,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// </summary>
         /// <returns></returns>
         dynamic GetProducts(DbTransaction trans,string ruleSql, PageParam page, ProductList productData, string serachKey, int userNumber);
-
+        Dictionary<string, List<Dictionary<string, object>>> GetNewProducts(DbTransaction trans, string ruleSql, PageParam page, ProductList productData, string serachKey, int userNumber);
         /// <summary>
         /// 根据产品系列id获取产品系列详情，不包含下级产品系列
         /// </summary>

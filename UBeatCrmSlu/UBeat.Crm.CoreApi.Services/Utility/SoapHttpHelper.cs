@@ -38,6 +38,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         DataSouce = 6,
         RelateEntity = 7,
         DateTime = 8,
+        Region=9,
         Default = 0
     }
     public enum FieldTypeEnum
@@ -206,6 +207,22 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             var accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
             switch (customPro.type)
             {
+                case DataTypeEnum.Region:
+                    IBasicDataRepository _basicDataRepository = ServiceLocator.Current.GetInstance<IBasicDataRepository>();
+                    var dic = new Dictionary<string, Int64>();
+                    dic.Add("regionsync", 0);
+                    var dataList = _basicDataRepository.SyncDataBasic(new DomainModel.BasicData.SyncDataMapper
+                    {
+                        VersionKey = dic
+                    }, 0);
+                    var pageData = dataList["region"];
+                    if (pageData != null)
+                    {
+                        var tmpData = (pageData as List<IDictionary<string, object>>).FirstOrDefault(t => (t["regionid"] == null ? string.Empty : t["regionid"].ToString()) ==detail[kv.Key].ToString());
+
+                        detail[kv.Key] = tmpData == null ? string.Empty : tmpData["regioncode"].ToString();
+                    }
+                    return;
                 case DataTypeEnum.SingleChoose:
                 case DataTypeEnum.MultiChoose:
                     var dicRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
@@ -294,6 +311,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         return;
                     case FieldTypeEnum.Text:
                         detail[kv.Key] = (string.IsNullOrEmpty(detail[kv.Key].ToString())) ? string.Empty : detail[kv.Key].ToString();
+                        return;
+                    default:
+
                         return;
                 }
 
@@ -387,7 +407,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             return actData;
         }
-        #region  产品
+        #region   
         static void CustDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
             var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
@@ -415,23 +435,43 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         static void ProductDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
             IProductsRepository _productRepository = ServiceLocator.Current.GetInstance<IProductsRepository>();
-            var dataList = _productRepository.GetProducts(null, " 1=1 ", new PageParam { PageIndex = 1, PageSize = 10 }, new DomainModel.Products.ProductList
+            var dataList = _productRepository.GetNewProducts(null, " 1=1 ", new PageParam { PageIndex = 1, PageSize = 10 }, new DomainModel.Products.ProductList
             {
                 IsAllProduct = true,
                 ProductSeriesId = Guid.Parse("7f74192d-b937-403f-ac2a-8be34714278b"),
                 RecStatus = 1,
                 RecVersion = 0
             }, string.Empty, userId);
-            var pageData = dataList["pagedata"];
+            var pageData = dataList["data"];
             if (pageData != null)
             {
                 var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
-                var tmpData = (pageData as List<Dictionary<string, object>>).FirstOrDefault(t => (t["productCode"] == null ? string.Empty : t["productCode"].ToString()) == oldVal);
+                var tmpData = (pageData as List<Dictionary<string, object>>).FirstOrDefault(t => (t["productcode"] == null ? string.Empty : t["productcode"].ToString()) == oldVal);
 
                 p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["recid"].ToString());
             }
         }
+
+        public static void RegionDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        {
+            IBasicDataRepository _basicDataRepository = ServiceLocator.Current.GetInstance<IBasicDataRepository>();
+            var dic = new Dictionary<string, Int64>();
+            dic.Add("regionsync", 0);
+            var dataList = _basicDataRepository.SyncDataBasic(new DomainModel.BasicData.SyncDataMapper
+            {
+                VersionKey = dic
+            }, userId);
+            var pageData = dataList["region"];
+            if (pageData != null)
+            {
+                var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
+                var tmpData = (pageData as List<IDictionary<string, object>>).FirstOrDefault(t => (t["regionid"] == null ? string.Empty : t["regionid"].ToString()) == oldVal);
+
+                p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["regioncode"].ToString());
+            }
+        }
         #endregion
+
         static object ConvertFieldValue<T>(PropertyInfo p, T data)
         {
             var fieldType = p.GetCustomAttribute<EntityFieldAttribute>();

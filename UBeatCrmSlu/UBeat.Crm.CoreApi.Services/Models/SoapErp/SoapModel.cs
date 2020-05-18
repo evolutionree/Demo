@@ -45,20 +45,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string Bank { get; set; }
         [JsonProperty("account")]
         public string Account { get; set; }
-        [JsonProperty("taxRegNo")]
+        [JsonProperty("regNo")]
         public string TaxNumber { get; set; }
-        [JsonProperty("creditLimited")]
-        public decimal CreditLine { get; set; }
-        [DataType(DataTypeEnum.MultiChoose)]
-        [JsonProperty("paymentMethodId")]
-        public string PayInstrument { get; set; }
         [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("businessManId")]
         public string RecManager { get; set; }
         [JsonIgnore]
-        //   [JsonProperty("attach")]
         public string[] Attach { get; set; }
-        // [JsonProperty("invoiceattach")]
         [JsonIgnore]
         public string[] InvoiceAttach { get; set; }
         [DataType(DataTypeEnum.SingleChoose)]
@@ -66,15 +59,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string SaleType { get; set; }
         [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("assistantId")]
-        public string FollowUser { get; set; }
-        [JsonProperty("ename")]
+        public string Assistant { get; set; }
+        [JsonProperty("eName")]
         public string EnglishName { get; set; }
-        //       [JsonProperty("precustomer")]
-        [JsonIgnore]
+        [DataType(DataTypeEnum.Region)]
+        [JsonProperty("areaId")]
         public string CustRegion { get; set; }
-        [DataType(DataTypeEnum.SingleChoose)]
-        [JsonProperty("areaid")]
-        public string Country { get; set; }
         [DataType(DataTypeEnum.Address)]
         [JsonProperty("officeAdd")]
         public string CustAddr { get; set; }
@@ -85,20 +75,28 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [JsonProperty("taxId")]
         public string TaxCategory { get; set; }
         [DataType(DataTypeEnum.SingleChoose)]
-        [JsonProperty("ifTaxPrice")]
-        public string IncludTax { get; set; }
-        [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("currencyId")]
         public string Currency { get; set; }
         [DataType(DataTypeEnum.SingleChoose)]
-        [JsonProperty("customerId")]
+        [JsonProperty("companyId")]
         public string TaoZhang { get; set; }
+        [JsonProperty("reconcileDate")]
+        public Int64 DeadLine { get; set; }
         [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("operator")]
         public string RecCreator { get; set; }
-        [DataType(DataTypeEnum.RelateEntity, typeof(CustomerAddress))]
-        [JsonProperty("customerAddress")]
-        public List<IDictionary<string, object>> customerAddress { get; set; }
+        [DataType(DataTypeEnum.ChoosePerson)]
+        [JsonProperty("complainmentAssistantId")]
+        public string ComplaintAssistant { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
+        [JsonProperty("paymentTermId")]
+        public string PayTime { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
+        [JsonProperty("paymentMethodId")]
+        public string PayInstrument { get; set; }
+        //[DataType(DataTypeEnum.RelateEntity, typeof(CustomerAddress))]
+        //[JsonProperty("customerAddress")]
+        //public List<IDictionary<string, object>> customerAddress { get; set; }
 
     }
     [EntityInfo("689bc59b-f60d-4084-b99d-b0a3e406e873")]
