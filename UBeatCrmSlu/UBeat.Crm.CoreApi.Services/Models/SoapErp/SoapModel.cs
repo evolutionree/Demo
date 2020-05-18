@@ -265,8 +265,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public int packingSlipId { get; set; }
         [EntityField("customercontractno")]
         public String contractNumber { get; set; }
-        //[EntityField("orderno")]
-        //public String soNumber { get; set; }
+        [DataType(DataTypeEnum.DataSouce, "OrderDataSource")]
+        [EntityField("orderno", FieldTypeEnum.Jsonb)]
+        public String soNumber { get; set; }
         //[EntityField("customercontractno")]
         //public String salesPartNum { get; set; }
         //[EntityField("customercontractno")]

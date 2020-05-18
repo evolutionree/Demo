@@ -451,6 +451,30 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["recid"].ToString());
             }
         }
+        static void OrderDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        {
+            var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
+            {
+                EntityId = Guid.Parse("af949c2d-a101-46d5-a125-a9d0659959f0"),
+                ExtraData = null,
+                ViewType = 0,
+                MenuId = "8886abf5-003b-4ee1-849c-79eeaa9f6ccb",
+                NeedPower = 0,
+                SearchQuery = " AND orderno='" + p.GetValue(oldinstance) + "'"
+            }, userId);
+            var pageData = dataList["PageData"];
+            if (pageData != null && pageData.Count > 0)
+            {
+                var tmpData = pageData.FirstOrDefault();
+                var detail = dynamicRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+                {
+                    EntityId = Guid.Parse("af949c2d-a101-46d5-a125-a9d0659959f0"),
+                    NeedPower = 0,
+                    RecId = Guid.Parse(tmpData["recid"].ToString())
+                }, userId);
+                p.SetValue(newinstance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
+            }
+        }
 
         public static void RegionDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
