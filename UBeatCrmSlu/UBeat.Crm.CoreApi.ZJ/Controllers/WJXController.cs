@@ -24,9 +24,12 @@ namespace UBeat.Crm.CoreApi.Controllers
 
         [Route("getwjxquestionlist")]
         [HttpPost]
-        [AllowAnonymous]
-        public OutputResult<object> GetWJXQuestionList([FromBody]  DynamicEntityListModel dynamicModel = null) {
-            return _wjxServices.GetWJXQuestionList();
+        public OutputResult<object> GetWJXQuestionList([FromBody]  UKExtExecuteFunctionModel paramInfo) {
+            if (paramInfo == null || paramInfo.RecIds.Length == 0)
+                return ResponseError<object>("参数格式错误");
+            var recId = Guid.Parse(paramInfo.RecIds[0]);
+            var entityId = paramInfo.EntityId;
+            return _wjxServices.GetWJXQuestionList(recId, entityId);
         }
     }
 }

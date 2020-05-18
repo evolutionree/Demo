@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.WJXModel;
 using UBeat.Crm.CoreApi.Services.Utility;
@@ -15,9 +16,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
     public class WJXServices : BasicBaseServices
     {
         private readonly IConfigurationRoot _configurationRoot;
-        public WJXServices(IConfigurationRoot configurationRoot)
+        private readonly DynamicEntityServices _dynamicEntityServices;
+        public WJXServices(IConfigurationRoot configurationRoot, DynamicEntityServices dynamicEntityServices)
         {
             _configurationRoot = configurationRoot;
+            _dynamicEntityServices = dynamicEntityServices;
         }
         public OutputResult<object> GetWJXSSO()
         {
@@ -27,20 +30,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(ssoUrl);
         }
 
-        public OutputResult<object> GetWJXQuestionList()
+        public OutputResult<object> GetWJXQuestionList(Guid recId, Guid? entityId)
         {
             try
             {
+                if (entityId==null||entityId == Guid.Empty) {
+                    throw new Exception("实体id不能为空");
+                }
+                DynamicEntityDetailtMapper entityModel = new DynamicEntityDetailtMapper();
+                entityModel.EntityId = Guid.Parse(entityId.ToString());
+                entityModel.RecId = recId;
+                entityModel.NeedPower = 0;
+                var resultData = _dynamicEntityServices.Detail(entityModel, 1);
+                IDictionary<string, object> detailData = null;
+                if (resultData != null && resultData.ContainsKey("Detail") && resultData["Detail"] != null && resultData["Detail"].Count > 0)
+                    detailData=resultData["Detail"][0];
+
+                if (detailData == null) {
+                    throw new Exception("没有找到对应实体记录");
+                }
                 var config = _configurationRoot.GetSection("WJXConfig").Get<WJXSSOConfigModel>();
                 var stamp = GetTimeStamp();
-                string qUrl = string.Format(config.QUrl, config.AppId, config.APPkey, config.User, SignatureHelper.Sha1Signature(config.AppId + config.APPkey + config.User + stamp));
+                string qUrl = string.Format(config.QUrl, config.AppId, config.User, stamp, SignatureHelper.Sha1Signature(config.AppId + config.APPkey + config.User + stamp));
                 Task<String> taskResult = DingdingMsgService.GetJson(qUrl, null, null);
                 taskResult.Wait();
                 var result = taskResult.Result;
-                List<WJXQuestionModel> searchResultList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WJXQuestionModel>>(result);
+                List<WJXQuestionModel> searchResultList=new List<WJXQuestionModel>();
+                if (result != null) {
+                    searchResultList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WJXQuestionModel>>(result);
 
-                foreach (var question in searchResultList) {
-                    question.qurl = "https://www.wjx.cn/jq/"+ question .qid+ ".aspx"; 
+                    foreach (var question in searchResultList)
+                    {
+                        question.qurl = "https://www.wjx.cn/jq/" + question.qid + ".aspx?sojumpparm="+ detailData["reccode"].ToString();
+                    }
                 }
                 return new OutputResult<object>(searchResultList);
             }
