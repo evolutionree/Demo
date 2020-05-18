@@ -22,7 +22,8 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             _wjxServices = wjxServices;
         }
 
-        [HttpPost("getwjxquestionlist")]
+        [Route("getwjxquestionlist")]
+        [HttpPost]
         public OutputResult<object> GetWJXQuestionList([FromBody]  DynamicEntityListModel dynamicModel = null) {
             return _wjxServices.GetWJXQuestionList();
         }
