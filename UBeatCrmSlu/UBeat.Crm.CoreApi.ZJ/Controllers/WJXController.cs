@@ -8,10 +8,10 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
 
-namespace UBeat.Crm.CoreApi.FHSJ.Controllers
+namespace UBeat.Crm.CoreApi.ZJ.Controllers
 {
 
-    [Route("api/[controller]")]
+    [Route("api/zj/[controller]")]
     public class WJXController: BaseController
     {
         private readonly WJXServices _wjxServices;
