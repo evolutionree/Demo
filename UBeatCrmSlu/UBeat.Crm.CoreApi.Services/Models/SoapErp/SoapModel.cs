@@ -268,14 +268,60 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [DataType(DataTypeEnum.DataSouce, "OrderDataSource")]
         [EntityField("orderno", FieldTypeEnum.Jsonb)]
         public String soNumber { get; set; }
-        //[EntityField("customercontractno")]
-        //public String salesPartNum { get; set; }
-        //[EntityField("customercontractno")]
-        //public String salesPartName { get; set; }
+        [EntityField("productcode")]
+        [DataType(DataTypeEnum.DataSouce, "ProductDataSource")]
+        public String salesPartNum { get; set; }
+        [EntityField("productname")]
+        public String salesPartName { get; set; }
         [EntityField("quantity")]
         public String qtyOfPcsAssigned { get; set; }
         [EntityField("units")]
         public string unit { get; set; }
+
+    }
+    [EntityInfo("b56a7264-46b2-43d2-b22e-e5d777fb00db")]
+    public class FromPackingShipPrimeCost
+    {
+        [EntityField("packingshipid")]
+        public int packingSlipId { get; set; }
+        [EntityField("packingshipdetailid")]
+        public int packingSlipItemId { get; set; }
+        [EntityField("shippingorderno")]
+        public string shipingNotesNumer { get; set; }
+        [EntityField("productcode")]
+        [DataType(DataTypeEnum.DataSouce, "ProductDataSource")]
+        public String salesPartNum { get; set; }
+        [EntityField("productname")]
+        public String salesPartName { get; set; }
+        [EntityField("Starting")]
+        public DateTime starting { get; set; }
+        [EntityField("Ending")]
+        public DateTime ending { get; set; }
+        [EntityField("cost")]
+        public decimal averageCostByMonth { get; set; }
+    }
+    public class FromMakeCollectionOrderParam
+    {
+        public string startDate { get; set; }
+        public string endDate { get; set; }
+    }
+    [EntityInfo("4d581576-cf39-4b05-bfa0-753f47dc8c72")]
+    public class FromMakeCollectionsOrder
+    {
+        [EntityField("makecollectionsorderid")]
+        public int recId { get; set; }
+        [EntityField("code")]
+        public string checkNumber { get; set; }
+        [DataType(DataTypeEnum.DataSouce, "CustDataSource")]
+        [EntityField("customercode", FieldTypeEnum.Jsonb)]
+        public string sourceId { get; set; }
+        [EntityField("dateofcollection")]
+        public decimal totalAmount { get; set; }
+        [EntityField("amountcollected")]
+        public DateTime checkDate { get; set; }
+        [EntityField("currency")]
+        [DataType(DataTypeEnum.SingleChoose)]
+        public string currencyId { get; set; }
 
     }
 }

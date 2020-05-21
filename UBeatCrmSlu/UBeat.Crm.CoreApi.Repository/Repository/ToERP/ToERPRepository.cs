@@ -28,5 +28,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ToERP
             var result = ExecuteScalar(sql, param);
             return result != null ? result.ToString() : string.Empty;
         }
+        public string IsExistsMakeCollectionOrder(string makeColOrderId)
+        {
+            var sql = " select recid from crm_zj_receivables where makecollectionsorderid=@makecollectionsorderid::int4";
+            var param = new DbParameter[] {
+                new NpgsqlParameter("makecollectionsorderid",makeColOrderId)
+            };
+            var result = ExecuteScalar(sql, param);
+            return result != null ? result.ToString() : string.Empty;
+        }
     }
 }

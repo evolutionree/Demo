@@ -38,7 +38,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         DataSouce = 6,
         RelateEntity = 7,
         DateTime = 8,
-        Region=9,
+        Region = 9,
         Default = 0
     }
     public enum FieldTypeEnum
@@ -216,12 +216,30 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         VersionKey = dic
                     }, 0);
                     var pageData = dataList["region"];
+                    IDictionary<string, object> data = new Dictionary<string, object>();
                     if (pageData != null)
                     {
-                        var tmpData = (pageData as List<IDictionary<string, object>>).FirstOrDefault(t => (t["regionid"] == null ? string.Empty : t["regionid"].ToString()) ==detail[kv.Key].ToString());
-
-                        detail[kv.Key] = tmpData == null ? string.Empty : tmpData["regioncode"].ToString();
+                        if (detail[kv.Key] == null) return;
+                        var countryVal = detail["country"];
+                        if (countryVal == null && string.IsNullOrEmpty(countryVal.ToString())) return;
+                        IDataSourceRepository _dataSourceRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
+                        var dicDetail = _dataSourceRepository.SelectFieldDicVaue(53, 0);
+                        if (dicDetail == null && dicDetail.Count == 0) return;
+                        var dicVal = dicDetail.FirstOrDefault(t => t.DataId == Convert.ToInt32(countryVal.ToString()));
+                        if (dic == null) return;
+                        if (string.IsNullOrEmpty(dicVal.ExtField1)) return;
+                        if (dicVal.ExtField1 == "G001")
+                        {
+                            data = (pageData as List<IDictionary<string, object>>).FirstOrDefault(t => (t["regionid"] == null ? string.Empty : t["regionid"].ToString()) == detail[kv.Key].ToString());
+                        }
+                        else
+                        {
+                            data = new Dictionary<string, object>();
+                            data.Add("regioncode", dicVal.ExtField1);
+                        }
                     }
+                    if (data.Keys.Count==0) return;
+                    detail[kv.Key] = data == null ? string.Empty : data["regioncode"].ToString();
                     return;
                 case DataTypeEnum.SingleChoose:
                 case DataTypeEnum.MultiChoose:
@@ -391,8 +409,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             break;
                         case DataTypeEnum.DataSouce:
                             var thisType = typeof(SoapHttpHelper);
-                            var methods = thisType.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-.Where(m => !m.IsSpecialName);
+                            var methods = thisType.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
                             var method = methods.FirstOrDefault(t1 => t1.Name == customPro.bindingMethod);
                             if (method == null) throw new Exception("数据源配置为空");
                             var genMethod = method.MakeGenericMethod(t.GetType());
@@ -475,8 +492,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 p.SetValue(newinstance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
             }
         }
-
-        public static void RegionDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        static void RegionDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
             IBasicDataRepository _basicDataRepository = ServiceLocator.Current.GetInstance<IBasicDataRepository>();
             var dic = new Dictionary<string, Int64>();
@@ -488,8 +504,34 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             var pageData = dataList["region"];
             if (pageData != null)
             {
-                var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
-                var tmpData = (pageData as List<IDictionary<string, object>>).FirstOrDefault(t => (t["regionid"] == null ? string.Empty : t["regionid"].ToString()) == oldVal);
+                IDictionary<string, object> tmpData;
+                var country = oldinstance.GetType().GetProperty("country");
+                if (country == null)
+                {
+                    var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
+                    tmpData = (pageData as List<IDictionary<string, object>>).FirstOrDefault(t => (t["regionid"] == null ? string.Empty : t["regionid"].ToString()) == oldVal);
+                }
+                else
+                {
+                    var countryVal = country.GetValue(oldinstance);
+                    if (countryVal == null && string.IsNullOrEmpty(countryVal.ToString())) return;
+                    IDataSourceRepository _dataSourceRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
+                    var dicDetail = _dataSourceRepository.SelectFieldDicVaue(53, userId);
+                    if (dicDetail == null && dicDetail.Count == 0) return;
+                    var dicVal = dicDetail.FirstOrDefault(t => t.DataId == Convert.ToInt32(countryVal.ToString()));
+                    if (dic == null) return;
+                    if (string.IsNullOrEmpty(dicVal.ExtField1)) return;
+                    if (dicVal.ExtField1 == "G001")
+                    {
+                        var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
+                        tmpData = (pageData as List<IDictionary<string, object>>).FirstOrDefault(t => (t["regionid"] == null ? string.Empty : t["regionid"].ToString()) == oldVal);
+                    }
+                    else
+                    {
+                        tmpData = new Dictionary<string, object>();
+                        tmpData.Add("regioncode", dicVal.ExtField1);
+                    }
+                }
 
                 p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["regioncode"].ToString());
             }

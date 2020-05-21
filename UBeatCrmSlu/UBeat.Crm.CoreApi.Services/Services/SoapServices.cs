@@ -363,7 +363,201 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+        /// <summary>
+        /// 发货单
+        /// </summary>
+        /// <param name="detail"></param>
+        /// <param name="filterKey"></param>
+        /// <param name="orignalName"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OperateResult FromErpPackingShipCost(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
+        {
+            string logId = string.Empty;
+            try
+            {
+                var config = ValidConfig("PackingShipCostSoap", filterKey, orignalName);
+                if (config.Flag == 0) return config;
+                var interfaces = (config.Data as SoapInterfacesCollection).Interfaces;
+                var soapConfig = interfaces.FirstOrDefault(t => t.FunctionName == filterKey);
+                WebHeaderCollection headers = new WebHeaderCollection();
+                headers.Add("token", AuthToLoginERP(userId));
+                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
+                var result = "{\"code\": 200, 	\"message\": \"success\", 	\"data\": [{ 		\"packingSlipId\": 38469, 		\"packingSlipItemId\": 5597, 		\"shipingNotesNumer\": \"DP19042401996\", 		\"salesPartNum\": \"MN10016G061723A\", 		\"salesPartName\": \"deco M5 REV1.0.0|1.1\", 		\"starting\": \"2019-04-01 00:00:00\", 		\"ending\": \"2019-04-30 00:00:00\", 		\"averageCostByMonth\": 0.0001 	}] }";
+                //HttpLib.Get(soapConfig.SoapUrl + "?startDate=20200501&endDate=20200513", headers);
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
+                var subResult = ParseResult(result) as SubOperateResult;
+                var dealData = SoapHttpHelper.PersistenceEntityData<FromPackingShipPrimeCost>(subResult.Data.ToString(), userId, logId);
+                OperateResult dataResult = new OperateResult();
+                var db = new PostgreHelper();
+                var conn = db.GetDbConnect();
+                conn.Open();
+                DbTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    var entityId = typeof(FromPackingShipPrimeCost).GetCustomAttribute<EntityInfoAttribute>().EntityId;
+                    foreach (var t in dealData)
+                    {
+                        var recid = _toERPRepository.IsExistsPackingShipOrder(t["packingshipid"].ToString());
+                        if (string.IsNullOrEmpty(recid)) continue;
+                        var _dynamicEntityServices = ServiceLocator.Current.GetInstance<DynamicEntityServices>();
+                        var data = _dynamicEntityServices.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+                        {
+                            EntityId = Guid.Parse(entityId),
+                            NeedPower = 0,
+                            RecId = Guid.Parse(recid)
+                        }, userId);
+                        var subDetail = data["Detail"].FirstOrDefault()["detail"] as List<IDictionary<string, object>>;
+                        Dictionary<string, object> dic = new Dictionary<string, object>();
+                        List<Dictionary<string, object>> subDetailData = new List<Dictionary<string, object>>();
+                        Dictionary<string, object> subData = new Dictionary<string, object>();
+                        if (subDetail == null) continue;
+                        foreach (var t1 in subDetail)
+                        {
+                            if (t1.ContainsKey("productcode"))
+                            {
+                                t1["productcode"] = t["productcode"];
+                            }
+                            if (t1.ContainsKey("productname"))
+                            {
+                                t1["productname"] = t["productname"];
+                            }
+                            if (t1.ContainsKey("cost"))
+                            {
+                                t1["cost"] = t["cost"];
+                            }
+                            subData.Add("FieldData", t1);
+                            subData.Add("TypeId", "658159ab-9ace-405b-ae06-00619230aa92");
+                            subDetailData.Add(subData);
+                        }
+                        dic.Add("starting", t["Starting"]);
+                        dic.Add("ending", t["Ending"]);
+                        dic.Add("detail", JsonConvert.SerializeObject(subDetailData));
 
+                        dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid), dic, userId);
+                        if (dataResult.Flag == 0)
+                        {
+                            trans.Rollback();
+                            break;
+                        }
+                    }
+                    trans.Commit();
+                    SoapHttpHelper.Log(new List<string> { "finallyresult" }, new List<string> { "erp产品同步到CRM成功" + JsonConvert.SerializeObject(dealData) }, 1, userId, logId);
+                }
+                catch (Exception ex)
+                {
+                    int isUpdate = 0;
+                    if (!string.IsNullOrEmpty(logId))
+                        isUpdate = 1;
+                    else
+                        isUpdate = 0;
+                    SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message
+}, isUpdate, userId, logId);
+                    trans.Rollback();
+                }
+                finally
+                {
+                    trans.Dispose();
+                    conn.Close();
+                }
+                return dataResult;
+            }
+            catch (Exception ex)
+            {
+                int isUpdate = 0;
+                if (!string.IsNullOrEmpty(logId))
+                    isUpdate = 1;
+                else
+                    isUpdate = 0;
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message
+}, isUpdate, userId, logId);
+                return new OperateResult { Flag = 0, Msg = ex.Message };
+            }
+        }
+
+        /// <summary>
+        /// 发货单
+        /// </summary>
+        /// <param name="detail"></param>
+        /// <param name="filterKey"></param>
+        /// <param name="orignalName"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public OperateResult FromErpMakeCollectionsOrder(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
+        {
+            string logId = string.Empty;
+            try
+            {
+                var config = ValidConfig("MakeCollectionOrderSoap", filterKey, orignalName);
+                if (config.Flag == 0) return config;
+                var interfaces = (config.Data as SoapInterfacesCollection).Interfaces;
+                var soapConfig = interfaces.FirstOrDefault(t => t.FunctionName == filterKey);
+                WebHeaderCollection headers = new WebHeaderCollection();
+                headers.Add("token", AuthToLoginERP(userId));
+                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
+                var result = "{\"code\": 200,   \"message\": \"success\",   \"data\": [     {       \"recId\": 2,       \"checkNumber\": \"RV20051600001\",       \"sourceId\": 1068,       \"totalAmount\": 120,       \"checkDate\": \"2020-05-16 00:00:00\",       \"currencyId\": \"RMB\"     }   ] }";
+                //HttpLib.Get(soapConfig.SoapUrl + "?startDate=20200501&endDate=20200513", headers);
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
+                var subResult = ParseResult(result) as SubOperateResult;
+                var dealData = SoapHttpHelper.PersistenceEntityData<FromMakeCollectionsOrder>(subResult.Data.ToString(), userId, logId);
+                OperateResult dataResult = new OperateResult();
+                var db = new PostgreHelper();
+                var conn = db.GetDbConnect();
+                conn.Open();
+                DbTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    var entityId = typeof(FromMakeCollectionsOrder).GetCustomAttribute<EntityInfoAttribute>().EntityId;
+                    foreach (var t in dealData)
+                    {
+                        var recid = _toERPRepository.IsExistsMakeCollectionOrder(t["makecollectionsorderid"].ToString());
+                        if (!string.IsNullOrEmpty(recid))
+                        {
+                            dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid), t, userId);
+                        }
+                        else
+                        {
+                            dataResult = _dynamicEntityRepository.DynamicAdd(trans, Guid.Parse(entityId), t, null, userId);
+                        }
+                        if (dataResult.Flag == 0)
+                        {
+                            trans.Rollback();
+                            break;
+                        }
+                    }
+                    trans.Commit();
+                    SoapHttpHelper.Log(new List<string> { "finallyresult" }, new List<string> { "erp产品同步到CRM成功" + JsonConvert.SerializeObject(dealData) }, 1, userId, logId);
+                }
+                catch (Exception ex)
+                {
+                    int isUpdate = 0;
+                    if (!string.IsNullOrEmpty(logId))
+                        isUpdate = 1;
+                    else
+                        isUpdate = 0;
+                    SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message
+}, isUpdate, userId, logId);
+                    trans.Rollback();
+                }
+                finally
+                {
+                    trans.Dispose();
+                    conn.Close();
+                }
+                return dataResult;
+            }
+            catch (Exception ex)
+            {
+                int isUpdate = 0;
+                if (!string.IsNullOrEmpty(logId))
+                    isUpdate = 1;
+                else
+                    isUpdate = 0;
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message
+}, isUpdate, userId, logId);
+                return new OperateResult { Flag = 0, Msg = ex.Message };
+            }
+        }
 
         OperateResult ParseResult(string result)
         {
@@ -416,8 +610,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (soapConfig != null && soapConfig.IsSingleParam == 0)
             {
                 var logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { JsonConvert.SerializeObject(soapConfig.Params), soapConfig.SoapUrl }, 0, userId);
-                var soapResult = HttpLib.Get(soapConfig.SoapUrl+ string.Format("?userId={0}&password={1}", soapConfig.Params[0].DefaultValue, soapConfig.Params[1].DefaultValue));
-                 var subResult = ParseResult(soapResult) as SubOperateResult;
+                var soapResult = HttpLib.Get(soapConfig.SoapUrl + string.Format("?userId={0}&password={1}", soapConfig.Params[0].DefaultValue, soapConfig.Params[1].DefaultValue));
+                var subResult = ParseResult(soapResult) as SubOperateResult;
                 return subResult;
             }
             return new SubOperateResult { Flag = 0, Msg = "校验账号配置异常" };
