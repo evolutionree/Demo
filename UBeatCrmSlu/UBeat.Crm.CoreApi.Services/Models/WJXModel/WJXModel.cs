@@ -11,6 +11,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WJXModel
         public string User { get; set; }
         public string SSOUrl { get; set; }
         public string QUrl { get; set; }
+        public string AnswerUrl { get; set; }
     }
 
     public class WJXQuestionModel

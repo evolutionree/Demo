@@ -4462,8 +4462,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         Comment = transferEntity.Suggest,
                         IsSignOrTransfer = transferEntity.IsSignOrTransfer,
                         FlowStatus = transferEntity.IsSignOrTransfer == 1 ? (transferEntity.ChoiceStatus == 1 ? 17 : (transferEntity.ChoiceStatus == 0 ? 27 : 7)) : 7,
-                        SignStatus = transfer.SignStatus
-                        //加签的情况下，17是同意，27是不同意
+                        SignStatus = transfer.SignStatus//加签的情况下，17是同意，27是不同意
                     }, userId);
                     foreach (var t in transferEntity.Files)
                     {

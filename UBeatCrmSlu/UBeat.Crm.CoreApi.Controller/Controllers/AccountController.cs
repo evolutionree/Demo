@@ -60,7 +60,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _soapServices.FromErpProduct(null, "getSalesPartList", "同步产品", 1);
             return new OutputResult<object>(result);
         }
-     
+
         [AllowAnonymous]
         [HttpPost]
         [Route("t5")]
@@ -92,6 +92,19 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             var result = _soapServices.FromErpMakeCollectionsOrder(null, "getReceivableList", "同步产品单", 1);
             return new OutputResult<object>(result);
+        }
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("t9")]
+        public OutputResult<object> e()
+        {
+            Stream stream = Request.Body;
+            Byte[] byteData = new Byte[stream.Length];
+            stream.Read(byteData, 0, (Int32)stream.Length);
+            string jsonData = Encoding.UTF8.GetString(byteData)+Request.Query["sojumpparm"];
+            SoapHttpHelper.Log(new List<string> { "finallyresult" }, new List<string> { "erp产品同步到CRM成功" + jsonData }, 0, 1);
+            //  var result = _soapServices.FromErpMakeCollectionsOrder(null, "getReceivableList", "同步产品单", 1);
+            return null;
         }
         [AllowAnonymous]
         [HttpPost]

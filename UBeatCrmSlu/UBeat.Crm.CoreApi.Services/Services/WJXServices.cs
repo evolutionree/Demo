@@ -13,11 +13,11 @@ using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
-    public class WJXServices : BasicBaseServices
+    public class WJX1Services : BasicBaseServices
     {
         private readonly IConfigurationRoot _configurationRoot;
         private readonly DynamicEntityServices _dynamicEntityServices;
-        public WJXServices(IConfigurationRoot configurationRoot, DynamicEntityServices dynamicEntityServices)
+        public WJX1Services(IConfigurationRoot configurationRoot, DynamicEntityServices dynamicEntityServices)
         {
             _configurationRoot = configurationRoot;
             _dynamicEntityServices = dynamicEntityServices;
@@ -54,7 +54,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var config = _configurationRoot.GetSection("WJXConfig").Get<WJXSSOConfigModel>();
                 var stamp = GetTimeStamp();
                 //sign=sha1(appid+appkey+username+joiner+activity+joinid+realname+dept+extf+ts)
-                string sign = SignatureHelper.Sha1Signature(config.AppId + config.APPkey + config.User + "20200000168" + "73334626" + "3" + stamp);
+                string sign = SignatureHelper.Sha1Signature(config.AppId + config.APPkey + config.User + "20200000167" + "75174687" + "106173436875" + stamp);
                 string sign1 = SignatureHelper.Sha1Signature(config.AppId + config.APPkey+ "73334626" + stamp);
                 string qUrl = string.Format(config.QUrl, config.AppId, config.User, stamp, SignatureHelper.Sha1Signature(config.AppId + config.APPkey + config.User + stamp));
                 Task<String> taskResult = DingdingMsgService.GetJson(qUrl, null, null);
