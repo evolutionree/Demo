@@ -170,7 +170,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         {
             return Type.GetType("UBeat.Crm.CoreApi.Services.Models.SoapErp." + className);
         }
-        public static Guid Log(List<string> fields, List<string> contents, int isUpdate, int userId, string recId = "")
+        public static Guid Log(List<string> fields, List<string> contents, int isUpdate, int userId, string recId = "", DbTransaction trans = null)
         {
             IDynamicEntityRepository dynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
             OperateResult result;
@@ -181,12 +181,12 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             }
             if (isUpdate == 0)
             {
-                result = dynamicEntityRepository.DynamicAdd(null, Guid.Parse("22e0700c-e829-4c1b-bb4a-ec5282d359b7"), fielddata, null, userId);
+                result = dynamicEntityRepository.DynamicAdd(trans, Guid.Parse("22e0700c-e829-4c1b-bb4a-ec5282d359b7"), fielddata, null, userId);
                 return Guid.Parse(result.Id);
             }
             else
             {
-                result = dynamicEntityRepository.DynamicEdit(null, Guid.Parse("22e0700c-e829-4c1b-bb4a-ec5282d359b7"), Guid.Parse(recId), fielddata, userId);
+                result = dynamicEntityRepository.DynamicEdit(trans, Guid.Parse("22e0700c-e829-4c1b-bb4a-ec5282d359b7"), Guid.Parse(recId), fielddata, userId);
                 return Guid.Parse(recId);
             }
 
@@ -238,7 +238,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             data.Add("regioncode", dicVal.ExtField1);
                         }
                     }
-                    if (data.Keys.Count==0) return;
+                    if (data.Keys.Count == 0) return;
                     detail[kv.Key] = data == null ? string.Empty : data["regioncode"].ToString();
                     return;
                 case DataTypeEnum.SingleChoose:
@@ -274,7 +274,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     detail[kv.Key] = files;
                     return;
                 case DataTypeEnum.Address:
-                    var addr = JObject.Parse((detail[kv.Key] ?? "{}").ToString());
+                    var addr = JObject.Parse((detail[kv.Key] == null ? "{}" : (string.IsNullOrEmpty(detail[kv.Key].ToString()) ? "{}" : detail[kv.Key].ToString())).ToString());
                     detail[kv.Key] = addr.HasValues ? addr["address"].ToString() : string.Empty;
                     break;
                 case DataTypeEnum.DataSouce:

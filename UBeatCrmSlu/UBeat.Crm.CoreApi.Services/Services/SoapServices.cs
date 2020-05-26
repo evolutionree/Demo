@@ -38,34 +38,51 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _toERPRepository = ServiceLocator.Current.GetInstance<IToERPRepository>();
         }
 
-        public OperateResult ToErpCustomer(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
+        public OperateResult SyncEntityDataAfterApproved(Guid entityId, Guid caseId, Guid recId, int userId, DbTransaction trans = null)
         {
-            //{ "entityId":"f9db9d79-e94b-4678-a5cc-aa6e281c1246","recId":"0320535d-35e0-41c1-8ac4-0bb39c5e06c7","needPower":0}
-            detail = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+            var detail = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
             {
-                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
-                NeedPower = 0,
-                RecId = Guid.Parse("0320535d-35e0-41c1-8ac4-0bb39c5e06c7")
-            }, userId, null);
+                RecId = recId,
+                EntityId = entityId
+            }, userId);
+            DomainModel.OperateResult result;
+            Dictionary<string, object> dic = new Dictionary<string, object>();
+            if (detail["ifsyn"] == null)
+            {
+                result = this.ToErpCustomer(detail, "saveCustomerFromCrm", "新增客户", userId, trans);
+            }
+            else if (detail["ifsyn"].ToString() == "1")
+                result = this.ToErpCustomer(detail, "updateCustomerFromCrm", "编辑客户", userId, trans);
+            else
+                result = new DomainModel.OperateResult { Flag = 1 };
+            if (result.Flag == 1)
+            {
+                dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : null);
+                _dynamicEntityRepository.DynamicEdit(trans, entityId, recId, dic, userId);
+            }
+            return result;
+        }
+        public OperateResult ToErpCustomer(IDictionary<string, object> detail, string filterKey, string orignalName, int userId, DbTransaction trans = null)
+        {
             var _dynamicEntityServices = ServiceLocator.Current.GetInstance<DynamicEntityServices>();
-            Dictionary<string, object> relinfo = new Dictionary<string, object>();
-            relinfo.Add("recid", detail["recid"]);
-            relinfo.Add("relid", "0dc586b0-c721-4319-af6c-c7d4639638d7");
-            var custaddr = _dynamicEntityServices.DataList(new Models.DynamicEntity.DynamicEntityListModel
-            {
-                EntityId = Guid.Parse("689bc59b-f60d-4084-b99d-b0a3e406e873"),
-                MenuId = "f38b01b0-f072-471c-acbd-c8f890c9cab9",
-                RelInfo = relinfo,
-                PageIndex = 1,
-                PageSize = int.MaxValue,
-                ViewType = 0,
-                SearchOrder = ""
-            }, false, userId);
-            var subdata = (custaddr.DataBody as Dictionary<string, List<IDictionary<string, object>>>)["PageData"];
-            subdata.ForEach(t =>
-            t.Add("custcode", detail["custcode"])
-            );
-            detail.Add("customerAddress".ToLower(), subdata);
+            //Dictionary<string, object> relinfo = new Dictionary<string, object>();
+            //relinfo.Add("recid", detail["recid"]);
+            //relinfo.Add("relid", "0dc586b0-c721-4319-af6c-c7d4639638d7");
+            //var custaddr = _dynamicEntityServices.DataList(new Models.DynamicEntity.DynamicEntityListModel
+            //{
+            //    EntityId = Guid.Parse("689bc59b-f60d-4084-b99d-b0a3e406e873"),
+            //    MenuId = "f38b01b0-f072-471c-acbd-c8f890c9cab9",
+            //    RelInfo = relinfo,
+            //    PageIndex = 1,
+            //    PageSize = int.MaxValue,
+            //    ViewType = 0,
+            //    SearchOrder = ""
+            //}, false, userId);
+            //var subdata = (custaddr.DataBody as Dictionary<string, List<IDictionary<string, object>>>)["PageData"];
+            //subdata.ForEach(t =>
+            //t.Add("custcode", detail["custcode"])
+            //);
+            //detail.Add("customerAddress".ToLower(), subdata);
             string logId = string.Empty;
             try
             {
@@ -90,10 +107,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 var param = JsonConvert.SerializeObject(paramData.FirstOrDefault());
                 WebHeaderCollection headers = new WebHeaderCollection();
-                headers.Add("token", AuthToLoginERP(userId));
-                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { param, soapConfig.SoapUrl }, 0, userId).ToString();
+                headers.Add("token", AuthToLoginERP(userId, trans));
+                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { param, soapConfig.SoapUrl }, 0, userId, trans: trans).ToString();
                 var result = HttpLib.Post(soapConfig.SoapUrl, param, headers);
-                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString(), trans: trans);
                 return ParseResult(result);
             }
             catch (Exception ex)
@@ -564,7 +581,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             JObject jObject = JObject.Parse(result);
             return new SubOperateResult { Flag = jObject["code"].ToString() == "200" ? 1 : 0, Msg = jObject["message"].ToString(), Data = jObject["data"].ToString() };
         }
-        string AuthToLoginERP(int userId)
+        string AuthToLoginERP(int userId, DbTransaction trans = null)
         {
             bool isNeedToAuth = false;
             string token = string.Empty;
@@ -587,7 +604,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (isNeedToAuth)
             {
-                var result = AuthErp(userId);
+                var result = AuthErp(userId, trans);
                 if (result.Flag == 1)
                 {
                     token = (result as SubOperateResult).Data.ToString();
@@ -600,7 +617,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return token;
         }
 
-        public OperateResult AuthErp(int userId)
+        public OperateResult AuthErp(int userId, DbTransaction trans = null)
         {
             var result = ValidConfig("AuthSoap", "getToken", "登录");
             if (result.Flag == 0) return result;
@@ -609,7 +626,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var soapConfig = interfaces.FirstOrDefault();
             if (soapConfig != null && soapConfig.IsSingleParam == 0)
             {
-                var logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { JsonConvert.SerializeObject(soapConfig.Params), soapConfig.SoapUrl }, 0, userId);
+                var logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { JsonConvert.SerializeObject(soapConfig.Params), soapConfig.SoapUrl }, 0, userId, trans: trans);
                 var soapResult = HttpLib.Get(soapConfig.SoapUrl + string.Format("?userId={0}&password={1}", soapConfig.Params[0].DefaultValue, soapConfig.Params[1].DefaultValue));
                 var subResult = ParseResult(soapResult) as SubOperateResult;
                 return subResult;

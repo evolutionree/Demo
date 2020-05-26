@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -27,6 +28,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DataSource;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Message;
+using UBeat.Crm.CoreApi.Services.Models.SoapErp;
 using UBeat.Crm.CoreApi.Services.Models.WorkFlow;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Utility.ExcelUtility;
@@ -1195,7 +1197,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     JObject j1 = JObject.Parse(JsonConvert.SerializeObject(config));
                                     JObject j2 = JObject.Parse(field.FieldConfig);
                                     j1.Merge(j2);
-                                    field.FieldConfig = j1.ToString(); 
+                                    field.FieldConfig = j1.ToString();
                                 }
                             }
                         }
@@ -1438,6 +1440,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var result = _dynamicEntityRepository.DynamicEdit(transaction, dynamicEntity.TypeId, dynamicEntity.RecId, data, userNumber);
                     if (result.Flag == 1)
                     {
+                        var type = typeof(SoapServices);
+                        var instance = ServiceLocator.Current.GetInstance<SoapServices>();
+                        var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+                        if (methods != null)
+                        {
+                            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == dynamicEntity.TypeId.ToString());
+                            if (erpSync != null)
+                            {
+                                var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
+                                var invokeValue = method.Invoke(instance, new object[] { dynamicEntity.TypeId, Guid.Empty, dynamicEntity.RecId, userNumber, transaction });
+                                var dataResult = invokeValue as OperateResult;
+                                if (dataResult.Flag == 0) throw new Exception(dataResult.Msg);
+                            }
+                        }
                         var entityInfotemp = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId);
                         CheckCallBackService(transaction, OperatType.Update, entityInfotemp.Servicesjson, bussinessId, (Guid)entityInfo.entityid, userNumber, "");
                     }
@@ -2672,8 +2689,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         var relEntityFields = _dynamicEntityRepository.GetEntityFields(Guid.Parse(entityInfo["relentityid"].ToString()), userNumber);
                         var relField = relEntityFields.FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
-						if (relField != null && relResult != null && relResult[relField.FieldName] != null && entityInfo != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
-						{
+                        if (relField != null && relResult != null && relResult[relField.FieldName] != null && entityInfo != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
+                        {
                             if (!detail.ContainsKey(entityInfo["relfieldname"].ToString()))
                             {
                                 detail.Add(entityInfo["relfieldname"].ToString(), relResult[relField.FieldName]);
@@ -3968,42 +3985,42 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!string.IsNullOrEmpty(uuid))
                         {
                             var functions = t.Functions.Where(b => b.EntityId == entity.EntityId && b.RecType == FunctionType.EntityTab && b.DeviceType == (int)DeviceClassic);//拿子节点对上一级 的父节点的id
-							if (functions != null && functions.Count() > 0)
-							{
-								var function = functions.SingleOrDefault();
-								functions = t.Functions.Where(a => a.ParentId == function.FuncId);
-								if (functions.Any(a => a.RelationValue == uuid))
-								{
-									//1.检查职能可见规则
-									//2.检查页签可见规则
-									var hasAccess = true;
-									var recIds = new List<Guid>();
-									recIds.Add(entityModel.RecId);
+                            if (functions != null && functions.Count() > 0)
+                            {
+                                var function = functions.SingleOrDefault();
+                                functions = t.Functions.Where(a => a.ParentId == function.FuncId);
+                                if (functions.Any(a => a.RelationValue == uuid))
+                                {
+                                    //1.检查职能可见规则
+                                    //2.检查页签可见规则
+                                    var hasAccess = true;
+                                    var recIds = new List<Guid>();
+                                    recIds.Add(entityModel.RecId);
 
-									var fun = functions.Where(a => a.RelationValue == uuid).FirstOrDefault();
-									var userData = GetUserData(userNumber, false);
-									var sql = userData.RuleSqlFormatForFunction(fun);
-									if (!string.IsNullOrEmpty(sql))
-									{
-										hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
-									}
-									if (hasAccess == true)
-									{
-										if (relTabRelationList != null && relTabRelationList.Any(i => i.RelTabId.ToString() == uuid))
-										{
-											var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
-											sql = userData.RuleSqlFormatForSql(tab.RuleSql);
-											hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
-										}
-									}
+                                    var fun = functions.Where(a => a.RelationValue == uuid).FirstOrDefault();
+                                    var userData = GetUserData(userNumber, false);
+                                    var sql = userData.RuleSqlFormatForFunction(fun);
+                                    if (!string.IsNullOrEmpty(sql))
+                                    {
+                                        hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+                                    }
+                                    if (hasAccess == true)
+                                    {
+                                        if (relTabRelationList != null && relTabRelationList.Any(i => i.RelTabId.ToString() == uuid))
+                                        {
+                                            var tab = relTabRelationList.Where(i => i.RelTabId.ToString() == uuid).FirstOrDefault();
+                                            sql = userData.RuleSqlFormatForSql(tab.RuleSql);
+                                            hasAccess = ruleRepository.HasDataAccess(null, sql, entityModel.EntityId, recIds);
+                                        }
+                                    }
 
-									if (hasAccess == true)
-									{
-										if (!lst.Contains(tmp))
-											lst.Add(tmp);
-									}
-								}
-							} 
+                                    if (hasAccess == true)
+                                    {
+                                        if (!lst.Contains(tmp))
+                                            lst.Add(tmp);
+                                    }
+                                }
+                            }
                         }
                     }
                 });

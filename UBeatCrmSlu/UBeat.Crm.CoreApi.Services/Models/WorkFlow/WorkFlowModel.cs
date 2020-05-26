@@ -310,4 +310,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
     {
         public Guid EntityId { get; set; }
     }
+
+    public class ExtWorkFlowExecResult
+    {
+        public int   Code { get; set; }
+        public string Message { get; set; }
+        public Dictionary<string,object> Data{ get; set; }
+    }
 }

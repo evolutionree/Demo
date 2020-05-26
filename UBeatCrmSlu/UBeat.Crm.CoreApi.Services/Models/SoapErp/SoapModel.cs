@@ -6,6 +6,11 @@ using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
 {
+    public class ErpSyncFunc
+    {
+        public string EntityId { get; set; }
+        public string FuncName { get; set; }
+    }
     public class ErpSoapInterfaces
     {
         public SoapConfig AuthSoap { get; set; }

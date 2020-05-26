@@ -26,6 +26,9 @@ using System.Text.RegularExpressions;
 using UBeat.Crm.CoreApi.Core.Utility;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using System.Reflection;
+using Microsoft.Extensions.Configuration;
+using UBeat.Crm.CoreApi.Services.Models.SoapErp;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -1411,16 +1414,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 if (result.NodeInfo.StepTypeId == NodeStepType.End && caseItemEntity.ChoiceStatus != 0)
                 {
-                    MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
-                    tran.Commit();
-                    WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
+                    if (caseItemEntity.ChoiceStatus == 1)
+                    {
+                        var type = typeof(SoapServices);
+                        var instance = ServiceLocator.Current.GetInstance<SoapServices>();
+                        var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+                        if (methods != null)
+                        {
+                            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString());
+                            if (erpSync != null)
+                            {
+                                var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
+                                var data = method.Invoke(instance, new object[] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId,tran });
+                                var dataResult = data as OperateResult;
+                                if (dataResult.Flag == 0) throw new Exception(dataResult.Msg);
+                            }
+                        }
+                        MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
+                        tran.Commit();
+                        WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
+                    }
+                    if (operatetype == 0)
+                    {
+                        if (tran != null && tran.Connection != null)
+                            tran.Rollback();
+                    }
+                    isDisposed = true;
                 }
-                if (operatetype == 0)
-                {
-                    if (tran != null && tran.Connection != null)
-                        tran.Rollback();
-                }
-                isDisposed = true;
             }
             catch (Exception ex)
             {
@@ -2117,6 +2138,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             bool IsFinishAfterStart = false;
             string handlUser = string.Empty;
             string curUserIds = string.Empty;
+
             if (tran == null || tran.Connection == null)
             {
                 conn = GetDbConnect();
@@ -2230,7 +2252,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         _workFlowRepository.AddEndWorkFlowCaseItemCPUser(tran, Guid.Parse(caseItemId.ToString()), subscriber);
                         //   caseItemEntity.ChoiceStatus = 5;
                     }
-
+                    if (caseItemEntity.ChoiceStatus == 1)
+                    {
+                        var type = typeof(SoapServices);
+                        var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+                        if (methods != null)
+                        {
+                            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString());
+                            if (erpSync != null)
+                            {
+                                var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
+                                var data = method.Invoke(type, new object[4] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId });
+                                var result = data as OperateResult;
+                                if (result.Flag == 0) throw new Exception(result.Msg);
+                            }
+                        }
+                    }
                     //判断是否有附加函数_event_func
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);
                     _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
@@ -2783,7 +2821,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     tran.Commit();
                     canWriteCaseMessage = true;
                 }
- 
+
             }
             catch (Exception ex)
             {
