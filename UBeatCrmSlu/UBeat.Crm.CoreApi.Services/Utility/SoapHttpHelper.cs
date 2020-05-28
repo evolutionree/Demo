@@ -221,7 +221,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     {
                         if (detail[kv.Key] == null) return;
                         var countryVal = detail["country"];
-                        if (countryVal == null && string.IsNullOrEmpty(countryVal.ToString())) return;
+                        if (countryVal == null || string.IsNullOrEmpty(countryVal.ToString())) return;
                         IDataSourceRepository _dataSourceRepository = ServiceLocator.Current.GetInstance<IDataSourceRepository>();
                         var dicDetail = _dataSourceRepository.SelectFieldDicVaue(53, 0);
                         if (dicDetail == null && dicDetail.Count == 0) return;
@@ -253,10 +253,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                     string s = string.Empty;
                     foreach (var id in ids)
                     {
+                        if (string.IsNullOrEmpty(id)) continue;
                         var dicValue = dicValues.FirstOrDefault(t => t.DataId == Convert.ToInt32(id));
                         s += dicValue.ExtField1 + ",";
                     }
-                    detail[kv.Key] = s.Substring(0, s.Length - 1);
+                    detail[kv.Key] = string.IsNullOrEmpty(s) ?s: s.Substring(0, s.Length -1);
                     TypeConvert(property, detail, kv);
                     return;
                 case DataTypeEnum.ChoosePerson:

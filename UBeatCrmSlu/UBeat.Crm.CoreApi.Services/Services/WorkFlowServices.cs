@@ -1248,6 +1248,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return HandleValid(caseItemEntity);
             }
+            string message = string.Empty;
+            int status = 0;
             bool casefinish = false;
             int stepnum = 0;
             Guid nodeid = Guid.Empty;
@@ -1412,6 +1414,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (isBreak)
                         break;
                 }
+
                 if (result.NodeInfo.StepTypeId == NodeStepType.End && caseItemEntity.ChoiceStatus != 0)
                 {
                     if (caseItemEntity.ChoiceStatus == 1)
@@ -1426,9 +1429,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (erpSync != null)
                             {
                                 var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
-                                var data = method.Invoke(instance, new object[] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId,tran });
+                                var data = method.Invoke(instance, new object[] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId, tran });
                                 var dataResult = data as OperateResult;
-                                if (dataResult.Flag == 0) throw new Exception(dataResult.Msg);
+                                if (dataResult.Flag == 0) { message = dataResult.Msg; }
                             }
                         }
                         MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
@@ -1457,7 +1460,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     conn.Dispose();
                 }
             }
-            return new OutputResult<object>(result);
+            return new OutputResult<object>(result, message, status);
         }
         public OutputResult<object> SubmitPretreatAuditHelp(WorkFlowAuditCaseItemModel caseItemModel, UserInfo userinfo, DbTransaction trans)
         {
@@ -2138,7 +2141,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             bool IsFinishAfterStart = false;
             string handlUser = string.Empty;
             string curUserIds = string.Empty;
-
+            string message = string.Empty;
+            int status = 0;
             if (tran == null || tran.Connection == null)
             {
                 conn = GetDbConnect();
@@ -2265,7 +2269,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
                                 var data = method.Invoke(type, new object[4] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId });
                                 var result = data as OperateResult;
-                                if (result.Flag == 0) throw new Exception(result.Msg);
+                                if (result.Flag == 0) { message = result.Msg; status = 1; }
                             }
                         }
                     }
@@ -2409,7 +2413,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     conn.Dispose();
                 }
             }
-            return new OutputResult<object>(null);
+            return new OutputResult<object>(null, message, status);
         }
         NextNodeDataInfo GetNextNodeBranch(WorkFlowCaseInfo caseInfo, Guid nodeId, UserInfo userInfo, DbTransaction tran)
         {

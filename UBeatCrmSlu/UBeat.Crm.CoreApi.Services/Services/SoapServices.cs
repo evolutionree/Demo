@@ -45,21 +45,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 RecId = recId,
                 EntityId = entityId
             }, userId);
+            var relateDetail = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+            {
+                RecId = Guid.Parse(JObject.Parse(detail["belongcust"].ToString())["id"].ToString()),
+                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246")
+            }, userId);
             DomainModel.OperateResult result;
             Dictionary<string, object> dic = new Dictionary<string, object>();
-            if (detail["ifsyn"] == null)
+            if (relateDetail["ifsyn"] == null)
             {
-                result = this.ToErpCustomer(detail, "saveCustomerFromCrm", "新增客户", userId, trans);
+                result = this.ToErpCustomer(relateDetail, "saveCustomerFromCrm", "新增客户", userId, trans);
             }
-            else if (detail["ifsyn"].ToString() == "1")
-                result = this.ToErpCustomer(detail, "updateCustomerFromCrm", "编辑客户", userId, trans);
+            else if (relateDetail["ifsyn"].ToString() == "2")
+            {
+                result = this.ToErpCustomer(relateDetail, "saveCustomerFromCrm", "新增客户", userId, trans);
+            }
+            else if (relateDetail["ifsyn"].ToString() == "1")
+                result = this.ToErpCustomer(relateDetail, "updateCustomerFromCrm", "编辑客户", userId, trans);
             else
-                result = new DomainModel.OperateResult { Flag = 1 };
-            if (result.Flag == 1)
+                result = new SubOperateResult { Flag = 1 };
+            dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : 2);
+            dic.Add("syncinfo", result.Flag == 1 ? "成功" : result.Msg);
+            var synTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss");
+            var synId = string.Empty;
+            var data = (result as SubOperateResult).Data;
+            if (!string.IsNullOrEmpty(data.ToString()))
             {
-                dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : null);
-                _dynamicEntityRepository.DynamicEdit(trans, entityId, recId, dic, userId);
+                synTime = JObject.Parse(data.ToString())["time"].ToString();
+                synId = JObject.Parse(data.ToString())["id"].ToString();
             }
+            dic.Add("synctime", synTime);
+            dic.Add("pkcode", synId);
+            _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"), Guid.Parse(JObject.Parse(detail["belongcust"].ToString())["id"].ToString()), dic, userId);
+
             return result;
         }
         public OperateResult ToErpCustomer(IDictionary<string, object> detail, string filterKey, string orignalName, int userId, DbTransaction trans = null)
@@ -120,7 +138,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     isUpdate = 1;
                 else
                     isUpdate = 0;
-                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message }, isUpdate, userId, logId);
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message }, isUpdate, userId, logId, trans: trans);
                 return new OperateResult { Flag = 0, Msg = ex.Message };
             }
         }

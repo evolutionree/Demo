@@ -86,6 +86,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [JsonProperty("companyId")]
         public string TaoZhang { get; set; }
         [JsonProperty("reconcileDate")]
+        [EntityField("reconcileDate", FieldTypeEnum.Int)]
         public Int64 DeadLine { get; set; }
         [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("operator")]
