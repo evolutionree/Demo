@@ -781,7 +781,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             {
                 return new OperateResult()
                 {
-                    Flag = 0,
+                    Flag = 0, 
                     Msg = "新增配置失败"
                 };
             }

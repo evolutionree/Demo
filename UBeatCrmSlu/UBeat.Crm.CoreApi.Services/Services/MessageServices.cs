@@ -506,7 +506,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         {
                                             packageMsg.recevier.Add(tmp);
                                         }
-                                        packageMsg.content = packageMsg.title + " \n  " + packageMsg.content + " \n " + packageMsg.DateTime;
+                                        packageMsg.content = packageMsg.title + " \n  <a href=\"www.baidu.com\">" + packageMsg.content + "</a> \n " + packageMsg.DateTime;
                                         MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.Text, packageMsg);
                                         break;
                                     case MessageStyleType.EntityOperate:
