@@ -20,13 +20,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class SoapServices : BasicBaseServices
     {
-        private string SOAPFUNCPARM = " " +
-            "   <soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"  xmlns:ws=\"http://ws.service.ceews.ceepcb.com/\">   <soapenv:Header/> {0}{1}</soapenv:Envelope>";
-        private string SOAPBODYPARAM = " <soap:Body xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
-            "                <ws:{0}> {1}</ws:{0}>" +
- "    </soap:Body> ";
-        private string SOAPPROPERTY = " <{0}>{1}</{0}> ";
-        private string SOAPAUTHPARAM = "<soap:Header><auth><token>{0}</token></auth> </soap:Header>";
         private static Hashtable ht = new Hashtable();
         private readonly IConfigurationRoot _configurationRoot;
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
@@ -83,24 +76,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OperateResult ToErpCustomer(IDictionary<string, object> detail, string filterKey, string orignalName, int userId, DbTransaction trans = null)
         {
             var _dynamicEntityServices = ServiceLocator.Current.GetInstance<DynamicEntityServices>();
-            //Dictionary<string, object> relinfo = new Dictionary<string, object>();
-            //relinfo.Add("recid", detail["recid"]);
-            //relinfo.Add("relid", "0dc586b0-c721-4319-af6c-c7d4639638d7");
-            //var custaddr = _dynamicEntityServices.DataList(new Models.DynamicEntity.DynamicEntityListModel
-            //{
-            //    EntityId = Guid.Parse("689bc59b-f60d-4084-b99d-b0a3e406e873"),
-            //    MenuId = "f38b01b0-f072-471c-acbd-c8f890c9cab9",
-            //    RelInfo = relinfo,
-            //    PageIndex = 1,
-            //    PageSize = int.MaxValue,
-            //    ViewType = 0,
-            //    SearchOrder = ""
-            //}, false, userId);
-            //var subdata = (custaddr.DataBody as Dictionary<string, List<IDictionary<string, object>>>)["PageData"];
-            //subdata.ForEach(t =>
-            //t.Add("custcode", detail["custcode"])
-            //);
-            //detail.Add("customerAddress".ToLower(), subdata);
             string logId = string.Empty;
             try
             {
@@ -143,6 +118,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+        public OperateResult SyncErpProduct()
+        {
+            return this.FromErpProduct(null, "getSalesPartList", "同步产品", 1);
+        }
         public OperateResult FromErpProduct(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
         {
             string logId = string.Empty;
@@ -155,7 +134,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
-                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=20191229&endDate=20200108", headers);
+                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate="+DateTime.Now.ToString()+"&endDate=20200108", headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
                 var dealData = SoapHttpHelper.PersistenceEntityData<FromProductSoap>(subResult.Data.ToString(), userId, logId);
@@ -213,6 +192,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+        public OperateResult SyncErpOrder()
+        {
+            return this.FromErpProduct(null, "getContractList", "同步产品单", 1);
+        }
         /// <summary>
         /// 订单
         /// </summary>

@@ -506,7 +506,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         {
                                             packageMsg.recevier.Add(tmp);
                                         }
-                                        packageMsg.content = packageMsg.title + " \n  <a href=\"www.baidu.com\">" + packageMsg.content + "</a> \n " + packageMsg.DateTime;
+                                        packageMsg.content = packageMsg.title + " \n  <a href=\"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wwadba9051b034e6b4&redirect_uri=www.baidu.com&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect\">" + packageMsg.content + "</a> \n " + packageMsg.DateTime;
                                         MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.Text, packageMsg);
                                         break;
                                     case MessageStyleType.EntityOperate:
