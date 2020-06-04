@@ -9,6 +9,7 @@ using System.Data.Common;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Dynamics;
@@ -220,7 +221,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="userNumber">当前用户</param>
         /// <param name="pushCustomContent">推送消息扩展数据</param>
         /// <param name="typeStatus">发消息方式，0=消息+动态，1=消息，2=动态</param>
-        public void WriteMessage(DbTransaction tran, MessageParameter msgparam, int userNumber, Dictionary<string, object> pushCustomContent = null, int typeStatus = 0)
+        public void WriteMessage(DbTransaction tran, MessageParameter msgparam, int userNumber, Dictionary<string, object> pushCustomContent = null, int typeStatus = 0, int isFlow = 0)
         {
             if (msgparam == null)
             {
@@ -495,19 +496,32 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             if (wcConfig.GetValue<Boolean>("IsSyncWebChat"))
                             {
-                                //Too Do
+                                if (isFlow == 0) return;
+                                var casedata = JObject.Parse(msgparam.ParamData);
+                                JToken jdata;
+                                string caseId = string.Empty;
+                                if (casedata.TryGetValue("caseid", out jdata))
+                                {
+                                    caseId = jdata.ToString();
+                                }
+                                if (string.IsNullOrEmpty(caseId)) return;
+                                var enterpriseWeChatRealmName = wcConfig.GetValue<string>("EnterpriseWeChatRealmName");
                                 switch (configData.MsgStyleType)
                                 {
                                     case MessageStyleType.WorkflowAudit:
                                         packageMsg.content = msgContent;
                                         packageMsg.title = pushMsg.Title;
                                         packageMsg.DateTime = tmpDate;
+                                        var rec = new List<string>();
                                         foreach (var tmp in wcUsers)
                                         {
-                                            packageMsg.recevier.Add(tmp);
+                                            rec.Add(tmp);
+                                            string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=1&userid=" + tmp + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + " & caseid = " + caseId);
+                                              packageMsg.recevier = rec;
+                                            packageMsg.content = packageMsg.title + " \n  <a href=\"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wwadba9051b034e6b4&redirect_uri="+url+"&response_type=code&scope=snsapi_base&state=#wechat_redirect\">" + packageMsg.content + "</a> \n " + packageMsg.DateTime;
+                                            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.Text, packageMsg);
+                                            rec.Clear();
                                         }
-                                        packageMsg.content = packageMsg.title + " \n  <a href=\"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wwadba9051b034e6b4&redirect_uri=www.baidu.com&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect\">" + packageMsg.content + "</a> \n " + packageMsg.DateTime;
-                                        MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.Text, packageMsg);
                                         break;
                                     case MessageStyleType.EntityOperate:
                                         if (entityInfo.modeltype == 0)

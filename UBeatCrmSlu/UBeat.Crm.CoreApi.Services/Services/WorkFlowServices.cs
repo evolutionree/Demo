@@ -3837,20 +3837,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 // 发布关联动态实体的动态消息
                                 var dynamicMsgtemp = MessageService.GetEntityMsgParameter(entityInfotemp, msg.BusinessId, msg.RelBusinessId, "EntityDynamicAdd", userNumber, newMembers, null, msgpParam);
 
-                                MessageService.WriteMessage(tran, dynamicMsgtemp, userNumber, null);
+                                MessageService.WriteMessage(tran, dynamicMsgtemp, userNumber, null, isFlow: 1);
 
                                 //发起流程时直接结束的场景
                                 if (caseInfo.AuditStatus == AuditStatusType.Finished)
                                 {
                                     msg.FuncCode = "WorkFlowNodeFinishDynamic";
-                                    MessageService.WriteMessage(tran, msg, userNumber);
+                                    MessageService.WriteMessage(tran, msg, userNumber, isFlow: 1);
                                 }
                             }
 
 
                         }
 
-                        else MessageService.WriteMessage(tran, msg, userNumber);
+                        else MessageService.WriteMessage(tran, msg, userNumber, isFlow: 1);
                         #endregion
                         tran.Commit();
                     }

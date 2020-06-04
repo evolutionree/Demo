@@ -58,7 +58,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="userNumber"></param>
         /// <returns></returns>
         AccountUserInfo GetAccountUserInfo(int userNumber);
-
+        AccountUserInfo GetWcAccountUserInfo(string userNumber);
         List<UserInfo> GetAllUserInfoList();
 
         List<UserInfo> GetUserInfoList(List<int> userids);

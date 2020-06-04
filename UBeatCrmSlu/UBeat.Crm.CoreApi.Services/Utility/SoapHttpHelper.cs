@@ -238,7 +238,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             data.Add("regioncode", dicVal.ExtField1);
                         }
                     }
-                    if (data.Keys.Count == 0) return;
+                    if (data == null || data.Keys.Count == 0) return;
                     detail[kv.Key] = data == null ? string.Empty : data["regioncode"].ToString();
                     return;
                 case DataTypeEnum.SingleChoose:
@@ -257,7 +257,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         var dicValue = dicValues.FirstOrDefault(t => t.DataId == Convert.ToInt32(id));
                         s += dicValue.ExtField1 + ",";
                     }
-                    detail[kv.Key] = string.IsNullOrEmpty(s) ?s: s.Substring(0, s.Length -1);
+                    detail[kv.Key] = string.IsNullOrEmpty(s) ? s : s.Substring(0, s.Length - 1);
                     TypeConvert(property, detail, kv);
                     return;
                 case DataTypeEnum.ChoosePerson:

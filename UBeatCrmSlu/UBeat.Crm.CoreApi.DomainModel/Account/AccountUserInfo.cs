@@ -26,5 +26,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
 
         public String DDUserId { get; set; }
 
+        public String WCUserid { get; set; }
+
     }
 }
