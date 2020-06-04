@@ -91,7 +91,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
             result = new OperateResult
             {
                 Flag = 1,
-                Id = actuallyUrl + "?" + token
+                Id = actuallyUrl + "?token=" + token
             };
             return HandleResult(result);
         }
