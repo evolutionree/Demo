@@ -33,28 +33,36 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OperateResult SyncEntityDataAfterApproved(Guid entityId, Guid caseId, Guid recId, int userId, DbTransaction trans = null)
         {
+            IDictionary<string, object> detailData;
             var detail = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
             {
                 RecId = recId,
                 EntityId = entityId
             }, userId);
-            var relateDetail = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+            if (entityId == Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"))
             {
-                RecId = Guid.Parse(JObject.Parse(detail["belongcust"].ToString())["id"].ToString()),
-                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246")
-            }, userId);
+                detailData = detail;
+            }
+            else
+            {
+                detailData = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper
+                {
+                    RecId = Guid.Parse(JObject.Parse(detail["belongcust"].ToString())["id"].ToString()),
+                    EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246")
+                }, userId);
+            }
             DomainModel.OperateResult result;
             Dictionary<string, object> dic = new Dictionary<string, object>();
-            if (relateDetail["ifsyn"] == null)
+            if (detailData["ifsyn"] == null)
             {
-                result = this.ToErpCustomer(relateDetail, "saveCustomerFromCrm", "新增客户", userId, trans);
+                result = this.ToErpCustomer(detailData, "saveCustomerFromCrm", "新增客户", userId, trans);
             }
-            else if (relateDetail["ifsyn"].ToString() == "2")
+            else if (detailData["ifsyn"].ToString() == "2")
             {
-                result = this.ToErpCustomer(relateDetail, "saveCustomerFromCrm", "新增客户", userId, trans);
+                result = this.ToErpCustomer(detailData, "saveCustomerFromCrm", "新增客户", userId, trans);
             }
-            else if (relateDetail["ifsyn"].ToString() == "1")
-                result = this.ToErpCustomer(relateDetail, "updateCustomerFromCrm", "编辑客户", userId, trans);
+            else if (detailData["ifsyn"].ToString() == "1")
+                result = this.ToErpCustomer(detailData, "updateCustomerFromCrm", "编辑客户", userId, trans);
             else
                 result = new SubOperateResult { Flag = 1 };
             dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : 2);
@@ -69,7 +77,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             dic.Add("synctime", synTime);
             dic.Add("pkcode", synId);
-            _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"), Guid.Parse(JObject.Parse(detail["belongcust"].ToString())["id"].ToString()), dic, userId);
+            _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"), Guid.Parse(detailData["recid"].ToString()), dic, userId);
 
             return result;
         }
@@ -134,7 +142,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
-                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate="+DateTime.Now.ToString()+"&endDate=20200108", headers);
+                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + DateTime.Now.ToString() + "&endDate=20200108", headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
                 var dealData = SoapHttpHelper.PersistenceEntityData<FromProductSoap>(subResult.Data.ToString(), userId, logId);

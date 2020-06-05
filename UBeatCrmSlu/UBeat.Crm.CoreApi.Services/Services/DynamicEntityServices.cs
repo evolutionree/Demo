@@ -1452,7 +1452,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
                                 var invokeValue = method.Invoke(instance, new object[] { dynamicEntity.TypeId, Guid.Empty, dynamicEntity.RecId, userNumber, transaction });
                                 var dataResult = invokeValue as OperateResult;
-                                if (dataResult.Flag == 0) throw new Exception(dataResult.Msg);
+                                if (dataResult.Flag == 0) result = dataResult;// throw new Exception(dataResult.Msg);
                             }
                         }
                         var entityInfotemp = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId);
