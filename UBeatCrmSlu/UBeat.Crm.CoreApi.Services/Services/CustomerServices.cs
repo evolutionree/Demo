@@ -8,6 +8,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Dynamics;
@@ -69,7 +70,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 var sqlParameters = new List<DbParameter>();
                 // sqlParameters.Add(new NpgsqlParameter(item.Key, item.Value));
-                var allList = _customerRepository.GetMergeCustomerList(transaction, wheresql,custModel.SearchKey, sqlParameters.ToArray(), custModel.PageIndex, custModel.PageSize);
+                var allList = _customerRepository.GetMergeCustomerList(transaction, wheresql, custModel.SearchKey, sqlParameters.ToArray(), custModel.PageIndex, custModel.PageSize);
 
                 return new OutputResult<object>(allList);
 
@@ -376,7 +377,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 _custstatus = 1;
             }
-            else {
+            else
+            {
                 if ((int)mytemp > _custstatus)
                     _custstatus = (int)mytemp;
             }
@@ -395,9 +397,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="transaction"></param>
         /// <param name="param"></param>
         /// <param name="trackback"></param>
-        public void CustomerSaveCallback(DbTransaction transaction, Dictionary<string, object> param, List<Dictionary<string, object>> trackback,int userNum,string userName) {
+        public void CustomerSaveCallback(DbTransaction transaction, Dictionary<string, object> param, List<Dictionary<string, object>> trackback, int userNum, string userName)
+        {
             if (param == null) return;
-            if (param.ContainsKey("recid") == false || param.ContainsKey("entityid") == false || param.ContainsKey("opertype") ==false ) { return; }
+            if (param.ContainsKey("recid") == false || param.ContainsKey("entityid") == false || param.ContainsKey("opertype") == false) { return; }
             string recid = param["recid"].ToString();
             string entityid = param["entityid"].ToString();
             OperatType opertype = (OperatType)param["opertype"];
@@ -409,17 +412,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 //反写销售线索
                 _customerRepository.rewriteSaleClue(transaction, saleclueid, 0);
                 //尝试新增联系人
-                TryAndSaveContract(transaction, saleclueid, recid,userNum,userName);
+                TryAndSaveContract(transaction, saleclueid, recid, userNum, userName);
             }
             else if (opertype == OperatType.Update)
             {
                 TryAndSaveContract(transaction, saleclueid, recid, userNum, userName);
             }
-            else if (opertype == OperatType.Delete) {
+            else if (opertype == OperatType.Delete)
+            {
 
-            } 
+            }
         }
-        public void TryAndSaveContract(DbTransaction transaction, string saleclueid ,string custid,int userNum,string userName)
+        public void TryAndSaveContract(DbTransaction transaction, string saleclueid, string custid, int userNum, string userName)
         {
             EntityTransferServices transferService = (EntityTransferServices)dynamicCreateService(typeof(EntityTransferServices).FullName, true);
             EntityTransferActionModel model = new EntityTransferActionModel();
@@ -428,11 +432,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             model.SrcRecId = saleclueid;
             try
             {
-                if (this._customerRepository.checkNeedAddContact(transaction,saleclueid,custid) == false) return;
+                if (this._customerRepository.checkNeedAddContact(transaction, saleclueid, custid) == false) return;
                 Dictionary<string, IDictionary<string, object>> transferData = transferService.CommonTransferBill(header, model, userNum, userName, new Dictionary<string, object>(), new Dictionary<string, object>(), transaction);
 
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
 
 
@@ -475,5 +480,37 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(null, "分配失败", 1);
         }
         #endregion
+
+        public OutputResult<object> ToErpCustomer(SyncErpCusomter sync, int userId)
+        {
+            var soapServices = ServiceLocator.Current.GetInstance<SoapServices>();
+            if (sync.RecIds.Count() == 0) return HandleResult(new OperateResult { Flag = 1, Msg = "没有要同步的客户" });
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var transaction = conn.BeginTransaction();
+                try
+                {
+                    OperateResult result = new OperateResult();
+                    foreach (var t in sync.RecIds)
+                    {
+                        result = soapServices.SyncEntityDataAfterApproved(sync.EntityId, Guid.NewGuid(), Guid.Parse(t), userId, transaction);
+                        if (result.Flag == 0)
+                            break;
+                    }
+                    transaction.Commit();
+                    return HandleResult(result);
+                }
+                catch (Exception ex)
+                {
+                    if (transaction != null && transaction.Connection != null)
+                        transaction.Rollback();
+                    if (!string.IsNullOrEmpty(ex.Message))
+                        throw new Exception(ex.Message);
+                    throw new Exception("同步客户异常");
+                }
+            }
+
+        }
     }
 }

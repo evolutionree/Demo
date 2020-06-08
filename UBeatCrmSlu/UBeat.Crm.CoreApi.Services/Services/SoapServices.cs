@@ -24,6 +24,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IConfigurationRoot _configurationRoot;
         private readonly IDynamicEntityRepository _dynamicEntityRepository;
         private readonly IToERPRepository _toERPRepository;
+        private bool IsRuning = false;
         public SoapServices()
         {
             _configurationRoot = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
@@ -67,7 +68,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 result = new SubOperateResult { Flag = 1 };
             dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : 2);
             dic.Add("syncinfo", result.Flag == 1 ? "成功" : result.Msg);
-            var synTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss");
+            var synTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             var synId = string.Empty;
             var data = (result as SubOperateResult).Data;
             if (!string.IsNullOrEmpty(data.ToString()))
@@ -133,19 +134,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OperateResult FromErpProduct(IDictionary<string, object> detail, string filterKey, string orignalName, int userId)
         {
             string logId = string.Empty;
+            if (!IsRuning) IsRuning = true;
+            else return new OperateResult();
             try
             {
                 var config = ValidConfig("ProductSoap", filterKey, orignalName);
                 if (config.Flag == 0) return config;
+                var productRepository = ServiceLocator.Current.GetInstance<IProductsRepository>();
                 var interfaces = (config.Data as SoapInterfacesCollection).Interfaces;
                 var soapConfig = interfaces.FirstOrDefault(t => t.FunctionName == filterKey);
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
-                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + DateTime.Now.ToString() + "&endDate=20200108", headers);
+                var startDate = productRepository.GetProductLastUpdatedTime(null, userId);
+                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + startDate + "&endDate=" + DateTime.Now.AddDays(1).ToString("yyyyMMdd"), headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
+                if (subResult.Flag == 0) return subResult;
                 var dealData = SoapHttpHelper.PersistenceEntityData<FromProductSoap>(subResult.Data.ToString(), userId, logId);
+                if (dealData == null || dealData.Count == 0) return subResult;
                 OperateResult dataResult = new OperateResult();
                 var db = new PostgreHelper();
                 var conn = db.GetDbConnect();
@@ -153,7 +160,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 DbTransaction trans = conn.BeginTransaction();
                 try
                 {
-                    var productRepository = ServiceLocator.Current.GetInstance<IProductsRepository>();
                     var entityId = typeof(FromProductSoap).GetCustomAttribute<EntityInfoAttribute>().EntityId;
                     foreach (var t in dealData)
                     {
@@ -224,11 +230,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
-                var result = "{\"code\":200,\"message\":\"success\",\"data\":[{\"recId\":286947,\"contractDate\":\"2020-05-13 00:00:00\",\"contractNo\":\"0753\",\"factoryCode\":\"惠州中京电子科技有限公司\",\"contractItem\":[{\"contractId\":286947,\"quantity\":50,\"deliveredQuantity\":25,\"requiredDate\":\"2020-05-13 00:00:00\",\"marketDate\":\"2020-05-13 00:00:00\",\"planDate\":\"2020-05-13 00:00:00\",\"price\":56.71,\"customer\":\"820\",\"customerModel\":\"SN1962A-F_MB_V0.85\",\"productCode\":\"P2005131014451522253\",\"custProductCode\":\" YY19620085\"},{\"contractId\":286947,\"quantity\":50,\"deliveredQuantity\":25,\"requiredDate\":\"2020-06-13 00:00:00\",\"marketDate\":\"2020-05-07 00:00:00\",\"planDate\":\"2020-05-07 00:00:00\",\"price\":56.71,\"customer\":\"820\",\"customerModel\":\"SN1962A-F_MB_V0.85\",\"productCode\":null,\"custProductCode\":\" YY19620085\"}]},{\"recId\":286954,\"contractDate\":\"2020-05-13 00:00:00\",\"contractNo\":\"wewqes1122\",\"factoryCode\":\"惠州中京电子科技有限公司\",\"contractItem\":[{\"contractId\":286954,\"quantity\":1200,\"deliveredQuantity\":300,\"requiredDate\":\"2020-06-13 00:00:00\",\"marketDate\":\"2020-06-04 00:00:00\",\"planDate\":\"2020-06-04 00:00:00\",\"price\":39,\"customer\":\"1178\",\"customerModel\":\"test201\",\"productCode\":\"P2005131107290568185\",\"custProductCode\":\"\"},{\"contractId\":286954,\"quantity\":1200,\"deliveredQuantity\":1200,\"requiredDate\":\"2020-05-13 00:00:00\",\"marketDate\":\"2020-05-13 00:00:00\",\"planDate\":\"2020-05-13 00:00:00\",\"price\":10,\"customer\":\"1178\",\"customerModel\":\"test201-1\",\"productCode\":\"P2005131120393225107\",\"custProductCode\":\"test201-1\"}]},{\"recId\":286955,\"contractDate\":\"2020-05-13 00:00:00\",\"contractNo\":\"wewqes1122-a\",\"factoryCode\":\"惠州中京电子科技有限公司\",\"contractItem\":[]}]}";
-                //HttpLib.Get(soapConfig.SoapUrl + "?startDate=20200501&endDate=20200513", headers);
+                var startDate = _toERPRepository.GetOrderLastUpdatedTime();
+                //var result = "{\"code\":200,\"message\":\"success\",\"data\":[{\"recId\":286947,\"contractDate\":\"2020-05-13 00:00:00\",\"contractNo\":\"0753\",\"factoryCode\":\"惠州中京电子科技有限公司\",\"contractItem\":[{\"contractId\":286947,\"quantity\":50,\"deliveredQuantity\":25,\"requiredDate\":\"2020-05-13 00:00:00\",\"marketDate\":\"2020-05-13 00:00:00\",\"planDate\":\"2020-05-13 00:00:00\",\"price\":56.71,\"customer\":\"820\",\"customerModel\":\"SN1962A-F_MB_V0.85\",\"productCode\":\"P2005131014451522253\",\"custProductCode\":\" YY19620085\"},{\"contractId\":286947,\"quantity\":50,\"deliveredQuantity\":25,\"requiredDate\":\"2020-06-13 00:00:00\",\"marketDate\":\"2020-05-07 00:00:00\",\"planDate\":\"2020-05-07 00:00:00\",\"price\":56.71,\"customer\":\"820\",\"customerModel\":\"SN1962A-F_MB_V0.85\",\"productCode\":null,\"custProductCode\":\" YY19620085\"}]},{\"recId\":286954,\"contractDate\":\"2020-05-13 00:00:00\",\"contractNo\":\"wewqes1122\",\"factoryCode\":\"惠州中京电子科技有限公司\",\"contractItem\":[{\"contractId\":286954,\"quantity\":1200,\"deliveredQuantity\":300,\"requiredDate\":\"2020-06-13 00:00:00\",\"marketDate\":\"2020-06-04 00:00:00\",\"planDate\":\"2020-06-04 00:00:00\",\"price\":39,\"customer\":\"1178\",\"customerModel\":\"test201\",\"productCode\":\"P2005131107290568185\",\"custProductCode\":\"\"},{\"contractId\":286954,\"quantity\":1200,\"deliveredQuantity\":1200,\"requiredDate\":\"2020-05-13 00:00:00\",\"marketDate\":\"2020-05-13 00:00:00\",\"planDate\":\"2020-05-13 00:00:00\",\"price\":10,\"customer\":\"1178\",\"customerModel\":\"test201-1\",\"productCode\":\"P2005131120393225107\",\"custProductCode\":\"test201-1\"}]},{\"recId\":286955,\"contractDate\":\"2020-05-13 00:00:00\",\"contractNo\":\"wewqes1122-a\",\"factoryCode\":\"惠州中京电子科技有限公司\",\"contractItem\":[]}]}";
+                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + startDate + "&endDate=" + DateTime.Now.AddDays(1).ToString("yyyyMMdd"), headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
+                if (subResult.Flag == 0) return subResult;
                 var dealData = SoapHttpHelper.PersistenceEntityData<FromOrder, FromOrderDetail>(subResult.Data.ToString(), userId, logId);
+                if (dealData == null || dealData.Count == 0) return subResult;
                 OperateResult dataResult = new OperateResult();
                 var db = new PostgreHelper();
                 var conn = db.GetDbConnect();
@@ -316,8 +325,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
-                var result = "{\"code\": 200, 	\"message\": \"success\", 	\"data\": [{ 			\"recId\": 38469, 			\"shipingNotesNumer\": \"DP20050600004\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-06 12:00:00\", 			\"packingSlipItem\": [{ 				\"recId\": 104149, 				\"packingSlipId\": 38469, 				\"contractNumber\": \"SO20032101892\", 				\"soNumber\": \"SO2003210189201\", 				\"salesPartNum\": \"MN30692G040058B\", 				\"salesPartName\": \"19K-514-6901R\", 				\"qtyOfPcsAssigned\": 48, 				\"unit\": \"PCS\" 			}] 		}, 		{ 			\"recId\": 38470, 			\"shipingNotesNumer\": \"DP20050600005\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-11 14:45:26\", 			\"packingSlipItem\": [{ 				\"recId\": 104150, 				\"packingSlipId\": 38470, 				\"contractNumber\": \"190447-001\", 				\"soNumber\": \"190447-001\", 				\"salesPartNum\": \"MH30692J040122A\", 				\"salesPartName\": \"19K-516-5100R\", 				\"qtyOfPcsAssigned\": 0, 				\"unit\": \"PCS\" 			}] 		} 	] }";
-                //HttpLib.Get(soapConfig.SoapUrl + "?startDate=20200501&endDate=20200513", headers);
+                var startDate = _toERPRepository.GetShippingOrderLastUpdatedTime();
+                //var result = "{\"code\": 200, 	\"message\": \"success\", 	\"data\": [{ 			\"recId\": 38469, 			\"shipingNotesNumer\": \"DP20050600004\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-06 12:00:00\", 			\"packingSlipItem\": [{ 				\"recId\": 104149, 				\"packingSlipId\": 38469, 				\"contractNumber\": \"SO20032101892\", 				\"soNumber\": \"SO2003210189201\", 				\"salesPartNum\": \"MN30692G040058B\", 				\"salesPartName\": \"19K-514-6901R\", 				\"qtyOfPcsAssigned\": 48, 				\"unit\": \"PCS\" 			}] 		}, 		{ 			\"recId\": 38470, 			\"shipingNotesNumer\": \"DP20050600005\", 			\"customerCode\": \"0692b\", 			\"customerName\": \"正鹏电子（昆山）有限公司\", 			\"shippingAddress\": \"江苏省昆山综合保税区新竹路88号\", 			\"shippedDate\": \"2020-05-11 14:45:26\", 			\"packingSlipItem\": [{ 				\"recId\": 104150, 				\"packingSlipId\": 38470, 				\"contractNumber\": \"190447-001\", 				\"soNumber\": \"190447-001\", 				\"salesPartNum\": \"MH30692J040122A\", 				\"salesPartName\": \"19K-516-5100R\", 				\"qtyOfPcsAssigned\": 0, 				\"unit\": \"PCS\" 			}] 		} 	] }";
+                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + startDate + "&endDate=" + DateTime.Now.AddDays(1).ToString("yyyyMMdd"), headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
                 var dealData = SoapHttpHelper.PersistenceEntityData<FromPackingShip, FromPackingShipDetail>(subResult.Data.ToString(), userId, logId);

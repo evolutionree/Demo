@@ -308,5 +308,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
                 return result;
             return string.Empty;
         }
+
+        public string GetProductLastUpdatedTime(DbTransaction trans, int userId)
+        {
+            var sql = " select recupdated from  crm_sys_product  order by recupdated desc limit 1   ";
+            var result = ExecuteScalar(sql, null, trans);
+            if (result != null)
+                return Convert.ToDateTime(result).ToString("yyyyMMdd");
+            return "1990-01-01";
+        }
     }
 }

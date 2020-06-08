@@ -1425,13 +1425,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (methods != null)
                         {
                             var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
-                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString());
+                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString() && t.FlowId == workflowInfo.FlowId.ToString());
                             if (erpSync != null)
                             {
-                                var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
-                                var data = method.Invoke(instance, new object[] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId, tran });
-                                var dataResult = data as OperateResult;
-                                if (dataResult.Flag == 0) { message = dataResult.Msg; }
+                                if (erpSync.IsFlow == 1)
+                                {
+                                    var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
+                                    var data = method.Invoke(instance, new object[] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId, tran });
+                                    var dataResult = data as OperateResult;
+                                    if (dataResult.Flag == 0) { message = dataResult.Msg; }
+                                }
                             }
                         }
                         MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
@@ -2263,13 +2266,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (methods != null)
                         {
                             var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
-                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString());
+                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString() && t.FlowId == workflowInfo.FlowId.ToString());
                             if (erpSync != null)
                             {
-                                var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
-                                var data = method.Invoke(type, new object[4] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId });
-                                var result = data as OperateResult;
-                                if (result.Flag == 0) { message = result.Msg; status = 1; }
+                                if (erpSync.IsFlow == 1)
+                                {
+                                    var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
+                                    var data = method.Invoke(type, new object[4] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId });
+                                    var result = data as OperateResult;
+                                    if (result.Flag == 0) { message = result.Msg; status = 1; }
+                                }
                             }
                         }
                     }

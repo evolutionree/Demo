@@ -18,6 +18,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ToERP
             var result = ExecuteScalar(sql, param);
             return result != null ? result.ToString() : string.Empty;
         }
+        public string GetOrderLastUpdatedTime()
+        {
+            var sql = " select recupdated from crm_sys_order order by recupdated desc limit 1";
+            var result = ExecuteScalar(sql, null);
+            if (result != null)
+                return Convert.ToDateTime(result).ToString("yyyyMMdd");
+            return "1990-01-01";
+        }
 
         public string IsExistsPackingShipOrder(string packingshipid)
         {
@@ -27,6 +35,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ToERP
             };
             var result = ExecuteScalar(sql, param);
             return result != null ? result.ToString() : string.Empty;
+        }
+        public string GetShippingOrderLastUpdatedTime()
+        {
+            var sql = " select recupdated from crm_cee_shippingorder order by recupdated desc limit 1";
+            var result = ExecuteScalar(sql, null);
+            if (result != null)
+                return Convert.ToDateTime(result).ToString("yyyyMMdd");
+            return "1990-01-01";
         }
         public string IsExistsMakeCollectionOrder(string makeColOrderId)
         {

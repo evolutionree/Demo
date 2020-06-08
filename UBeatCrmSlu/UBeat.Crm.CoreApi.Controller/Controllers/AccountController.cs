@@ -36,76 +36,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             _salesTargetServices = salesTargetServices;
             _soapServices = soapServices;
         }
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t1")]
-        public OutputResult<object> AuthErp()
-        {
-            var result = _soapServices.AuthErp(UserId);
-            return new OutputResult<object>(result);
-        }
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t2")]
-        public OutputResult<object> ToErpCustomer()
-        {
-            var result = _soapServices.ToErpCustomer(null, "saveCustomerFromCrm", "新增客户", 1);
-            return new OutputResult<object>(result);
-        }
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t3")]
-        public OutputResult<object> FromErpProducts()
-        {
-            var result = _soapServices.FromErpProduct(null, "getSalesPartList", "同步产品", 1);
-            return new OutputResult<object>(result);
-        }
 
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t5")]
-        public OutputResult<object> a()
-        {
-            var result = _soapServices.FromErpPackingShip(null, "getPackingSlipList", "同步产品单", 1);
-            return new OutputResult<object>(result);
-        }
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t6")]
-        public OutputResult<object> b()
-        {
-            var result = _soapServices.FromErpOrder(null, "getContractList", "同步产品单", 1);
-            return new OutputResult<object>(result);
-        }
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t7")]
-        public OutputResult<object> c()
-        {
-            var result = _soapServices.FromErpPackingShipCost(null, "getPackingSlipCost", "同步产品单", 1);
-            return new OutputResult<object>(result);
-        }
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t8")]
-        public OutputResult<object> d()
-        {
-            var result = _soapServices.FromErpMakeCollectionsOrder(null, "getReceivableList", "同步产品单", 1);
-            return new OutputResult<object>(result);
-        }
-        [AllowAnonymous]
-        [HttpPost]
-        [Route("t9")]
-        public OutputResult<object> e()
-        {
-            Stream stream = Request.Body;
-            Byte[] byteData = new Byte[stream.Length];
-            stream.Read(byteData, 0, (Int32)stream.Length);
-            string jsonData = Encoding.UTF8.GetString(byteData)+Request.Query["sojumpparm"];
-            SoapHttpHelper.Log(new List<string> { "finallyresult" }, new List<string> { "erp产品同步到CRM成功" + jsonData }, 0, 1);
-            //  var result = _soapServices.FromErpMakeCollectionsOrder(null, "getReceivableList", "同步产品单", 1);
-            return null;
-        }
         [AllowAnonymous]
         [HttpPost]
         [Route("redisstatus")]

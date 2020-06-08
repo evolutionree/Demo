@@ -1449,10 +1449,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == dynamicEntity.TypeId.ToString());
                             if (erpSync != null)
                             {
-                                var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
-                                var invokeValue = method.Invoke(instance, new object[] { dynamicEntity.TypeId, Guid.Empty, dynamicEntity.RecId, userNumber, transaction });
-                                var dataResult = invokeValue as OperateResult;
-                                if (dataResult.Flag == 0) result = dataResult;// throw new Exception(dataResult.Msg);
+                                if (erpSync.IsFlow == 0)
+                                {
+                                    var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
+                                    var invokeValue = method.Invoke(instance, new object[] { dynamicEntity.TypeId, Guid.Empty, dynamicEntity.RecId, userNumber, transaction });
+                                    var dataResult = invokeValue as OperateResult;
+                                    if (dataResult.Flag == 0) result = dataResult;// throw new Exception(dataResult.Msg);
+                                }
                             }
                         }
                         var entityInfotemp = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId);

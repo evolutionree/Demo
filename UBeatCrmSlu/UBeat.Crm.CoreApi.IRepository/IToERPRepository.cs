@@ -9,5 +9,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         string IsExistsPackingShipOrder(string packingshipid);
         string IsExistsOrder(string orderId);
         string IsExistsMakeCollectionOrder(string makeColOrderId);
+
+        string GetOrderLastUpdatedTime();
+        string GetShippingOrderLastUpdatedTime();
     }
 }

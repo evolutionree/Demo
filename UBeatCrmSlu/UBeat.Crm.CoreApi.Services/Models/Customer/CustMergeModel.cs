@@ -32,4 +32,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.Customer
         public int UserId { get; set; }
         public List<string> Recids { get; set; }
     }
+    public class SyncErpCusomter
+    {
+        public Guid EntityId { get; set; }
+        public string[] RecIds { get; set; }
+    }
 }

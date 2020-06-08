@@ -67,5 +67,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _customerServices.DistributionCustomer(entity, UserId);
         }
         #endregion
+
+        [HttpPost]
+        [Route("synerp")]
+        public OutputResult<object> ToErpCustomer([FromBody] SyncErpCusomter sync)
+        {
+            var result = _customerServices.ToErpCustomer(sync, UserId);
+            return result;
+        }
     }
 }

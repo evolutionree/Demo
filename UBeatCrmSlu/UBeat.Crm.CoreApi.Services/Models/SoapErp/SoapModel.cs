@@ -10,6 +10,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
     {
         public string EntityId { get; set; }
         public string FuncName { get; set; }
+        public string FlowId { get; set; }
+        public int IsFlow { get; set; }
     }
     public class ErpSoapInterfaces
     {
