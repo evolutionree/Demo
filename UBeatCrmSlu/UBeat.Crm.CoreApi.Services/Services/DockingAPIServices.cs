@@ -17,31 +17,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
             public static string NOTAUTHMESSAGE = "接口未获取授权";
         }
         private readonly IDockingAPIRepository _dockingAPIRepository;
-        public DockingAPIServices(IDockingAPIRepository dockingAPIRepository)
+        private readonly IDataSourceRepository _dataSourceRepository;
+        public DockingAPIServices(IDockingAPIRepository dockingAPIRepository, IDataSourceRepository dataSourceRepository)
         {
             _dockingAPIRepository = dockingAPIRepository;
+            _dataSourceRepository = dataSourceRepository;
         }
-        public OutputResult<object> GetBusinessList(CompanyModel api)
+        public OutputResult<object> GetBusinessList(CompanyModel api, int userId)
         {
             string[] splitStr = api.CompanyName.Split(" ");
             var outResult = new List<AbstractCompanyInfo>();
             var result = new List<ForeignCompanySampleInfo>();
+            api.Country = "53,7";
+            var arr = api.Country.Split(",");
+            var country = _dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(arr[0]), userId).FirstOrDefault(t => t.DataId == Convert.ToInt32(arr[1]));
             foreach (var str in splitStr)
             {
                 api.CompanyName = str;
-                if (api.Country == "CN")
+                api.Country = country.ExtField2;
+                if (country.ExtField2 == "CN")
                     BuildCompanySamples(api).ForEach(t =>
                     {
                         var p = t as AbstractCompanyInfo;
                         outResult.Add(p);
                     });
                 else
-                BuildForeignCompanySamples(api).ForEach(t =>
-                {
-                    var p = t as AbstractCompanyInfo;
-                    outResult.Add(p);
-                });
-                outResult.AddRange(result);
+                    BuildForeignCompanySamples(api).ForEach(t =>
+                    {
+                        var p = t as AbstractCompanyInfo;
+                        CompanySampleInfo company = new CompanySampleInfo
+                        {
+                            Id = t.Id,
+                            Name = t.Name
+                        };
+                        outResult.Add(company);
+                    });
             }
             return new OutputResult<object>(new CompanyInfoAPISubResult { Items = outResult, Total = outResult.Count });
         }
@@ -62,6 +72,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 CaseDetail = JsonConvert.SerializeObject(caseDetail),
                 CourtNotice = JsonConvert.SerializeObject(courtNotice),
                 BreakPromise = JsonConvert.SerializeObject(breakPromise),
+            }
+                 , userId);
+            return HandleResult(new OperateResult
+            {
+                Flag = 1,
+                Msg = DateTime.Now.ToString("yyyy-MM-dd HH:MM:ss")
+            });
+        }
+        public OutputResult<object> UpdateForeignBusinessInfomation(CompanyModel api, int userId)
+        {
+            var basicInfo = this.GetForeignBusinessDetail(api, 1, userId);
+            _dockingAPIRepository.UpdateForeignBussinessInfomation(new BussinessInformation
+            {
+                Id = api.Id,
+                BasicInfo = JsonConvert.SerializeObject(basicInfo.DataBody as ForeignCompanySampleInfo)
             }
                  , userId);
             return HandleResult(new OperateResult
@@ -112,6 +137,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return new OutputResult<object>(t);
         }
+        public OutputResult<Object> GetForeignBusinessDetail(CompanyModel api, int isRefresh, int userId)
+        {
+            var data = BuildForeignCompanySamples(api);
+
+            if (data != null && data.Count > 0)
+            {
+                return new OutputResult<object>(data.FirstOrDefault(t => t.Id == api.Id));
+            }
+            return new OutputResult<object>(new ForeignCompanySampleInfo());
+        }
+        public OutputResult<object> SaveForeignBusinessDetail(CompanyModel api, int isRefresh, int userId)
+        {
+            var data = BuildForeignCompanySamples(api);
+            if (data != null && data.Count > 0)
+            {
+                var realData = GetForeignBusinessDetail(api, 1, userId).DataBody as ForeignCompanySampleInfo;
+                var result = _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { Id = api.Id, BasicInfo = JsonConvert.SerializeObject(realData) }, userId);
+                return HandleResult(result);
+            }
+            return HandleResult(new OperateResult
+            {
+                Flag = 1
+            });
+        }
+
         List<CompanySampleInfo> BuildCompanySamples(CompanyModel api)
         {
             string result = HttpLib.Get(string.Format(DockingAPIHelper.ADVSEARCH_API, api.CompanyName, "name", api.AppKey, api.SkipNum));

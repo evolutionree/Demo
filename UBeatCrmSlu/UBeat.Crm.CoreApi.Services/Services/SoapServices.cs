@@ -39,7 +39,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 RecId = recId,
                 EntityId = entityId
-            }, userId);
+            }, userId, trans);
             if (entityId == Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"))
             {
                 detailData = detail;
@@ -50,27 +50,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     RecId = Guid.Parse(JObject.Parse(detail["belongcust"].ToString())["id"].ToString()),
                     EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246")
-                }, userId);
+                }, userId, trans);
             }
             if (detailData["custype"] == null || detailData["custype"].ToString() == "1") return new OperateResult { Flag = 1, Msg = String.Empty };
             DomainModel.OperateResult result;
             Dictionary<string, object> dic = new Dictionary<string, object>();
-            if (detailData["ifsyn"] == null)
+            if (detailData["pkcode"] == null)
             {
                 result = this.ToErpCustomer(detailData, "saveCustomerFromCrm", "新增客户", userId, trans);
             }
-            else if (detailData["ifsyn"].ToString() == "2")
-            {
-                result = this.ToErpCustomer(detailData, "saveCustomerFromCrm", "新增客户", userId, trans);
-            }
-            else if (detailData["ifsyn"].ToString() == "1")
+            else
                 result = this.ToErpCustomer(detailData, "updateCustomerFromCrm", "编辑客户", userId, trans);
-            else
-                result = new SubOperateResult { Flag = 1 };
-            if (detailData["ifsyn"] == null)
-                dic.Add("ifsyn", result.Flag == 0 ? null : new Nullable<int>(1));
-            else
-                dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : 2);
+            dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : 2);
             dic.Add("syncinfo", result.Flag == 1 ? "成功" : result.Msg);
             var synTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             var synId = string.Empty;
@@ -114,10 +105,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var param = JsonConvert.SerializeObject(paramData.FirstOrDefault());
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId, trans));
-                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { param, soapConfig.SoapUrl }, 0, userId, trans: trans).ToString();
+                logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl", "soapreqstatus" }, new List<string> { param, soapConfig.SoapUrl, "请求成功" }, 0, userId, trans: trans).ToString();
                 var result = HttpLib.Post(soapConfig.SoapUrl, param, headers);
-                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString(), trans: trans);
-                return ParseResult(result);
+                var pResult = ParseResult(result);
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg", "soapresstatus" }, new List<string> { result, string.Empty, pResult.Flag == 0 ? pResult.Msg : "请求返回成功【" + pResult.Msg + "】" }, 1, userId, logId.ToString(), trans: trans);
+                return pResult;
             }
             catch (Exception ex)
             {

@@ -17,6 +17,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string CourtNotice { get; set; }
         public string BreakPromise { get; set; }
         public string RecUpdated { get; set; }
+        public string Id { get; set; }
     }
     public class Bussiness
     {
@@ -45,6 +46,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
     }
     public class CompanyModel : APIModel
     {
+        public string Id { get; set; }
         public string CompanyName { get; set; }
         public string Country { get; set; }
     }
@@ -69,6 +71,24 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string Name { get; set; }
         [JsonProperty("id3a")]
         public string Id { get; set; }
+        public string TradingName { get; set; }
+        public string AliasName { get; set; }
+        public string CountryCode { get; set; }
+        public string Country { get; set; }
+        public string StateProvince { get; set; }
+        public string City { get; set; }
+        public string Region { get; set; }
+        public string Street { get; set; }
+        public string PostCode { get; set; }
+        public string Website { get; set; }
+        public string Email { get; set; }
+        public string Telephone { get; set; }
+        public string Status { get; set; }
+        public string Listed { get; set; }
+        public string TypeOfEntity { get; set; }
+        public string DateOfIncorporation { get; set; }
+        public string SalesLastYear { get; set; }
+        public string LastYear { get; set; }
     }
     public class CompanyInfoAPISubResult : APIResult
     {

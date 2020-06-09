@@ -66,7 +66,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string SaleType { get; set; }
         [DataType(DataTypeEnum.ChoosePerson)]
         [JsonProperty("assistantId")]
-        public string Assistant { get; set; }
+        public string FollowUser { get; set; }
         [JsonProperty("eName")]
         public string EnglishName { get; set; }
         [DataType(DataTypeEnum.Region)]

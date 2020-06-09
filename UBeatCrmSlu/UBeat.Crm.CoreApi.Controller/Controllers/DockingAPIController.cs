@@ -37,7 +37,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetBusinessList([FromBody]CompanyModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetBusinessList(api);
+            return _dockingAPIServices.GetBusinessList(api, UserId);
         }
         [HttpPost]
         [Route("updatebusiinfo")]
@@ -47,11 +47,25 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dockingAPIServices.UpdateBusinessInfomation(api, UserId);
         }
         [HttpPost]
+        [Route("updateforebusiinfo")]
+        public OutputResult<object> UpdateForeignBusinessInfomation([FromBody]CompanyModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.UpdateForeignBusinessInfomation(api, UserId);
+        }
+        [HttpPost]
+        [Route("saveforebusidetail")]
+        public OutputResult<object> SaveForeignBusinessDetail([FromBody]CompanyModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.SaveForeignBusinessDetail(api, 1, UserId);
+        }
+        [HttpPost]
         [Route("getbusinessdetail")]
         public OutputResult<object> GetBusinessDetail([FromBody]CompanyModel api)
         {
             if (api == null) return new OutputResult<object>("参数异常");
-            return _dockingAPIServices.GetBusinessDetail(api,0, UserId);
+            return _dockingAPIServices.GetBusinessDetail(api, 0, UserId);
         }
         [HttpPost]
         [Route("getyearreport")]
