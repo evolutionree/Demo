@@ -11,6 +11,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         /// </summary>
         public static String ADVSEARCH_API = "http://api.qixin.com/APIService/v2/search/advSearch?keyword={0}&matchType={1}&appkey={2}&skip={3}";
         /// <summary>
+        /// 根据企业名称或董监高姓名等关键字获取企业列表
+        /// </summary>
+        public static String FORENGIN_ADVSEARCH_API = "http://api.qixin.com/APIService/sax/getOnlineView?countryCode={0}&companyName={1}&appkey={2}";
+        /// <summary>
         /// 根据企业全名或注册号或统一社会信用代码精确获取企业工商基本信息
         /// </summary>
         public static String GETBASICINFO_API = "http://api.qixin.com/APIService/enterprise/getBasicInfo?appkey={0}&keyword={1}";
@@ -29,7 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         /// <summary>
         /// 按企业全名或注册号或统一社会信用代码返回裁判文书列表
         /// </summary>
-        public static string GETLAWSUITLISTBYNAME_API = "http://api.qixin.com/APIService/lawsuit/getLawsuitListByName?appkey={0}&name={1}&skip={2}";    
+        public static string GETLAWSUITLISTBYNAME_API = "http://api.qixin.com/APIService/lawsuit/getLawsuitListByName?appkey={0}&name={1}&skip={2}";
         /// <summary>
         /// 按企业全名或注册号或统一社会信用代码返回裁判文书列表
         /// </summary>

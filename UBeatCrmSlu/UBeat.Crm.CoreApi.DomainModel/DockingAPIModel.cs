@@ -46,19 +46,33 @@ namespace UBeat.Crm.CoreApi.DomainModel
     public class CompanyModel : APIModel
     {
         public string CompanyName { get; set; }
+        public string Country { get; set; }
     }
     public class CompanyAPISubResult : APIResult
     {
         public List<CompanySampleInfo> Items { get; set; }
     }
-    public class CompanySampleInfo
+    public class ForeignCompanyAPISubResult : APIResult
+    {
+        public List<ForeignCompanySampleInfo> Items { get; set; }
+    }
+    public class AbstractCompanyInfo
+    { }
+    public class CompanySampleInfo: AbstractCompanyInfo
     {
         public string Name { get; set; }
         public string Id { get; set; }
     }
+    public class ForeignCompanySampleInfo : AbstractCompanyInfo
+    {
+        [JsonProperty("companyName")]
+        public string Name { get; set; }
+        [JsonProperty("id3a")]
+        public string Id { get; set; }
+    }
     public class CompanyInfoAPISubResult : APIResult
     {
-        public List<CompanySampleInfo> Items { get; set; }
+        public List<AbstractCompanyInfo> Items { get; set; }
     }
     public class CompanyInfo
     {

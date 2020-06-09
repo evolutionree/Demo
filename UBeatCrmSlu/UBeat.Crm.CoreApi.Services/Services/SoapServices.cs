@@ -52,6 +52,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246")
                 }, userId);
             }
+            if (detailData["custype"] == null || detailData["custype"].ToString() == "1") return new OperateResult { Flag = 1, Msg = String.Empty };
             DomainModel.OperateResult result;
             Dictionary<string, object> dic = new Dictionary<string, object>();
             if (detailData["ifsyn"] == null)
@@ -66,7 +67,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 result = this.ToErpCustomer(detailData, "updateCustomerFromCrm", "编辑客户", userId, trans);
             else
                 result = new SubOperateResult { Flag = 1 };
-            dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : 2);
+            if (detailData["ifsyn"] == null)
+                dic.Add("ifsyn", result.Flag == 0 ? null : new Nullable<int>(1));
+            else
+                dic.Add("ifsyn", result.Flag == 1 ? new Nullable<int>(1) : 2);
             dic.Add("syncinfo", result.Flag == 1 ? "成功" : result.Msg);
             var synTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             var synId = string.Empty;

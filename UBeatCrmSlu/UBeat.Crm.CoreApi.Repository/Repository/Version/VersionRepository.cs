@@ -168,10 +168,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
                 if (frow != null)
                 {
                     var fField = frow.FirstOrDefault();
-                    if( fField.Value!=null)
+                    if (fField.Value != null)
                         totalMaxVersion = long.Parse(fField.Value.ToString());
                 }
-                
+
             }
             maxVersion = totalMaxVersion;
             if (result[0].Count > 0)
@@ -338,7 +338,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
         /// <returns></returns>
         public List<Dictionary<string, object>> GetDictionaryByVersion(long recVersion, int userNumber, out long maxVersion, out bool hasMoreData)
         {
-            var selectFields = "dicid,dictypeid,dataid,dataval,recorder,recstatus,dataval_lang";
+            var selectFields = "dicid,dictypeid,dataid,dataval,recorder,recstatus,dataval_lang,extfield1,extfield2";
             return GetDatasByVersion("crm_sys_dictionary", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
@@ -580,7 +580,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Version
             return GetDatasByVersion("crm_sys_entity_condition", selectFields, recVersion, userNumber, out maxVersion, out hasMoreData);
         }
         #endregion
-       
+
 
 
         #region --流程审批配置--

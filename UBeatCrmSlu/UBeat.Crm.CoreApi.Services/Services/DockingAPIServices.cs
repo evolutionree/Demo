@@ -24,12 +24,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> GetBusinessList(CompanyModel api)
         {
             string[] splitStr = api.CompanyName.Split(" ");
-            var outResult = new List<CompanySampleInfo>();
-            var result = new List<CompanySampleInfo>();
+            var outResult = new List<AbstractCompanyInfo>();
+            var result = new List<ForeignCompanySampleInfo>();
             foreach (var str in splitStr)
             {
                 api.CompanyName = str;
-                result = BuildCompanySamples(api);
+                if (api.Country == "CN")
+                    BuildCompanySamples(api).ForEach(t =>
+                    {
+                        var p = t as AbstractCompanyInfo;
+                        outResult.Add(p);
+                    });
+                else
+                BuildForeignCompanySamples(api).ForEach(t =>
+                {
+                    var p = t as AbstractCompanyInfo;
+                    outResult.Add(p);
+                });
                 outResult.AddRange(result);
             }
             return new OutputResult<object>(new CompanyInfoAPISubResult { Items = outResult, Total = outResult.Count });
@@ -112,6 +123,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else if (jObject["status"].ToString() == "105") return null;
             return new List<CompanySampleInfo>();
+        }
+        List<ForeignCompanySampleInfo> BuildForeignCompanySamples(CompanyModel api)
+        {
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.FORENGIN_ADVSEARCH_API, api.Country, api.CompanyName, api.AppKey));
+            var jObject = JObject.Parse(result);
+            if (jObject["status"].ToString() == "200")
+            {
+                var data = JsonConvert.DeserializeObject<ForeignCompanyAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
+                return data.Items ?? new List<ForeignCompanySampleInfo>();
+            }
+            else if (jObject["status"].ToString() == "105") return null;
+            return new List<ForeignCompanySampleInfo>();
         }
         CompanyInfo BuildCompanyInfo(DockingAPIModel api)
         {
