@@ -185,6 +185,14 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [DataType(DataTypeEnum.SingleChoose)]
         [EntityField("subclass", FieldTypeEnum.Int)]
         public string appCategory { get; set; }
+        [EntityField("code")]
+        public string MiCode { get; set; }
+        [EntityField("partRev")]
+        public string partRev { get; set; }
+        [EntityField("partNum")]
+        public string partNum { get; set; }
+        [EntityField("salespartRev")]
+        public string salespartRev { get; set; }
     }
     public class FromOrderParam
     {
@@ -202,6 +210,13 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public String contractNo { get; set; }
         [EntityField("factorycode")]
         public String factoryCode { get; set; }
+        [EntityField("taxrate")]
+        public decimal taxRate { get; set; }
+        [EntityField("exchangeRate")]
+        public decimal exchangeRate { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
+        [EntityField("currency", FieldTypeEnum.Int)]
+        public string currency { get; set; }
         [DataType(DataTypeEnum.RelateEntity, typeof(FromOrderDetail))]
         [EntityField("detail")]
         public List<FromOrderDetail> contractItem { get; set; }
@@ -209,32 +224,68 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
     [EntityInfo("0d6d41d5-f913-4ccf-8ffd-1414fd9ed736")]
     public class FromOrderDetail
     {
-        [EntityField("orderdetailid")]
-        public int recId { get; set; }
-        [EntityField("orderid")]
-        public int contractId { get; set; }
-        [EntityField("quantity")]
-        public int quantity { get; set; }
+        [EntityField("factorycode")]
+        public string businessName { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
+        [EntityField("status", FieldTypeEnum.Int)]
+        public string status { get; set; }
+        [DataType(DataTypeEnum.SingleChoose)]
+        [EntityField("approvestatus", FieldTypeEnum.Int)]
+        public string approveStatus { get; set; }
+        [EntityField("ifnew")]
+        public string ifnew { get; set; }
+        [EntityField("ifforecast")]
+        public string ifforecast { get; set; }
+        [EntityField("nonplanned")]
+        public string nonplanned { get; set; }
+        [EntityField("qtyplanned", FieldTypeEnum.Int)]
+        public int qtyplanned { get; set; }
+        [EntityField("qtytobeplanned", FieldTypeEnum.Int)]
+        public int qty_tobe_planned { get; set; }
+        [EntityField("qtyundo", FieldTypeEnum.Int)]
+        public int qtyundo { get; set; }
+        [EntityField("qtyforecasted", FieldTypeEnum.Int)]
+        public int qtyforecasted { get; set; }
         [EntityField("deliveredquantity")]
-        public int deliveredQuantity { get; set; }
+        public int qtyArray { get; set; }
+        [EntityField("qtyassigned")]
+        public int qtyassigned { get; set; }
+        [EntityField("qtygift")]
+        public int qtygift { get; set; }
+        [EntityField("qtyshipped")]
+        public int qtyshipped { get; set; }
+        [EntityField("qtyrepaired")]
+        public int qtyrepaired { get; set; }
+        [EntityField("qtyorderreturned")]
+        public int qtyorderreturned { get; set; }
+        [EntityField("qtyreplenishment")]
+        public int qtyreplenishment { get; set; }
+        [EntityField("qtyreturned")]
+        public int qtyreturned { get; set; }
         [EntityField("requireddate")]
-        public DateTime requiredDate { get; set; }
+        public DateTime requireddate { get; set; }
         [EntityField("marketdate")]
-        public DateTime marketDate { get; set; }
-        [EntityField("plandate")]
+        public DateTime marketdate { get; set; }
+        [EntityField("planDate")]
         public DateTime planDate { get; set; }
         [EntityField("price")]
         public decimal price { get; set; }
         [DataType(DataTypeEnum.DataSouce, "CustDataSource")]
         [EntityField("customer", FieldTypeEnum.Jsonb)]
         public String customer { get; set; }
-        [EntityField("customermodel")]
-        public string customerModel { get; set; }
         [DataType(DataTypeEnum.DataSouce, "ProductDataSource")]
         [EntityField("product")]
         public string productCode { get; set; }
+        [EntityField("customermodel")]
+        public string customermodel { get; set; }
         [EntityField("custproductcode")]
         public string custproductcode { get; set; }
+        [EntityField("area")]
+        public decimal area { get; set; }
+        [EntityField("mainrecid", FieldTypeEnum.Int)]
+        public int recid { get; set; }
+        [EntityField("itemrecId", FieldTypeEnum.Int)]
+        public int itemRecId { get; set; }
     }
 
 

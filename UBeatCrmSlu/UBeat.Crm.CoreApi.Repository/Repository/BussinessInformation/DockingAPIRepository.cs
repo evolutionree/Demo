@@ -13,11 +13,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
     {
         public OperateResult InsertBussinessInfomation(BussinessInformation data, int userNumber)
         {
-            var executeSql = @"insert into crm_sys_bussiness_infomation(basicinfo,yearreport,casedetail,lawsuit,courtnotice,breakpromise,companyname,reccreator,recupdator) values (@basicinfo::jsonb,@yearreport::jsonb,@casedetail::jsonb,@lawsuit::jsonb,@courtnotice::jsonb,@breakpromise::jsonb,@companyname,@reccreator,@recupdator)";
+            var executeSql = @"insert into crm_sys_bussiness_infomation(basicinfo,yearreport,casedetail,lawsuit,courtnotice,breakpromise,companyname,reccreator,recupdator,idforengin) values (@basicinfo::jsonb,@yearreport::jsonb,@casedetail::jsonb,@lawsuit::jsonb,@courtnotice::jsonb,@breakpromise::jsonb,@companyname,@reccreator,@recupdator,@idforengin)";
 
             var existSql = " select count(1) from crm_sys_bussiness_infomation where companyname=@companyname;";
             var args = new
             {
+                idforengin = data.Id,
                 basicinfo = data.BasicInfo,
                 yearreport = data.YearReport,
                 lawsuit = data.LawSuit,

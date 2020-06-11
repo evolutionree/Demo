@@ -54,6 +54,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dockingAPIServices.UpdateForeignBusinessInfomation(api, UserId);
         }
         [HttpPost]
+        [Route("getforebusinessdetail")]
+        public OutputResult<object> GetForeignBusinessDetail([FromBody]CompanyModel api)
+        {
+            if (api == null) return new OutputResult<object>("参数异常");
+            return _dockingAPIServices.GetForeignBusinessDetail(api, 0, UserId);
+        }
+        [HttpPost]
         [Route("saveforebusidetail")]
         public OutputResult<object> SaveForeignBusinessDetail([FromBody]CompanyModel api)
         {

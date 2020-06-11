@@ -60,13 +60,14 @@ namespace UBeat.Crm.CoreApi.DomainModel
     }
     public class AbstractCompanyInfo
     { }
-    public class CompanySampleInfo: AbstractCompanyInfo
+    public class CompanySampleInfo : AbstractCompanyInfo
     {
         public string Name { get; set; }
         public string Id { get; set; }
     }
     public class ForeignCompanySampleInfo : AbstractCompanyInfo
     {
+        public string RecUpdated { get; set; }
         [JsonProperty("companyName")]
         public string Name { get; set; }
         [JsonProperty("id3a")]

@@ -111,7 +111,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Department
                     isExist = ExecuteScalar(check_sql, param, tran);
                     if (isExist != null && isExist.ToString() == "1")
                     {
-                        throw new Exception("同一级的部门名称不能重复");
+                      //  throw new Exception("同一级的部门名称不能重复");
                     }
 
                     var old_pdeptid_sql = @"SELECT pdeptid FROM crm_sys_department where deptid = @deptid;";

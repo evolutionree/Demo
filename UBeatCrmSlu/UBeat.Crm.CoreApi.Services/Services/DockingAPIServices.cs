@@ -28,7 +28,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             string[] splitStr = api.CompanyName.Split(" ");
             var outResult = new List<AbstractCompanyInfo>();
             var result = new List<ForeignCompanySampleInfo>();
-            api.Country = "53,7";
             var arr = api.Country.Split(",");
             var country = _dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(arr[0]), userId).FirstOrDefault(t => t.DataId == Convert.ToInt32(arr[1]));
             foreach (var str in splitStr)
@@ -139,21 +138,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<Object> GetForeignBusinessDetail(CompanyModel api, int isRefresh, int userId)
         {
-            var data = BuildForeignCompanySamples(api);
-
-            if (data != null && data.Count > 0)
+            var country = _dataSourceRepository.SelectFieldDicVaue(53, userId).FirstOrDefault(t => t.DataId == Convert.ToInt32(api.Country));
+            api.Country = country.ExtField2;
+            var tmp = _dockingAPIRepository.GetBussinessInfomation("basicinfo", 1, api.CompanyName, userId);
+            if (isRefresh == 0 && tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().BasicInfo))
             {
-                return new OutputResult<object>(data.FirstOrDefault(t => t.Id == api.Id));
+                var data = JsonConvert.DeserializeObject<ForeignCompanySampleInfo>(tmp.FirstOrDefault().BasicInfo);
+                data.RecUpdated = tmp.FirstOrDefault().RecUpdated;
+                return new OutputResult<object>(data);
+            }
+            var actData = BuildForeignCompanySamples(api);
+
+            if (actData != null && actData.Count > 0)
+            {
+                return new OutputResult<object>(actData.FirstOrDefault(t => t.Id == api.Id));
             }
             return new OutputResult<object>(new ForeignCompanySampleInfo());
         }
         public OutputResult<object> SaveForeignBusinessDetail(CompanyModel api, int isRefresh, int userId)
         {
+            var arr = api.Country.Split(",");
+            var country = _dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(arr[0]), userId).FirstOrDefault(t => t.DataId == Convert.ToInt32(arr[1]));
+            api.Country = country.ExtField2;
             var data = BuildForeignCompanySamples(api);
             if (data != null && data.Count > 0)
             {
-                var realData = GetForeignBusinessDetail(api, 1, userId).DataBody as ForeignCompanySampleInfo;
-                var result = _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { Id = api.Id, BasicInfo = JsonConvert.SerializeObject(realData) }, userId);
+                var realData = data.FirstOrDefault(t => t.Id == api.Id);
+                var result = _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { Id = api.Id, CompanyName = api.Id + api.CompanyName, BasicInfo = JsonConvert.SerializeObject(realData) }, userId);
                 return HandleResult(result);
             }
             return HandleResult(new OperateResult
