@@ -6,6 +6,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
 {
     public class AccountUserInfo
     {
+        public string AccountPwd { get; set; }
         public int AccountId { set; get; }
 
         public string AccountName { set; get; }

@@ -27,6 +27,11 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
             _configurationRoot = configurationRoot;
             _accountRepository = accountRepository;
         }
+        public OutputResult<object> GetAccountInfo(int userNumber)
+        {
+            var result = _accountRepository.GetAccountUserInfo(userNumber);
+            return new OutputResult<object>(result);
+        }
         public OutputResult<object> GetSSOCode(EnterpriseWeChatModel enterpriseWeChat)
         {
             try
@@ -96,7 +101,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
                 result = new OperateResult
                 {
                     Flag = 1,
-                    Id = actuallyUrl + "?token=" + token
+                    Id = token
                 };
                 return HandleResult(result);
             }
