@@ -29,71 +29,82 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
         }
         public OutputResult<object> GetSSOCode(EnterpriseWeChatModel enterpriseWeChat)
         {
-            OperateResult result;
-            var config = _configurationRoot.GetSection("WeChatConfig");
-            string agentId = config.GetValue<string>("AgentId");
-            string secret = config.GetValue<string>("Secret");
-            string corpId = config.GetValue<string>("CorpId");
-            var getToken = HttpLib.Get(string.Format(Access_Token, corpId, secret));
-            var tokenObj = JObject.Parse(getToken);
-            if (tokenObj["errcode"].ToString() !="0") {
+            try
+            {
+                OperateResult result;
+                var config = _configurationRoot.GetSection("WeChatConfig");
+                string agentId = config.GetValue<string>("AgentId");
+                string secret = config.GetValue<string>("Secret");
+                string corpId = config.GetValue<string>("CorpId");
+                var getToken = HttpLib.Get(string.Format(Access_Token, corpId, secret));
+                var tokenObj = JObject.Parse(getToken);
+                if (tokenObj["errcode"].ToString() != "0")
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 0,
+                        Msg = "企业微信单点登录失败" + corpId + secret + getToken,
+                        Stacks = getToken
+                    };
+                    return HandleResult(result);
+                }
+                string access_token = tokenObj["access_token"].ToString();
+                var getWCUser = HttpLib.Get(string.Format(UserAuth, access_token, enterpriseWeChat.Code));
+                var getWCUserData = JObject.Parse(getWCUser);
+                if (getWCUserData["errcode"].ToString() != "0")
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 0,
+                        Msg = "企业微信获取用户信息失败" + enterpriseWeChat.Code + getWCUser
+                    };
+                    return HandleResult(result);
+                }
+                if (!getWCUserData.ContainsKey("UserId"))
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 0,
+                        Msg = "非企业微信授权用户"
+                    };
+                    return HandleResult(result);
+                }
+                var wcUserId = getWCUserData["UserId"].ToString();
+                var userInfo = _accountRepository.GetWcAccountUserInfo(wcUserId);
+                if (userInfo == null || string.IsNullOrEmpty(userInfo.WCUserid))
+                {
+                    result = new OperateResult
+                    {
+                        Flag = 0,
+                        Msg = "获取用户失败" + wcUserId
+                    };
+                    return HandleResult(result);
+                }
+                var enterpriseWeChatType = _configurationRoot.GetSection("EnterpriseWeChat").Get<EnterpriseWeChatTypeModel>();
+                string actuallyUrl = string.Empty;
+                if (enterpriseWeChat.UrlType == UrlTypeEnum.WorkFlow)
+                {
+                    actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["caseid"]);
+                }
+                else
+                    actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
+                DateTime expiration;
+                List<Claim> claims = new List<Claim>();
+                claims.Add(new Claim("uid", userInfo.UserId.ToString()));
+                claims.Add(new Claim("username", userInfo.UserName));
+                var token = JwtAuth.SignToken(claims, out expiration);
                 result = new OperateResult
                 {
-                    Flag = 0,
-                    Msg = "企业微信单点登录失败"
+                    Flag = 1,
+                    Id = actuallyUrl + "?token=" + token
                 };
                 return HandleResult(result);
             }
-            string access_token = tokenObj["access_token"].ToString();
-            var getWCUser = HttpLib.Get(string.Format(UserAuth, access_token, enterpriseWeChat.Code));
-            var getWCUserData = JObject.Parse(getWCUser);
-            if (getWCUserData["errcode"].ToString() != "0") {
-                result = new OperateResult
-                {
-                    Flag = 0,
-                    Msg = "企业微信获取用户信息失败"
-                };
-                return HandleResult(result);
-            }
-            if (!getWCUserData.ContainsKey("UserId"))
+            catch (Exception ex)
             {
-                result = new OperateResult
-                {
-                    Flag = 0,
-                    Msg = "非企业微信授权用户"
-                };
-                return HandleResult(result);
+                //SoapHttpHelper.Log(new List<string> { "soapexceptionmsg", "finallyresult" }, new List<string> { ex.Message, ex.Source + ex.StackTrace }, 0, 1);
+                return HandleResult(new OperateResult { Flag = 1, Msg = ex.Message });
             }
-            var wcUserId = getWCUserData["UserId"].ToString();
-            var userInfo = _accountRepository.GetWcAccountUserInfo(wcUserId);
-            if (userInfo == null || string.IsNullOrEmpty(userInfo.WCUserid))
-            {
-                result = new OperateResult
-                {
-                    Flag = 0,
-                    Msg = "获取用户失败"
-                };
-                return HandleResult(result);
-            }
-            var enterpriseWeChatType = _configurationRoot.GetSection("EnterpriseWeChat").Get<EnterpriseWeChatTypeModel>();
-            string actuallyUrl = string.Empty;
-            if (enterpriseWeChat.UrlType == UrlTypeEnum.WorkFlow)
-            {
-                actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["caseid"]);
-            }
-            else
-                actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
-            DateTime expiration;
-            List<Claim> claims = new List<Claim>();
-            claims.Add(new Claim("uid", userInfo.UserId.ToString()));
-            claims.Add(new Claim("username", userInfo.UserName));
-            var token = JwtAuth.SignToken(claims, out expiration);
-            result = new OperateResult
-            {
-                Flag = 1,
-                Id = actuallyUrl + "?token=" + token
-            };
-            return HandleResult(result);
         }
     }
 }

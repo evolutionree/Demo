@@ -20,9 +20,7 @@ using App.Metrics.Extensions.Reporting.InfluxDB;
 using App.Metrics.Extensions.Reporting.InfluxDB.Client;
 using App.Metrics;
 using UBeat.Crm.CoreApi.Models;
-using System.Net.WebSockets;
 using UBeat.Crm.CoreApi.Services.webchat;
-using UBeat.Crm.CoreApi.Controllers;
 using UBeat.Crm.CoreApi.Core;
 using UBeat.Crm.CoreApi.Core.Utility;
 
@@ -66,6 +64,7 @@ namespace UBeat.Crm.CoreApi
 
             //添加本地缓存
             services.AddMemoryCache();
+
             // Add framework services.
             IMvcBuilder mvcBuilder = services.AddMvc();
             LoadCustomerProjectAssembly(mvcBuilder);

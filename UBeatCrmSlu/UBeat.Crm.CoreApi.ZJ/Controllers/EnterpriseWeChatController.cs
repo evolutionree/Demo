@@ -23,7 +23,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
         [HttpGet]
         [Route("getssocode")]
         [AllowAnonymous]
-        public OutputResult<object> GetSSOCode()
+        public OutputResult<object> GetMessageSSOCode()
         {
             Stream stream = Request.Body;
             Byte[] byteData = new Byte[stream.Length];
@@ -33,11 +33,11 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             string caseid = Request.Query["caseid"];
             string action = Request.Query["action"];
             string code = Request.Query["code"];
-
+            string urltype = Request.Query["urltype"];
             EnterpriseWeChatModel enterpriseWeChat = new EnterpriseWeChatModel();
             enterpriseWeChat.Code = code;
             enterpriseWeChat.Data = new Dictionary<string, object>();
-            if (action == "1")
+            if (urltype == "1")
             {
                 enterpriseWeChat.UrlType = UrlTypeEnum.WorkFlow;
                 enterpriseWeChat.Data.Add("caseid", caseid);
@@ -51,11 +51,36 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
 
             var result = _enterpriseWeChatServices.GetSSOCode(enterpriseWeChat);
             if (result.Status == 1) return result;
+            this.HttpContext.Response.Cookies.Append("token", result.DataBody.ToString().Substring(result.DataBody.ToString().LastIndexOf("?") + 1), new CookieOptions
+            {
+                Expires = DateTime.Now.AddMinutes(120),
+            });
+            this.HttpContext.Response.Redirect("http://183.63.72.242:45290/dashboard");
+            return result;
+        }
+
+        [HttpGet]
+        [Route("getsso")]
+        [AllowAnonymous]
+        public OutputResult<object> GetSSO()
+        {
+            Stream stream = Request.Body;
+            Byte[] byteData = new Byte[stream.Length];
+            stream.Read(byteData, 0, (Int32)stream.Length);
+            string code = Request.Query["code"];
+
+            EnterpriseWeChatModel enterpriseWeChat = new EnterpriseWeChatModel();
+            enterpriseWeChat.Code = code;
+            enterpriseWeChat.Data = new Dictionary<string, object>();
+            enterpriseWeChat.UrlType = UrlTypeEnum.SSO;
+
+            var result = _enterpriseWeChatServices.GetSSOCode(enterpriseWeChat);
+            if (result.Status == 1) return result;
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString().Substring(result.DataBody.ToString().LastIndexOf("?") + 1), new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120)
             });
-            
+
             return result;
         }
         [HttpGet]
@@ -63,8 +88,11 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
         [AllowAnonymous]
         public string GetAbc()
         {
-
-            return "asd";
+            Stream stream = Request.Body;
+            Byte[] byteData = new Byte[stream.Length];
+            stream.Read(byteData, 0, (Int32)stream.Length);
+            string code = Request.Query["code"];
+            return code;
         }
 
     }

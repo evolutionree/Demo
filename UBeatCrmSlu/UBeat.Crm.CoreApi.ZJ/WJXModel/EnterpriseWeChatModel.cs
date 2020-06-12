@@ -6,6 +6,7 @@ namespace UBeat.Crm.CoreApi.ZJ.WJXModel
 {
     public enum UrlTypeEnum
     {
+        SSO = 0,
         WorkFlow = 1,
         SmartReminder = 2
     }

@@ -506,6 +506,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                                 if (string.IsNullOrEmpty(caseId)) return;
                                 var enterpriseWeChatRealmName = wcConfig.GetValue<string>("EnterpriseWeChatRealmName");
+                                var corpId = wcConfig.GetValue<string>("CorpId");
                                 switch (configData.MsgStyleType)
                                 {
                                     case MessageStyleType.WorkflowAudit:
@@ -516,9 +517,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         foreach (var tmp in wcUsers)
                                         {
                                             rec.Add(tmp);
-                                            string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=1&userid=" + tmp + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + " & caseid = " + caseId);
-                                              packageMsg.recevier = rec;
-                                            packageMsg.content = packageMsg.title + " \n  <a href=\"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wwadba9051b034e6b4&redirect_uri="+url+"&response_type=code&scope=snsapi_base&state=#wechat_redirect\">" + packageMsg.content + "</a> \n " + packageMsg.DateTime;
+                                            string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=1&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&caseid=" + caseId);
+                                            packageMsg.recevier = rec;
+                                            packageMsg.content = packageMsg.title + string.Format(" \n  <a href=\"https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect\">", corpId) + packageMsg.content + "</a> \n " + packageMsg.DateTime;
                                             MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.Text, packageMsg);
                                             rec.Clear();
                                         }

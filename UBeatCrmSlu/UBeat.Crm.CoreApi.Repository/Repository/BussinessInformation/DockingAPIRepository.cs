@@ -36,7 +36,11 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
                 return new OperateResult { Flag = 1 };
             }
 
-            return DataBaseHelper.QuerySingle<OperateResult>(executeSql, args);
+            var count = DataBaseHelper.ExecuteNonQuery(executeSql, args);
+            if (count > 0)
+                return new OperateResult { Flag = 1 };
+            else
+                return new OperateResult { Flag = 0 };
         }
         public OperateResult InsertForeignBussinessInfomation(BussinessInformation data, int userNumber)
         {

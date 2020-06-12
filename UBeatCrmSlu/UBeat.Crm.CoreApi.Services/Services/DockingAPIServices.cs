@@ -164,7 +164,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (data != null && data.Count > 0)
             {
                 var realData = data.FirstOrDefault(t => t.Id == api.Id);
-                var result = _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { Id = api.Id, CompanyName = api.Id + api.CompanyName, BasicInfo = JsonConvert.SerializeObject(realData) }, userId);
+                var result = _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { Id = api.Id, CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(realData) }, userId);
                 return HandleResult(result);
             }
             return HandleResult(new OperateResult
