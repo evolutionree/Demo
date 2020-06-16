@@ -107,7 +107,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 WebHeaderCollection headers = new WebHeaderCollection();
                 headers.Add("token", AuthToLoginERP(userId, trans));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl", "soapreqstatus" }, new List<string> { param, soapConfig.SoapUrl, "请求成功" }, 0, userId, trans: trans).ToString();
-                  result = HttpLib.Post(soapConfig.SoapUrl, param, headers);
+                result = HttpLib.Post(soapConfig.SoapUrl, param, headers);
                 var pResult = ParseResult(result);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg", "soapresstatus" }, new List<string> { result, string.Empty, pResult.Flag == 0 ? pResult.Msg : "请求返回成功【" + pResult.Msg + "】" }, 1, userId, logId.ToString(), trans: trans);
                 return pResult;
@@ -119,7 +119,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     isUpdate = 1;
                 else
                     isUpdate = 0;
-                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message+ "["+ result + "]" }, isUpdate, userId, logId, trans: trans);
+                SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { string.Empty, ex.Message + "[" + result + "]" }, isUpdate, userId, logId, trans: trans);
                 return new OperateResult { Flag = 0, Msg = ex.Message };
             }
         }
@@ -158,6 +158,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var entityId = typeof(FromProductSoap).GetCustomAttribute<EntityInfoAttribute>().EntityId;
                     foreach (var t in dealData)
                     {
+                        if (t["cust"] == null) continue;
+                        if (t["cust"] != null && t["cust"].ToString() == "{}") continue;
                         var recid = productRepository.IsProductExists(trans, t["productcode"].ToString(), userId);
                         if (recid != null && !string.IsNullOrEmpty(recid.ToString()))
                             dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid.ToString()), t, userId);
@@ -226,7 +228,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
                 var startDate = _toERPRepository.GetOrderLastUpdatedTime();
-                  var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + startDate + "&endDate=" + DateTime.Now.AddDays(1).ToString("yyyyMMdd"), headers);
+                var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + startDate + "&endDate=" + DateTime.Now.AddDays(1).ToString("yyyyMMdd"), headers);
                 //var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=20190101&endDate=20190202", headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
@@ -242,6 +244,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     var entityId = typeof(FromOrder).GetCustomAttribute<EntityInfoAttribute>().EntityId;
                     var subEntityId = typeof(FromOrderDetail).GetCustomAttribute<EntityInfoAttribute>().EntityId;
+                    bool isSkip = false;
                     foreach (var t in dealData)
                     {
                         if (subEntityId != null)
@@ -250,6 +253,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var newSubDetail = new List<Dictionary<string, object>>();
                             foreach (var t1 in subDetail)
                             {
+                                if (t1["customer"] == null) { isSkip = true; break; }
+                                if (t1["customer"] != null && t["customer"].ToString() == "{}") { isSkip = true; break; }
                                 var buidlerDetail = new Dictionary<string, object>();
                                 buidlerDetail.Add("TypeId", subEntityId);
                                 buidlerDetail.Add("FieldData", t1);
@@ -257,6 +262,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             t["detail"] = JsonConvert.SerializeObject(newSubDetail);
                         }
+                        if (isSkip) continue;
                         var recid = _toERPRepository.IsExistsOrder(t["orderid"].ToString());
                         if (!string.IsNullOrEmpty(recid))
                             dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid), t, userId);

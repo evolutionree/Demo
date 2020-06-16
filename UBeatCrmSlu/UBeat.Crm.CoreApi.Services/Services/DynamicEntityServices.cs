@@ -1220,8 +1220,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("该实体分类没有配置相应字段");
             }
-            if (tmpField != null)
-                fields.Add(tmpField);
+            //if (tmpField != null)
+            //    fields.Add(tmpField);
             return new OutputResult<object>(fields);
         }
 
@@ -1454,7 +1454,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
                                     var invokeValue = method.Invoke(instance, new object[] { dynamicEntity.TypeId, Guid.Empty, dynamicEntity.RecId, userNumber, transaction });
                                     var dataResult = invokeValue as OperateResult;
-                                    if (dataResult.Flag == 0) result = dataResult;// throw new Exception(dataResult.Msg);
+                                    if (dataResult.Flag == 0) throw new Exception(dataResult.Msg);// throw new Exception(dataResult.Msg);
                                 }
                             }
                         }

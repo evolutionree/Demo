@@ -463,7 +463,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
         public List<UserInfo> GetAllUserInfoList()
         {
-            var sql = @"SELECT u.userid, u.username,u.namepinyin,u.usericon,u.usersex,u1.relateerpuserid FROM crm_sys_userinfo as u left join crm_sys_crmtoerp_user as u1 on u1.userid=u.userid and u1.recstatus=1";
+            var sql = @"SELECT u.userid, u.username,u.namepinyin,u.usericon,u.usersex,u1.relateerpuserid FROM crm_sys_userinfo as u left join crm_sys_crmtoerp_user as u1 on u1.userid=u.userid and u1.recstatus=1 and u1.usertype=0";
 
             return ExecuteQuery<UserInfo>(sql, null);
         }

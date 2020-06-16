@@ -32,7 +32,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
             var result = _accountRepository.GetAccountUserInfo(userNumber);
             return new OutputResult<object>(result);
         }
-        public OutputResult<object> GetSSOCode(EnterpriseWeChatModel enterpriseWeChat)
+        public OutputResult<object> GetSSOCode(EnterpriseWeChatModel enterpriseWeChat, out int userId)
         {
             try
             {
@@ -48,9 +48,9 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
                     result = new OperateResult
                     {
                         Flag = 0,
-                        Msg = "企业微信单点登录失败" + corpId + secret + getToken,
-                        Stacks = getToken
+                        Msg = "企业微信单点登录失败"
                     };
+                    userId = 0;
                     return HandleResult(result);
                 }
                 string access_token = tokenObj["access_token"].ToString();
@@ -63,6 +63,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
                         Flag = 0,
                         Msg = "企业微信获取用户信息失败" + enterpriseWeChat.Code + getWCUser
                     };
+                    userId = 0;
                     return HandleResult(result);
                 }
                 if (!getWCUserData.ContainsKey("UserId"))
@@ -72,6 +73,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
                         Flag = 0,
                         Msg = "非企业微信授权用户"
                     };
+                    userId = 0;
                     return HandleResult(result);
                 }
                 var wcUserId = getWCUserData["UserId"].ToString();
@@ -81,18 +83,11 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
                     result = new OperateResult
                     {
                         Flag = 0,
-                        Msg = "获取用户失败" + wcUserId
+                        Msg = "获取用户失败"
                     };
+                    userId = 0;
                     return HandleResult(result);
                 }
-                var enterpriseWeChatType = _configurationRoot.GetSection("EnterpriseWeChat").Get<EnterpriseWeChatTypeModel>();
-                string actuallyUrl = string.Empty;
-                if (enterpriseWeChat.UrlType == UrlTypeEnum.WorkFlow)
-                {
-                    actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["caseid"]);
-                }
-                else
-                    actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
                 DateTime expiration;
                 List<Claim> claims = new List<Claim>();
                 claims.Add(new Claim("uid", userInfo.UserId.ToString()));
@@ -101,12 +96,14 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
                 result = new OperateResult
                 {
                     Flag = 1,
-                    Id = token
+                    Id = token,
                 };
+                userId = userInfo.UserId;
                 return HandleResult(result);
             }
             catch (Exception ex)
             {
+                userId = 0;
                 //SoapHttpHelper.Log(new List<string> { "soapexceptionmsg", "finallyresult" }, new List<string> { ex.Message, ex.Source + ex.StackTrace }, 0, 1);
                 return HandleResult(new OperateResult { Flag = 1, Msg = ex.Message });
             }

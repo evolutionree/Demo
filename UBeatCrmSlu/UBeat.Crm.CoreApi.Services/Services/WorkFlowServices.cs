@@ -3786,6 +3786,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         paramData.Add("reccode", caseInfo.RecCode);
                         paramData.Add("approvalSuggest", myAuditCaseItem.Suggest);
                         paramData.Add("allApprovalSuggest", allApprovalSuggest);
+                        paramData.Add("workflowtopic", caseInfo.Title);
 
 
 
@@ -3801,7 +3802,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                          && (msg.FuncCode == "WorkFlowLaunch" || caseInfo.AuditStatus != AuditStatusType.Approving))
                         {
                             //先发流程的审批消息，再发关联动态的消息
-                            MessageService.WriteMessage(tran, msg, userNumber);
+                            MessageService.WriteMessage(tran, msg, userNumber, isFlow: 1);
 
                             var detailMapper = new DynamicEntityDetailtMapper()
                             {

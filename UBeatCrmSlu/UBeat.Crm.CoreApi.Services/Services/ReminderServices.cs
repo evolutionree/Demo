@@ -1224,7 +1224,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			}
 			else
 			{
-				return new OutputResult<object>(null, null, 1);
+				return new OutputResult<object>(null, null, 0);
 			}
 
 		}

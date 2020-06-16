@@ -519,8 +519,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             rec.Add(tmp);
                                             string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=1&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&caseid=" + caseId);
                                             packageMsg.recevier = rec;
-                                            packageMsg.content = packageMsg.title + string.Format(" \n  <a href=\"https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect\">", corpId) + packageMsg.content + "</a> \n " + packageMsg.DateTime;
-                                            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.Text, packageMsg);
+                                            packageMsg.title = packageMsg.title;
+                                            packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
+                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, "{workflowtopic}")+ " \n " +packageMsg.content + " \n " + packageMsg.DateTime;
+                                            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
                                             rec.Clear();
                                         }
                                         break;

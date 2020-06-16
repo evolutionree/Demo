@@ -21,4 +21,8 @@ namespace UBeat.Crm.CoreApi.ZJ.WJXModel
         public string Code { get; set; }
         public Dictionary<string, object> Data { get; set; }
     }
+    public class EnterpriseWeChatSignatureModel
+    {
+        public string Url { get; set; }
+    }
 }

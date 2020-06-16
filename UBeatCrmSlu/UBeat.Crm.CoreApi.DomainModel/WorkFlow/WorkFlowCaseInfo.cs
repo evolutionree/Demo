@@ -86,5 +86,6 @@ namespace UBeat.Crm.CoreApi.DomainModel.WorkFlow
         public long RecVersion { set; get; }
 
         public int Recstatus { set; get; }
+        public string Title { get; set; }
     }
 }
