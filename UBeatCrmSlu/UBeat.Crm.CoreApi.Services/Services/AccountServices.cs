@@ -92,8 +92,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> Login(AccountLoginModel loginModel, AnalyseHeader header)
         {
-
             var userInfo = _accountRepository.GetUserInfo(loginModel.AccountName);
+            if (userInfo.IsCrmUser == 0)
+            {
+                return ShowError<object>("非CRM用户，不能登录");
+            }
 
             if (userInfo == null)
             {
@@ -510,6 +513,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
                  var result = _accountRepository.SetLeader(entity, userNumber);
                  return HandleResult(result);
              }, entityModel, userNumber);
+            IncreaseDataVersion(DataVersionType.BasicData, null);
+            return res;
+        }
+
+        public OutputResult<object> SetIsCrm(SetIsCrmModel entityModel, int userNumber)
+        {
+            var entity = _mapper.Map<SetIsCrmModel, SetIsCrmMapper>(entityModel);
+            var userInfo = _accountRepository.GetAccountUserInfo(entityModel.UserId);
+            int count = _accountRepository.GetLicenseUserCount();
+            OperateResult result = new OperateResult();
+            if (userInfo.AccessType != "99")//如果是99，表示限制登录，不会考虑许可问题 
+            {
+                if (count >= Convert.ToInt32(LicenseInstance.Instance.LimitPersonNum))
+                {
+                    result.Msg = "注册用户人数已经超过项目许可注册人数,不能将Hr用户转为CRM用户";
+                    return HandleResult(result);
+                }
+            }
+            var res = ExcuteAction((transaction, arg, userData) =>
+            {
+                //验证通过后，插入数据
+                var iscrm = _accountRepository.SetIsCrm(entity, userNumber);
+                var op = new OperateResult
+                {
+                    Flag = iscrm ? 1 : 0,
+                    Msg = iscrm ? "设置成功" : "设置失败"
+                };
+                return HandleResult(op);
+            }, entityModel, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
             return res;
         }

@@ -26,7 +26,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         public AccountUserMapper GetUserInfo(string accountName)
         {
             var sql = @"
-                SELECT u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime FROM crm_sys_account AS a
+                SELECT u.iscrmuser,u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime FROM crm_sys_account AS a
                 LEFT JOIN crm_sys_account_userinfo_relate AS r ON a.accountid = r.accountid
                 LEFT JOIN crm_sys_userinfo AS u ON r.userid = u.userid
                 WHERE accountname = @accountName LIMIT 1
@@ -409,7 +409,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
             var result = DataBaseHelper.QuerySingle<OperateResult>(sql, param);
             return result;
         }
+        public bool SetIsCrm(SetIsCrmMapper entity, int userNumber)
+        {
+            var sql = @"
+               update crm_sys_userinfo set iscrmuser=@iscrmuser where userid=@userid;
+            ";
 
+            var param = new DynamicParameters();
+            param.Add("userid", entity.UserId);
+            param.Add("iscrmuser", entity.IsCrmUser);
+            var result = DataBaseHelper.ExecuteNonQuery(sql, param);
+            return result > 0;
+        }
         public UpdateSoftwareEntity UpdateSoftware(DbTransaction tran, int clientType, int versionNo, int buildNo, int userNumber)
         {
             var sql = @"
@@ -427,7 +438,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         public AccountUserInfo GetAccountUserInfo(int userNumber)
         {
             var sql = @"
-              SELECT a.accountpwd,ur.accountid,a.accountname,ur.userid,u.username,u.namepinyin AS UserNamePinyin,ur.deptid AS DepartmentId,d.deptcode AS DepartmentCode,d.deptname AS DepartmentName,d.pdeptid AS PDepartmentId,u.dduserid,u.wcuserid
+              SELECT a.accountpwd,ur.accountid,a.accountname,ur.userid,u.username,u.namepinyin AS UserNamePinyin,ur.deptid AS DepartmentId,d.deptcode AS DepartmentCode,d.deptname AS DepartmentName,d.pdeptid AS PDepartmentId,u.dduserid,u.wcuserid,a.accesstype
                 FROM crm_sys_account_userinfo_relate AS ur
                 LEFT JOIN crm_sys_department AS d ON ur.deptid=d.deptid
                 LEFT JOIN crm_sys_userinfo AS u ON u.userid=ur.userid

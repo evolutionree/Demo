@@ -69,7 +69,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                 WriteLog(LogLevel.Warning, null, string.Format("文件【{0}】不存在", fileid));
 
                 return ResponseError(string.Format("文件【{0}】不存在", fileid));
-                
+
             }
             string filename = WebUtility.UrlEncode(fileInfo.FileName);
 
@@ -77,8 +77,9 @@ namespace UBeat.Crm.CoreApi.Controllers
             Response.Headers.Add("filelength", fileInfo.Length.ToString());
             Response.Headers.Add("Content-Disposition", "inline; filename=" + filename);
             Response.Headers.Add("Content-Length", fileInfo.Length.ToString());//添加头文件，指定文件的大小，让浏览器显示文件下载的速度
+            Response.Headers.Add("Cache-Control", "max-age=31536000");
             //获取缩略图
-            if (queryParam.FileType==0)
+            if (queryParam.FileType == 0)
             {
                 _fileService.GetFileData(entityid, fileid, Response.Body);
             }
@@ -88,6 +89,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 
                 Response.Headers["Content-Disposition"] = "inline; filename=" + WebUtility.UrlEncode(filename);
                 Response.Headers["Content-Length"] = bytes.Length.ToString();
+
                 await Response.Body.WriteAsync(bytes, 0, bytes.Length);
             }
             return File(Response.Body, "application/octet-stream");
@@ -198,17 +200,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (formData == null)
                 return ResponseError<object>("缺乏查询参数");
-            
+
             var isexist = _fileService.Exists(formData.EntityId, formData.FileId);
             string fileId = string.Empty;
             if (isexist == false)
             {
                 fileId = _fileService.UploadFile(formData.EntityId, formData.FileId, formData.FileName, formData.Data.OpenReadStream());
             }
-            WriteOperateLog("上传文件", new { formData.EntityId, FileId= fileId, formData.FileName });
+            WriteOperateLog("上传文件", new { formData.EntityId, FileId = fileId, formData.FileName });
             return new OutputResult<object>(fileId);
         }
-       
+
         #endregion
 
         #region --大文件上传-- 
@@ -222,7 +224,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (formData == null)
                 return ResponseError<object>("缺乏查询参数");
-           
+
             byte[] filedata = ImageHelper.StreamToBytes(formData.Data.OpenReadStream());
             var targetfileid = _fileService.UploadFileChunk(formData.EntityId, formData.FileId, formData.FileName, filedata, formData.FileMD5, formData.ChunkIndex, formData.FileLength, formData.ChunkSize);
             WriteOperateLog("上传文件", string.Format("文件【{0}】分片【{1}】已上传,文件ID为{2}", formData.FileName, formData.ChunkIndex, targetfileid));
@@ -293,8 +295,8 @@ namespace UBeat.Crm.CoreApi.Controllers
                     WriteLog(LogLevel.Information, null, string.Format("下载文件【{0}】", fileInfo.FileName));
                     //设置header
                     RequestHeaders requestHeaders = new RequestHeaders(Request.Headers);
-                   
-                    Response.ContentType = "application/octet-stream; charset=utf-8" ;
+
+                    Response.ContentType = "application/octet-stream; charset=utf-8";
                     Response.Headers.Add("Content-Disposition", string.Format("attachment; filename={0}; filename*=utf-8''{0}", WebUtility.UrlEncode(fileInfo.FileName)));
                     Response.Headers.Add("Accept-Ranges", "bytes");//告诉客户端接受资源为字节
                     Response.Headers.Add("filename", WebUtility.UrlEncode(fileInfo.FileName));

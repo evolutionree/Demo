@@ -497,6 +497,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (wcConfig.GetValue<Boolean>("IsSyncWebChat"))
                             {
                                 if (isFlow == 0) return;
+                                packageMsg.content = msgContent;
+                                packageMsg.title = pushMsg.Title;
+                                packageMsg.DateTime = tmpDate;
                                 var casedata = JObject.Parse(msgparam.ParamData);
                                 JToken jdata;
                                 string caseId = string.Empty;
@@ -510,19 +513,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 switch (configData.MsgStyleType)
                                 {
                                     case MessageStyleType.WorkflowAudit:
-                                        packageMsg.content = msgContent;
-                                        packageMsg.title = pushMsg.Title;
-                                        packageMsg.DateTime = tmpDate;
                                         var rec = new List<string>();
                                         foreach (var tmp in wcUsers)
                                         {
                                             rec.Add(tmp);
                                             string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=1&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&caseid=" + caseId);
                                             packageMsg.recevier = rec;
-                                            packageMsg.title = packageMsg.title;
                                             packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
-                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, "{workflowtopic}")+ " \n " +packageMsg.content + " \n " + packageMsg.DateTime;
+                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, "{workflowtopic}") + " \n " + msgContent + " \n " + packageMsg.DateTime;
                                             MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+
                                             rec.Clear();
                                         }
                                         break;

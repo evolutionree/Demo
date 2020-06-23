@@ -193,6 +193,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string partNum { get; set; }
         [EntityField("salespartRev")]
         public string salespartRev { get; set; }
+        [EntityField("productLen")]
+        public string longer { get; set; }
+        [EntityField("longWid")]
+        public string wide { get; set; }
     }
     public class FromOrderParam
     {

@@ -14,7 +14,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
     {
         public void SaveWXJAnswer(WJXCallBack callBack, int userId, DbTransaction tran = null)
         {
-            var sql = " insert into crm_sys_wjxanswer (activity,name,joinid,submittime,sign,answer,sojumpparm) values (@activity,@name,@joinid,@submittime,@sign,@answer::jsonb,@sojumpparm)";
+            var sql = " insert into crm_sys_wjxanswer (activity,name,joinid,submittime,sign,answer,question,sojumpparm) values (@activity,@name,@joinid,@submittime,@sign,@answer::jsonb,@question::jsonb,@sojumpparm)";
 
             var param = new DbParameter[] {
                 new NpgsqlParameter("activity",callBack.Activity),
@@ -23,7 +23,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
                 new NpgsqlParameter("submittime",callBack.SubmitTime),
                 new NpgsqlParameter("sign",callBack.SubmitTime),
                  new NpgsqlParameter("answer",JsonConvert.SerializeObject(callBack.Answer)),
-                new NpgsqlParameter("sojumpparm",callBack.Sojumpparm)
+                new NpgsqlParameter("question",callBack.Question),
+                new NpgsqlParameter("sojumpparm", callBack.Sojumpparm)
             };
             ExecuteNonQuery(sql, param, tran);
 

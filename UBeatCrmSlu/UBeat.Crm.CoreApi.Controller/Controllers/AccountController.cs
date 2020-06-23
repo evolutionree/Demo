@@ -511,6 +511,14 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _accountServices.SetLeader(entityModel, UserId);
         }
+        [HttpPost]
+        [Route("setiscrm")]
+        public OutputResult<object> SetIsCrm([FromBody] SetIsCrmModel entityModel = null)
+        {
+            if (entityModel == null) return ResponseError<object>("参数格式错误");
+
+            return _accountServices.SetIsCrm(entityModel, UserId);
+        }
 
         [HttpGet]
         [AllowAnonymous]

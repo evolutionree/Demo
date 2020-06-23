@@ -27,6 +27,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
 
     public class AccountUserMapper
     {
+        public int IsCrmUser { get; set; }
         public int UserId { get; set; }
         public string UserName { get; set; }
         public string AccessType { get; set; }
@@ -299,9 +300,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         // 0 否 1 是
         public int IsLeader { get; set; }
     }
+    public class SetIsCrmMapper
+    {
+        public int UserId { get; set; }
+        // 0 否 1 是
+        public int IsCrmUser { get; set; }
+    }
 
 
 
-   
 
 }

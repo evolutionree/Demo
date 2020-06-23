@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 
@@ -11,7 +12,7 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.WJXModel;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
-
+using System.Linq;
 namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class WJXServices : BasicBaseServices
@@ -35,6 +36,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> GetWJXQuestionList(Guid recId, Guid? entityId)
         {
+            string tipMsg = string.Empty;
             try
             {
                 if (entityId == null || entityId == Guid.Empty)
@@ -64,7 +66,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (result != null)
                 {
                     searchResultList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<WJXQuestionModel>>(result);
-
+                    if (detailData["custcode"] == null) tipMsg = "空户编码为空的情况下，不能获取问卷星列表";
                     foreach (var question in searchResultList)
                     {
                         question.qurl = "https://www.wjx.cn/jq/" + question.qid + ".aspx?sojumpparm=" + detailData["custcode"].ToString();
@@ -74,6 +76,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             catch (Exception ex)
             {
+                if (!string.IsNullOrEmpty(tipMsg)) throw new Exception(tipMsg);
                 throw new Exception("获取问卷列表异常");
             }
 
@@ -90,12 +93,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public void SaveWXJAnswer(Dictionary<string, object> dic, int userId)
         {
+            var config = _configurationRoot.GetSection("WJXConfig").Get<WJXSSOConfigModel>();
             using (var conn = GetDbConnect())
             {
                 conn.Open();
                 var transaction = conn.BeginTransaction();
                 try
                 {
+                    var question = HttpLib.Get(string.Format(config.QuestionUrl, dic["activity"].ToString()));
+                    if (string.IsNullOrEmpty(question)) return;
                     WJXCallBack callBack = new WJXCallBack()
                     {
                         Activity = dic["activity"].ToString(),
@@ -104,6 +110,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         SubmitTime = Convert.ToDateTime(dic["submittime"].ToString()),
                         JoinId = dic["joinid"].ToString(),
                         Answer = dic,
+                        Question = question,
                         Sign = dic["sign"].ToString(),
                         Sojumpparm = dic["sojumpparm"].ToString()
                     };

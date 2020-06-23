@@ -178,6 +178,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
         public int IsLeader { get; set; }
     }
 
+    public class SetIsCrmModel
+    {
+        // 0 否 1 是
+        public int UserId { get; set; }
+        public int IsCrmUser { get; set; }
+    }
 
     public class UpdateSoftwareModel
     {

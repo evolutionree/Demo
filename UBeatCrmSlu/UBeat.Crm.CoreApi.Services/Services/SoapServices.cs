@@ -601,12 +601,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
-        OperateResult ParseResult(string result)
+        public OperateResult ParseResult(string result)
         {
             JObject jObject = JObject.Parse(result);
             return new SubOperateResult { Flag = jObject["code"].ToString() == "200" ? 1 : 0, Msg = jObject["message"].ToString(), Data = jObject["data"].ToString() };
         }
-        string AuthToLoginERP(int userId, DbTransaction trans = null)
+        public string AuthToLoginERP(int userId, DbTransaction trans = null)
         {
             bool isNeedToAuth = false;
             string token = string.Empty;
@@ -658,11 +658,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return new SubOperateResult { Flag = 0, Msg = "校验账号配置异常" };
         }
-        class SubOperateResult : OperateResult
+        public class SubOperateResult : OperateResult
         {
             public object Data { get; set; }
         }
-        SubOperateResult ValidConfig(string key, string filterKey, string orignalName)
+        public SubOperateResult ValidConfig(string key, string filterKey, string orignalName)
         {
             string body = string.Empty;
             var soap = _configurationRoot.GetSection("ErpSoapInterfaces");

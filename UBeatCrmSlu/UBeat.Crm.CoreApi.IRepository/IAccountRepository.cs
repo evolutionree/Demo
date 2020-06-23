@@ -48,7 +48,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult DisabledDept(DeptDisabledMapper entity, int userNumber);
 
         OperateResult SetLeader(SetLeaderMapper entity, int userNumber);
-
+        bool SetIsCrm(SetIsCrmMapper entity, int userNumber);
 
         UpdateSoftwareEntity UpdateSoftware(DbTransaction tran,int clientType, int versionNo, int buildNo, int userNumber);
 

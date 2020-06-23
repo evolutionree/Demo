@@ -16,6 +16,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WJXModel
         public string JoinId { get; set; }
         public DateTime SubmitTime { get; set; }
         public Dictionary<string, object> Answer { get; set; }
+        public string Question { get; set; }
         public string Sign { get; set; }
         public string Sojumpparm { get; set; }
         public string Url { get; set; }

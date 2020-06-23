@@ -8,6 +8,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     {
         public Guid Id { get; set; }//报表定义ID
         public string Name { get; set; }//报表名称
+        public int ReportType { get; set; }
+        public string ReferReportUrl { get; set; }
         public int RptType { get; set; }//报表类型,1=Mobile,2=WEB, 另外一个含义是每一行有多少个占位符
         public List<ReportDataSourceInfo> datasources = new List<ReportDataSourceInfo>();//引用的数据源，及定义数据源的形参和实参
         public List<ReportEventInfo> events = new List<ReportEventInfo>();//报表事件，暂时没有意义
@@ -25,10 +27,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
          * 名称：从数据库查询出来的结果转换到ReportDefineInfo
          * 主要是因为datasources\events\components这三个字段存在数据库是json字符串，而返回给前端是对象
          * */
-        public static ReportDefineInfo fromDict(IDictionary<string, object> dict) {
+        public static ReportDefineInfo fromDict(IDictionary<string, object> dict)
+        {
             ReportDefineInfo ret = new ReportDefineInfo();
             if (dict == null) return null;
-            foreach (string key in dict.Keys) {
+            foreach (string key in dict.Keys)
+            {
                 string tmp = key.ToLower();
                 if (tmp.Equals("id") || tmp.Equals("recid"))
                 {
@@ -36,13 +40,22 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
                     {
                         ret.Id = (Guid)dict[key];
                     }
-                    else {
+                    else
+                    {
                         ret.Id = Guid.Parse(dict[key].ToString());
                     }
                 }
                 else if (tmp.Equals("name") || tmp.Equals("recname"))
                 {
                     ret.Name = (string)dict[key];
+                }
+                else if (tmp.Equals("reporttype") || tmp.Equals("reporttype"))
+                {
+                    ret.ReportType = (int)dict[key];
+                }
+                else if (tmp.Equals("referreporturl") || tmp.Equals("referreporturl"))
+                {
+                    ret.ReferReportUrl = (string)dict[key];
                 }
                 else if (tmp.Equals("rpttype"))
                 {
@@ -64,7 +77,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
                         ret.events = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ReportEventInfo>>(tmpString);
                     }
                 }
-                else if (tmp.Equals("Components".ToLower())) {
+                else if (tmp.Equals("Components".ToLower()))
+                {
                     string tmpString = (string)dict[key];
                     if (tmpString != null && tmpString.Length > 0)
                     {
@@ -76,15 +90,18 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         }
 
     }
-    public class ReportDataSourceInfo {
+    public class ReportDataSourceInfo
+    {
         public string InstId { get; set; }
         public Guid DataSourceDefineID { get; set; }
         public List<Dictionary<string, string>> Parameters { get; set; }
 
     }
-    public class ReportEventInfo {
+    public class ReportEventInfo
+    {
     }
-    public enum ReportComponentInfo_CtrlType {
+    public enum ReportComponentInfo_CtrlType
+    {
         Chart = 1,//图，现在包括散点图，柱状图，折线图，但不包括地图
         WebTable = 2,//web部分的表格控件
         FilterCtrl = 3,//过滤条件控件
@@ -94,7 +111,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         MobileTable = 8,//手机上的表格控件
         UKBarGraph = 9//移动端U客柱状图
     }
-    public enum ReportFilter_CtrlType {
+    public enum ReportFilter_CtrlType
+    {
         Text = 1,
         Commonbox = 2,
         MultiChoose = 3,
@@ -105,17 +123,19 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     /// <summary>
     /// 报表控件类型
     /// </summary>
-    public enum ReportComponentCtrlType {
-        CommonChart = 1 ,/*普通图控件，包括折线图，柱状图，散点图和饼图*/
-        PCTable = 2 ,/*PC版表格*/
+    public enum ReportComponentCtrlType
+    {
+        CommonChart = 1,/*普通图控件，包括折线图，柱状图，散点图和饼图*/
+        PCTable = 2,/*PC版表格*/
         Filter = 3,/*过滤控件，可能会有子项*/
         TextDiv = 7,/*文本组件*/
         RegionMap = 6,/*客户地图控件，包含分组过滤项的*/
         MobileTable = 8,/*移动端表格控件*/
-        MapPath =10,/*地图路径和地图坐标控件*/
+        MapPath = 10,/*地图路径和地图坐标控件*/
         OrgComponent = 11/**组织地图***/
     }
-    public class ReportComponentInfo {
+    public class ReportComponentInfo
+    {
         public int Index { get; set; }
         /// <summary>
         /// 控件类型，详见ReportComponentCtrlType
@@ -159,7 +179,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 是否跟下一块链接，主要用于手机端报表
         /// </summary>
         public bool IsLinkToDown { get; set; }
-        public ReportComponentInfo() {
+        public ReportComponentInfo()
+        {
             IsLinkToDown = false;
             IsLinkToUp = false;
         }
@@ -167,35 +188,41 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     /// <summary>
     /// 移动端报表，U客柱状图定义
     /// </summary>
-    public class MobileUKBarGraphDefineInfo {
+    public class MobileUKBarGraphDefineInfo
+    {
         public string XFieldName { get; set; }
         public string ValueFieldName { get; set; }
-        public string ValueLabelScheme { get;set; }
+        public string ValueLabelScheme { get; set; }
     }
     /// <summary>
     /// 移动端报表列表控件定义
     /// </summary>
-    public class MobileTableDefineInfo {
+    public class MobileTableDefineInfo
+    {
         public string EntityId { get; set; }
         public string MainTitleFieldName { get; set; }
         public string SubTitleFieldName { get; set; }
         public List<MobileTableFieldDefineInfo> DetailColumns { get; set; }
     }
-    public class MobileTableFieldDefineInfo {
+    public class MobileTableFieldDefineInfo
+    {
         public string Title { get; set; }
         public string FieldName { get; set; }
     }
-    public class ComponentTitleInfo {
+    public class ComponentTitleInfo
+    {
         public string TitleScheme { get; set; }
         public List<string> ParamsKey { get; set; }
     }
-    public class MapComponentInfo {
+    public class MapComponentInfo
+    {
         public List<MapItemFilterExtInfo> FilterItems { get; set; }
         public string FormatForMap { get; set; }
         public string FormatForChart { get; set; }
     }
 
-    public class MapItemFilterExtInfo {
+    public class MapItemFilterExtInfo
+    {
         public int Index { get; set; }
         public bool IsRegion { get; set; }
         public string CtrlName { get; set; }
@@ -204,20 +231,24 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public string Title { get; set; }
 
     }
-    public class DivLabelExtInfo {
+    public class DivLabelExtInfo
+    {
         public string TextLabelScheme { get; set; }
         public string TextAlign { get; set; }
         public List<string> Params { get; set; }
-        public DivLabelExtInfo() {
+        public DivLabelExtInfo()
+        {
             TextAlign = "center";
         }
     }
 
-    public class ComponentEventInfo {
+    public class ComponentEventInfo
+    {
         public string EventName { get; set; }
         public List<ComponentEventActionInfo> ActionList { get; set; }
     }
-    public class ComponentEventActionInfo {
+    public class ComponentEventActionInfo
+    {
         public int ActionType { get; set; }//1=打开页面,2=更改变量,
         public List<ComponentEventActionChangeParamSetting> ChangeParam { get; set; }
         public string LinkScheme { get; set; }
@@ -225,13 +256,15 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
 
 
     }
-    public class ComponentEventActionChangeParamSetting {
+    public class ComponentEventActionChangeParamSetting
+    {
         public int FilterCtrlIndex { get; set; }
         public string ParameterName { get; set; }
         public string ParameterValue { get; set; }
     }
 
-    public enum ReportCommonComponent_ChatType {
+    public enum ReportCommonComponent_ChatType
+    {
         /// <summary>
         /// 折线图和柱状图
         /// </summary>
@@ -245,7 +278,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// </summary>
         Gauge = 3
     }
-    public class CommonComponentInfo {
+    public class CommonComponentInfo
+    {
         public string XFieldName { get; set; }
         public string XFieldLableName { get; set; }
         public string DetailFormat { get; set; }
@@ -271,7 +305,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     /// <summary>
     /// 仪表盘定义
     /// </summary>
-    public class GaugeDefineInfo {
+    public class GaugeDefineInfo
+    {
         /// <summary>
         /// 仪表盘的最小值
         /// </summary>
@@ -297,7 +332,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// </summary>
         public List<GaugeAreaDefineInfo> AreaInfo { get; set; }
     }
-    public class  GaugeAreaDefineInfo {
+    public class GaugeAreaDefineInfo
+    {
         /// <summary>
         /// 排序码
         /// </summary>
@@ -309,15 +345,17 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         //本区域显示的颜色
         public string AreaColor { get; set; }
     }
-    public class YSerialLabelInfo {
+    public class YSerialLabelInfo
+    {
         public int Index { get; set; }
         public string Name { get; set; }
         public string FormatStr { get; set; }//Y轴显示格式，仅需要支持 “{value}年”这种定义 
         public Decimal MaxValue { get; set; }
         public Decimal MinValue { get; set; }
-        
+
     }
-    public class CommonSeriesInfo {
+    public class CommonSeriesInfo
+    {
         public string FieldName { get; set; }
         public string SeriesName { get; set; }
         public string CharType { get; set; }
@@ -327,14 +365,16 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public string BaseColor { get; set; }
 
     }
-    public class SerieColorSetting {
+    public class SerieColorSetting
+    {
         public int Index { get; set; }
         public string LeftItem { get; set; }
         public string Operator { get; set; }
         public string RightItem { get; set; }
         public string Result { get; set; }
     }
-    public class TableComponentInfo {
+    public class TableComponentInfo
+    {
         public int FixedX { get; set; }
         public int FixedY { get; set; }
         /// <summary>
@@ -343,7 +383,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public int ShowExport { get; set; }
         public List<TableColumnInfo> Columns { get; set; }
     }
-    public class TableColumnInfo {
+    public class TableColumnInfo
+    {
         public string Title { get; set; }
         public string FieldName { get; set; }
         public string LinkScheme { get; set; }
@@ -362,10 +403,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     /***
      * 过滤条件列表cd 
      * */
-    public class FilterPanelInfo {
+    public class FilterPanelInfo
+    {
         public List<FilterControlInfo> Ctrls { get; set; }
     }
-    public class FilterControlInfo {
+    public class FilterControlInfo
+    {
         public int Index { get; set; }
         public string LabelText { get; set; }
         public int CtrlType { get; set; } //1=文本，2=下拉(数据来源)，3=选择（选择，是否多选）,4系列，5时间
@@ -373,25 +416,28 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         public FilterComboDataInfo ComboData { get; set; }
         public MultiChooseDataInfo MultiChooseData { get; set; }
         public FilterSeriesCtrlInfo SeriesSetting { get; set; }
-        public string TextDefaultValue { get; set;  }
+        public string TextDefaultValue { get; set; }
         public string TextDefaultValue_Name { get; set; }
         public string TextDefaultValueScheme { get; set; }
         public string TextDefaultValue_NameScheme { get; set; }
         public string DateDefaultValue { get; set; }
         public string DateDefaultValueScheme { get; set; }
         public int Width { get; set; }
-        public FilterControlInfo() {
+        public FilterControlInfo()
+        {
             Width = 50;
             CtrlType = 1;
         }
     }
 
-    public class FilterSeriesCtrlInfo {
+    public class FilterSeriesCtrlInfo
+    {
         public bool CanAdd { get; set; }
         public List<FilterSerieDefineInfo> DefaultValues { get; set; }
 
     }
-    public class FilterSerieDefineInfo {
+    public class FilterSerieDefineInfo
+    {
         public int Index { get; set; }
         public string SerieName { get; set; }
         public string SerieColor { get; set; }
@@ -407,7 +453,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     }
 
 
-    public class FilterComboDataInfo {
+    public class FilterComboDataInfo
+    {
         public int DataSourceType { get; set; } //1=自定义,2=数据源
         public List<Dictionary<string, string>> DataList { get; set; }
         public ReportDataSourceInfo DataSource { get; set; }
@@ -421,9 +468,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// </summary>
         public string DefaultValueScheme { get; set; }
         public string DefaultValue_NameScheme { get; set; }
-         
+
     }
-    public class MultiChooseDataInfo {
+    public class MultiChooseDataInfo
+    {
         public bool IsMultiSelect { get; set; }
         public int ChooseType { get; set; }//1=部门,2=人员，3=产品 4=地区
         public List<Dictionary<string, object>> DefaultValues { get; set; }
@@ -434,7 +482,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     /// <summary>
     /// 地图路径和地图坐标控件的详情信息
     /// </summary>
-    public class MapPathInfo {
+    public class MapPathInfo
+    {
         /// <summary>
         /// 系列定义
         /// </summary>
@@ -463,7 +512,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
     /// <summary>
     /// 组织和人员选择则控件，仅支持pc端
     /// </summary>
-    public class OrgComponentInfo {
+    public class OrgComponentInfo
+    {
 
         /// <summary>
         /// 是否是多选模式
@@ -480,7 +530,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 当=1时，且为多选时，部门节点也是允许选择的，只是意义就是选择部门下的所有人员。
         /// 默认为1
         /// </summary>
-        public int SelectMode { get; set;  }
+        public int SelectMode { get; set; }
         /// <summary>
         /// 最大选择数量，如果没有，但是多选，默认为10个。
         /// </summary>

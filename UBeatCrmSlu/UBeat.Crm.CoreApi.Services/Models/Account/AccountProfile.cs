@@ -22,6 +22,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
             CreateMap<DeptOrderbyModel, DeptOrderbyMapper>();
             CreateMap<DeptDisabledModel, DeptDisabledMapper>();
             CreateMap<SetLeaderModel, SetLeaderMapper>();
+            CreateMap<SetIsCrmModel, SetIsCrmMapper>();
         }
     }
 
