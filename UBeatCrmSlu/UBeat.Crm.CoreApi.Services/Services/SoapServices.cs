@@ -142,6 +142,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 headers.Add("token", AuthToLoginERP(userId));
                 logId = SoapHttpHelper.Log(new List<string> { "soapparam", "soapurl" }, new List<string> { string.Empty, soapConfig.SoapUrl }, 0, userId).ToString();
                 var startDate = productRepository.GetProductLastUpdatedTime(null, userId);
+                if (string.IsNullOrEmpty(startDate)) startDate = soapConfig.Params.FirstOrDefault().DefaultValue;
                 var result = HttpLib.Get(soapConfig.SoapUrl + "?startDate=" + startDate + "&endDate=" + DateTime.Now.AddDays(1).ToString("yyyyMMdd"), headers);
                 SoapHttpHelper.Log(new List<string> { "soapresresult", "soapexceptionmsg" }, new List<string> { result, string.Empty }, 1, userId, logId.ToString());
                 var subResult = ParseResult(result) as SubOperateResult;
@@ -164,7 +165,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (recid != null && !string.IsNullOrEmpty(recid.ToString()))
                             dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid.ToString()), t, userId);
                         else
+                        {
+                            //   Dictionary<string, object> extra = new Dictionary<string, object>();
+                            t.Add("productsetid", "7f74192d-b937-403f-ac2a-8be34714278b");
                             dataResult = _dynamicEntityRepository.DynamicAdd(trans, Guid.Parse(entityId), t, null, userId);
+                        }
                         if (dataResult.Flag == 0)
                         {
                             trans.Rollback();

@@ -187,16 +187,16 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string appCategory { get; set; }
         [EntityField("code")]
         public string MiCode { get; set; }
-        [EntityField("partRev")]
+        [EntityField("partrev")]
         public string partRev { get; set; }
-        [EntityField("partNum")]
+        [EntityField("partnum")]
         public string partNum { get; set; }
-        [EntityField("salespartRev")]
+        [EntityField("salespartrev")]
         public string salespartRev { get; set; }
-        [EntityField("productLen")]
-        public string longer { get; set; }
-        [EntityField("longWid")]
-        public string wide { get; set; }
+        [EntityField("longer")]
+        public string productLen { get; set; }
+        [EntityField("wide")] 
+        public string productWid { get; set; }
     }
     public class FromOrderParam
     {

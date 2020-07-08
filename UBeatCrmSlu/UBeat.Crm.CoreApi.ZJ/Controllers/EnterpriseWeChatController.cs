@@ -90,7 +90,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = "ltcwx.mos400.cn",
+                Domain = "crmtest.ceepcb.com",
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);
@@ -259,7 +259,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = "ltcwx.mos400.cn",
+                Domain = "crmtest.ceepcb.com",
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);

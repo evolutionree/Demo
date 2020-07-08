@@ -36,7 +36,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             _salesTargetServices = salesTargetServices;
             _soapServices = soapServices;
         }
-
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("t")]
+        public OutputResult<object> SyncErpProduct()
+        {
+            _soapServices.SyncErpProduct();
+            return new OutputResult<object>("");
+        }
         [AllowAnonymous]
         [HttpPost]
         [Route("redisstatus")]

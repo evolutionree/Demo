@@ -541,23 +541,30 @@ namespace UBeat.Crm.CoreApi.Services.Utility
 
         static object ConvertFieldValue<T>(PropertyInfo p, T data)
         {
-            var fieldType = p.GetCustomAttribute<EntityFieldAttribute>();
-            if (fieldType == null) return null;
-            switch (fieldType.FieldType)
+            try
             {
-                case FieldTypeEnum.Int:
-                    var val = p.GetValue(data);
-                    if (val == null)
-                        return (object)0;
-                    return (object)(Convert.ToInt32(val));
-                case FieldTypeEnum.Jsonb:
-                    val = p.GetValue(data);
-                    if (val == null)
-                        return JObject.Parse("{}");
-                    return (object)(val.ToString());
-                default:
-                    val = p.GetValue(data);
-                    return val;
+                var fieldType = p.GetCustomAttribute<EntityFieldAttribute>();
+                if (fieldType == null) return null;
+                switch (fieldType.FieldType)
+                {
+                    case FieldTypeEnum.Int:
+                        var val = p.GetValue(data);
+                        if (val == null)
+                            return (object)0;
+                        return (object)(Convert.ToInt32(val));
+                    case FieldTypeEnum.Jsonb:
+                        val = p.GetValue(data);
+                        if (val == null)
+                            return JObject.Parse("{}");
+                        return (object)(val.ToString());
+                    default:
+                        val = p.GetValue(data);
+                        return val;
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
             }
         }
         public static List<Dictionary<string, object>> PersistenceEntityData<T>(string data, int userId, string logId)

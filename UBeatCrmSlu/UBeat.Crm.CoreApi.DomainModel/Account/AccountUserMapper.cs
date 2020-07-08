@@ -212,6 +212,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
         public string UserPhone { get; set; }
         public int RecStatus { get; set; }
         public Guid DeptId { get; set; }
+        public int IsCrmUser { get; set; }
         protected override IValidator GetValidator()
         {
             return new AccountUserQueryMapperValidator();

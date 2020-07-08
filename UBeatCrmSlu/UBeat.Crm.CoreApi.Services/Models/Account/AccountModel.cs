@@ -135,6 +135,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
         public Guid DeptId { get; set; }
         public int PageIndex { get; set; }
         public int PageSize { get; set; }
+        public int IsCrmUser { get; set; }
     }
     public class AccountQueryForControlModel
     {

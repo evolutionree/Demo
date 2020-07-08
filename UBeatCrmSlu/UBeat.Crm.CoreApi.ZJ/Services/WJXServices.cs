@@ -13,6 +13,8 @@ using UBeat.Crm.CoreApi.Services.Models.WJXModel;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 using System.Linq;
+using UBeat.Crm.LicenseCore;
+
 namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class WJXServices : BasicBaseServices
@@ -96,6 +98,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var config = _configurationRoot.GetSection("WJXConfig").Get<WJXSSOConfigModel>();
             using (var conn = GetDbConnect())
             {
+
                 conn.Open();
                 var transaction = conn.BeginTransaction();
                 try

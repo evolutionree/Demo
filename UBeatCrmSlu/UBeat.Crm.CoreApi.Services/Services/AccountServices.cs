@@ -435,6 +435,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> GetUserInfo(int userNumber, int CurrentUserId)
         {
             var result = _accountRepository.GetUserInfo(userNumber, CurrentUserId);
+            var users = result["User"];
+            if (users != null)
+            {
+                foreach (var t in users)
+                {
+                    if (t["frpwd"] == null) continue;
+                    t["frpwd"] = RSAEncrypt.RSADecryptStr(t["frpwd"].ToString());
+                }
+            }
             return new OutputResult<object>(result);
         }
 
