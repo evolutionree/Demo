@@ -941,7 +941,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 								CopyUsers = null
 							};
 
-							MessageService.WriteMessageAsyn(data, userNumber);
+							MessageService.WriteMessageAsyn(data, userNumber,isFlow:1);
 						}
 					}
 				}

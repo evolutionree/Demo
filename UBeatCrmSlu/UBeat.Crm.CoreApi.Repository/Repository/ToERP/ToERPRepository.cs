@@ -24,7 +24,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ToERP
             var result = ExecuteScalar(sql, null);
             if (result != null)
                 return Convert.ToDateTime(result).ToString("yyyyMMdd");
-            return "1990-01-01";
+            return string.Empty;
         }
 
         public string IsExistsPackingShipOrder(string packingshipid)

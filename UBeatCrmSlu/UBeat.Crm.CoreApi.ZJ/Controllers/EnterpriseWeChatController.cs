@@ -38,17 +38,17 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             Stream stream = Request.Body;
             Byte[] byteData = new Byte[stream.Length];
             stream.Read(byteData, 0, (Int32)stream.Length);
+            string urltype = Request.Query["urltype"];
             string userId = Request.Query["userid"];
             string username = Request.Query["username"];
-            string caseid = Request.Query["caseid"];
-            string action = Request.Query["action"];
             string code = Request.Query["code"];
-            string urltype = Request.Query["urltype"];
             EnterpriseWeChatModel enterpriseWeChat = new EnterpriseWeChatModel();
             enterpriseWeChat.Code = code;
             enterpriseWeChat.Data = new Dictionary<string, object>();
+            string action = Request.Query["action"];
             if (urltype == "1")
             {
+                string caseid = Request.Query["caseid"];
                 enterpriseWeChat.UrlType = UrlTypeEnum.WorkFlow;
                 enterpriseWeChat.Data.Add("caseid", caseid);
                 enterpriseWeChat.Data.Add("userid", userId);
@@ -56,6 +56,15 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             }
             else
             {
+                string recid = Request.Query["recid"];
+                string typeid = Request.Query["typeid"];
+                string entityid = Request.Query["entityid"];
+                enterpriseWeChat.UrlType = UrlTypeEnum.WorkFlow;
+                enterpriseWeChat.Data.Add("recid", recid);
+                enterpriseWeChat.Data.Add("entityid", entityid);
+                enterpriseWeChat.Data.Add("typeid", typeid);
+                enterpriseWeChat.Data.Add("userid", userId);
+                enterpriseWeChat.Data.Add("username", username);
                 enterpriseWeChat.UrlType = UrlTypeEnum.SmartReminder;
             }
             int userNumber;
@@ -90,7 +99,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = "crmtest.ceepcb.com",
+                Domain = "ltcwx.mos400.cn",
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);
@@ -105,7 +114,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             }
             else
             {
-                actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
+                actuallyUrl = string.Format(enterpriseWeChatType.SmartReminder_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["typeid"], enterpriseWeChat.Data["recid"]);
             }
 
             HttpContext.Response.WriteAsync("<script type='text/javascript'>location.href='" + actuallyUrl + "';</script>");
@@ -259,7 +268,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = "crmtest.ceepcb.com",
+                Domain = "ltcwx.mos400.cn",
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);

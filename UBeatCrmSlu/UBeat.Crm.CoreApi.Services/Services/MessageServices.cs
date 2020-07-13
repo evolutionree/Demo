@@ -86,11 +86,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="userNumber">当前用户</param>
         /// <param name="isPushMsg">是否发起推送</param>
         /// <param name="pushCustomContent">推送消息扩展数据</param>
-        public void WriteMessageAsyn(MessageParameter msgparam, int userNumber, Dictionary<string, object> pushCustomContent = null)
+        public void WriteMessageAsyn(MessageParameter msgparam, int userNumber, Dictionary<string, object> pushCustomContent = null, int isFlow = 0)
         {
             Task.Run(() =>
             {
-                WriteMessage(null, msgparam, userNumber, pushCustomContent);
+                WriteMessage(null, msgparam, userNumber, pushCustomContent, isFlow: isFlow);
             });
         }
         #endregion
@@ -379,7 +379,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var date = DateTime.Now;
                     var pushMsg = new AccountsPushExtModel()
                     {
-                        Accounts = receivers.Select(t => t.UserId).Select(m => m.ToString()).ToList(),
+                        Accounts = receivers.Count == 0 ? receiverIds.Select(t => t.ToString()).ToList() : receivers.Select(t => t.UserId).Select(m => m.ToString()).ToList(),
                         Title = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.TitleTemplate),
                         Message = FormatMsgTemplate(msgparam.TemplateKeyValue, configData.NotifyTemplate),
                         SendTime = date.AddYears(-1).ToString(),
@@ -500,19 +500,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 packageMsg.content = msgContent;
                                 packageMsg.title = pushMsg.Title;
                                 packageMsg.DateTime = tmpDate;
-                                var casedata = JObject.Parse(msgparam.ParamData);
-                                JToken jdata;
-                                string caseId = string.Empty;
-                                if (casedata.TryGetValue("caseid", out jdata))
-                                {
-                                    caseId = jdata.ToString();
-                                }
-                                if (string.IsNullOrEmpty(caseId)) return;
                                 var enterpriseWeChatRealmName = wcConfig.GetValue<string>("EnterpriseWeChatRealmName");
                                 var corpId = wcConfig.GetValue<string>("CorpId");
                                 switch (configData.MsgStyleType)
                                 {
                                     case MessageStyleType.WorkflowAudit:
+                                        var casedata = JObject.Parse(msgparam.ParamData);
+                                        JToken jdata;
+                                        string caseId = string.Empty;
+                                        if (casedata.TryGetValue("caseid", out jdata))
+                                        {
+                                            caseId = jdata.ToString();
+                                        }
+                                        if (string.IsNullOrEmpty(caseId)) return;
                                         var rec = new List<string>();
                                         foreach (var tmp in wcUsers)
                                         {
@@ -561,6 +561,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                 packageMsg.recevier.Add(tmp);
                                             }
                                             MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+                                        }
+                                        break;
+                                    case MessageStyleType.RedmindCanSkip:
+                                        var rec1 = new List<string>();
+                                        foreach (var tmp in wcUsers)
+                                        {
+                                            rec1.Add(tmp);
+                                            string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=2&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString() + "&typeid=" + msgparam.TypeId.ToString());
+                                            packageMsg.recevier = rec1;
+                                            packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
+                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, msgContent + " \n " + packageMsg.DateTime);
+                                            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+                                            rec1.Clear();
                                         }
                                         break;
                                     default:

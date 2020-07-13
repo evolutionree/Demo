@@ -84,7 +84,13 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.0-msbuild3-final" />
   </ItemGroup>
   <ItemGroup>
-
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Core\UBeat.Crm.CoreApi.Core.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Desktop\UBeat.Crm.CoreApi.Desktop.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.DevAssist\UBeat.Crm.CoreApi.DevAssist.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.DingTalk\UBeat.Crm.CoreApi.DingTalk.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.DomainModel\UBeat.Crm.CoreApi.DomainModel.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.Services\UBeat.Crm.CoreApi.Services.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.ZJ\UBeat.Crm.CoreApi.ZJ.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="NLog.config">

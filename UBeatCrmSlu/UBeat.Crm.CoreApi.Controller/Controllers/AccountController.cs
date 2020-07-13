@@ -80,7 +80,6 @@ namespace UBeat.Crm.CoreApi.Controllers
             {
                 loginModel.AccountPwd = _accountServices.DecryptAccountPwd(loginModel.AccountPwd, out requestTimeStamp, true);
             }
-
             var handleResult = _accountServices.Login(loginModel, header);
             if (!(handleResult.DataBody is AccountUserMapper))
             {

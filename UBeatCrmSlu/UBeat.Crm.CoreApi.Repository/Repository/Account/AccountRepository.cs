@@ -26,7 +26,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         public AccountUserMapper GetUserInfo(string accountName)
         {
             var sql = @"
-                SELECT u.iscrmuser,u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime FROM crm_sys_account AS a
+                SELECT u.iscrmuser,u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime,u.iscrmuser FROM crm_sys_account AS a
                 LEFT JOIN crm_sys_account_userinfo_relate AS r ON a.accountid = r.accountid
                 LEFT JOIN crm_sys_userinfo AS u ON r.userid = u.userid
                 WHERE accountname = @accountName LIMIT 1

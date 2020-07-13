@@ -179,11 +179,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string jobSpec { get; set; }
         [EntityField("note")]
         public string note { get; set; }
-        [DataType(DataTypeEnum.SingleChoose)]
-        [EntityField("class", FieldTypeEnum.Int)]
+        [EntityField("class")]
         public string textValue { get; set; }
-        [DataType(DataTypeEnum.SingleChoose)]
-        [EntityField("subclass", FieldTypeEnum.Int)]
+        [EntityField("subclass")]
         public string appCategory { get; set; }
         [EntityField("code")]
         public string MiCode { get; set; }
@@ -222,7 +220,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [EntityField("currency", FieldTypeEnum.Int)]
         public string currency { get; set; }
         [DataType(DataTypeEnum.RelateEntity, typeof(FromOrderDetail))]
-        [EntityField("detail")]
+        [EntityField("orderdetail")]
         public List<FromOrderDetail> contractItem { get; set; }
     }
     [EntityInfo("0d6d41d5-f913-4ccf-8ffd-1414fd9ed736")]
@@ -285,7 +283,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [EntityField("custproductcode")]
         public string custproductcode { get; set; }
         [EntityField("area")]
-        public decimal area { get; set; }
+        public string area { get; set; }
         [EntityField("mainrecid", FieldTypeEnum.Int)]
         public int recid { get; set; }
         [EntityField("itemrecId", FieldTypeEnum.Int)]

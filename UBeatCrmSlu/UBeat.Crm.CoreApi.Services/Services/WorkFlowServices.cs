@@ -116,12 +116,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     result.CaseItem = new CaseItemAuditInfo();
                     Guid caseItemId = Guid.Empty;
+                    var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber);
                     var lastCaseItem = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber).LastOrDefault(t => t["handleuser"].ToString() == userNumber.ToString() && (t["choicestatus"].ToString() == "4" || t["choicestatus"].ToString() == "6"));
                     if (lastCaseItem != null)
                     {
                         var username = lastCaseItem.ContainsKey("username") ? lastCaseItem["username"] : "";
                         var casestatus = lastCaseItem.ContainsKey("casestatus") ? lastCaseItem["casestatus"] : "";
-                        result.CaseItem.AuditStatus = string.Format("{0}{1}", username, casestatus);
+                        result.CaseItem.AuditStatus = string.Format("{0}{1}", username, caseItemList.LastOrDefault()["casestatus"]);
                         result.CaseItem.NodeType = Convert.ToInt32(lastCaseItem["nodetype"].ToString());
                         result.CaseItem.CaseItemId = Guid.Parse(lastCaseItem["caseitemid"].ToString());
                     }

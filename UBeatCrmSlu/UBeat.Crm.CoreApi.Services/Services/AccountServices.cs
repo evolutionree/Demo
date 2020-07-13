@@ -93,7 +93,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> Login(AccountLoginModel loginModel, AnalyseHeader header)
         {
             var userInfo = _accountRepository.GetUserInfo(loginModel.AccountName);
-            if (userInfo.IsCrmUser == 0)
+            if (userInfo.IsCrmUser == 2)
             {
                 return ShowError<object>("非CRM用户，不能登录");
             }
