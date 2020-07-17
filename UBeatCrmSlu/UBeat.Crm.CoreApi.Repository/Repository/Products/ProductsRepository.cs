@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using Newtonsoft.Json.Linq;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -297,17 +298,23 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
             return ExecuteQuery(sql, new DbParameter[] { }, trans);
         }
 
-        public object IsProductExists(DbTransaction trans, string productcode, int userId)
+        public object IsProductExists(DbTransaction trans, string cust, string productcode, string partnum, string partrev, string salespartrev, string customermodel, int userId)
         {
-            var sql = " select recid from  crm_sys_product where productcode=@productcode";
+            var sql = " select recid from  crm_sys_product where (cust->>'id')::text=@cust and  productcode=@productcode and partnum=@partnum and partrev=@partrev and salespartrev=@salespartrev and customermodel=@customermodel";
             var dbParam = new DbParameter[] {
-                new NpgsqlParameter("productcode",productcode)
+                new NpgsqlParameter("productcode",productcode),
+                new NpgsqlParameter("partnum",partnum),
+                new NpgsqlParameter("partrev",partrev),
+                new NpgsqlParameter("salespartrev",salespartrev),
+                new NpgsqlParameter("customermodel",customermodel),
+                new NpgsqlParameter("cust",JObject.Parse(cust)["id"].ToString())
             };
             var result = ExecuteScalar(sql, dbParam, trans);
             if (result != null)
                 return result;
             return string.Empty;
         }
+
 
         public string GetProductLastUpdatedTime(DbTransaction trans, int userId)
         {

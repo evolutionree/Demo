@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using DocumentFormat.OpenXml.Drawing.Charts;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -193,7 +194,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public string salespartRev { get; set; }
         [EntityField("longer")]
         public string productLen { get; set; }
-        [EntityField("wide")] 
+        [EntityField("wide")]
         public string productWid { get; set; }
     }
     public class FromOrderParam
@@ -206,10 +207,15 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
     {
         [EntityField("orderid")]
         public int recId { get; set; }
+        [DataType(DataTypeEnum.DataSouce, "PersonsDataSource")]
+        [EntityField("reccreator")]
+        public int creatorId { get; set; }
         [EntityField("contractdate")]
         public DateTime contractDate { get; set; }
         [EntityField("contractno")]
         public String contractNo { get; set; }
+        [EntityField("orderno")]
+        public String soNumber { get; set; }
         [EntityField("factorycode")]
         public String factoryCode { get; set; }
         [EntityField("taxrate")]
@@ -248,6 +254,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public int qtyundo { get; set; }
         [EntityField("qtyforecasted", FieldTypeEnum.Int)]
         public int qtyforecasted { get; set; }
+        [EntityField("quantity", FieldTypeEnum.Int)]
+        public int qtyOrder { get; set; }
         [EntityField("deliveredquantity")]
         public int qtyArray { get; set; }
         [EntityField("qtyassigned")]
@@ -268,7 +276,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         public DateTime requireddate { get; set; }
         [EntityField("marketdate")]
         public DateTime marketdate { get; set; }
-        [EntityField("planDate")]
+        [EntityField("plandate")]
         public DateTime planDate { get; set; }
         [EntityField("price")]
         public decimal price { get; set; }
@@ -283,14 +291,12 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [EntityField("custproductcode")]
         public string custproductcode { get; set; }
         [EntityField("area")]
-        public string area { get; set; }
+        public decimal areaOrder { get; set; }
         [EntityField("mainrecid", FieldTypeEnum.Int)]
         public int recid { get; set; }
         [EntityField("itemrecId", FieldTypeEnum.Int)]
         public int itemRecId { get; set; }
     }
-
-
 
     public class FromPackingShipParam
     {

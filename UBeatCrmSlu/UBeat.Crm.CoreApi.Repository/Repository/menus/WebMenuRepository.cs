@@ -106,7 +106,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
                 item.FuncID,
                 item.ParentId,
                 item.IsDynamic,
-                Name_Lang =JsonConvert.SerializeObject( item.Name_Lang)
+                Name_Lang = JsonConvert.SerializeObject(item.Name_Lang)
             };
             return DataBaseHelper.ExecuteScalar<Guid>(cmdText, param);
         }
@@ -139,16 +139,28 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
         List<WebMenuItem> IWebMenuRepository.getAllMenu(int type, int userNumber)
         {
             string cmdText = "with RECURSIVE  tmp as   ( \n" +
-"                                                                select w.* from crm_sys_webmenu w  \n" +
+"                                                                select w.*," +
+"(select reporttype from crm_sys_reportdefine where recid::text =\n" +
+" ltrim(rtrim(replace(w.path, '/reportform/', ''))) limit 1) as reporttype,\n" +
+"(select recname from crm_sys_reportdefine where recid::text =\n" +
+" ltrim(rtrim(replace(w.path, '/reportform/', ''))) limit 1) as reportname ,\n" +
+"(select referreporturl from crm_sys_reportdefine where recid::text =\n" +
+" ltrim(rtrim(replace(w.path, '/reportform/', ''))) limit 1) as referreporturl  from crm_sys_webmenu w  \n" +
 "                                                                WHERE parentid='00000000-0000-0000-0000-000000000000' and islogicmenu=@type \n" +
 "                                                                union all  \n" +
-"                                                                select e.*  from crm_sys_webmenu e    \n" +
+"                                                                select e.*," +
+"(select reporttype from crm_sys_reportdefine where recid::text =\n" +
+" ltrim(rtrim(replace(e.path, '/reportform/', ''))) limit 1) as reporttype,\n" +
+"(select recname from crm_sys_reportdefine where recid::text =\n" +
+" ltrim(rtrim(replace(e.path, '/reportform/', ''))) limit 1) as reportname ,\n" +
+"(select referreporturl from crm_sys_reportdefine where recid::text =\n" +
+" ltrim(rtrim(replace(e.path, '/reportform/', ''))) limit 1) as referreporturl  " + "  from crm_sys_webmenu e    \n" +
 "                                                                inner join tmp t on t.id = e.parentid \n" +
 "                                                                ) \n" +
 "                                                                select id, index, name, \n" +
 "                                                                (select icons from crm_sys_entity where entityid::text = ltrim(rtrim(replace(path, '/entcomm-list/', ''))) limit 1) as icon,\n" +
 "                                                                path, funcid, parentid, isdynamic, islogicmenu, \n" +
-"                                                                isleaf, name_lang from tmp where path like '/entcomm-list/%'\n" +
+"                                                                isleaf, name_lang,reporttype,reportname,referreporturl from tmp where path like '/entcomm-list/%'\n" +
 "                                                                union\n" +
 "                                                                select * from tmp where (path is null or path not like '/entcomm-list/%')\n" +
 "                                                                order by index";

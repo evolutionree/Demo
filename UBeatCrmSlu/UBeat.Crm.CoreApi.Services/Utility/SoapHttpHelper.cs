@@ -537,6 +537,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["regioncode"].ToString());
             }
         }
+        static void PersonsDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        {
+            IAccountRepository _accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
+            var userInfos = _accountRepository.GetAllUserInfoList();
+            if (userInfos != null)
+            {
+                var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
+                var tmpData = userInfos.FirstOrDefault(t => t.RelateErpUserId == oldVal);
+
+                p.SetValue(newinstance, tmpData == null ? -1 : tmpData.UserId);
+            }
+        }
         #endregion
 
         static object ConvertFieldValue<T>(PropertyInfo p, T data)

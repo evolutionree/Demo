@@ -27,10 +27,12 @@ namespace UBeat.Crm.CoreApi.DomainModel
     public class APIModel
     {
         public string AppKey { get; set; }
+        public string Secret { get; set; }
         private static IConfigurationRoot configuration = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
         public APIModel()
         {
             this.AppKey = configuration.GetValue<string>("QiXinBaoKey");
+            this.Secret = configuration.GetValue<string>("QiXinBaoSecret");
         }
         public int SkipNum { get; set; }
     }

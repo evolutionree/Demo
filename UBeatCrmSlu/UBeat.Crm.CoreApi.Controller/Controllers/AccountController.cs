@@ -41,7 +41,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("t")]
         public OutputResult<object> SyncErpProduct()
         {
-            _soapServices.SyncErpProduct();
+            _soapServices.SyncErpOrder();
             return new OutputResult<object>("");
         }
         [AllowAnonymous]

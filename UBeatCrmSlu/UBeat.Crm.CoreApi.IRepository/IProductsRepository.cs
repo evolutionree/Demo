@@ -75,7 +75,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         List<Dictionary<string, object>> getProductAndSet(DbTransaction trans, int userNum);
         void GetProductAndSetVersion(DbTransaction tran, out long productVersion, out long setVersion, out long fieldVersion, int userNumber);
-        object IsProductExists(DbTransaction trans, string productcode, int userId);
+        object IsProductExists(DbTransaction trans, string cust, string productcode, string partnum, string partrev, string salespartrev, string customermodel, int userId);
         string GetProductLastUpdatedTime(DbTransaction trans, int userId);
     }
 }

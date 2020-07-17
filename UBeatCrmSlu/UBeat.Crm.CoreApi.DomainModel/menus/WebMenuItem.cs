@@ -22,6 +22,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.menus
         /// </summary>
         public int IsDefaultPage { get; set; }
         public List<WebMenuItem> ChildRen { get; set; }
+        public String ReportName { get; set; }
+        public String ReferReportUrl { get; set; }
+        public int ReportType { get; set; }
         public WebMenuItem()
         {
             this.ChildRen = new List<WebMenuItem>();
@@ -60,6 +63,18 @@ namespace UBeat.Crm.CoreApi.DomainModel.menus
             if (dict.ContainsKey("isdynamic") && dict["isdynamic"] != null)
             {
                 retItem.IsDynamic = Int32.Parse(dict["isdynamic"].ToString());
+            }
+            if (dict.ContainsKey("reportname") && dict["reportname"] != null)
+            {
+                retItem.ReportName =dict["reportname"].ToString();
+            }
+            if (dict.ContainsKey("reporttype") && dict["reporttype"] != null)
+            {
+                retItem.ReportType = Int32.Parse(dict["reporttype"].ToString());
+            }
+            if (dict.ContainsKey("referreporturl") && dict["referreporturl"] != null)
+            {
+                retItem.ReferReportUrl = dict["referreporturl"].ToString();
             }
             return retItem;
         }

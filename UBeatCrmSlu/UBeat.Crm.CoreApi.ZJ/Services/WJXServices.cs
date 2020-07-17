@@ -126,7 +126,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         transaction.Rollback();
                     if (!string.IsNullOrEmpty(ex.Message))
                         throw new Exception(ex.Message);
-                    throw new Exception("跳到驳回人失败");
+                    throw new Exception("问卷星回写异常");
                 }
             }
         }

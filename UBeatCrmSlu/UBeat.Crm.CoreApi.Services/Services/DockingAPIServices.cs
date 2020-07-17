@@ -175,7 +175,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         List<CompanySampleInfo> BuildCompanySamples(CompanyModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.ADVSEARCH_API, api.CompanyName, "name", api.AppKey, api.SkipNum));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.ADVSEARCH_API, api.CompanyName, "name", api.AppKey, api.SkipNum, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -187,7 +187,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         List<ForeignCompanySampleInfo> BuildForeignCompanySamples(CompanyModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.FORENGIN_ADVSEARCH_API, api.Country, api.CompanyName, api.AppKey));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.FORENGIN_ADVSEARCH_API, api.Country, api.CompanyName, api.AppKey, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -199,7 +199,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         CompanyInfo BuildCompanyInfo(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETBASICINFO_API, api.AppKey, api.CompanyName));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETBASICINFO_API, api.AppKey, api.CompanyName, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -211,7 +211,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         CompanyInfo BuildCompanyContactInfo(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETCONTACTINFO_API, api.CompanyName, api.AppKey));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETCONTACTINFO_API, api.CompanyName, api.AppKey, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -222,7 +222,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         CompanyLogoInfo BuildCompanyLogoInfo(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETENTLOGOBYNAME_API, api.CompanyName, api.AppKey));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETENTLOGOBYNAME_API, api.CompanyName, api.AppKey, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -247,7 +247,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         YearReportAPISubResult BuildYearReport(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETREPORTLISTBYNAME_API, api.AppKey, api.CompanyName));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETREPORTLISTBYNAME_API, api.AppKey, api.CompanyName, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -272,7 +272,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         LawSuitAPISubResult BuildLawSuit(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETLAWSUITLISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETLAWSUITLISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -296,7 +296,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         CaseDetailAPISubResult BuildCaseDetail(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETCASEDETAILLISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETCASEDETAILLISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -321,7 +321,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         CourtNoticeAPISubResult BuildCourtNotice(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETNOTICELISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETNOTICELISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
@@ -345,7 +345,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         BreakPromiseAPISubResult BuildBreakPromise(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETNOTICELISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum));
+            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETNOTICELISTBYNAME_API, api.AppKey, api.CompanyName, api.SkipNum, api.Secret));
             var jObject = JObject.Parse(result);
             if (jObject["status"].ToString() == "200")
             {
