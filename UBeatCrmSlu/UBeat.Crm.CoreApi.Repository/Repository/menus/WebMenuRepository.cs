@@ -162,7 +162,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
 "                                                                path, funcid, parentid, isdynamic, islogicmenu, \n" +
 "                                                                isleaf, name_lang,reporttype,reportname,referreporturl from tmp where path like '/entcomm-list/%'\n" +
 "                                                                union\n" +
-"                                                                select * from tmp where (path is null or path not like '/entcomm-list/%')\n" +
+"                                                                select id, index, name, \n" +
+"                                                                (select icons from crm_sys_entity where entityid::text = ltrim(rtrim(replace(path, '/entcomm-application/', ''))) limit 1) as icon,\n" +
+"                                                                path, funcid, parentid, isdynamic, islogicmenu, \n" +
+"                                                                isleaf, name_lang,reporttype,reportname,referreporturl from tmp where path like '/entcomm-application/%'"+
+"                                                                union\n" +
+"                                                                select * from tmp where (path is null or path not like '/entcomm-list/%') and (path is null or path not like '/entcomm-application/%') \n" +
 "                                                                order by index";
             var param = new DynamicParameters();
             param.Add("type", type);

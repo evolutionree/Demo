@@ -129,6 +129,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
 
     public class AccountQueryModel
     {
+        public int IsControl { get; set; }
         public string UserName { get; set; }
         public string UserPhone { get; set; }
         public int RecStatus { get; set; }

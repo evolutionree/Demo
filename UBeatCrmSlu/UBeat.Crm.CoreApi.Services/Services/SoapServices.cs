@@ -358,9 +358,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             t.Add("customer", cust);
                         var recid = _toERPRepository.IsExistsOrder(t["orderid"].ToString());
                         if (!string.IsNullOrEmpty(recid))
-                            dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid), t, userId);
+                            dataResult = _dynamicEntityRepository.DynamicEdit(trans, Guid.Parse(entityId), Guid.Parse(recid), t, t["reccreator"] != null ? Convert.ToInt32(t["reccreator"]) : userId);
                         else
-                            dataResult = _dynamicEntityRepository.DynamicAdd(trans, Guid.Parse(entityId), t, null, userId);
+                            dataResult = _dynamicEntityRepository.DynamicAdd(trans, Guid.Parse(entityId), t, null, t["reccreator"] != null ? Convert.ToInt32(t["reccreator"]) : userId);
                         if (dataResult.Flag == 0)
                         {
                             trans.Rollback();

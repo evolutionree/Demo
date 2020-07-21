@@ -208,6 +208,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Account
 
     public class AccountUserQueryMapper : BaseEntity
     {
+        public int IsControl { get; set; }
         public string UserName { get; set; }
         public string UserPhone { get; set; }
         public int RecStatus { get; set; }
