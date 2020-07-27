@@ -267,8 +267,8 @@ namespace UBeat.Crm.CoreApi.Services.Models
                         if (functionInfo != null)
                         {
                             string temp = string.Empty;
-                            if (functionInfo.BasicRule != null && !string.IsNullOrEmpty(functionInfo.BasicRule.Rulesql))
-                                temp = functionInfo.BasicRule.Rulesql;
+                            if (functionInfo.Rule != null && !string.IsNullOrEmpty(functionInfo.Rule.Rulesql))
+                                temp = functionInfo.Rule.Rulesql;
                             else temp = "1=1";
                             if (string.IsNullOrEmpty(functionRuleSql))
                                 functionRuleSql = temp;

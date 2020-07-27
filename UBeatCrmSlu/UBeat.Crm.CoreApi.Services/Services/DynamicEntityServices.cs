@@ -2869,7 +2869,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             break;
                         default:
-                            funcBtns.Add(btn);
+                            if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count >= 1)
+                            {
+                                var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
+                                if (checkAccess)
+                                    funcBtns.Add(btn);
+                            }
+                            // funcBtns.Add(btn);
                             break;
                     }
 
