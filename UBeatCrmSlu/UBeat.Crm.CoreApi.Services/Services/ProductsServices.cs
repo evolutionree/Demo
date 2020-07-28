@@ -10,6 +10,7 @@ using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using Microsoft.International.Converters.PinYinConverter;
 using System.Data.Common;
+using System.Linq;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -23,7 +24,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
 
-        public ProductsServices(IProductsRepository repository, 
+        public ProductsServices(IProductsRepository repository,
             DynamicEntityServices dynamicEntityServices,
             IEntityProRepository entityProRepository)
         {
@@ -55,11 +56,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             var res = ExcuteAction((transaction, arg, userData) =>
-             {
+            {
 
-                 return HandleResult(_repository.AddProductSeries(transaction, crmData, userNumber));
+                return HandleResult(_repository.AddProductSeries(transaction, crmData, userNumber));
 
-             }, body, userNumber);
+            }, body, userNumber);
             IncreaseDataVersion(DataVersionType.ProductData, null);
             return res;
         }
@@ -89,11 +90,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             var res = ExcuteAction((transaction, arg, userData) =>
-             {
+            {
 
-                 return HandleResult(_repository.EditProductSeries(transaction, crmData, userNumber));
+                return HandleResult(_repository.EditProductSeries(transaction, crmData, userNumber));
 
-             }, body, userNumber);
+            }, body, userNumber);
             IncreaseDataVersion(DataVersionType.ProductData, null);
             return res;
         }
@@ -110,9 +111,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
             var res = ExcuteAction((transaction, arg, userData) =>
-             {
-                 return HandleResult(_repository.DeleteProductSeries(transaction, body.ProductsetId, userNumber));
-             }, body, userNumber);
+            {
+                return HandleResult(_repository.DeleteProductSeries(transaction, body.ProductsetId, userNumber));
+            }, body, userNumber);
             IncreaseDataVersion(DataVersionType.ProductData, null);
             return res;
 
@@ -180,25 +181,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
 
             var res = ExcuteAction((transaction, arg, userData) =>
-             {
-                 if (string.IsNullOrEmpty(productIds))
-                 {
-                     throw new Exception("productIds不可为空");
-                 }
-                 var productIdsArray = productIds.Split(',');
-                 var recids = new List<Guid>();
-                 foreach (var pid in productIdsArray)
-                 {
-                     recids.Add(new Guid(pid));
-                 }
+            {
+                if (string.IsNullOrEmpty(productIds))
+                {
+                    throw new Exception("productIds不可为空");
+                }
+                var productIdsArray = productIds.Split(',');
+                var recids = new List<Guid>();
+                foreach (var pid in productIdsArray)
+                {
+                    recids.Add(new Guid(pid));
+                }
 
                 //判断某个实体的业务是否有权限新增文档，此处是判断实体业务表的id
                 if (!userData.HasDataAccess(transaction, RoutePath, productEntityId, DeviceClassic, recids))
-                 {
-                     throw new Exception("您没有权限停用该数据");
-                 }
-                 return HandleResult(_repository.DeleteProduct(transaction, productIds, userNumber));
-             }, productIds, userNumber);
+                {
+                    throw new Exception("您没有权限停用该数据");
+                }
+                return HandleResult(_repository.DeleteProduct(transaction, productIds, userNumber));
+            }, productIds, userNumber);
             IncreaseDataVersion(DataVersionType.ProductData, null);
             return res;
         }
@@ -211,12 +212,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     List<Guid> setids = new List<Guid>();
                     string[] sids = paramInfo.recids.Split(',');
-                    foreach (string id in sids) {
+                    foreach (string id in sids)
+                    {
                         setids.Add(Guid.Parse(id));
                     }
                     return new OutputResult<object>(this._repository.GetProductSeriesDetail(null, setids, userId));
                 }
-                else {
+                else
+                {
 
                     DynamicEntityDetaillistModel model = new DynamicEntityDetaillistModel();
                     model.EntityId = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
@@ -225,7 +228,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return this._dynamicEntityServices.DetailList(model, userId);
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw (ex);
             }
         }
@@ -303,7 +307,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
 
-        public OutputResult<object> SearchProductAndSeries(ProductSearchModel paramInfo,bool IsForWeb, int userNumber)
+        public OutputResult<object> SearchProductAndSeries(ProductSearchModel paramInfo, bool IsForWeb, int userNumber)
         {
             Guid productGuid = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
             #region 处理参数信息
@@ -318,20 +322,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 searchkeys = paramInfo.SearchKey.Split(' ');
             }
-            else {
+            else
+            {
                 searchkeys = new string[] { };
             }
             #endregion
-            
+
             Dictionary<string, object> retDict = new Dictionary<string, object>();
             List<ProductSetsSearchInfo> ret = new List<ProductSetsSearchInfo>();
 
-            ProductSetPackageInfo ProductSet = ProductSetsUtils.getInstance().getCurrentPackage(_entityProRepository, _repository, _dynamicEntityServices, userNumber);
+            ProductSetPackageInfo ProductSet = ProductSetsUtils.getInstance().getCurrentPackage(_entityProRepository, _repository, _dynamicEntityServices, paramInfo.IncludeFilter, userNumber);
             #region
-                if (paramInfo.IsTopSet == -1 && IsForWeb) {
+            if (paramInfo.IsTopSet == -1 && IsForWeb)
+            {
                 ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, ProductSet.RootProductSet);
-                if (newRoot != null )
-                     SearchProductForProductSet(newRoot, ret);
+                if (newRoot != null)
+                    SearchProductForProductSet(newRoot, ret);
 
             }
             else if (paramInfo.IsTopSet == 1)
@@ -346,12 +352,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (newRoot != null)
                         {
                             #region 开始处理searchkey过滤
-                            SearchProductForSearchKey(searchkeys, IsForWeb, paramInfo.IsProductSetOnly != 0,newRoot, ret, ProductSet.VisibleFieldList);
+                            SearchProductForSearchKey(searchkeys, IsForWeb, paramInfo.IsProductSetOnly != 0, newRoot, ret, ProductSet.VisibleFieldList);
                             #endregion
                         }
                     }
                 }
-                else {
+                else
+                {
                     foreach (ProductSetsSearchInfo child in ProductSet.RootProductSet.Children)
                     {
 
@@ -371,9 +378,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                     }
                 }
-                
+
             }
-            else if (paramInfo.PSetId != null && paramInfo.PSetId.Length>0)
+            else if (paramInfo.PSetId != null && paramInfo.PSetId.Length > 0)
             {
                 //这种情况是非搜索情况，直接处理js即可.
                 if (ProductSet.ProductSetDict.ContainsKey(paramInfo.PSetId))
@@ -382,7 +389,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (IsForWeb)
                     {
                         if (paramInfo.SearchKey == null) paramInfo.SearchKey = "";
-                        if (paramInfo.SearchKey != null )
+                        if (paramInfo.SearchKey != null)
                         {
                             ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, parentSet);
                             if (newRoot != null)
@@ -393,7 +400,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         foreach (ProductSetsSearchInfo child in parentSet.Children)
                         {
                             if (ProductSetsUtils.getInstance().CheckNodeWith(paramInfo, child))
@@ -412,19 +420,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                         }
                     }
-                    
+
                 }
             }
             else if (paramInfo.SearchKey != null && paramInfo.SearchKey.Length > 0)
             {
-                ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo,ProductSet.RootProductSet);
-                if (newRoot != null) {
+                ProductSetsSearchInfo newRoot = ProductSetsUtils.getInstance().generateTree(paramInfo, ProductSet.RootProductSet);
+                if (newRoot != null)
+                {
                     #region 开始处理searchkey过滤
-                    SearchProductForSearchKey(searchkeys, IsForWeb,paramInfo.IsProductSetOnly !=0 ,newRoot, ret, ProductSet.VisibleFieldList);
+                    SearchProductForSearchKey(searchkeys, IsForWeb, paramInfo.IsProductSetOnly != 0, newRoot, ret, ProductSet.VisibleFieldList);
                     #endregion
                 }
             }
-            else {
+            else
+            {
                 //这里可能要抛出错误
                 ret = new List<ProductSetsSearchInfo>();
             }
@@ -451,7 +461,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 pageCount.Add("page", totalCount % paramInfo.PageCount == 0 ? totalCount / paramInfo.PageCount : totalCount / paramInfo.PageCount + 1);
                 pageCount.Add("total", ret.Count);
             }
-            else {
+            else
+            {
                 pageCount.Add("page", 1);
                 pageCount.Add("total", ret.Count);
                 countList.AddRange(ret);
@@ -474,34 +485,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     return 1;
                 }
-                else {
+                else
+                {
                     return o1.ProductSetName.CompareTo(o2.ProductSetName);
                 }
             });
         }
-        private void CalcNodepath(List<ProductSetsSearchInfo> list) {
-            foreach (ProductSetsSearchInfo item in list) {
+        private void CalcNodepath(List<ProductSetsSearchInfo> list)
+        {
+            foreach (ProductSetsSearchInfo item in list)
+            {
                 char[] chs = item.FullPathName.ToCharArray();
                 int count = 0;
-                foreach (char ch in chs) {
+                foreach (char ch in chs)
+                {
                     if (ch == '.') count++;
-                 }
+                }
                 item.Nodepath = count;
             }
         }
-        private void SearchProductForProductSet(ProductSetsSearchInfo item, List<ProductSetsSearchInfo> list) {
+        private void SearchProductForProductSet(ProductSetsSearchInfo item, List<ProductSetsSearchInfo> list)
+        {
             if (item.SetOrProduct == 1)
                 list.Add(item);
-            if (item.Children!= null)
+            if (item.Children != null)
             {
-                foreach (ProductSetsSearchInfo subItem in item.Children) {
+                foreach (ProductSetsSearchInfo subItem in item.Children)
+                {
                     SearchProductForProductSet(subItem, list);
                 }
             }
             item.Children = new List<ProductSetsSearchInfo>();
         }
 
-        private void SearchProductForSearchKey(string [] searchkeys ,bool isForWeb,bool isSetOnly,ProductSetsSearchInfo item,List<ProductSetsSearchInfo> list,List<IDictionary<string,object>> fieldsVisible) {
+        private void SearchProductForSearchKey(string[] searchkeys, bool isForWeb, bool isSetOnly, ProductSetsSearchInfo item, List<ProductSetsSearchInfo> list, List<IDictionary<string, object>> fieldsVisible)
+        {
             int index = 0;
             bool isMatch = true;
             string productname = item.ProductSetName.ToLower();
@@ -537,11 +555,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //        }
             //    }   
             //}
-            if (isMatch == false && item.SetOrProduct == 2 && item.ProductDetail != null ) {
-                foreach (IDictionary<string, object> field in fieldsVisible) {
+            if (isMatch == false && item.SetOrProduct == 2 && item.ProductDetail != null)
+            {
+                foreach (IDictionary<string, object> field in fieldsVisible)
+                {
                     string fieldname = field["fieldname"].ToString();
                     if (fieldname.Equals("productname")) continue;
-                    if (item.ProductDetail.ContainsKey(fieldname + "_name")) {
+                    if (item.ProductDetail.ContainsKey(fieldname + "_name"))
+                    {
                         fieldname = fieldname + "_name";
                     }
                     if (item.ProductDetail[fieldname] == null) continue;
@@ -577,13 +598,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 else
                 {
-                    if (!isSetOnly || item.SetOrProduct == 1) 
+                    if (!isSetOnly || item.SetOrProduct == 1)
                         list.Add(item.CopyToNew());
                 }
             }
-            if (item.Children != null) {
-                foreach (ProductSetsSearchInfo subitem in item.Children) {
-                    SearchProductForSearchKey(searchkeys,isForWeb, isSetOnly, subitem, list, fieldsVisible);
+            if (item.Children != null)
+            {
+                foreach (ProductSetsSearchInfo subitem in item.Children)
+                {
+                    SearchProductForSearchKey(searchkeys, isForWeb, isSetOnly, subitem, list, fieldsVisible);
                 }
             }
         }
@@ -599,7 +622,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
     /// <summary>
     /// 记录产品及产品系列的包
     /// </summary>
-    public class ProductSetPackageInfo {
+    public class ProductSetPackageInfo
+    {
         public Dictionary<string, ProductSetsSearchInfo> ProductSetDict { get; set; }
         public List<ProductSetsSearchInfo> ListProductSet { get; set; }
         public ProductSetsSearchInfo RootProductSet { get; set; }
@@ -608,20 +632,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public long MaxProductVersion { get; set; }
         public long MaxFieldVersion { get; set; }
     }
-    public class ProductSetsUtils {
+    public class ProductSetsUtils
+    {
 
         private ProductSetPackageInfo ProductSetCached = null;
-        private static  object lockObj = new object();
+        private static object lockObj = new object();
         private static object lockWorkObj = new object();
         private static ProductSetsUtils instance = null;
-        public static ProductSetsUtils getInstance() {
+        public static ProductSetsUtils getInstance()
+        {
             lock (lockObj)
             {
                 if (instance == null) instance = new ProductSetsUtils();
                 return instance;
             }
         }
-        public ProductSetPackageInfo getCurrentPackage(IEntityProRepository _entityProRepository,IProductsRepository _repository, DynamicEntityServices _dynamicEntityServices, int userNumber) {
+        public ProductSetPackageInfo getCurrentPackage(IEntityProRepository _entityProRepository, IProductsRepository _repository, DynamicEntityServices _dynamicEntityServices, string filterKey, int userNumber)
+        {
             lock (lockWorkObj)
             {
                 bool isNeedUpdateProduct = false;
@@ -650,7 +677,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (isNeedUpdateProduct)
                 {
                     Console.WriteLine("需要获取产品详情");
-                    List<ProductSetsSearchInfo> list = this.getList(_repository, _dynamicEntityServices, userNumber);
+                    List<ProductSetsSearchInfo> list = this.getList(_repository, _dynamicEntityServices, filterKey, userNumber);
                     ProductSetPackageInfo tmp = this.generatePackage(list);
                     if (ProductSetCached != null)
                     {
@@ -666,9 +693,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ProductSetCached.VisibleFieldList = VisibleFieldList;
                     long tmpversion = 0;
                     long maxversion = 0;
-                    foreach (IDictionary<string, object> item in VisibleFieldList) {
-                        if (item.ContainsKey("recversion") && item["recversion"]!=null) {
-                            if (long.TryParse(item["recversion"].ToString(), out tmpversion)) {
+                    foreach (IDictionary<string, object> item in VisibleFieldList)
+                    {
+                        if (item.ContainsKey("recversion") && item["recversion"] != null)
+                        {
+                            if (long.TryParse(item["recversion"].ToString(), out tmpversion))
+                            {
                                 if (maxversion < tmpversion) maxversion = tmpversion;
                             }
                         }
@@ -680,28 +710,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         }
         private void getProductAndSetVersion(IProductsRepository _repository, DynamicEntityServices _dynamicEntityServices, int userNumber,
-                out long ProductVersion,out long SetVersion,out long FieldVersion) {
+                out long ProductVersion, out long SetVersion, out long FieldVersion)
+        {
             DbTransaction tran = null;
-            _repository.GetProductAndSetVersion(tran,out   ProductVersion, out   SetVersion, out   FieldVersion, userNumber);
+            _repository.GetProductAndSetVersion(tran, out ProductVersion, out SetVersion, out FieldVersion, userNumber);
         }
-        public List<ProductSetsSearchInfo> getList(IProductsRepository _repository,DynamicEntityServices _dynamicEntityServices,int userNumber) {
+        public List<ProductSetsSearchInfo> getList(IProductsRepository _repository, DynamicEntityServices _dynamicEntityServices, string filterKey, int userNumber)
+        {
             ///检查并获取最新的产品系列列表
             Guid productGuid = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2");
             List<Dictionary<string, object>> tmplist = _repository.getProductAndSet(null, userNumber);
             List<ProductSetsSearchInfo> list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ProductSetsSearchInfo>>(Newtonsoft.Json.JsonConvert.SerializeObject(tmplist));
-            DynamicEntityListModel dynamicEntity = new DynamicEntityListModel()
+            //DynamicEntityListModel dynamicEntity = new DynamicEntityListModel()
+            //{
+            //    EntityId = productGuid,
+            //    MenuId = null,
+            //    ViewType = 4,
+            //    NeedPower = 0,
+            //    PageIndex = 1,
+            //    PageSize = 1000000,
+            //    IsAdvanceQuery = 0
+            //};
+            //OutputResult<object> tmp = _dynamicEntityServices.DataList2(dynamicEntity, false, 1);
+            dynamic tmp = _repository.GetProducts(null, "", new PageParam { PageIndex = 1, PageSize = Int32.MaxValue }, new ProductList
             {
-                EntityId = productGuid,
-                MenuId = null,
-                ViewType = 4,
-                NeedPower = 0,
-                PageIndex = 1,
-                PageSize = 1000000,
-                IsAdvanceQuery = 0
-            };
-            OutputResult<object> tmp = _dynamicEntityServices.DataList2(dynamicEntity, false, 1);
-
-            List<Dictionary<string, object>> products = ((Dictionary<string, List<Dictionary<string, object>>>)tmp.DataBody)["PageData"];
+                IsAllProduct = true,
+                ProductSeriesId = Guid.Parse("7f74192d-b937-403f-ac2a-8be34714278b"),
+                RecStatus = 1,
+                RecVersion = 0,
+                ExitField = 3
+            }, filterKey, userNumber);
+            var pagedata = tmp.GetType().GetProperty("pagedata").GetValue(tmp, null);
+            List<Dictionary<string, object>> products = (List<Dictionary<string, object>>)pagedata;
             foreach (Dictionary<string, object> item in products)
             {
                 ProductSetsSearchInfo product = new ProductSetsSearchInfo();
@@ -739,6 +779,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     product.PProductSetId = Guid.Empty;
                 }
+                if (item.ContainsKey("recid") && item["recid"] != null)
+                {
+                    product.RecId = Guid.Parse(item["recid"].ToString());
+                }
+                else
+                {
+                    product.RecId = Guid.Empty;
+                }
                 if (item.ContainsKey("recorder") && item["recorder"] != null)
                 {
                     product.RecOrder = int.Parse(item["recorder"].ToString());
@@ -749,11 +797,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 if (item.ContainsKey("recversion") && item["recversion"] != null)
                 {
-                    long tmpversion = 0 ;
+                    long tmpversion = 0;
                     long.TryParse(item["recversion"].ToString(), out tmpversion);
                     product.RecVersion = tmpversion;
                 }
-                else {
+                else
+                {
                     product.RecVersion = 0;
                 }
                 product.ProductDetail = item;
@@ -770,10 +819,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
             long maxSetVersion = 0;
             foreach (ProductSetsSearchInfo item in list)
             {
-                if (item.SetOrProduct == 2 && maxProductVersion < item.RecVersion) {
+                if (item.SetOrProduct == 2 && maxProductVersion < item.RecVersion)
+                {
                     maxProductVersion = item.RecVersion;
-                    
-                }else if (item.SetOrProduct == 1 && maxSetVersion < item.RecVersion)
+
+                }
+                else if (item.SetOrProduct == 1 && maxSetVersion < item.RecVersion)
                 {
                     maxSetVersion = item.RecVersion;
 
@@ -783,25 +834,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             foreach (ProductSetsSearchInfo item in list)
             {
-                item.ProductSetName_Pinyin = PingYinHelper.ConvertToAllSpell(item.ProductSetName);
+                //  item.ProductSetName_Pinyin = PingYinHelper.ConvertToAllSpell(item.ProductSetName);
                 if (item.ProductSetName_Pinyin == null) item.ProductSetName_Pinyin = "";
                 item.ProductSetName_Pinyin = item.ProductSetName_Pinyin.ToLower();
-                    if (item.PProductSetId != null)
+                if (item.PProductSetId != null)
                 {
-                    if (item.PProductSetId == Guid.Empty && ret.RootProductSet == null && item.SetOrProduct == 1) {
+                    if (item.PProductSetId == Guid.Empty && ret.RootProductSet == null && item.SetOrProduct == 1)
+                    {
                         ret.RootProductSet = item;
                     }
                     string tid = item.PProductSetId.ToString();
                     if (ret.ProductSetDict.ContainsKey(tid))
                     {
-                        if (ret.ProductSetDict[tid].Children == null) {
+                        if (ret.ProductSetDict[tid].Children == null)
+                        {
                             ret.ProductSetDict[tid].Children = new List<ProductSetsSearchInfo>();
                         }
                         ret.ProductSetDict[tid].Children.Add(item);
                     }
                 }
             }
-            if (ret.RootProductSet != null) {
+            if (ret.RootProductSet != null)
+            {
                 this.GenerateFullName(ret.RootProductSet, "");
                 CalcChildrenCount(ret.RootProductSet);
             }
@@ -809,22 +863,28 @@ namespace UBeat.Crm.CoreApi.Services.Services
             ret.MaxSetVersion = maxSetVersion;
             return ret;
         }
-        public void CalcChildrenCount(ProductSetsSearchInfo item) {
+        public void CalcChildrenCount(ProductSetsSearchInfo item)
+        {
             if (item.Children != null)
             {
                 item.ChildrenCount = item.Children.Count;
-                foreach (ProductSetsSearchInfo subItem in item.Children) {
+                foreach (ProductSetsSearchInfo subItem in item.Children)
+                {
                     CalcChildrenCount(subItem);
                 }
             }
-            else {
+            else
+            {
                 item.ChildrenCount = 0;
             }
         }
-        private void GenerateFullName(ProductSetsSearchInfo root,string prefix) {
+        private void GenerateFullName(ProductSetsSearchInfo root, string prefix)
+        {
             root.FullPathName = prefix + root.ProductSetName;
-            if (root.Children != null) {
-                foreach (ProductSetsSearchInfo item in root.Children) {
+            if (root.Children != null)
+            {
+                foreach (ProductSetsSearchInfo item in root.Children)
+                {
                     GenerateFullName(item, root.FullPathName + ".");
                 }
             }
@@ -832,59 +892,86 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public bool CheckNodeWith(ProductSearchModel paramInfo, ProductSetsSearchInfo root)
         {
-            if (root.Children != null) {
-                foreach (ProductSetsSearchInfo item in root.Children) {
+            if (root.Children != null)
+            {
+                foreach (ProductSetsSearchInfo item in root.Children)
+                {
                     if (CheckNodeWith(paramInfo, item)) return true;
                 }
             }
             return CheckSingleNode(paramInfo, root);
         }
-        public ProductSetsSearchInfo generateTree(ProductSearchModel paramInfo, ProductSetsSearchInfo root) {
+        public ProductSetsSearchInfo generateTree(ProductSearchModel paramInfo, ProductSetsSearchInfo root)
+        {
             ProductSetsSearchInfo ret = root.CopyToNew();
             ret.Children = new List<ProductSetsSearchInfo>();
             bool isOK = false;
-            if (root.Children != null && root.Children.Count > 0) {
-                foreach (ProductSetsSearchInfo item in root.Children) {
+            if (root.Children != null && root.Children.Count > 0)
+            {
+                foreach (ProductSetsSearchInfo item in root.Children)
+                {
                     ProductSetsSearchInfo tmp = generateTree(paramInfo, item);
-                    if (tmp != null) {
+                    if (tmp != null)
+                    {
                         isOK = true;
                         ret.Children.Add(tmp);
                     }
                 }
             }
-            if (isOK == false) {
+            if (isOK == false)
+            {
                 isOK = CheckSingleNode(paramInfo, root);
             }
-            if (isOK )
+            if (isOK)
                 return ret;
             return null;
         }
 
-        private bool CheckSingleNode(ProductSearchModel paramInfo, ProductSetsSearchInfo root) {
+        private bool CheckSingleNode(ProductSearchModel paramInfo, ProductSetsSearchInfo root)
+        {
             bool isMatch = false;
             bool isCheck = false;
-            foreach (string item in paramInfo.IncludeFilters) {
-                if (item.Length == 0) continue;
-                isCheck = true;
-                if (root.FullPathName.ToLower().IndexOf(item) >= 0) {
-                    isMatch = true;
-                    break;
-                }
+            //foreach (string item in paramInfo.IncludeFilters)
+            //{
+            //    if (item.Length == 0) continue;
+            //    isCheck = true;
+            //    if (root.FullPathName.ToLower().IndexOf(item) >= 0)
+            //    {
+            //        isMatch = true;
+            //        break;
+            //    }
+            //}
+            if (root.SetOrProduct == 1) return true;
+            var filter = paramInfo.IncludeFilters.Where(t => !string.IsNullOrEmpty(t)).FirstOrDefault(t => t == root.RecId.ToString());
+            if (filter != null)
+            {
+                isCheck = true; isMatch = true;
             }
-            if (isMatch == false && isCheck ==true) return false;
-            foreach (string item in paramInfo.ExcludeFilters) {
-                if (item.Length == 0) continue;
-                if (root.FullPathName.ToLower().IndexOf(item) >= 0)
-                {
-                    return false;
-                }
+
+            if (paramInfo.IncludeFilters.FirstOrDefault(t => !string.IsNullOrEmpty(t)) != null) isCheck = true;
+
+            if (isMatch == false && isCheck == true) return false;
+            var exFilter = paramInfo.ExcludeFilters.Where(t => !string.IsNullOrEmpty(t)).FirstOrDefault(t => t == root.RecId.ToString());
+            if (exFilter != null)
+            {
+                return false;
             }
             return true;
+            //foreach (string item in paramInfo.ExcludeFilters)
+            //{
+            //    if (item.Length == 0) continue;
+            //    if (root.FullPathName.ToLower().IndexOf(item) >= 0)
+            //    {
+            //        return false;
+            //    }
+            //}
+            //return true;
         }
     }
 
     public class ProductSetsSearchInfo
     {
+        public Guid RecId { get; set; }
         public Guid ProductSetId { get; set; }
         public string ProductSetName { get; set; }
         public string ProductSetName_Pinyin { get; set; }
@@ -899,10 +986,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public List<ProductSetsSearchInfo> Children { get; set; }
         public int ChildrenCount { get; set; }
         public Dictionary<string, object> ProductDetail { get; set; }
-        public ProductSetsSearchInfo() {
+        public ProductSetsSearchInfo()
+        {
             Children = new List<ProductSetsSearchInfo>();
         }
-        public ProductSetsSearchInfo CopyToNew() {
+        public ProductSetsSearchInfo CopyToNew()
+        {
             ProductSetsSearchInfo ret = new ProductSetsSearchInfo();
             ret.ProductSetId = this.ProductSetId;
             ret.ProductSetName = this.ProductSetName;
@@ -951,7 +1040,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return string.Empty;
         }
 
-        public static string ConvertFirstChar(string strChinese) {
+        public static string ConvertFirstChar(string strChinese)
+        {
             try
             {
                 if (strChinese.Length != 0)
@@ -1022,7 +1112,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
             }
 
-            return coverchr.Substring(0,1);
+            return coverchr.Substring(0, 1);
 
         }
         private static string GetSpellFirstChar(char chr)
@@ -1037,7 +1127,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (!string.IsNullOrEmpty(value))
                     {
-                        return value.Substring(0,1);
+                        return value.Substring(0, 1);
                     }
                 }
             }

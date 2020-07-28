@@ -100,8 +100,8 @@ namespace UBeat.Crm.CoreApi.Services.Models.Reminder
 
     public class ReminderEventActivateModel
     {
-  
 
+        public Guid? BusRecId { get; set; }
         public string RemindId { get; set; }
 
     }

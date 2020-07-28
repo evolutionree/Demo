@@ -297,7 +297,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reminder
 
     public class ReminderMapper
     {
-
+        public string Message { get; set; }
+        public Guid? BusRecId { get; set; }
+        public Guid? RoleId { get; set; }
         public Guid ReminderId { get; set; }
 
         public bool IsRepeat { get; set; }

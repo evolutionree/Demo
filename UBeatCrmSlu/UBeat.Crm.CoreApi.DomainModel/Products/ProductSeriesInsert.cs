@@ -155,7 +155,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Products
 
     public class ProductList : BaseEntity
     {
-
+        public int ExitField { get; set; }
         /// <summary>
         /// 产品系列id
         /// </summary>
