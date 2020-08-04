@@ -9,8 +9,8 @@ namespace UBeat.Crm.CoreApi.IRepository
 {
     public interface ICustomerRepository
     {
-        
 
+        List<Dictionary<string, object>> SelectFailedCustomer(int userNumber);
         dynamic QueryCustRelate(DbTransaction tran, Guid custId);
 
         PageDataInfo<MergeCustEntity> GetMergeCustomerList(DbTransaction tran, string wheresql,string searchkey, DbParameter[] sqlParameters, int pageIndex, int pageSize);

@@ -27,5 +27,13 @@ namespace UBeat.Crm.CoreApi.Controllers
            if (vcardModel == null) return ResponseError<object>("参数格式错误");
             return _businessCardServices.GetBusinessCardInfo(vcardModel, UserId);
         }
+        [HttpPost]
+        [Route("getcardinfocontact")]
+        [AllowAnonymous]
+        public OutputResult<object> GetCardInfoContact([FromBody] ContactVCardModel vcardModel = null)
+        {
+            if (vcardModel == null) return ResponseError<object>("参数格式错误");
+            return _businessCardServices.GetBusinessCardInfoContact(vcardModel, UserId);
+        }
     }
 }

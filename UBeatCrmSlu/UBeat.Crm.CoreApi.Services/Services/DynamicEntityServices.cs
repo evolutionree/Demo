@@ -93,7 +93,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         SendMessage(new Guid(dynamicModel.ExtraData["recordId"].ToString()), userNumber, new Guid(dynamicModel.ExtraData["entityId"].ToString()), dynamicModel.ExtraData["funccode"].ToString());
                     }
-                    else WriteEntityAddMessage(dynamicModel.TypeId, bussinessId, relbussinessId, userNumber);
+                    else WriteEntityAddMessage(dynamicModel.TypeId, bussinessId, relbussinessId, userNumber, 1);
                 }
 
             }
@@ -399,7 +399,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <summary>
         /// 新增实体数据时写消息逻辑
         /// </summary>
-        private void WriteEntityAddMessage(Guid typeId, Guid bussinessId, Guid relbussinessId, int userNumber)
+        private void WriteEntityAddMessage(Guid typeId, Guid bussinessId, Guid relbussinessId, int userNumber, int isFlow = 0)
         {
             Task.Run(() =>
             {
@@ -508,14 +508,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var msg = MessageService.GetDailyMsgParameter(reportdate, entityInfotemp, bussinessId, relbussinessId, funccode, userNumber, newMembers, null, msgpParam);
                     msg.ApprovalUsers = msg.Receivers[MessageUserType.DailyApprover];
                     msg.CopyUsers = msg.Receivers[MessageUserType.DailyCarbonCopyUser];
-                    MessageService.WriteMessage(null, msg, userNumber);
+                    MessageService.WriteMessage(null, msg, userNumber, isFlow: 1);
                 }
 
                 else
                 {
                     //编辑操作的消息
                     var addEntityMsg = MessageService.GetEntityMsgParameter(entityInfotemp, bussinessId, relbussinessId, funccode, userNumber, newMembers, null, msgpParam);
-                    MessageService.WriteMessageAsyn(addEntityMsg, userNumber);
+                    MessageService.WriteMessageAsyn(addEntityMsg, userNumber, isFlow: isFlow);
                 }
 
                 if (entityInfotemp.ModelType == EntityModelType.Independent)

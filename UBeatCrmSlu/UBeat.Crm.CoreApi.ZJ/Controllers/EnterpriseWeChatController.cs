@@ -56,16 +56,23 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             }
             else
             {
+                if (urltype == "3")
+                    enterpriseWeChat.UrlType = UrlTypeEnum.EntityDynamic;
+                else if (urltype == "4")
+                    enterpriseWeChat.UrlType = UrlTypeEnum.Daily;
+                else if (urltype == "5")
+                    enterpriseWeChat.UrlType = UrlTypeEnum.Weekly;
+                else
+                    enterpriseWeChat.UrlType = UrlTypeEnum.SmartReminder;
                 string recid = Request.Query["recid"];
                 string typeid = Request.Query["typeid"];
                 string entityid = Request.Query["entityid"];
-                enterpriseWeChat.UrlType = UrlTypeEnum.WorkFlow;
                 enterpriseWeChat.Data.Add("recid", recid);
                 enterpriseWeChat.Data.Add("entityid", entityid);
                 enterpriseWeChat.Data.Add("typeid", typeid);
                 enterpriseWeChat.Data.Add("userid", userId);
                 enterpriseWeChat.Data.Add("username", username);
-                enterpriseWeChat.UrlType = UrlTypeEnum.SmartReminder;
+
             }
             int userNumber;
             var result = _enterpriseWeChatServices.GetSSOCode(enterpriseWeChat, out userNumber);
@@ -111,6 +118,18 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             if (enterpriseWeChat.UrlType == UrlTypeEnum.WorkFlow)
             {
                 actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["caseid"]);
+            }
+            else if (enterpriseWeChat.UrlType == UrlTypeEnum.EntityDynamic)
+            {
+                actuallyUrl = string.Format(enterpriseWeChatType.EntityDynamic_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["typeid"], enterpriseWeChat.Data["recid"]);
+            }
+            else if (enterpriseWeChat.UrlType == UrlTypeEnum.Daily)
+            {
+                actuallyUrl = string.Format(enterpriseWeChatType.Daily_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
+            }
+            else if (enterpriseWeChat.UrlType == UrlTypeEnum.Weekly)
+            {
+                actuallyUrl = string.Format(enterpriseWeChatType.Weekly_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
             }
             else
             {

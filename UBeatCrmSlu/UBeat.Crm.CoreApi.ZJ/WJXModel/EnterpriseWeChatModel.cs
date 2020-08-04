@@ -8,12 +8,18 @@ namespace UBeat.Crm.CoreApi.ZJ.WJXModel
     {
         SSO = 0,
         WorkFlow = 1,
-        SmartReminder = 2
+        SmartReminder = 2,
+        EntityDynamic = 3,
+        Daily = 4,
+        Weekly = 5
     }
     public class EnterpriseWeChatTypeModel
     {
         public string Workflow_EnterpriseWeChat { get; set; }
         public string SmartReminder_EnterpriseWeChat { get; set; }
+        public string EntityDynamic_EnterpriseWeChat { get; set; }
+        public string Daily_EnterpriseWeChat { get; set; }
+        public string Weekly_EnterpriseWeChat { get; set; }
     }
     public class EnterpriseWeChatModel
     {

@@ -53,7 +53,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
 
     public class ProductListModel
     {
-
+        public Dictionary<string, string> ColumnFilter { get; set; }
         /// <summary>
         /// 产品系列id
         /// </summary>

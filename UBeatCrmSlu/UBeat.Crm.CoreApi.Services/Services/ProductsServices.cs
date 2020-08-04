@@ -11,6 +11,8 @@ using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using Microsoft.International.Converters.PinYinConverter;
 using System.Data.Common;
 using System.Linq;
+using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
+using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -298,6 +300,59 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (!page.IsValid())
             {
                 return HandleValid(page);
+            }
+            string SearchQuery = string.Empty;
+            if (body.ColumnFilter != null && body.ColumnFilter.Count > 0)
+            {
+
+                var searchFields = _dynamicEntityServices.GetEntityFields(Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), userNumber);
+                foreach (DynamicEntityFieldSearch field in searchFields)
+                {
+                    if (field.ControlType == (int)DynamicProtocolControlType.SelectSingle
+                        /*|| field.ControlType == (int)DynamicProtocolControlType.SelectMulti //暂时把多选也设置为模糊*/)
+                    {
+                        field.IsLike = 0;
+                    }
+                    else
+                    {
+                        field.IsLike = 1;//把除字典类型所有的字段都设成模糊搜索
+                    }
+
+                }
+                Dictionary<string, object> fieldDatas = new Dictionary<string, object>();
+                foreach (string key in body.ColumnFilter.Keys)
+                {
+                    DynamicEntityFieldSearch fieldInfo = searchFields.FirstOrDefault(t => t.FieldName.ToString() == key);
+                    if (fieldInfo == null) continue;
+                    fieldDatas.Add(fieldInfo.FieldName, body.ColumnFilter[key]);
+
+                }
+                var validResults = DynamicProtocolHelper.AdvanceQuery2(searchFields, fieldDatas);
+
+                var validTips = new List<string>();
+                var data = new Dictionary<string, string>();
+                foreach (DynamicProtocolValidResult validResult in validResults.Values)
+                {
+                    if (!validResult.IsValid)
+                    {
+                        validTips.Add(validResult.Tips);
+                    }
+                    data.Add(validResult.FieldName, validResult.FieldData.ToString());
+
+                }
+
+                if (validTips.Count > 0)
+                {
+                    return ShowError<object>(string.Join(";", validTips));
+                }
+
+                if (data.Count > 0)
+                {
+                    crmData.SearchQuery = crmData.SearchQuery + " AND (" + string.Join(" AND ", data.Values.ToArray()) + ")";
+                }
+                else
+                    crmData.SearchQuery = string.Empty;
+
             }
             return ExcuteAction((transaction, arg, userData) =>
             {
@@ -931,7 +986,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             bool isMatch = false;
             bool isCheck = false;
-            //foreach (string item in paramInfo.IncludeFilters)
+            ////foreach (string item in paramInfo.IncludeFilters)
             //{
             //    if (item.Length == 0) continue;
             //    isCheck = true;

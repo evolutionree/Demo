@@ -14,7 +14,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Customer
 {
     public class CustomerRepository : RepositoryBase, ICustomerRepository
     {
-
+        public List<Dictionary<string, object>> SelectFailedCustomer(int userNumber)
+        {
+            string sql = @"select recid from crm_sys_customer where ifsyn=2 ";
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("reccreator",userNumber)
+            };
+            return ExecuteQuery(sql, param, null);
+        }
         public dynamic QueryCustRelate(DbTransaction tran, Guid custId)
         {
             string executeSql = "WITH RECURSIVE T (ID, NAME, PARENT_ID, PATH, DEPTH,manager)  AS ( " +

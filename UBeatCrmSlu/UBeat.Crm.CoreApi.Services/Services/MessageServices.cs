@@ -395,105 +395,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var wcConfig = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("WeChatConfig");
                             dynamic entityInfo = _iEntityProRepository.GetEntityInfo(msgparam.TypeId, userNumber);
                             var fields = _iEntityProRepository.FieldQuery(msgparam.EntityId.ToString(), userNumber);
-                            _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
+                            // _pushServices.PushMessage(pushMsg.Accounts, pushMsg.Title, pushMsg.Message, pushMsg.CustomContent, 0, pushMsg.SendTime);
                             Pug_inMsg packageMsg = new Pug_inMsg();
                             var users = GetUserInfoList(pushMsg.Accounts.Select(t => Convert.ToInt32(t)).ToList());
                             var currentUser = users.FirstOrDefault(t => t.UserId == userNumber);
-                            List<String> ddUsers = users.Select(t => t.DDUserId).ToList();
                             List<String> wcUsers = users.Select(t => t.WCUserId).ToList();
-                            if (ddConfig.GetValue<Boolean>("IsSyncDingDing"))
-                            {
-                                switch (configData.MsgStyleType)
-                                {
-                                    case MessageStyleType.WorkflowAudit:
-                                        packageMsg.content = msgContent;
-                                        packageMsg.title = pushMsg.Title;
-                                        packageMsg.DateTime = tmpDate;
-                                        foreach (var tmp in ddUsers)
-                                        {
-                                            packageMsg.recevier.Add(tmp);
-                                        }
-                                        packageMsg.content = packageMsg.title + " \n ## " + packageMsg.content + " \n " + packageMsg.DateTime;
-                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.PicText, packageMsg);
-                                        break;
-                                    case MessageStyleType.EntityOperate:
-                                        if (entityInfo.modeltype == 0)
-                                        {
-                                            packageMsg.title = "实体消息";
-                                            packageMsg.markdown = "**" + msgparam.EntityName + "  " + pushMsg.Title + "**  \r" + msgContent + "  \r" + tmpDate;
-                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
-                                            foreach (var tmp in ddUsers)
-                                            {
-                                                packageMsg.recevier.Add(tmp);
-                                            }
-                                            MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
-                                        }
-                                        break;
-                                    case MessageStyleType.EntityDynamic:
-                                        if (entityInfo.modeltype == 3)
-                                        {
-                                            packageMsg.title = "实体消息";
-                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
-                                            string str = String.Empty;
-                                            Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
-                                            foreach (var tmp in dicObj)
-                                            {
-                                                if (tmp.Value == null) continue;
-                                                var field = fields.FirstOrDefault(t => t.FieldName == tmp.Key);
-                                                if (field == null || field.ControlType != 1012) continue;
-                                                str += " \r• " + field.DisplayName + " ";
-                                                str += " \r      " + tmp.Value + " ";
-                                            }
-                                            packageMsg.markdown = packageMsg.markdown + str;
-                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
-                                            foreach (var tmp in ddUsers)
-                                            {
-                                                packageMsg.recevier.Add(tmp);
-                                            }
-                                            MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
-                                        }
-                                        break;
-                                    case MessageStyleType.DynamicPrase:
-                                        if (msgparam.FuncCode == "EntityDynamicComment")
-                                        {
-                                            packageMsg.title = "实体评论消息";
-                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
-                                            packageMsg.markdown = packageMsg.markdown + " \r" + msgContent;
-                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.RelEntityId, msgparam.RelBusinessId);
-                                            foreach (var tmp in ddUsers)
-                                            {
-                                                packageMsg.recevier.Add(tmp);
-                                            }
-
-                                        }
-                                        else
-                                        {
-                                            packageMsg.title = "实体消息";
-                                            packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
-                                            packageMsg.markdown = packageMsg.markdown + " \r" + pushMsg.Message;
-                                            packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.RelEntityId, msgparam.RelBusinessId);
-                                            foreach (var tmp in ddUsers)
-                                            {
-                                                packageMsg.recevier.Add(tmp);
-                                            }
-                                        }
-                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
-                                        break;
-                                    case MessageStyleType.RedmindCanSkip:
-                                        packageMsg.title = "实体消息";
-                                        packageMsg.markdown = "**" + currentUser.UserName + "**  " + entityInfo.entityname + "  \r" + tmpDate + " ";
-                                        packageMsg.markdown = packageMsg.markdown + " \r" + pushMsg.Message;
-                                        packageMsg.single_url = String.Format("http://10.187.134.251:733/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.RelEntityId, msgparam.RelBusinessId);
-                                        foreach (var tmp in ddUsers)
-                                        {
-                                            packageMsg.recevier.Add(tmp);
-                                        }
-                                        MsgForPug_inHelper.SendMessageForDingDing(MSGServiceType.Dingding, MSGType.TextCard, packageMsg);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
                             if (wcConfig.GetValue<Boolean>("IsSyncWebChat"))
                             {
                                 if (isFlow == 0) return;
@@ -529,38 +435,43 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     case MessageStyleType.EntityOperate:
                                         if (entityInfo.modeltype == 0)
                                         {
-                                            packageMsg.title = msgparam.EntityName + "  " + pushMsg.Title;
-                                            packageMsg.content = msgContent + " \n " + tmpDate + " \n ";
-                                            packageMsg.responseUrl = String.Format("http://code.renqiankeji.com:11666/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
+                                            var rec2 = new List<string>();
                                             foreach (var tmp in wcUsers)
                                             {
-                                                packageMsg.recevier.Add(tmp);
+                                                rec2.Add(tmp);
+                                                string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=2&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString() + "&typeid=" + msgparam.TypeId.ToString());
+                                                packageMsg.recevier = rec2;
+                                                packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
+                                                packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, msgContent + " \n " + packageMsg.DateTime);
+                                                MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+                                                rec2.Clear();
                                             }
-                                            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
                                         }
                                         break;
                                     case MessageStyleType.EntityDynamic:
-                                        if (entityInfo.modeltype == 3)
+                                        var rec3 = new List<string>();
+                                        foreach (var tmp in wcUsers)
                                         {
-                                            packageMsg.title = currentUser.UserName + "  " + msgparam.EntityName;
-                                            packageMsg.content = tmpDate + " \n ";
-                                            string str = String.Empty;
-                                            Dictionary<String, object> dicObj = JsonHelper.ToJsonDictionary(msgparam.ParamData);
-                                            foreach (var tmp in dicObj)
-                                            {
-                                                if (tmp.Value == null) continue;
-                                                var field = fields.FirstOrDefault(t => t.FieldName == tmp.Key);
-                                                if (field == null || field.ControlType != 1012) continue;
-                                                str += " \n• " + field.DisplayName + " ";
-                                                str += "\n   " + tmp.Value + " ";
-                                            }
-                                            packageMsg.content = packageMsg.content + str;
-                                            packageMsg.single_url = String.Format("http://code.renqiankeji.com:11666/mobilecrm.html#/entcomm/{0}/{1}/activities", msgparam.EntityId, msgparam.BusinessId);
-                                            foreach (var tmp in wcUsers)
-                                            {
-                                                packageMsg.recevier.Add(tmp);
-                                            }
+                                            rec3.Add(tmp);
+                                            string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=3&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString() + "&typeid=" + msgparam.TypeId.ToString());
+                                            packageMsg.recevier = rec3;
+                                            packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
+                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, msgContent + " \n " + packageMsg.DateTime);
                                             MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+                                            rec3.Clear();
+                                        }
+                                        break;
+                                    case MessageStyleType.WorkReport:
+                                        var rec4 = new List<string>();
+                                        foreach (var tmp in wcUsers)
+                                        {
+                                            rec4.Add(tmp);
+                                            string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=" + (msgparam.EntityId.ToString() == "601cb738-a829-4a7b-a3d9-f8914a5d90f2" ? "4" : "5") + "&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString());
+                                            packageMsg.recevier = rec4;
+                                            packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
+                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, msgContent);
+                                            MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+                                            rec4.Clear();
                                         }
                                         break;
                                     case MessageStyleType.RedmindCanSkip:

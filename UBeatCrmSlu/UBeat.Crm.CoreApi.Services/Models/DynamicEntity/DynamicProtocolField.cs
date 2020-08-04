@@ -313,7 +313,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         /// 数据源
         /// </summary>
         public  DynamicProtocolDataSource DataSource { get; set; }
-        
+
+        [JsonProperty("allowadd")]
+        public int AllowAdd { get; set; }
+
         /// <summary>
         /// 数据最短长度
         /// </summary>
