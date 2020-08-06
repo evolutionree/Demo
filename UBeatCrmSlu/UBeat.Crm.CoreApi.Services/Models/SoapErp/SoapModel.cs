@@ -85,7 +85,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.SoapErp
         [DataType(DataTypeEnum.SingleChoose)]
         [JsonProperty("currencyId")]
         public string Currency { get; set; }
-        [DataType(DataTypeEnum.SingleChoose)]
+        [DataType(DataTypeEnum.MultiChoose)]
         [JsonProperty("companyId")]
         public string TaoZhang { get; set; }
         [JsonProperty("reconcileDate")]

@@ -441,6 +441,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                 rec2.Add(tmp);
                                                 string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=2&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString() + "&typeid=" + msgparam.TypeId.ToString());
                                                 packageMsg.recevier = rec2;
+                                                packageMsg.title = msgparam.EntityName + "  [" + packageMsg.title + "]";
                                                 packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
                                                 packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, msgContent + " \n " + packageMsg.DateTime);
                                                 MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
@@ -455,8 +456,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             rec3.Add(tmp);
                                             string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=3&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString() + "&typeid=" + msgparam.TypeId.ToString());
                                             packageMsg.recevier = rec3;
+                                            packageMsg.title = msgparam.EntityName + "   [" + packageMsg.title + "]";
                                             packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
-                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, msgContent + " \n " + packageMsg.DateTime);
+                                            packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, pushMsg.Message + " \n " + packageMsg.DateTime);
                                             MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
                                             rec3.Clear();
                                         }

@@ -1712,7 +1712,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
         /// <returns></returns>
         public List<EntityProMapper> GetDynamicEntityList(int modelType = 3)
         {
-            var sql = @"select entityid::text,entityname,relentityid::text from crm_sys_entity where relentityid is not null and modeltype=@modeltype and recstatus=1";
+            var sql = @"select icons,entityid::text,entityname,relentityid::text from crm_sys_entity where relentityid is not null and modeltype=@modeltype and recstatus=1";
 
             var param = new
             {
@@ -2138,7 +2138,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                 index++;
             }
             param[index] = new NpgsqlParameter("recid", mapper.RecId);
-            sql = string.Format(sql, conditionSql, (string.IsNullOrEmpty(mapper.SearchOrder) ?  string.Empty: (" order by " + mapper.SearchOrder)));
+            sql = string.Format(sql, conditionSql, (string.IsNullOrEmpty(mapper.SearchOrder) ? string.Empty : (" order by " + mapper.SearchOrder)));
             if (dbTran == null)
                 return ExecuteQueryByPaging(sql, param, mapper.PageSize, mapper.PageIndex, dbTran);
 

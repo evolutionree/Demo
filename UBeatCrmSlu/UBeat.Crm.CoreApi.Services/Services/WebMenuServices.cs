@@ -303,7 +303,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                     }
 
-                    webMenu.Icon = "";
+                    webMenu.Icon = item["icons"] == null ? "" : item["icons"].ToString();
                     webMenu.FuncID = "";
                     webMenu.IsDynamic = 1;
                     webMenu.FuncID = getFunctionIDByEntity(((Guid)item["entityid"]), allFunctions);
@@ -364,7 +364,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             webMenu.path = "/entcomm-application/" + ((Guid)item["entityid"]).ToString();
                         }
                     }
-                    webMenu.Icon = "";
+                    webMenu.Icon = item["icons"] == null ? "" : item["icons"].ToString();
                     webMenu.FuncID = "";
                     webMenu.IsDynamic = 1;
                     webMenu.FuncID = getFunctionIDByEntity(((Guid)item["entityid"]), allFunctions);
@@ -383,7 +383,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
             if (sysMenus.ContainsKey("DynamicEntity"))
-             {
+            {
                 List<IDictionary<string, object>> dynamicEntity = (List<IDictionary<string, object>>)sysMenus["DynamicEntity"];
                 var tmpLst = _entryProRepository.GetDynamicEntityList();
                 int index = 0;
@@ -399,7 +399,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     webMenu.ParentId = DynamicEntityId;
                     webMenu.Id = Guid.NewGuid();
                     webMenu.Index = index;
-                    webMenu.Icon = "";
+                    webMenu.Icon = item["icons"] == null ? "" : item["icons"].ToString();
                     webMenu.IsDynamic = 1;
                     webMenu.FuncID = getFunctionIDByEntity(((Guid)item["entityid"]), allFunctions);
                     var pid = _webMenuRepository.insertMennInfo(webMenu);
@@ -413,7 +413,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         webSubMenu.ParentId = pid;
                         webSubMenu.Id = Guid.NewGuid();
                         webSubMenu.Index = secIndex;
-                        webSubMenu.Icon = "";
+                        webSubMenu.Icon = subMenu.Icons;
                         webSubMenu.IsDynamic = 1;
                         webSubMenu.path = "/entcomm-dynamic/" + subMenu.EntityId;
                         webSubMenu.FuncID = getFunctionIDByEntity(Guid.Parse(subMenu.EntityId), allFunctions, 3);
