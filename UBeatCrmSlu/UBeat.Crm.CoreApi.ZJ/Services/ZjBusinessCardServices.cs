@@ -6,14 +6,14 @@ using System.Text;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.Contact;
 using UBeat.Crm.CoreApi.Services.Utility;
-
+using System.Linq;
 namespace UBeat.Crm.CoreApi.Services.Services
 {
     public class ZjBusinessCardServices : BasicBaseServices
     {
         private readonly FileServices _fileServices;
         private readonly BaiduBusinessCardServices _baiduBusinessCardServices;
-
+        private static NLog.ILogger _logger = NLog.LogManager.GetLogger(typeof(ZjBusinessCardServices).FullName);
         public ZjBusinessCardServices(FileServices fileServices, BaiduBusinessCardServices baiduBusinessCardServices)
         {
             _fileServices = fileServices;
@@ -29,7 +29,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var fileData = _fileServices.GetFileData(vcardModel.CollectionName, vcardModel.FileId);
             if (fileData == null)
             {
-               return ShowError<object>("无法获取名片数据");
+                return ShowError<object>("无法获取名片数据");
             }
 
             //string fileName = "d:\\test1.jpg";
@@ -127,7 +127,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 address = new List<string>(addresss);
             }
 
-            var vcardData = new Dictionary<string, List<string>>();           
+            var vcardData = new Dictionary<string, List<string>>();
             vcardData.Add("recname", recname);
             vcardData.Add("phone", phone);
             vcardData.Add("fax", fax);
@@ -138,7 +138,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             vcardData.Add("company", company);
             vcardData.Add("address", address);
             vcardData.Add("remark", remark);
-            
+
             return vcardData;
         }
 
@@ -162,7 +162,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //filestream.Close();
 
             var cardInfo = _baiduBusinessCardServices.GetBusinessCardInfo(fileData);
-
+            _logger.Trace(cardInfo);
             if (string.IsNullOrWhiteSpace(cardInfo))
             {
                 return ShowError<object>("名片数据获取为空");
@@ -250,13 +250,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 address = new List<string>(addresss);
             }
 
+ 
             var vcardData = new Dictionary<string, List<string>>();
-            vcardData.Add("fullname", recname);
+            vcardData.Add("recname", recname);
             vcardData.Add("fax", fax);
-            vcardData.Add("phone", phone);
+            vcardData.Add("phone", mobilephone);
+            vcardData.Add("telphone", phone);
             vcardData.Add("mail", email);
             vcardData.Add("address", address);
-
             return vcardData;
         }
     }

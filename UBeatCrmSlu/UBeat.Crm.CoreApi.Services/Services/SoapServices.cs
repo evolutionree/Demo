@@ -70,7 +70,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             object data;
             if (detailData["custype"] == null || detailData["custype"].ToString() == "1")
             {
-                result = new OperateResult { Flag = 1, Msg = "该客户是潜在客户，不进行同步" };
+                result = new OperateResult { Flag = 0, Msg = "该客户是潜在客户，不进行同步" };
                 dic.Add("ifsyn", 2);
                 dic.Add("syncinfo", result.Msg);
                 synTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
