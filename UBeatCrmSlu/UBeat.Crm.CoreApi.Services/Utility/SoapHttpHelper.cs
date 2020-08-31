@@ -19,6 +19,7 @@ using Newtonsoft.Json.Linq;
 using UBeat.Crm.CoreApi.Services.Models.SoapErp;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using System.Data.Common;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
@@ -372,7 +373,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 return default(T);
             }
         }
-        public static List<T> ConvertDataFormat<T>(string data, int userId)
+        public static List<T> ConvertDataFormat<T>(string data, int userId, Dictionary<string, object> cache = null)
         {
             var dto = JsonConvert.DeserializeObject<List<T>>(data);
             var properties = typeof(T).GetProperties();
@@ -414,7 +415,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             var method = methods.FirstOrDefault(t1 => t1.Name == customPro.bindingMethod);
                             if (method == null) throw new Exception("数据源配置为空");
                             var genMethod = method.MakeGenericMethod(t.GetType());
-                            genMethod.Invoke(thisType, new object[5] { p, t, instance, dynamicRepository, userId });
+                            var dataSourceValue = genMethod.Invoke(thisType, new object[5] { p, t, instance, dynamicRepository, userId });
+                            if (!cache.ContainsKey(method.Name))
+                                cache.Add(method.Name, dataSourceValue);
+                            else if (cache[method.Name] == null && dataSourceValue != null)
+                                cache[method.Name] = dataSourceValue;
                             break;
                         case DataTypeEnum.RelateEntity:
                             p.SetValue(instance, p.GetValue(t));
@@ -426,18 +431,22 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             return actData;
         }
         #region   
-        static void CustDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        static object CustDataSource<T>(Dictionary<string, object> dicCache, PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
-            var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
+            List<IDictionary<string, object>> pageData = dicCache["CustDataSource"] as List<IDictionary<string, object>>;
+            if (pageData == null)
             {
-                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
-                ExtraData = null,
-                ViewType = 0,
-                MenuId = "f3219ea4-7701-4a19-87d8-1ecf1d27ca38",
-                NeedPower = 0,
-                SearchQuery = " AND custcode='" + p.GetValue(oldinstance) + "'"
-            }, userId);
-            var pageData = dataList["PageData"];
+                var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
+                {
+                    EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"),
+                    ExtraData = null,
+                    ViewType = 0,
+                    MenuId = "f3219ea4-7701-4a19-87d8-1ecf1d27ca38",
+                    NeedPower = 0,
+                    SearchQuery = " AND custcode='" + p.GetValue(oldinstance) + "'"
+                }, userId);
+                pageData = dataList["PageData"];
+            }
             if (pageData != null && pageData.Count > 0)
             {
                 var tmpData = pageData.FirstOrDefault();
@@ -449,8 +458,9 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 }, userId);
                 p.SetValue(newinstance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
             }
+            return pageData;
         }
-        static void ProductDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        static void ProductDataSource<T>(Dictionary<string, object> dicCache, PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
             IProductsRepository _productRepository = ServiceLocator.Current.GetInstance<IProductsRepository>();
             var dataList = _productRepository.GetNewProducts(null, " 1=1 ", new PageParam { PageIndex = 1, PageSize = 10 }, new DomainModel.Products.ProductList
@@ -469,7 +479,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["recid"].ToString());
             }
         }
-        static void OrderDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        static void OrderDataSource<T>(Dictionary<string, object> dicCache, PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
             var dataList = dynamicRepository.DataList(new PageParam { PageIndex = 1, PageSize = int.MaxValue }, null, new DomainModel.DynamicEntity.DynamicEntityListMapper
             {
@@ -493,7 +503,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 p.SetValue(newinstance, "{\"id\":\"" + detail["recid"].ToString() + "\",\"name\":\"" + detail["recname"].ToString() + "\"}");
             }
         }
-        static void RegionDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        static void RegionDataSource<T>(Dictionary<string, object> dicCache, PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
             IBasicDataRepository _basicDataRepository = ServiceLocator.Current.GetInstance<IBasicDataRepository>();
             var dic = new Dictionary<string, Int64>();
@@ -537,17 +547,21 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 p.SetValue(newinstance, tmpData == null ? string.Empty : tmpData["regioncode"].ToString());
             }
         }
-        static void PersonsDataSource<T>(PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
+        static object PersonsDataSource<T>(Dictionary<string, object> dicCache, PropertyInfo p, T oldinstance, T newinstance, IDynamicEntityRepository dynamicRepository, int userId)
         {
-            IAccountRepository _accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
-            var userInfos = _accountRepository.GetAllUserInfoList();
-            if (userInfos != null)
+            List<UserInfo> pageData = dicCache["PersonsDataSource"] as List<UserInfo>;
+            if (pageData == null)
+            {
+                IAccountRepository _accountRepository = ServiceLocator.Current.GetInstance<IAccountRepository>();
+                pageData = _accountRepository.GetAllUserInfoList();
+            }
+            if (pageData != null)
             {
                 var oldVal = p.GetValue(oldinstance) == null ? string.Empty : p.GetValue(oldinstance).ToString();
-                var tmpData = userInfos.FirstOrDefault(t => t.RelateErpUserId == oldVal);
-
+                var tmpData = pageData.FirstOrDefault(t => t.RelateErpUserId == oldVal);
                 p.SetValue(newinstance, tmpData == null ? -1 : tmpData.UserId);
             }
+            return pageData;
         }
         #endregion
 
@@ -601,7 +615,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         }
         public static List<Dictionary<string, object>> PersistenceEntityData<T, T1>(string data, int userId, string logId)
         {
-            var tData = ConvertDataFormat<T>(data, userId);
+            Dictionary<string, object> dicCache = new Dictionary<string, object>();
+            var tData = ConvertDataFormat<T>(data, userId, dicCache);
             var propertyInfos = GetSubDetailPros<T, T1>();
             foreach (var p in propertyInfos)
             {

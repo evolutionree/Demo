@@ -1263,6 +1263,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 if (item.ContainsKey("entityid") && item["entityid"] != null)
                                 {
                                     config.DataSource.EntityId = Guid.Parse(item["entityid"].ToString());
+                                    config.IsReadOnly = field.IsReadOnly ? 1 : 0;
+                                    config.IsRequired = field.IsRequire ? 1 : 0;
+                                    config.IsVisible = field.IsVisible ? 1 : 0;
                                     field.FieldConfig = JsonConvert.SerializeObject(config);
 
                                 }
