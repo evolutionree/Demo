@@ -10,6 +10,7 @@ using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Excels;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
 {
@@ -397,6 +398,51 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Excels
             return result;
         }
 
+        public OrdersForecast GetProductId(string cust, string product, out string errorMsg)
+        {
+            errorMsg = null;
+            string executeSql = @"
+select product.recid,product.salespartsid,product.jobid from (select regexp_split_to_table(orderdetail,',')::uuid detailid,recid ,reccreated,customer from crm_sys_order )as ord
+LEFT JOIN crm_sys_order_detail detail on detail.recitemid=detailid
+LEFT JOIN crm_sys_product product ON product.recid=detail.product::uuid
+where  (ord.customer->>'name')=(@cust::jsonb->>'name') and product.productname=@productname
+ORDER BY ord.reccreated desc limit 1 ";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("productname", product),
+                new NpgsqlParameter("cust", cust),
+            };
+
+            var dataResult = ExecuteQuery<OrdersForecast>(executeSql, param);
+
+            if (dataResult.Count == 0)
+            {
+                errorMsg = "产品不存在（或者不满足过滤条件）";
+                return new OrdersForecast();
+            }
+            else if (dataResult.Count > 1)
+            {
+                errorMsg = "存在多个同名料号";
+            }
+            //else
+            //{
+            //    var data = dataResult.FirstOrDefault();
+            //    if (data == null) errorMsg = "产品不存在";
+            //    else
+            //    {
+            //        string salespartsId = data.SalesPartsId;
+            //        string jobId = string.IsNullOrEmpty(data.JobId) ? string.Empty : data.JobId;
+            //        param = new DbParameter[]
+            //        {
+            //            new NpgsqlParameter("salespartsid", salespartsId),
+            //            new NpgsqlParameter("jobid", jobId)
+            //        };
+            //    }
+            //}
+            //executeSql = " select "
+            return dataResult.FirstOrDefault();
+        }
 
         public Guid GetProductId(string namepath, out string errorMsg, Dictionary<string, object> FieldFilters = null)
         {

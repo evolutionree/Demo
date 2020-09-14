@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Excels;
+using UBeat.Crm.CoreApi.Services.Models.Excels;
 
 namespace UBeat.Crm.CoreApi.IRepository
 {
@@ -86,6 +87,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <param name="FieldFilters">过滤条件</param>
         /// <returns></returns>
         Guid GetProductId(string namepath, out string errorMsg, Dictionary<string, object> FieldFilters = null);
+        OrdersForecast GetProductId(string cust, string product, out string errorMsg);
         /// <summary>
         /// 获取产品系列id
         /// </summary>

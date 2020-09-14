@@ -1142,7 +1142,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                                         string thisfieldname = item.FieldName.Substring(fieldname.Length + 1);
                                         if (mdata.ContainsKey(thisfieldname) == false
-                                            &&  mdata.ContainsKey(thisfieldname + "_name") == false) continue;//第一层忽略表格内容字段
+                                            && mdata.ContainsKey(thisfieldname + "_name") == false) continue;//第一层忽略表格内容字段
                                         switch (item.FieldType)
                                         {
                                             case FieldType.TimeDate:
@@ -2449,7 +2449,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 case DynamicProtocolControlType.Product:
                     if (!string.IsNullOrEmpty(columnValue))
                     {
-                        var pid = _repository.GetProductId(columnValue, out errorMsg, fieldFilters);
+                        Guid pid = Guid.Empty;
+                        if (Guid.Parse("3b9849dc-4fe0-4f2d-a22a-fbe5fb80f517") == typeId)
+                        {
+                            var ordersForecast = _repository.GetProductId(rowdata["customer"].ToString(), columnValue, out errorMsg);
+                            if (!rowdata.ContainsKey("salespartsid"))
+                            {
+                                rowdata.Add("salespartsid", ordersForecast.SalesPartsId);
+                            }
+                            else
+                            {
+                                rowdata["salespartsid"] = ordersForecast.SalesPartsId;
+                            }
+                            if (!rowdata.ContainsKey("jobid"))
+                            {
+                                rowdata.Add("jobid", ordersForecast.JobId);
+                            }
+                            else
+                            {
+                                rowdata["jobid"] = ordersForecast.JobId;
+                            }
+                        }
+                        else
+                        {
+                            pid = _repository.GetProductId(columnValue, out errorMsg, fieldFilters);
+                        }
                         if (string.IsNullOrEmpty(errorMsg))
                         {
                             rowdata[typeField.FieldName] = pid;
