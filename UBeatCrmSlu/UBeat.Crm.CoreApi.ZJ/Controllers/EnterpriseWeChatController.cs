@@ -250,6 +250,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             Byte[] byteData = new Byte[stream.Length];
             stream.Read(byteData, 0, (Int32)stream.Length);
             string code = Request.Query["code"];
+            string urlType =string.IsNullOrEmpty( Request.Query["urltype"])?"1" : Request.Query["urltype"].ToString();
             EnterpriseWeChatModel enterpriseWeChat = new EnterpriseWeChatModel();
             enterpriseWeChat.Code = code;
             enterpriseWeChat.Data = new Dictionary<string, object>();
@@ -294,9 +295,10 @@ namespace UBeat.Crm.CoreApi.ZJ.Controllers
             HttpContext.Response.Cookies.Append("account", userData.AccountName, cookie);
             HttpContext.Response.Cookies.Append("accountid", userData.AccountId.ToString(), cookie);
             HttpContext.Response.Headers.Add("Authorization", "Bearer " + result.DataBody.ToString());
-            var enterpriseWeChatMainPage = config.GetSection("WeChatConfig").GetValue<string>("EnterpriseWeChatMainPage");
-
-            HttpContext.Response.WriteAsync("<script type='text/javascript'>location.href='" + enterpriseWeChatMainPage + "';</script>");
+            var page = config.GetSection("WeChatConfig").GetValue<string>("EnterpriseWeChatMainPage");
+            if (urlType.ToString()=="2")
+                page = config.GetSection("WeChatConfig").GetValue<string>("EnterpriseWeChatWaitApprovePage");
+            HttpContext.Response.WriteAsync("<script type='text/javascript'>location.href='" + page + "';</script>");
         }
         [HttpGet]
         [Route("geturl")]
