@@ -2453,21 +2453,25 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (Guid.Parse("3b9849dc-4fe0-4f2d-a22a-fbe5fb80f517") == typeId)
                         {
                             var ordersForecast = _repository.GetProductId(rowdata["customer"].ToString(), columnValue, out errorMsg);
-                            if (!rowdata.ContainsKey("salespartsid"))
+                            if (ordersForecast != null)
                             {
-                                rowdata.Add("salespartsid", ordersForecast.SalesPartsId);
-                            }
-                            else
-                            {
-                                rowdata["salespartsid"] = ordersForecast.SalesPartsId;
-                            }
-                            if (!rowdata.ContainsKey("jobid"))
-                            {
-                                rowdata.Add("jobid", ordersForecast.JobId);
-                            }
-                            else
-                            {
-                                rowdata["jobid"] = ordersForecast.JobId;
+                                if (!rowdata.ContainsKey("salespartsid"))
+                                {
+                                    rowdata.Add("salespartsid", ordersForecast.SalesPartsId);
+                                }
+                                else
+                                {
+                                    rowdata["salespartsid"] = ordersForecast.SalesPartsId;
+                                }
+                                if (!rowdata.ContainsKey("jobid"))
+                                {
+                                    rowdata.Add("jobid", ordersForecast.JobId);
+                                }
+                                else
+                                {
+                                    rowdata["jobid"] = ordersForecast.JobId;
+                                }
+                                pid = ordersForecast.RecId;
                             }
                         }
                         else
