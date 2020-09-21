@@ -167,13 +167,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 
         public dynamic GetProducts(DbTransaction trans, string ruleSql, PageParam page, ProductList productData, string serachKey, int userNumber)
         {
-            var executeSql = @"SELECT * FROM crm_func_products_select(@productseriesid,@includechild,@searchkey,@userno,@pageindex,@pagesize,@recversion,@recstatus)";
+            var executeSql = @"SELECT * FROM crm_func_products_select(@productseriesid,@includechild,@searchkey,@advancequery,@userno,@pageindex,@pagesize,@recversion,@recstatus)";
 
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("productseriesid", productData.ProductSeriesId.ToString()),
-                new NpgsqlParameter("includechild", productData.IsAllProduct == true ? 1 : 0),
+                new NpgsqlParameter("includechild",productData.ExitField==0? (productData.IsAllProduct == true ? 1 : 0):productData.ExitField),
                 new NpgsqlParameter("searchkey", serachKey),
+                new NpgsqlParameter("advancequery", productData.SearchQuery),
                 new NpgsqlParameter("userno", userNumber),
                 new NpgsqlParameter("pageindex", page.PageIndex),
                 new NpgsqlParameter("pagesize",  page.PageSize),
@@ -192,6 +193,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
             };
 
         }
+
         public Dictionary<string, List<Dictionary<string, object>>> GetNewProducts(DbTransaction trans, string ruleSql, PageParam page, ProductList productData, string serachKey, int userNumber)
         {
             var executeSql = @"SELECT * FROM crm_func_products_select(@productseriesid,@includechild,@searchkey,@userno,@pageindex,@pagesize,@recversion,@recstatus)";
