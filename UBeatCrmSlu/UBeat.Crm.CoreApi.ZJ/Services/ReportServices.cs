@@ -408,11 +408,13 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
 				t2.dataval stagename,
 				t2.recorder,
 				count(1) as currentcount,
-				case when t2.recorder = 0 then sum(count(1)) over()
-				when t2.recorder = 1 then sum(case when t2.recorder > 0 then count(1) else 0 end) over()
+				case when t2.recorder = 1 then sum(count(1)) over()
 				when t2.recorder = 2 then sum(case when t2.recorder > 1 then count(1) else 0 end) over()
 				when t2.recorder = 3 then sum(case when t2.recorder > 2 then count(1) else 0 end) over()
 				when t2.recorder = 4 then sum(case when t2.recorder > 3 then count(1) else 0 end) over()
+				when t2.recorder = 5 then sum(case when t2.recorder > 4 then count(1) else 0 end) over()
+				when t2.recorder = 6 then sum(case when t2.recorder > 5 then count(1) else 0 end) over()
+				when t2.recorder = 7 then sum(case when t2.recorder > 6 then count(1) else 0 end) over()
 				else 0 end as oppcount,
 				0 as totalmoney,
 				round((count(1) / sum(count(1)) over())*100,2) || '%' as proportion,
