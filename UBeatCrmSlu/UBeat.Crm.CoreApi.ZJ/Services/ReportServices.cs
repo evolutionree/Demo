@@ -416,7 +416,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
             {
                 oppTypeConditon = " and t1.opptype in (" + opptypeid + ") ";
             }
-            string sql = string.Format($@"
+            string sql =$@"
  				select 
 				'立项项目' as categoryname,
 				t2.dataval stagename,
@@ -443,11 +443,11 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
 				else '' end as converate
 				from crm_cee_opportunity t1
 				inner join crm_sys_dictionary t2 on t1.stage = t2.dataid and t2.dictypeid=58
-				where t1.rectype = '{OPP_EntityID}'  and t1.recstatus = 1 and t2.recstatus = 1 {0}
-				{datesql + deptsql + rulesql}
+				where t1.rectype = '{OPP_EntityID}'  and t1.recstatus = 1 and t2.recstatus = 1  
+				{oppTypeConditon+datesql + deptsql + rulesql}
 				group by t2.dataval,t2.recorder
 				order by t2.recorder
-			", oppTypeConditon);
+			";
 
             var data = _reportEngineRepository.ExecuteSQL(sql, new DbParameter[] { });
 
