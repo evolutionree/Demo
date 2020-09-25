@@ -349,6 +349,7 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
             string datesql = "";
             string deptsql = "";
             string department = "";
+            string opptypeid = "";
             DateTime dtfrom;
             DateTime dtto;
             #endregion
@@ -357,7 +358,12 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
             department = ReportParamsUtils.parseString(param, "department");
             dtfrom = ReportParamsUtils.parseDateTime(param, "searchfrom");
             dtto = ReportParamsUtils.parseDateTime(param, "searchto");
+            opptypeid = ReportParamsUtils.parseString(param, "opptypeid");
             if (department == null || department.Length == 0)
+            {
+                throw (new Exception("参数异常"));
+            }
+            if (string.IsNullOrEmpty(opptypeid))
             {
                 throw (new Exception("参数异常"));
             }
@@ -401,8 +407,16 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
             decimal money2 = 0;
             decimal money3 = 0;
             decimal money4 = 0;
-
-            string sql = $@"
+            string oppTypeConditon = "";
+            if (opptypeid == "0")
+            {
+                oppTypeConditon = " and t1.opptype not in (-1) ";
+            }
+            else
+            {
+                oppTypeConditon = " and t1.opptype in (" + opptypeid + ") ";
+            }
+            string sql = string.Format($@"
  				select 
 				'立项项目' as categoryname,
 				t2.dataval stagename,
@@ -429,11 +443,11 @@ namespace UBeat.Crm.CoreApi.ZJ.Services
 				else '' end as converate
 				from crm_cee_opportunity t1
 				inner join crm_sys_dictionary t2 on t1.stage = t2.dataid and t2.dictypeid=58
-				where t1.rectype = '{OPP_EntityID}'  and t1.recstatus = 1 and t2.recstatus = 1
+				where t1.rectype = '{OPP_EntityID}'  and t1.recstatus = 1 and t2.recstatus = 1 {0}
 				{datesql + deptsql + rulesql}
 				group by t2.dataval,t2.recorder
 				order by t2.recorder
-			";
+			", oppTypeConditon);
 
             var data = _reportEngineRepository.ExecuteSQL(sql, new DbParameter[] { });
 

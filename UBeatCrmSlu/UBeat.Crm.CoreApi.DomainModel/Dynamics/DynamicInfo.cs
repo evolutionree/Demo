@@ -86,6 +86,17 @@ namespace UBeat.Crm.CoreApi.DomainModel.Dynamics
         /// </summary>
         [JsonProperty("relentityname")]
         public string RelEntityName { set; get; }
+        /// <summary>
+        /// 实体名称
+        /// </summary>
+        [JsonProperty("entityname_en")]
+        public string EntityName_EN { set; get; }
+
+        /// <summary>
+        /// 关联实体名称
+        /// </summary>
+        [JsonProperty("relentityname_en")]
+        public string RelEntityName_EN { set; get; }
 
 
         [JsonProperty("typename")]

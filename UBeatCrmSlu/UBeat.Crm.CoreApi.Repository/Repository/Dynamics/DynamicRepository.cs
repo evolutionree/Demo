@@ -408,7 +408,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
 							                                    LEFT JOIN crm_sys_dynamic_comments AS dc ON dc.commentsid=c.pcommentsid
 							                                    LEFT JOIN crm_sys_userinfo AS uc ON uc.userid=dc.reccreator
 							                                    WHERE c.dynamicid=d.dynamicid AND c.recstatus=1 ORDER BY c.reccreated) AS t
-				                                     ) AS Comments
+				                                     ) AS Comments,(case when COALESCE((e.entityname_lang->>'en'),'')='' then e.entityname else (e.entityname_lang->>'en') end) entityname_en,
+(case when COALESCE((re.entityname_lang->>'en'),'')='' then re.entityname else (re.entityname_lang->>'en') end) relentityname_en
                                                 FROM public.crm_sys_dynamics AS d 
                                                 LEFT JOIN crm_sys_dynamic_template AS t ON t.templateid=d.templateid
                                                 LEFT JOIN crm_sys_entity AS re ON re.entityid=d.relentityid
@@ -480,7 +481,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
 							                                    LEFT JOIN crm_sys_dynamic_comments AS dc ON dc.commentsid=c.pcommentsid
 							                                    LEFT JOIN crm_sys_userinfo AS uc ON uc.userid=dc.reccreator
 							                                    WHERE c.dynamicid=d.dynamicid AND c.recstatus=1 ORDER BY c.reccreated) AS t
-				                                     ) AS Comments
+				                                     ) AS Comments,(case when COALESCE((e.entityname_lang->>'en'),'')='' then e.entityname else (e.entityname_lang->>'en') end) entityname_en,
+(case when COALESCE((re.entityname_lang->>'en'),'')='' then re.entityname else (re.entityname_lang->>'en') end) relentityname_en
                                                 FROM public.crm_sys_dynamics AS d 
                                                 LEFT JOIN crm_sys_dynamic_template AS t ON t.templateid=d.templateid
                                                 LEFT JOIN crm_sys_entity AS re ON re.entityid=d.relentityid
