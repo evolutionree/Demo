@@ -48,6 +48,7 @@
 
   <ItemGroup>
     <Folder Include="logs\" />
+    <Folder Include="Properties\" />
     <Folder Include="StaticFiles\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Folder>

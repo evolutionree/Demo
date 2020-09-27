@@ -1881,6 +1881,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 var sub_fieldname = sub_field["fieldname"].ToString();
                                 var sub_controltype = sub_field["controltype"].ToString();
                                 FieldType sub_fieldTypetemp = FieldType.Text;
+                                
                                 ConstructField(sub_controltype, out sub_fieldTypetemp);
                                 sub_fieldname = fieldname + "." + sub_fieldname;
                                 MultiHeader sub_header = new MultiHeader() { HeaderType = 1, FieldName = sub_fieldname, HeaderText = sub_displayname, Width = 150, FieldType = sub_fieldTypetemp };
@@ -2141,6 +2142,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         break;
                     case DynamicProtocolControlType.NumberDecimal:
                         tempFieldType = FieldType.NumberDecimal;
+                        break;
+                    case DynamicProtocolControlType.NumberInt:
+                        tempFieldType = FieldType.NumberInt;
                         break;
                     case DynamicProtocolControlType.LinkeTable:
                         continue;
