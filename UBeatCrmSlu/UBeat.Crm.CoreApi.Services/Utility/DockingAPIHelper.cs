@@ -80,5 +80,10 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         /// 按企业全名或注册号或统一社会信用代码返回法院公告信息
         /// </summary>
         public static string GETNOTICELISTBYNAME_API = "http://api.qixin.com/APIService/notice/getNoticeListByName?appkey={0}&name={1}&skip={2}&secret_key={3}";
+
+        /// <summary>
+        /// 根据企业名称或董监高姓名等关键字获取企业列表
+        /// </summary>
+        public static String GETHKCOMPANYBYNAME_API = "http://api.qixin.com/APIService/hkenterprise/getHKDetailByName?appkey={0}&secret_key={1}&keyword={2}";
     }
 }

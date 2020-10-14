@@ -60,6 +60,10 @@ namespace UBeat.Crm.CoreApi.DomainModel
     {
         public List<ForeignCompanySampleInfo> Items { get; set; }
     }
+    public class HKCompanyAPISubResult : APIResult
+    {
+        public List<HKCompanySampleInfo> Items { get; set; }
+    }
     public class AbstractCompanyInfo
     { }
     public class CompanySampleInfo : AbstractCompanyInfo
@@ -92,6 +96,21 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string DateOfIncorporation { get; set; }
         public string SalesLastYear { get; set; }
         public string LastYear { get; set; }
+    }
+    public class HKCompanySampleInfo : AbstractCompanyInfo
+    {
+        public string Case_No { get; set; }
+        public string Name_Cn { get; set; }
+        public string Name_En { get; set; }
+        public string Type { get; set; }
+        public string Date { get; set; }
+        public string Status { get; set; }
+        public string Condition { get; set; }
+        public string Model { get; set; }
+        public string Dissolution_Date { get; set; }
+        public string Register_Charges { get; set; }
+        public string Important_Matter { get; set; }
+       
     }
     public class CompanyInfoAPISubResult : APIResult
     {
