@@ -140,6 +140,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string OrgNo { get; set; }
         public string CreditNo { get; set; }
         public string DistrictCode { get; set; }
+        public string DistrictCode_Name { get; set; }
         public string Domain { get; set; }
         public string RecUpdated { get; set; }
     }

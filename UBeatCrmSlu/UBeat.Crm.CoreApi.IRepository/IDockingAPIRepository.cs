@@ -12,5 +12,6 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<BussinessInformation> GetBussinessInfomation(string selectField, int isLike, string companyName, int userNumber);
         void UpdateBussinessInfomation(BussinessInformation data, int userNumber);
         void UpdateForeignBussinessInfomation(BussinessInformation data, int userNumber);
+        String explainDistrictCode(string regionCode, int userNumber);
     }
 }

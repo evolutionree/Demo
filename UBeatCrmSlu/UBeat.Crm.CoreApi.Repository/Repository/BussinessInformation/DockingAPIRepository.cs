@@ -166,5 +166,17 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
 
             return DataBaseHelper.Query<BussinessInformation>(executeSql, args);
         }
+        public String explainDistrictCode(string regionCode, int userNumber)
+        {
+            //ILIKE '%' || @keyword || '%' ESCAPE '`'
+            var executeSql = @" select * from qxb_region  where regioncode=@regioncode limit 1 ";
+
+            var args = new
+            {
+                regioncode = regionCode
+            };
+
+            return DataBaseHelper.ExecuteScalar<String>(executeSql, args);
+        }
     }
 }

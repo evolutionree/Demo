@@ -100,6 +100,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 Msg = DateTime.Now.ToString("yyyy-MM-dd HH:MM:ss")
             });
         }
+        String explainDistrictCode(String regionCode, int userId)
+        {
+            return _dockingAPIRepository.explainDistrictCode(regionCode, userId);
+        }
         public OutputResult<object> GetBusinessDetail(CompanyModel api, int isRefresh, int userId)
         {
             var country = _dataSourceRepository.SelectFieldDicVaue(53, userId).FirstOrDefault(t1 => t1.DataId == Convert.ToInt32(api.Country));
@@ -116,6 +120,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
             if (t != null && !string.IsNullOrEmpty(t.Id))
             {
+                t.DistrictCode_Name = explainDistrictCode(t.DistrictCode ?? String.Empty, userId);
                 t.RecUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:MM:ss");
                 var t1 = BuildCompanyContactInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
                 if (t1 != null)
