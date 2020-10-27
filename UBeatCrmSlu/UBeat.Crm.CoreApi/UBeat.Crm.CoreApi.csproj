@@ -91,7 +91,7 @@
     <ProjectReference Include="..\UBeat.Crm.CoreApi.DingTalk\UBeat.Crm.CoreApi.DingTalk.csproj" />
     <ProjectReference Include="..\UBeat.Crm.CoreApi.DomainModel\UBeat.Crm.CoreApi.DomainModel.csproj" />
     <ProjectReference Include="..\UBeat.Crm.CoreApi.Services\UBeat.Crm.CoreApi.Services.csproj" />
-    <ProjectReference Include="..\UBeat.Crm.CoreApi.ZJ\UBeat.Crm.CoreApi.ZJ.csproj" />
+    <ProjectReference Include="..\UBeat.Crm.CoreApi.GL\UBeat.Crm.CoreApi.GL.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="NLog.config">

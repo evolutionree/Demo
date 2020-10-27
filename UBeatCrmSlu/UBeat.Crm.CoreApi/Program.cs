@@ -1,16 +1,15 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using NLog;
+using Quartz;
+using Quartz.Impl;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
 using System.Threading;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using NLog;
-using Quartz;
-using Quartz.Impl;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Utility;
 
@@ -18,7 +17,7 @@ namespace UBeat.Crm.CoreApi
 {
     public class Program
     {
-        private static IScheduler _scheduler; 
+        private static IScheduler _scheduler;
         public static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
@@ -33,7 +32,7 @@ namespace UBeat.Crm.CoreApi
 
             var host = new WebHostBuilder()
                 .UseKestrel()
-                .UseConfiguration(config) 
+                .UseConfiguration(config)
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()
@@ -88,7 +87,7 @@ namespace UBeat.Crm.CoreApi
                 logger.Warn("!!!!!未配置后台事务启动，后台事务将不在本服务器内运行!!!!!!");
                 return;
             }
-            
+
             var mainScheduleJob = JobBuilder.Create<MainSchedulerJobImp>()
                 .WithIdentity("MainScheduleJob")
                 .Build();

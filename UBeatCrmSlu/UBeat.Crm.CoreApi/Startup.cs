@@ -1,28 +1,28 @@
-﻿using System;
+﻿using App.Metrics;
+using App.Metrics.Extensions.Reporting.InfluxDB;
+using App.Metrics.Extensions.Reporting.InfluxDB.Client;
+using App.Metrics.Reporting.Interfaces;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using NLog.Web;
-using UBeat.Crm.CoreApi.Utility;
-using Microsoft.AspNetCore.Http;
-using System.IO;
+using System;
 using System.Collections.Generic;
-using System.Runtime.Loader;
+using System.IO;
 using System.Reflection;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using App.Metrics.Reporting.Interfaces;
-using App.Metrics.Extensions.Reporting.InfluxDB;
-using App.Metrics.Extensions.Reporting.InfluxDB.Client;
-using App.Metrics;
-using UBeat.Crm.CoreApi.Models;
-using UBeat.Crm.CoreApi.Services.webchat;
+using System.Runtime.Loader;
 using UBeat.Crm.CoreApi.Core;
 using UBeat.Crm.CoreApi.Core.Utility;
+using UBeat.Crm.CoreApi.Models;
+using UBeat.Crm.CoreApi.Services.webchat;
+using UBeat.Crm.CoreApi.Utility;
 
 namespace UBeat.Crm.CoreApi
 {
@@ -92,8 +92,9 @@ namespace UBeat.Crm.CoreApi
             dynamic type = this.GetType();
             string currentDirectory = Path.GetDirectoryName(type.Assembly.Location);
             System.IO.DirectoryInfo dir = new DirectoryInfo(currentDirectory);
-            FileInfo [] files = dir.GetFiles("UBeat.Crm.CoreApi.*.dll");
-            foreach (FileInfo f in files) {
+            FileInfo[] files = dir.GetFiles("UBeat.Crm.CoreApi.*.dll");
+            foreach (FileInfo f in files)
+            {
                 string assemblename = f.Name.Substring(0, f.Name.Length - 4);
                 CoreApiRegistEngine.RegisterServices(containerBuilder, assemblename, "Services");
                 CoreApiRegistEngine.RegisterImplemented(containerBuilder, assemblename, "Repository");
@@ -155,29 +156,30 @@ namespace UBeat.Crm.CoreApi
         private void ConfigureMetrics(IServiceCollection services)
         {
             var appMetrics = Configuration.GetSection("AppMetrics").Get<AppMetricsModel>();
-            if (appMetrics == null|| appMetrics.IsEnable!=1)
+            if (appMetrics == null || appMetrics.IsEnable != 1)
                 return;
             services.AddMetrics(options =>
             {
                 options.GlobalTags.Add("app", appMetrics.AppName);
                 options.GlobalTags.Add("env", appMetrics.EnvName);
             }).AddHealthChecks(
-                factory => {
-                    string phyMemoryHealthCheckName=null;
-                    if(appMetrics.PhysicalMemoryHealthCheck>=1024L*1024*1024)
+                factory =>
+                {
+                    string phyMemoryHealthCheckName = null;
+                    if (appMetrics.PhysicalMemoryHealthCheck >= 1024L * 1024 * 1024)
                     {
-                        phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024 * 1024 ) +"GB";
+                        phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024 * 1024) + "GB";
                     }
-                    else if (appMetrics.PhysicalMemoryHealthCheck >= 1024L * 1024 )
+                    else if (appMetrics.PhysicalMemoryHealthCheck >= 1024L * 1024)
                     {
-                        phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024 ) + "MB";
+                        phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024) + "MB";
                     }
                     else
                     {
                         phyMemoryHealthCheckName = (double)appMetrics.PhysicalMemoryHealthCheck / (1024L * 1024) + "KB";
                     }
                     factory.RegisterProcessPhysicalMemoryHealthCheck(string.Format("占用内存是否超过阀值({0})", phyMemoryHealthCheckName), appMetrics.PhysicalMemoryHealthCheck);
-                    
+
                 }
                 ).AddReporting(
                 factory =>
@@ -187,8 +189,8 @@ namespace UBeat.Crm.CoreApi
                         {
                             InfluxDbSettings = new InfluxDBSettings(appMetrics.DataBase, new Uri(appMetrics.Uri))
                             {
-                                 UserName= appMetrics.DbUserName,
-                                 Password= appMetrics.DbPassword
+                                UserName = appMetrics.DbUserName,
+                                Password = appMetrics.DbPassword
                             },
                             ReportInterval = TimeSpan.FromSeconds(5)
                         });

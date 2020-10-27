@@ -26,7 +26,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         public AccountUserMapper GetUserInfo(string accountName)
         {
             var sql = @"
-                SELECT u.iscrmuser,u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime,u.iscrmuser FROM crm_sys_account AS a
+                SELECT u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime FROM crm_sys_account AS a
                 LEFT JOIN crm_sys_account_userinfo_relate AS r ON a.accountid = r.accountid
                 LEFT JOIN crm_sys_userinfo AS u ON r.userid = u.userid
                 WHERE accountname = @accountName LIMIT 1
@@ -476,7 +476,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
         public List<UserInfo> GetAllUserInfoList()
         {
-            var sql = @"SELECT u.userid, u.username,u.namepinyin,u.usericon,u.usersex,u1.relateerpuserid FROM crm_sys_userinfo as u left join crm_sys_crmtoerp_user as u1 on u1.userid=u.userid and u1.recstatus=1 and u1.usertype=0";
+            var sql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo";
 
             return ExecuteQuery<UserInfo>(sql, null);
         }

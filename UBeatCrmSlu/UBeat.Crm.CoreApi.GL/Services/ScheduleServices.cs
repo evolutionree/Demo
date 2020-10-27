@@ -14,7 +14,6 @@ using System.Data.Common;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using System.Reflection;
 using Newtonsoft.Json;
-using UBeat.Crm.CoreApi.ZJ.Model;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.Department;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
