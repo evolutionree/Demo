@@ -1440,24 +1440,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     var result = _dynamicEntityRepository.DynamicEdit(transaction, dynamicEntity.TypeId, dynamicEntity.RecId, data, userNumber);
                     if (result.Flag == 1)
                     {
-                        var type = typeof(SoapServices);
-                        var instance = ServiceLocator.Current.GetInstance<SoapServices>();
-                        var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
-                        if (methods != null)
-                        {
-                            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
-                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == dynamicEntity.TypeId.ToString());
-                            if (erpSync != null)
-                            {
-                                if (erpSync.IsFlow == 0)
-                                {
-                                    var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
-                                    var invokeValue = method.Invoke(instance, new object[] { dynamicEntity.TypeId, Guid.Empty, dynamicEntity.RecId, userNumber, transaction });
-                                    var dataResult = invokeValue as OperateResult;
-                                    if (dataResult.Flag == 0) throw new Exception(dataResult.Msg);// throw new Exception(dataResult.Msg);
-                                }
-                            }
-                        }
                         var entityInfotemp = _entityProRepository.GetEntityInfo(dynamicEntity.TypeId);
                         CheckCallBackService(transaction, OperatType.Update, entityInfotemp.Servicesjson, bussinessId, (Guid)entityInfo.entityid, userNumber, "");
                     }

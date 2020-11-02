@@ -200,7 +200,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
 
             //这里提供两种方式
             var procName =
-                "SELECT crm_func_account_userinfo_dept_list_power(@iscontrol,@userName,@userPhone,@deptId,@iscrmuser,@recStatus,@pageIndex,@pageSize,@userNo)";
+                "SELECT crm_func_account_userinfo_dept_list_power(@userName,@userPhone,@deptId,@recStatus,@pageIndex,@pageSize,@userNo)";
 
             var dataNames = new List<string> { "PageData", "PageCount" };
             var param = new
@@ -211,9 +211,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
                 RecStatus = searchParam.RecStatus,
                 PageIndex = pageParam.PageIndex,
                 PageSize = pageParam.PageSize,
-                IsCrmUser = searchParam.IsCrmUser,
-                UserNo = userNumber,
-                IsControl = searchParam.IsControl
+                UserNo = userNumber
             };
 
             var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
