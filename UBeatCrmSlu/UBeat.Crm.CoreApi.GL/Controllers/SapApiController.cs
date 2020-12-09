@@ -17,10 +17,12 @@ namespace UBeat.Crm.CoreApi.Controllers
     public class SapApiController : BaseController
     {
         private readonly DynamicEntityServices _dynamicEntityServices;
+        private readonly BaseDataServices _baseDataServices;
 
-        public SapApiController(DynamicEntityServices dynamicEntityServices)
+        public SapApiController(DynamicEntityServices dynamicEntityServices, BaseDataServices baseDataServices)
         {
             _dynamicEntityServices = dynamicEntityServices;
+            _baseDataServices = baseDataServices;
         }
 
         [Route("test")]
@@ -42,6 +44,15 @@ namespace UBeat.Crm.CoreApi.Controllers
                         return ResponseError<object>("没有找到对应业务类型");
                     break;
             }
+        }
+
+        [Route("initdicdata")]
+        [HttpPost]
+        [AllowAnonymous]
+        public OutputResult<object> InitDicData([FromBody] SynSapModel model = null)
+        {
+            _baseDataServices.InitDicDataQrtz();
+            return new OutputResult<object>(null);
         }
 
     }
