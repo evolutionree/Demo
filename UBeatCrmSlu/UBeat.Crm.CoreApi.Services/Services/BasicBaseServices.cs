@@ -141,5 +141,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
             outResult.Versions = userData.GetUserVersionData(commonData.DataVersions);
             return outResult;
         }
+
+        public string isNull(IDictionary<String, object> data, string key)
+        {
+            if (data == null)
+                return "";
+            if (data.ContainsKey(key + "_name"))
+            {
+                return data[key + "_name"] == null ? "" : data[key + "_name"].ToString();
+            }
+            if (data.ContainsKey(key))
+            {
+                return data[key] == null ? "" : data[key].ToString();
+            }
+            return "";
+        }
     }
 }

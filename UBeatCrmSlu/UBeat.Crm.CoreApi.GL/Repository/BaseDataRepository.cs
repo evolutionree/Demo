@@ -491,5 +491,15 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
                     };
             return DBHelper.ExecuteQuery(transaction, sql, param);
         }
+
+        public List<RegionCityClass> GetRegionCityData()
+        {
+            string sql = @"select regionid,regionname,replace(fullname,'.','') as fullname from crm_sys_region where recstatus = 1 and regiontype = 2;";
+
+            var param = new DynamicParameters();
+
+            var result = DataBaseHelper.Query<RegionCityClass>(sql, param, CommandType.Text);
+            return result;
+        }
     }
 }

@@ -10,9 +10,9 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Utility;
-using UBeat.Crm.CoreApi.ZJ.WJXModel;
+using UBeat.Crm.CoreApi.GL.WJXModel;
 
-namespace UBeat.Crm.CoreApi.ZJ.Services
+namespace UBeat.Crm.CoreApi.GL.Services
 {
     public class EnterpriseWeChatServices : BasicBaseServices
     {

@@ -20,8 +20,9 @@ using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.Account;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UBeat.Crm.CoreApi.Services.Services;
 
-namespace UBeat.Crm.CoreApi.Services.Services
+namespace UBeat.Crm.CoreApi.GL.Services
 {
     public class ScheduleServices : BasicBaseServices
     {

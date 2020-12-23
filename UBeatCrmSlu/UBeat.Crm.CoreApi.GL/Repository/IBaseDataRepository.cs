@@ -44,5 +44,6 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         Int32 GetProductLine(string productcode);
         dynamic ExcuteActionExt(DbTransaction transaction, string funcname, object basicParamData, object preActionResult, object actionResult, int usernumber);
         dynamic DoCloseCRMOrderRow(DbTransaction transaction, string _entityid, string _recids, string _inputstatus, int usernumber);
+        List<RegionCityClass> GetRegionCityData();
     }
 }

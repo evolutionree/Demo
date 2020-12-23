@@ -5,7 +5,7 @@ using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.Services.Models.WJXModel;
 
-namespace UBeat.Crm.CoreApi.IRepository
+namespace UBeat.Crm.CoreApi.GL.IRepository
 {
     public interface IWJXRepository
     {

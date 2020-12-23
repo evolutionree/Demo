@@ -14,8 +14,9 @@ using UBeat.Crm.CoreApi.Services.Utility;
 using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 using System.Linq;
 using UBeat.Crm.LicenseCore;
+using UBeat.Crm.CoreApi.Services.Services;
 
-namespace UBeat.Crm.CoreApi.Services.Services
+namespace UBeat.Crm.CoreApi.GL.Services
 {
     public class OrderServices : BasicBaseServices
     {

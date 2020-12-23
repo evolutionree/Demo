@@ -21,12 +21,14 @@ using UBeat.Crm.CoreApi.DomainModel.Utility;
 using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.GL.Model;
 using UBeat.Crm.CoreApi.GL.Repository;
+using UBeat.Crm.CoreApi.Services.Services;
+using System.Data.Common;
 
-namespace UBeat.Crm.CoreApi.Services.Services
+namespace UBeat.Crm.CoreApi.GL.Services
 {
     public class BaseDataServices : BasicBaseServices
     {
-        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.BaseDataServices");
+        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.GL.Services.BaseDataServices");
         private readonly DynamicEntityServices _dynamicEntityServices;
         private readonly IBaseDataRepository _baseDataRepository;
 
@@ -481,6 +483,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return list;
         }
 
+        #endregion
+
+        #region 
+        public IDictionary<string, object> GetEntityDetailData(DbTransaction tran, Guid entityId, Guid recId, int userId)
+        {
+            DynamicEntityDetailtMapper entityModel = new DynamicEntityDetailtMapper();
+            entityModel.EntityId = entityId;
+            entityModel.RecId = recId;
+            entityModel.NeedPower = 0;
+            var resultData = _dynamicEntityServices.Detail(entityModel, userId);
+
+            if (resultData != null && resultData.ContainsKey("Detail") && resultData["Detail"] != null && resultData["Detail"].Count > 0)
+                return resultData["Detail"][0];
+
+            return null;
+        }
         #endregion
     }
 }
