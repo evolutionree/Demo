@@ -86,7 +86,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户数据", string.Empty);
 
-            var sendResult = _fetchCustomerServices.FetchCustData(model, 1);
+            var sendResult = _fetchCustomerServices.FetchCustData(model,UserId,1);
             return new OutputResult<object>(sendResult);
         }
 

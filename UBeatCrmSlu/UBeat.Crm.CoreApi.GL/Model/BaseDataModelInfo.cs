@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
     {
         None = 0,
         客户类型=53,
-        币种 = 53,
+        币种 = 54,
         分销渠道 = 62,
         销售组织 = 63,
         销售办事处 = 64,
@@ -40,6 +40,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         客户账户组 = 86,
         税分类 = 87,
         装运条件 =88,
+        销售组=89,
         地区 = 90,
         客户行业 =91
     }
