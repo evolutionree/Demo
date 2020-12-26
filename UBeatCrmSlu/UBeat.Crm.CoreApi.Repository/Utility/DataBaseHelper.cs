@@ -35,13 +35,14 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
             return new NpgsqlConnection(connectStr);
         }
 
-        public static string getDbName() {
+        public static string getDbName()
+        {
             if (_connectString == null)
             {
                 IConfigurationRoot config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
                 _connectString = config.GetConnectionString("DefaultDB");
             }
-            NpgsqlConnection conn  = new   NpgsqlConnection(_connectString); ;
+            NpgsqlConnection conn = new NpgsqlConnection(_connectString); ;
             return conn.Database;
         }
         public static int ExecuteNonQuery(string commandText, object parameters = null,
@@ -134,49 +135,77 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
         /// <returns></returns>
         public static Dictionary<string, List<IDictionary<string, object>>> QueryStoredProcCursor(string procName,
             List<string> dataNames,
-            object parameters = null, CommandType commandType = CommandType.StoredProcedure, string connectString = null)
+            object parameters = null, CommandType commandType = CommandType.StoredProcedure, string connectString = null, IDbTransaction touterran = null)
         {
+
             var resultList = new Dictionary<string, List<IDictionary<string, object>>>();
-            using (var conn = GetDbConnect(connectString))
+            IDbConnection conn = null;
+            IDbTransaction tran = null;
+            try
             {
-                conn.Open();
-                var tran = conn.BeginTransaction();
-                try
+                if (touterran == null)
                 {
-                    var resultsReferences =
-                        conn.Query(procName, parameters, commandType: commandType)
-                            .Cast<IDictionary<string, object>>()
-                            .ToList();
-                    for (var index = 0; index < resultsReferences.Count; index++)
-                    {
-                        var resultsReference = resultsReferences[index];
-                        var resultSetName = resultsReference.Values.FirstOrDefault();
-                        var resultSetReferenceCommand = string.Format("FETCH ALL IN \"{0}\";", resultSetName);
-
-                        var dataKey = index >= dataNames.Count ? resultSetName.ToString().Replace("cursor", "") : dataNames[index];
-
-                        var result =
-                            conn.Query(resultSetReferenceCommand, null, commandType: CommandType.Text, transaction: tran)
+                    conn = GetDbConnect(connectString);
+                    conn.Open();
+                    tran = conn.BeginTransaction();
+                }
+                else
+                {
+                    tran = touterran;
+                    conn = tran.Connection;
+                }
+                var resultsReferences =
+                            conn.Query(procName, parameters, transaction: tran, commandType: commandType)
                                 .Cast<IDictionary<string, object>>()
                                 .ToList();
+                for (var index = 0; index < resultsReferences.Count; index++)
+                {
+                    var resultsReference = resultsReferences[index];
+                    var resultSetName = resultsReference.Values.FirstOrDefault();
+                    var resultSetReferenceCommand = string.Format("FETCH ALL IN \"{0}\";", resultSetName);
 
-                        resultList.Add(dataKey, result);
-                    }
+                    var dataKey = index >= dataNames.Count ? resultSetName.ToString().Replace("cursor", "") : dataNames[index];
+
+                    var result =
+                        conn.Query(resultSetReferenceCommand, null, commandType: CommandType.Text, transaction: tran)
+                            .Cast<IDictionary<string, object>>()
+                            .ToList();
+                    var closeCursorSQL = string.Format("close \"{0}\";", resultSetName);
+                    ExecuteNonQuery(closeCursorSQL, conn, tran);
+                    resultList.Add(dataKey, result);
+                }
+                if (touterran == null)
+                {
                     tran.Commit();
-                }
-                catch (Exception ex)
-                {
-                    tran.Rollback();
-                    Logger.Error(ex, "数据库执行出错");
-                    throw;
-                }
-                finally
-                {
-                    conn.Close();
-                    conn.Dispose();
+                    tran = null;
                 }
             }
-
+            catch (Exception ex)
+            {
+                throw (ex);
+            }
+            finally
+            {
+                try
+                {
+                    if (touterran == null)
+                    {
+                        if (tran != null)
+                        {
+                            tran.Rollback();
+                            tran = null;
+                        }
+                        if (conn != null)
+                        {
+                            conn.Close();
+                            conn = null;
+                        }
+                    }
+                }
+                catch (Exception ex1)
+                {
+                }
+            }
             return resultList;
         }
 
@@ -206,8 +235,8 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
                     var resultsReference = resultsReferences.FirstOrDefault();
                     var resultSetName = resultsReference.Values.FirstOrDefault();
                     var resultSetReferenceCommand = string.Format("FETCH ALL IN \"{0}\";", resultSetName);
-                   var tmp = conn.Query(resultSetReferenceCommand, null, commandType: CommandType.Text,
-                           transaction: tran).ToList();
+                    var tmp = conn.Query(resultSetReferenceCommand, null, commandType: CommandType.Text,
+                            transaction: tran).ToList();
                     result = JsonConvert.DeserializeObject<List<TDataType>>(JsonConvert.SerializeObject(tmp));
                     tran.Commit();
                 }
@@ -352,7 +381,7 @@ namespace UBeat.Crm.CoreApi.Repository.Utility
 
 
         public static List<T> Query<T>(IDbConnection connection, string commandText, object parameters = null,
-            CommandType commandType = CommandType.Text)
+            CommandType commandType = CommandType.Text, IDbTransaction tran = null)
         {
             return connection.Query<T>(commandText, parameters, commandType: commandType).ToList();
         }

@@ -289,7 +289,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 NeedPower = 0
             };
 
-            var mergecustDetail = _dynamicEntityRepository.DetailList(detailMapper, userNumber);
+            var mergecustDetail = _dynamicEntityRepository.DetailList(detailMapper, userNumber,null);
             mergecustName = new List<string>();
             DateTime reconlive = DateTime.MinValue;
             DateTime reconlivetemp = DateTime.MinValue;
