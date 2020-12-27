@@ -94,6 +94,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
 		public OperateResult FetchCustData(SynSapModel model,int userid,int opt=0, DbTransaction tran = null)
 		{
+			userid = userid == 0 ? 1 : userid;
 			var sapResult = string.Empty;
 			var optResult = new OperateResult();
 			optResult.Msg = string.Format(@"同步SAP客户成功");
@@ -116,20 +117,6 @@ namespace UBeat.Crm.CoreApi.GL.Services
 					{
 						fetchDateTime = DateTime.Parse(paramInfo["fetchday"].ToString()).ToString("yyyy-MM-dd");
 					}
-                    if (opt==3)
-                    {
-						var detailData = _baseDataServices.GetEntityDetailData(tran, model.EntityId, model.RecIds[0], userid);
-						string erpcode= isNull(detailData, "erpcode").StringMax(0, 10);
-						if (string.IsNullOrEmpty(erpcode))
-						{
-							optResult.Flag = 0;
-							optResult.Msg = "SAP编号不能为空";
-							return optResult;
-						}
-						else {
-							postData.Add("PARTNER", erpcode);
-						}
-					}
 				}
 				catch (Exception ex1)
 				{
@@ -143,6 +130,21 @@ namespace UBeat.Crm.CoreApi.GL.Services
 				//全量
 				fetchDateTime = "";
 				postData["REQDATE"]= fetchDateTime;
+			}
+			else if (opt == 3)
+			{
+				var detailData = _baseDataServices.GetEntityDetailData(tran, model.EntityId, model.RecIds[0], userid);
+				string erpcode = isNull(detailData, "erpcode").StringMax(0, 10);
+				if (string.IsNullOrEmpty(erpcode))
+				{
+					optResult.Flag = 0;
+					optResult.Msg = "SAP编号不能为空";
+					return optResult;
+				}
+				else
+				{
+					postData["PARTNER"] = erpcode;
+				}
 			}
 
 			logger.Info(string.Concat("获取SAP客户请求参数：", JsonHelper.ToJson(postData)));

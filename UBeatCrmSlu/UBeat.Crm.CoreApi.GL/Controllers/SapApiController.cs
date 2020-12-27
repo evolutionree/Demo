@@ -98,7 +98,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             if (model == null || model.RecIds.Count == 0)
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户数据根据id", string.Empty);
-            var c = _fetchCustomerServices.FetchCustData(model, UserId, 0);
+            var c = _fetchCustomerServices.FetchCustData(model, UserId, 3);
 
             if (c.Flag == 1)
             {
