@@ -26,6 +26,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
     {
         None = 0,
         验证业务 = 1,
+        产品=3,
     }
 
     public class SynResultModel
