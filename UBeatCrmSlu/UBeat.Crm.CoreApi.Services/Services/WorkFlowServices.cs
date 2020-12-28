@@ -346,9 +346,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 }
                             }
                         }
-                        result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber).FirstOrDefault();
+                        result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber, tran).FirstOrDefault();
                     }
-                    result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber).FirstOrDefault();
+                    result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber,tran).FirstOrDefault();
 
                     #endregion
 

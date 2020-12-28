@@ -94,12 +94,13 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
 		public OperateResult FetchCustData(SynSapModel model,int userid,int opt=0, DbTransaction tran = null)
 		{
+			userid = userid == 0 ? 1 : userid;
 			var sapResult = string.Empty;
 			var optResult = new OperateResult();
 			optResult.Msg = string.Format(@"同步SAP客户成功");
 			optResult.Flag = 1;
 
-			//opt=0是全量 opt=1增量 opt=3单个
+			//opt=1是全量 opt=0增量 opt=3单个
 			var logTime = DateTime.Now;
 			var postData = new Dictionary<string, string>();
 			var headData = new Dictionary<string, string>();
@@ -116,20 +117,6 @@ namespace UBeat.Crm.CoreApi.GL.Services
 					{
 						fetchDateTime = DateTime.Parse(paramInfo["fetchday"].ToString()).ToString("yyyy-MM-dd");
 					}
-                    if (opt==3)
-                    {
-						var detailData = _baseDataServices.GetEntityDetailData(tran, model.EntityId, model.RecIds[0], userid);
-						string erpcode= isNull(detailData, "erpcode").StringMax(0, 10);
-						if (string.IsNullOrEmpty(erpcode))
-						{
-							optResult.Flag = 0;
-							optResult.Msg = "SAP编号不能为空";
-							return optResult;
-						}
-						else {
-							postData.Add("PARTNER", erpcode);
-						}
-					}
 				}
 				catch (Exception ex1)
 				{
@@ -143,6 +130,21 @@ namespace UBeat.Crm.CoreApi.GL.Services
 				//全量
 				fetchDateTime = "";
 				postData["REQDATE"]= fetchDateTime;
+			}
+			else if (opt == 3)
+			{
+				var detailData = _baseDataServices.GetEntityDetailData(tran, model.EntityId, model.RecIds[0], userid);
+				string erpcode = isNull(detailData, "erpcode").StringMax(0, 10);
+				if (string.IsNullOrEmpty(erpcode))
+				{
+					optResult.Flag = 0;
+					optResult.Msg = "SAP编号不能为空";
+					return optResult;
+				}
+				else
+				{
+					postData["PARTNER"] = erpcode;
+				}
 			}
 
 			logger.Info(string.Concat("获取SAP客户请求参数：", JsonHelper.ToJson(postData)));
@@ -197,7 +199,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
 					SaveCustomerMainView v = new SaveCustomerMainView();
 					v.companyone = item.PARTNER.Trim().PadLeft(10, '0');//客户编号
-					//v.reccode = item.NAME4.Trim();//CRM流水号
+					v.reccode = item.CRMCUST.Trim();//CRM流水号
 
 					if (!string.IsNullOrEmpty(item.KUKLA))
 					{
@@ -598,7 +600,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 								list.Add(dicData[item]);
 							if (list.Count > 0)
 							{
-								//_customerRepository.ModifyList(list, userId);
+								_customerRepository.ModifyList(list, userId);
 							}
 						}
 						catch (Exception ex)
@@ -610,7 +612,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
 				}
 
-				/*var crmLostList = _customerRepository.getCrmLostCode(reccodeList);
+				var crmLostList = _customerRepository.getCrmLostCode(reccodeList);
 				//查询同步异常，sap已经创建了，同时记录crm流水号的数据
 				if (crmLostList.Count > 0)
 				{
@@ -632,7 +634,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 							continue;
 						}
 					}
-				}*/
+				}
 
 				var addCodeList = _customerRepository.getAddCode(codeList);
 				if (addCodeList.Count > 0)

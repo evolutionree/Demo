@@ -492,7 +492,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             entityModel.EntityId = entityId;
             entityModel.RecId = recId;
             entityModel.NeedPower = 0;
-            var resultData = _dynamicEntityServices.Detail(entityModel, userId);
+            var resultData = _dynamicEntityServices.Detail(entityModel, userId,tran);
 
             if (resultData != null && resultData.ContainsKey("Detail") && resultData["Detail"] != null && resultData["Detail"].Count > 0)
                 return resultData["Detail"][0];

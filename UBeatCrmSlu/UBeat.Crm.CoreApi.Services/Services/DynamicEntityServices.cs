@@ -731,7 +731,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (fieldValue["id"] != null)
                     {
                         detailMapper.RecIds = fieldValue["id"].ToString();
-                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber);
+                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber,null);
                         var entityInfotemp = _entityProRepository.GetEntityInfo(noticeModel.EntityId);
                         foreach (var detail in detailList)
                         {
@@ -799,7 +799,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (fieldValue["id"] != null)
                     {
                         detailMapper.RecIds = fieldValue["id"].ToString();
-                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber);
+                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber,null);
                         var entityInfotemp = _entityProRepository.GetEntityInfo(noticeModel.EntityId);
                         foreach (var detail in detailList)
                         {
@@ -2625,24 +2625,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return this.CommonDataList(dynamicEntity, pageParam, isAdvanceQuery, userNumber, CalcCountOnly, isColumnFilter);
         }
 
-        public OutputResult<object> Detail(DynamicEntityDetailModel dynamicModel, int userNumber)
-        {
-            var dynamicEntity = _mapper.Map<DynamicEntityDetailModel, DynamicEntityDetailtMapper>(dynamicModel);
-            if (dynamicEntity == null || !dynamicEntity.IsValid())
-            {
-                return HandleValid(dynamicEntity);
-            }
-            var result = Detail(dynamicEntity, userNumber);
-
-            if (result.Count == 1)
-            {
-                var singleResult = new Dictionary<string, object>();
-                singleResult.Add(result.Keys.First(), result.Values.First().FirstOrDefault());
-                return new OutputResult<object>(singleResult);
-            }
-            else return new OutputResult<object>(result);
-        }
-        public Dictionary<string, List<IDictionary<string, object>>> Detail(DynamicEntityDetailtMapper dynamicEntity, int userNumber)
+        public Dictionary<string, List<IDictionary<string, object>>> Detail(DynamicEntityDetailtMapper dynamicEntity, int userNumber, DbTransaction tran = null)
         {
 
             if (dynamicEntity == null || !dynamicEntity.IsValid())
@@ -2651,8 +2634,91 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 throw new Exception(errorTips);
             }
 
-            var result = _dynamicEntityRepository.DetailMulti(dynamicEntity, userNumber);
-            var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(dynamicEntity.EntityId, userNumber);
+            var result = _dynamicEntityRepository.DetailMulti(dynamicEntity, userNumber, tran);
+            List<DynamicEntityFieldSearch> fieldList = _dynamicEntityRepository.GetEntityFields(dynamicEntity.EntityId, userNumber);
+
+            List<IDictionary<string, object>> list = result["Detail"];
+            foreach (DynamicEntityFieldSearch fieldInfo in fieldList)
+            {
+                if (fieldInfo.ControlType == (int)(DynamicProtocolControlType.DataSourceSingle))
+                {
+                    foreach (IDictionary<string, object> item in list)
+                    {
+                        if (item.ContainsKey(fieldInfo.FieldName)
+                            && item.ContainsKey(fieldInfo.FieldName + "_name")
+                            && item[fieldInfo.FieldName] != null)
+                        {
+                            if (item[fieldInfo.FieldName] is IDictionary<string, object>)
+                            {
+                                IDictionary<string, object> obj = ((IDictionary<string, object>)item[fieldInfo.FieldName]);
+                                if (obj != null && obj.ContainsKey("id") && obj.ContainsKey("name"))
+                                {
+                                    if (!((item[fieldInfo.FieldName + "_name"] == null && obj["name"] == null)
+                                        || obj["name"].Equals(item[fieldInfo.FieldName + "_name"])))
+                                    {
+                                        obj["name"] = item[fieldInfo.FieldName + "_name"];
+                                        item[fieldInfo.FieldName] = obj;
+
+                                    }
+                                }
+                            }
+                            else if (item[fieldInfo.FieldName] is Dictionary<string, object>)
+                            {
+                                Dictionary<string, object> obj = ((Dictionary<string, object>)item[fieldInfo.FieldName]);
+                                if (obj != null && obj.ContainsKey("id") && obj.ContainsKey("name"))
+                                {
+                                    if (!((item[fieldInfo.FieldName + "_name"] == null && obj["name"] == null)
+                                        || obj["name"].Equals(item[fieldInfo.FieldName + "_name"])))
+                                    {
+                                        obj["name"] = item[fieldInfo.FieldName + "_name"];
+                                        item[fieldInfo.FieldName] = obj;
+
+                                    }
+                                }
+                            }
+                            else if (item[fieldInfo.FieldName] is string)
+                            {
+                                Dictionary<string, object> obj = JsonConvert.DeserializeObject<Dictionary<string, object>>((string)item[fieldInfo.FieldName]);
+                                if (obj != null && obj.ContainsKey("id") && obj.ContainsKey("name"))
+                                {
+                                    Dictionary<string, object> fieldConfigDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(fieldInfo.FieldConfig);
+                                    bool SaveNamed = false;
+                                    if (fieldConfigDict.ContainsKey("dataSource")
+                                        && fieldConfigDict["dataSource"] != null)
+                                    {
+                                        Dictionary<string, object> datasourceInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                                        Newtonsoft.Json.JsonConvert.SerializeObject(fieldConfigDict["dataSource"]));
+                                        if (datasourceInfo != null && datasourceInfo.ContainsKey("namefrom") && datasourceInfo["namefrom"] != null)
+                                        {
+                                            string namefrom = datasourceInfo["namefrom"].ToString();
+                                            if (namefrom.Equals("1"))
+                                            {
+                                                SaveNamed = true;
+                                            }
+                                        }
+                                    }
+                                    if (!((item[fieldInfo.FieldName + "_name"] == null && obj["name"] == null)
+                                       || obj["name"].Equals(item[fieldInfo.FieldName + "_name"])))
+                                    {
+                                        if (SaveNamed)
+                                        {
+                                            item[fieldInfo.FieldName + "_name"] = obj["name"];
+                                        }
+                                        else
+                                        {
+                                            obj["name"] = item[fieldInfo.FieldName + "_name"];
+                                            item[fieldInfo.FieldName] = JsonConvert.SerializeObject(obj);
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+
+            var entityInfo = _dynamicEntityRepository.getEntityBaseInfoById(dynamicEntity.EntityId, userNumber, tran);
             if (entityInfo != null)
             {
                 var modelType = Convert.ToInt32(entityInfo["modeltype"].ToString());
@@ -2669,12 +2735,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         EntityId = Guid.Parse(entityInfo["relentityid"].ToString()),
                         RecId = Guid.Parse(detail["recrelateid"].ToString()),
                         NeedPower = 0
-                    }, userNumber);
+                    }, userNumber, tran);
                     if (relResult != null)
                     {
-                        var relEntityFields = _dynamicEntityRepository.GetEntityFields(Guid.Parse(entityInfo["relentityid"].ToString()), userNumber);
+                        var relEntityFields = _dynamicEntityRepository.GetEntityFields(Guid.Parse(entityInfo["relentityid"].ToString()), userNumber, tran);
                         var relField = relEntityFields.FirstOrDefault(t => t.FieldId == Guid.Parse(entityInfo["relfieldid"].ToString()));
-                        if (relField != null && relResult != null && relResult[relField.FieldName] != null && entityInfo != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
+                        if (relField == null) throw (new Exception("动态表单的关联字段配置异常，请联系管理员"));
+                        if (relResult[relField.FieldName] != null && entityInfo["relfieldid"] != null && entityInfo["relfieldname"] != null)
                         {
                             if (!detail.ContainsKey(entityInfo["relfieldname"].ToString()))
                             {
@@ -2693,25 +2760,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         detail.Add(entityInfo["relfieldname"].ToString() + "_name", relResult[relField.FieldName]);
                                     }
                                 }
+
                             }
 
                         }
                     }
                 }
             }
-            //List<DynamicEntityFieldSearch>fieldsList =  _dynamicEntityRepository.GetEntityFields(dynamicEntity.EntityId, userNumber);
-            //if (result.ContainsKey("Detail") && result["Detail"] != null) {
-            //    foreach (DynamicEntityFieldSearch fieldInfo in fieldsList) {
-            //        if (fieldInfo.ControlType == (int)EntityFieldControlType.NumberDecimal
-            //            || fieldInfo.ControlType == (int)EntityFieldControlType.NumberInt) {
-            //            DynamicProtocolHelper.FormatNumericFieldInList(result["Detail"],fieldInfo);
-            //        }
-            //    }
-            //}
-            //foreach (DynamicEntityFieldSearch fieldInfo in fieldsList) {
-            //    FormatNumericFieldInDict(result["Detail"], fieldInfo);
-            //}
-            // IEnumerable<DynamicEntityFieldSearch> linkTableFields = new List<DynamicEntityFieldSearch>();
 
             Guid entityid = dynamicEntity.EntityId;
             if (dynamicEntity.EntityId == new Guid("00000000-0000-0000-0000-000000000001"))
@@ -2724,11 +2779,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         entityid = workflowInfo.Entityid;
 
-                        result["entitydetail"] = DealLinkTableFields(result["entitydetail"], entityid, userNumber);
+                        result["entitydetail"] = DealLinkTableFields(result["entitydetail"], entityid, userNumber, tran);
                         var relatedetail = result["relatedetail"];
                         if (relatedetail.Count > 0)
                         {
-                            relatedetail = DealLinkTableFields(relatedetail, workflowInfo.RelEntityId, userNumber);
+                            relatedetail = DealLinkTableFields(relatedetail, workflowInfo.RelEntityId, userNumber, tran);
                         }
                     }
                 }
@@ -2747,14 +2802,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         throw new Exception("数据已经被删除");
                     }
                 }
-                result["Detail"] = DealLinkTableFields(result["Detail"], entityid, userNumber);
+                result["Detail"] = DealLinkTableFields(result["Detail"], entityid, userNumber, tran);
             }
 
             return result;
         }
 
 
-        public List<IDictionary<string, object>> DealLinkTableFields(List<IDictionary<string, object>> data, Guid entityid, int userNumber)
+        public List<IDictionary<string, object>> DealLinkTableFields(List<IDictionary<string, object>> data, Guid entityid, int userNumber, DbTransaction tran)
         {
             var searchFields = GetEntityFields(entityid, userNumber);
             var linkTableFields = searchFields.Where(m => (DynamicProtocolControlType)m.ControlType == DynamicProtocolControlType.LinkeTable).ToList();
@@ -2778,7 +2833,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             NeedPower = 0
                         };
 
-                        row[filed.FieldName] = _dynamicEntityRepository.DetailList(modeltemp, userNumber);
+                        row[filed.FieldName] = _dynamicEntityRepository.DetailList(modeltemp, userNumber, tran);
                     }
                 }
 
@@ -2787,7 +2842,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 
 
+        public OutputResult<object> Detail(DynamicEntityDetailModel dynamicModel, int userNumber, DbTransaction tran = null)
+        {
+            var dynamicEntity = _mapper.Map<DynamicEntityDetailModel, DynamicEntityDetailtMapper>(dynamicModel);
+            if (dynamicEntity == null || !dynamicEntity.IsValid())
+            {
+                return HandleValid(dynamicEntity);
+            }
+            var result = Detail(dynamicEntity, userNumber, tran);
 
+            if (result.Count == 1)
+            {
+                var singleResult = new Dictionary<string, object>();
+                singleResult.Add(result.Keys.First(), result.Values.First().FirstOrDefault());
+                return new OutputResult<object>(singleResult);
+            }
+            else return new OutputResult<object>(result);
+        }
 
         public OutputResult<object> DetailList(DynamicEntityDetaillistModel dynamicModel, int userNumber)
         {
@@ -2802,7 +2873,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(dynamicEntity);
             }
 
-            var result = _dynamicEntityRepository.DetailList(dynamicEntity, userNumber);
+            var result = _dynamicEntityRepository.DetailList(dynamicEntity, userNumber,null);
 
             return new OutputResult<object>(result);
         }
@@ -3704,7 +3775,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     NeedPower = 0
                 };
                 //先获取详情再删除数据
-                var details = _dynamicEntityRepository.DetailList(detailMapper, userNumber);
+                var details = _dynamicEntityRepository.DetailList(detailMapper, userNumber, transaction);
 
                 //删除数据
                 var result = _dynamicEntityRepository.Delete(transaction, dynamicModel.EntityId, dynamicModel.RecId, dynamicModel.PageType, dynamicModel.PageCode, userNumber);

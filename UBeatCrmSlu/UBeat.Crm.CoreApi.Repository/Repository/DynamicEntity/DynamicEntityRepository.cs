@@ -206,7 +206,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
         }
 
-        public List<IDictionary<string, object>> DetailList(DynamicEntityDetailtListMapper detailMapper, int userNumber)
+        public List<IDictionary<string, object>> DetailList(DynamicEntityDetailtListMapper detailMapper, int userNumber, DbTransaction tran)
         {
             var recIds = detailMapper.RecIds.Split(',');
             var datalist = new List<IDictionary<string, object>>();
@@ -217,7 +217,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 mapper.NeedPower = detailMapper.NeedPower;
                 mapper.RecId = new Guid(recid);
 
-                var result = Detail(mapper, userNumber);
+                var result = Detail(mapper, userNumber, tran);
                 datalist.Add(result);
             }
             return datalist;
@@ -242,7 +242,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return result;
         }
 
-        public List<DynamicEntityFieldSearch> GetEntityFields(Guid entityId, int userNumber)
+        public List<DynamicEntityFieldSearch> GetEntityFields(Guid entityId, int userNumber, IDbTransaction tran = null)
         {
             var procName =
              @"
@@ -250,17 +250,18 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             FROM crm_sys_entity_fields WHERE entityid = @entityId AND recstatus = 1
             ";
 
-            var param = new
-            {
-                EntityId = entityId,
+            //var param = new
+            //{
+            //    EntityId = entityId,
+            //};
+            DbParameter[] p = new DbParameter[] {
+                new NpgsqlParameter("@entityId",entityId)
             };
-
-            var result = DataBaseHelper.Query<DynamicEntityFieldSearch>(procName, param, CommandType.Text);
+            var result = this.ExecuteQuery<DynamicEntityFieldSearch>(procName, p, (DbTransaction)tran); //DataBaseHelper.Query<DynamicEntityFieldSearch>(procName, param, CommandType.Text,tran);
 
             return result;
         }
-
-        public Dictionary<string, List<IDictionary<string, object>>> DetailMulti(DynamicEntityDetailtMapper detailMapper, int userNumber)
+        public Dictionary<string, List<IDictionary<string, object>>> DetailMulti(DynamicEntityDetailtMapper detailMapper, int userNumber, DbTransaction tran = null)
         {
             var procName =
              "SELECT crm_func_entity_protocol_data_detail(@entityid,@recid,@needpower,@userNo)";
@@ -275,7 +276,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
             var dataNames = new List<string> { "Detail" };
 
-            var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text);
+            var result = DataBaseHelper.QueryStoredProcCursor(procName, dataNames, param, CommandType.Text, null, tran);
             return result;
         }
 
@@ -1139,7 +1140,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
 
             return resutl;
         }
-        public Dictionary<string, object> getEntityBaseInfoById(Guid entityid, int userNum)
+        public Dictionary<string, object> getEntityBaseInfoById(Guid entityid, int userNum, DbTransaction tran = null)
         {
             try
             {
@@ -1147,7 +1148,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 var param = new DbParameter[] {
                     new NpgsqlParameter("entityid",entityid)
                 };
-                List<Dictionary<string, object>> ret = ExecuteQuery(cmdText, param);
+                List<Dictionary<string, object>> ret = ExecuteQuery(cmdText, param, tran);
                 if (ret != null && ret.Count > 0) return ret[0];
             }
             catch (Exception ex)

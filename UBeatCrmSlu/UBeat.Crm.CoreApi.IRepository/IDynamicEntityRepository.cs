@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
@@ -26,7 +27,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<DynamicEntityWebFieldMapper> GetWebDynamicListFields(Guid typeId, int operateType, int userNumber);
 
         List<DynamicEntityFieldSearch> GetSearchFields(Guid entityId, int userNumber);
-        List<DynamicEntityFieldSearch> GetEntityFields(Guid entityId, int userNumber);
+        List<DynamicEntityFieldSearch> GetEntityFields(Guid entityId, int userNumber, IDbTransaction tran = null);
         OperateResult DynamicAdd(DbTransaction tran, Guid typeId, Dictionary<string, object> fieldData, Dictionary<string, object> extraData, int userNumber);
 
         void DynamicAddList(List<DynamicEntityAddListMapper> data, int userNumber);
@@ -40,9 +41,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         string CheckDataListSpecFunction(Guid entityid);
         IDictionary<string, object> Detail(DynamicEntityDetailtMapper detailMapper, int userNumber,DbTransaction transaction = null);
 
-        List<IDictionary<string, object>> DetailList(DynamicEntityDetailtListMapper detailMapper, int userNumber);
+        List<IDictionary<string, object>> DetailList(DynamicEntityDetailtListMapper detailMapper, int userNumber, DbTransaction tran);
 
-        Dictionary<string, List<IDictionary<string, object>>> DetailMulti(DynamicEntityDetailtMapper detailMapper, int userNumber);
+        Dictionary<string, List<IDictionary<string, object>>> DetailMulti(DynamicEntityDetailtMapper detailMapper, int userNumber, DbTransaction tran = null);
 
         List<GeneralDicItem> GetDicItemByKeys(string dicKeys);
 
@@ -99,7 +100,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 
         //获取数据源控件类型的所有字段
         List<EntityFieldInfo> GetDataSourceEntityFields();
-        Dictionary<string, object> getEntityBaseInfoById(Guid entityid, int userNum);
+        Dictionary<string, object> getEntityBaseInfoById(Guid entityid, int userNum, DbTransaction tran = null);
 
         bool WriteBack(DbTransaction tran, List<Dictionary<string, object>> writebackrules, int userNum);
 

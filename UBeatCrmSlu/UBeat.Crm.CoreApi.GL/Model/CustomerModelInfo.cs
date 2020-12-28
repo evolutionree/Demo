@@ -33,6 +33,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
     public class CUST_MAIN
     {
         public string PARTNER { get; set; }
+        public string CRMCUST { get; set; }
         public string LOEVM { get; set; }
         public string KTOKD { get; set; }
         public string ANRED { get; set; }

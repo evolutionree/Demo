@@ -136,7 +136,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@recstatus", index_str), (int)item.status);
                 addSingleParameters.Add(string.Concat("@reccreator", index_str), userId);
                 addSingleParameters.Add(string.Concat("@issynchrosap", index_str), (int)SynchrosapStatus.Yes);
-                addSingleParameters.Add(string.Concat("@flowstatus", index_str), 1);
+                addSingleParameters.Add(string.Concat("@flowstatus", index_str), 3);
                 addSingleParameters.Add(string.Concat("@createfrom", index_str), (int)item.createfrom);
                  
                 //recupdator, recmanager, reccreated, recupdated, reconlive,
@@ -146,8 +146,8 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@recupdated", index_str), DateTime.Now);
                 addSingleParameters.Add(string.Concat("@reconlive", index_str), DateTime.Now);
 
-                //erpcode, customertype, recname, searchone,
-                //addSingleParameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);//客户账户组
+                //customertype,erpcode, customertype, recname, searchone,
+                addSingleParameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);//客户账户组
                 addSingleParameters.Add(string.Concat("@erpcode", index_str), item.companyone);
                 //addSingleParameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
                 addSingleParameters.Add(string.Concat("@recname", index_str), item.recname);
@@ -173,10 +173,11 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@account", index_str), item.accountcode);
                 addSingleParameters.Add(string.Concat("@salesorganization", index_str), item.salesorganization_crmid);
 
-                //saledistribution, productgroup, sapcusttype,salesarea,
+                //saledistribution, productgroup, sapcusttype,industry,salesarea,
                 addSingleParameters.Add(string.Concat("@saledistribution", index_str), item.distribution_crmid);
                 addSingleParameters.Add(string.Concat("@productgroup", index_str), item.productgroup_crmid);
                 addSingleParameters.Add(string.Concat("@sapcusttype", index_str), item.custgpone_crmid);
+                addSingleParameters.Add(string.Concat("@industry", index_str), item.custgptwo_crmid);
                 addSingleParameters.Add(string.Concat("@area", index_str), item.salesarea_crmid);
 
                 //salesoffice, pricingpro, delivery, shipment, payment,
@@ -199,7 +200,6 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 //addSingleParameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
                 addSingleParameters.Add(string.Concat("@updatefrom", index_str), 0);
                 addSingleParameters.Add(string.Concat("@customerstatus", index_str), 2);
-                addSingleParameters.Add(string.Concat("@flowstatus", index_str), 3);
 
                 foreach (var p in addSingleParameters.ParameterNames)
                 { 
@@ -213,14 +213,14 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 var insertSql = string.Format(@"INSERT INTO crm_sys_customer(
 												recid, rectype, recstatus, reccreator, issynchrosap,flowstatus,createfrom,
                                                 recupdator, recmanager, reccreated, recupdated, reconlive,
-                                                erpcode, recname, customername, 
+                                                customertype,erpcode, recname, customername, 
                                                 customercompanyaddress, region, country, saparea,
                                                 language,
                                                 taxno, bank,account, salesorganization,
-                                                saledistribution, productgroup, sapcusttype,area,
+                                                saledistribution, productgroup, sapcusttype,industry,area,
                                                 salesoffice, shipment, payrequirement,
                                                 taxgp, currency,
-                                                credit,updatefrom,customerstatus,flowstatus
+                                                credit,updatefrom,customerstatus
                                                 ) VALUES ({0});",
                                                 string.Join(",", parameters));
 
@@ -262,72 +262,73 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 parameters.Add(string.Concat("@reconlive", index_str), DateTime.Now);
                 parameters.Add(string.Concat("@recstatus", index_str), (int)item.status);
                 parameters.Add(string.Concat("@issynchrosap", index_str), (int)SynchrosapStatus.Yes);
-                parameters.Add(string.Concat("@flowstatus", index_str), 1);
+                parameters.Add(string.Concat("@flowstatus", index_str), 3);
                 //修改不修改来源
                 //parameters.Add(string.Concat("@createfrom", index_str), (int)item.createfrom);
 
-                //customertype, companyone, appellation, recname, searchone, 
-                parameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);
-                parameters.Add(string.Concat("@companyone", index_str), item.companyone);
-                parameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
+                //customertype, companyone, recname, searchone, 
+                parameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);//客户账户组
+                parameters.Add(string.Concat("@erpcode", index_str), item.companyone);
+                //parameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
                 parameters.Add(string.Concat("@recname", index_str), item.recname);
                 parameters.Add(string.Concat("@reccode", index_str), item.reccode);
-                parameters.Add(string.Concat("@searchone", index_str), item.searchone);
+                parameters.Add(string.Concat("@customername", index_str), item.recname);
 
-                //address, city, country, region, postcode,
-                parameters.Add(string.Concat("@address", index_str), item.address);
-                parameters.Add(string.Concat("@city", index_str), item.city_crmid);
+                //customercompanyaddress, city, country, saparea, postcode,
+                parameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);
+                parameters.Add(string.Concat("@region", index_str), item.city_crmid);//城市
                 parameters.Add(string.Concat("@country", index_str), item.country_crmid);
-                parameters.Add(string.Concat("@region", index_str), item.region_crmid);
+                parameters.Add(string.Concat("@saparea", index_str), item.region_crmid);//地区
                 //parameters.Add(string.Concat("@postcode", index_str), item.postcode);
+
 
                 //language, taxphone, extension, mobilephone, fax,
                 parameters.Add(string.Concat("@language", index_str), item.language);
-                parameters.Add(string.Concat("@taxphone", index_str), item.taxphone);
-                parameters.Add(string.Concat("@extension", index_str), item.extension);
-                parameters.Add(string.Concat("@mobilephone", index_str), item.mobilephone);
-                parameters.Add(string.Concat("@fax", index_str), item.fax);
+                //parameters.Add(string.Concat("@taxphone", index_str), item.taxphone);
+                //parameters.Add(string.Concat("@extension", index_str), item.extension);
+                //parameters.Add(string.Concat("@mobilephone", index_str), item.mobilephone);
+                //parameters.Add(string.Concat("@fax", index_str), item.fax);
 
-                //email, valueadd, opencode, openname, accountcode, salesorganization,
-                parameters.Add(string.Concat("@email", index_str), item.email);
+                //email, valueadd, opencode, accountcode, salesorganization,
+                //parameters.Add(string.Concat("@email", index_str), item.email);
                 if (!string.IsNullOrEmpty(item.valueadd))
                 {
-                    parameters.Add(string.Concat("@valueadd", index_str), item.valueadd);
+                    parameters.Add(string.Concat("@taxno", index_str), item.valueadd);
                 }
-                parameters.Add(string.Concat("@opencode", index_str), item.open);
-                parameters.Add(string.Concat("@openname", index_str), item.openname);
-                parameters.Add(string.Concat("@accountcode", index_str), item.accountcode);
+                parameters.Add(string.Concat("@bank", index_str), item.opencode);
+                parameters.Add(string.Concat("@account", index_str), item.accountcode);
                 parameters.Add(string.Concat("@salesorganization", index_str), item.salesorganization_crmid);
 
-                //distribution, productgroup, custgpone, custgptwo, salesarea,
-                parameters.Add(string.Concat("@distribution", index_str), item.distribution_crmid);
+
+                //distribution, productgroup, sapcusttype,industry,salesarea,
+                parameters.Add(string.Concat("@saledistribution", index_str), item.distribution_crmid);
                 parameters.Add(string.Concat("@productgroup", index_str), item.productgroup_crmid);
-                parameters.Add(string.Concat("@custgpone", index_str), item.custgpone_crmid);
-                parameters.Add(string.Concat("@custgptwo", index_str), item.custgptwo_crmid);
-                parameters.Add(string.Concat("@salesarea", index_str), item.salesarea_crmid);
+                parameters.Add(string.Concat("@sapcusttype", index_str), item.custgpone_crmid);
+                parameters.Add(string.Concat("@industry", index_str), item.custgptwo_crmid);
+                parameters.Add(string.Concat("@area", index_str), item.salesarea_crmid);
 
                 //salesoffice, pricingpro, delivery, shipment, payment,
                 parameters.Add(string.Concat("@salesoffice", index_str), item.salesoffice_crmid);
-                parameters.Add(string.Concat("@pricingpro", index_str), item.pricingpro_crmid);
-                parameters.Add(string.Concat("@delivery", index_str), item.delivery_crmid);
+                //parameters.Add(string.Concat("@pricingpro", index_str), item.pricingpro_crmid);
+                //parameters.Add(string.Concat("@delivery", index_str), item.delivery_crmid);
                 parameters.Add(string.Concat("@shipment", index_str), item.shipment_crmid);
-                parameters.Add(string.Concat("@payment", index_str), item.payment_crmid);
+                parameters.Add(string.Concat("@payrequirement", index_str), item.payment_crmid);
 
                 //accountgp, taxgp, currency, creditperiod, rules, 
-                parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
+                //parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
                 parameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
                 parameters.Add(string.Concat("@currency", index_str), item.currency_crmid);
-                parameters.Add(string.Concat("@creditperiod", index_str), item.creditperiod);
-                parameters.Add(string.Concat("@rules", index_str), item.rules_crmid);
+                //parameters.Add(string.Concat("@creditperiod", index_str), item.creditperiod);
+
 
                 //risktype, checkrules, risklimit, companycode, accountantsub
-                parameters.Add(string.Concat("@risktype", index_str), item.risktype_crmid);
-                parameters.Add(string.Concat("@checkrules", index_str), item.checkrules_crmid);
-                parameters.Add(string.Concat("@risklimit", index_str), item.risklimit);
-                parameters.Add(string.Concat("@companycode", index_str), item.companycode);
-                parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
+                //parameters.Add(string.Concat("@risktype", index_str), item.risktype_crmid);
+                parameters.Add(string.Concat("@credit", index_str), item.risklimit);
+                //parameters.Add(string.Concat("@companycode", index_str), item.companycode);
+                //parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
                 //0sap 1crm
                 parameters.Add(string.Concat("@updatefrom", index_str), 0);
+                parameters.Add(string.Concat("@customerstatus", index_str), 2);
 
                 //setters
                 foreach (var p in parameters.ParameterNames)
@@ -335,9 +336,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                     if (p.Contains(index_str))
                     {
                         var para = p.Replace(index_str, "");
-                        if (p.Contains("address"))
-                            setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p, "::jsonb")));
-                        else if (p.Contains("opencode"))
+                        if (p.Contains("customercompanyaddress"))
                             setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p, "::jsonb")));
                         else
                             setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p)));
@@ -380,93 +379,94 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 var setters = new List<string>();
 
                 //parameters
+                //parameters
                 //recupdator, recmanager, recupdated, reconlive, recstatus, issynchrosap, createfrom
                 parameters.Add(string.Concat("@recupdator", index_str), userId);
-               // parameters.Add(string.Concat("@recmanager", index_str), item.manager);
+                // parameters.Add(string.Concat("@recmanager", index_str), item.manager);
                 parameters.Add(string.Concat("@recupdated", index_str), DateTime.Now);
                 parameters.Add(string.Concat("@reconlive", index_str), DateTime.Now);
                 parameters.Add(string.Concat("@recstatus", index_str), (int)item.status);
                 parameters.Add(string.Concat("@issynchrosap", index_str), (int)SynchrosapStatus.Yes);
-                parameters.Add(string.Concat("@flowstatus", index_str),1);
+                parameters.Add(string.Concat("@flowstatus", index_str), 3);
                 //修改不修改来源
                 //parameters.Add(string.Concat("@createfrom", index_str), (int)item.createfrom);
-                 
-                //customertype, companyone, appellation, recname, searchone, 
-                parameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);
-                parameters.Add(string.Concat("@companyone", index_str), item.companyone);
-                parameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
-                parameters.Add(string.Concat("@recname", index_str), item.recname);
-                parameters.Add(string.Concat("@searchone", index_str), item.searchone);
 
-                //address, city, country, region, postcode,
-                parameters.Add(string.Concat("@address", index_str), item.address);
-                parameters.Add(string.Concat("@city", index_str), item.city_crmid);
+                //customertype, companyone, recname, searchone, 
+                parameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);//客户账户组
+                parameters.Add(string.Concat("@erpcode", index_str), item.companyone);
+                //parameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
+                parameters.Add(string.Concat("@recname", index_str), item.recname);
+                parameters.Add(string.Concat("@customername", index_str), item.recname);
+
+                //customercompanyaddress, city, country, saparea, postcode,
+                parameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);
+                parameters.Add(string.Concat("@region", index_str), item.city_crmid);//城市
                 parameters.Add(string.Concat("@country", index_str), item.country_crmid);
-                parameters.Add(string.Concat("@region", index_str), item.region_crmid);
-                parameters.Add(string.Concat("@postcode", index_str), item.postcode);
+                parameters.Add(string.Concat("@saparea", index_str), item.region_crmid);//地区
+                //parameters.Add(string.Concat("@postcode", index_str), item.postcode);
+
 
                 //language, taxphone, extension, mobilephone, fax,
                 parameters.Add(string.Concat("@language", index_str), item.language);
-                parameters.Add(string.Concat("@taxphone", index_str), item.taxphone);
-                parameters.Add(string.Concat("@extension", index_str), item.extension);
-                parameters.Add(string.Concat("@mobilephone", index_str), item.mobilephone);
-                parameters.Add(string.Concat("@fax", index_str), item.fax);
+                //parameters.Add(string.Concat("@taxphone", index_str), item.taxphone);
+                //parameters.Add(string.Concat("@extension", index_str), item.extension);
+                //parameters.Add(string.Concat("@mobilephone", index_str), item.mobilephone);
+                //parameters.Add(string.Concat("@fax", index_str), item.fax);
 
-                //email, valueadd, opencode, openname, accountcode, salesorganization,
-                parameters.Add(string.Concat("@email", index_str), item.email);
-                if (!string.IsNullOrEmpty(item.valueadd)) {
-                    parameters.Add(string.Concat("@valueadd", index_str), item.valueadd);
+                //email, valueadd, opencode, accountcode, salesorganization,
+                //parameters.Add(string.Concat("@email", index_str), item.email);
+                if (!string.IsNullOrEmpty(item.valueadd))
+                {
+                    parameters.Add(string.Concat("@taxno", index_str), item.valueadd);
                 }
-                parameters.Add(string.Concat("@opencode", index_str), item.open);
-                parameters.Add(string.Concat("@openname", index_str), item.openname);
-                parameters.Add(string.Concat("@accountcode", index_str), item.accountcode);
+                parameters.Add(string.Concat("@bank", index_str), item.opencode);
+                parameters.Add(string.Concat("@account", index_str), item.accountcode);
                 parameters.Add(string.Concat("@salesorganization", index_str), item.salesorganization_crmid);
 
-                //distribution, productgroup, custgpone, custgptwo, salesarea,
-                parameters.Add(string.Concat("@distribution", index_str), item.distribution_crmid);
+
+                //distribution, productgroup, sapcusttype,industry, salesarea,
+                parameters.Add(string.Concat("@saledistribution", index_str), item.distribution_crmid);
                 parameters.Add(string.Concat("@productgroup", index_str), item.productgroup_crmid);
-                parameters.Add(string.Concat("@custgpone", index_str), item.custgpone_crmid);
-                parameters.Add(string.Concat("@custgptwo", index_str), item.custgptwo_crmid);
-                parameters.Add(string.Concat("@salesarea", index_str), item.salesarea_crmid);
+                parameters.Add(string.Concat("@sapcusttype", index_str), item.custgpone_crmid);
+                parameters.Add(string.Concat("@industry", index_str), item.custgptwo_crmid);
+                parameters.Add(string.Concat("@area", index_str), item.salesarea_crmid);
 
                 //salesoffice, pricingpro, delivery, shipment, payment,
                 parameters.Add(string.Concat("@salesoffice", index_str), item.salesoffice_crmid);
-                parameters.Add(string.Concat("@pricingpro", index_str), item.pricingpro_crmid);
-                parameters.Add(string.Concat("@delivery", index_str), item.delivery_crmid);
+                //parameters.Add(string.Concat("@pricingpro", index_str), item.pricingpro_crmid);
+                //parameters.Add(string.Concat("@delivery", index_str), item.delivery_crmid);
                 parameters.Add(string.Concat("@shipment", index_str), item.shipment_crmid);
-                parameters.Add(string.Concat("@payment", index_str), item.payment_crmid);
+                parameters.Add(string.Concat("@payrequirement", index_str), item.payment_crmid);
 
                 //accountgp, taxgp, currency, creditperiod, rules, 
-                parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
+                //parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
                 parameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
                 parameters.Add(string.Concat("@currency", index_str), item.currency_crmid);
-                parameters.Add(string.Concat("@creditperiod", index_str), item.creditperiod);
-                parameters.Add(string.Concat("@rules", index_str), item.rules_crmid);
+                //parameters.Add(string.Concat("@creditperiod", index_str), item.creditperiod);
+
 
                 //risktype, checkrules, risklimit, companycode, accountantsub
-                parameters.Add(string.Concat("@risktype", index_str), item.risktype_crmid);
-                parameters.Add(string.Concat("@checkrules", index_str), item.checkrules_crmid);
-                parameters.Add(string.Concat("@risklimit", index_str), item.risklimit);
-                parameters.Add(string.Concat("@companycode", index_str), item.companycode);
-                parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
+                //parameters.Add(string.Concat("@risktype", index_str), item.risktype_crmid);
+                parameters.Add(string.Concat("@credit", index_str), item.risklimit);
+                //parameters.Add(string.Concat("@companycode", index_str), item.companycode);
+                //parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
                 //0sap 1crm
                 parameters.Add(string.Concat("@updatefrom", index_str), 0);
+                parameters.Add(string.Concat("@customerstatus", index_str), 2);
 
                 //setters
                 foreach (var p in parameters.ParameterNames)
                 {
-                    if(p.Contains(index_str))
+                    if (p.Contains(index_str))
                     {
                         var para = p.Replace(index_str, "");
-                        if (p.Contains("address"))
-                            setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p, "::jsonb")));
-                        else if (p.Contains("opencode"))
+                        if (p.Contains("customercompanyaddress"))
                             setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p, "::jsonb")));
                         else
                             setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p)));
-                    } 
-                } 
-                var updateSql = string.Format(@"update crm_sys_customer set {1} where companyone = '{0}';",
+                    }
+                }
+                var updateSql = string.Format(@"update crm_sys_customer set {1} where erpcode = '{0}';",
                     item.companyone,
                     string.Join(",", setters));
                  

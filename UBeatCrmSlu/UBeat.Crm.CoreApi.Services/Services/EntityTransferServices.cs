@@ -1100,7 +1100,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         NeedPower = 0
                     };
 
-                    data[filed.FieldName] = _dynamicEntityRepository.DetailList(modeltemp, userNumber);
+                    data[filed.FieldName] = _dynamicEntityRepository.DetailList(modeltemp, userNumber,null);
                 }
             }
 
