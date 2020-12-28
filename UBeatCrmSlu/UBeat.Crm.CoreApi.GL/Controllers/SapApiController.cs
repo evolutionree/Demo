@@ -50,7 +50,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
-        [Route("saprequest")]
+        [Route("saprequest")]  
         [HttpPost]
         [AllowAnonymous]
         public OutputResult<object> SapRequest([FromBody] SynSapModel paramInfo = null)
