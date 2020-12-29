@@ -19,6 +19,14 @@ namespace UBeat.Crm.CoreApi.GL.Model
 
     }
 
+    public class SapCustCreateModelResult
+    {
+        public string TYPE { get; set; }
+        public string MESSAGE { get; set; }
+        public string PARTNER { get; set; }
+
+    }
+
     public class SapCustModel
     {
         public List<CUST_MAIN> CUST_MAIN { get; set; }
@@ -47,7 +55,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string STREET { get; set; }
         public string STR_SUPPL3 { get; set; }
         public string LOCATION { get; set; }
-        public string PSTLZ { get; set; }
+        public string PSTLZ { get; set; } //邮编默认123456
         public string ORT01 { get; set; }
         public string LAND1 { get; set; }
         public string REGIO { get; set; }
@@ -171,7 +179,8 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string companyone { get; set; }
         public Int32 appellation_crmid { get; set; }
         public string appellation_sapcode { get; set; } //默认值003
-        public string recname { get; set; }
+        public string recname { get; set; }//全称
+        public string customername { get; set; } 
         public string searchone { get; set; }
 
         public string address { get; set; }

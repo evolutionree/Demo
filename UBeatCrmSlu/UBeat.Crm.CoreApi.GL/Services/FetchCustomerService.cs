@@ -152,7 +152,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 			SapCustModelResult sapRequest = JsonConvert.DeserializeObject<SapCustModelResult>(result);
 			if (sapRequest.TYPE != "S")
 			{
-				logger.Log(LogLevel.Error, $"获取获取SAP客户接口异常报错：{sapRequest.MESSAGE}");
+				logger.Log(LogLevel.Error, $"获取SAP客户接口异常报错：{sapRequest.MESSAGE}");
 			}
 
 			initCrmBaseData();
@@ -448,8 +448,6 @@ namespace UBeat.Crm.CoreApi.GL.Services
 					if (!string.IsNullOrEmpty(item.NAME1))
 					{
 						v.recname = item.NAME1.Trim();//名称1
-						if (!string.IsNullOrEmpty(item.NAME2))
-							v.recname = string.Concat(item.NAME1.Trim(), item.NAME2.Trim());
 					}
 					if (!string.IsNullOrEmpty(item.SORTL))
 					{

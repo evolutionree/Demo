@@ -19,11 +19,14 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
     {
         private readonly BaseDataServices _baseDataServices;
         private readonly FetchCustomerServices _fetchCustomerServices;
+        private readonly ModifyCustomerServices _modifyCustomerServices;
 
-        public SapHttpApiController(BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
+        public SapHttpApiController(BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, 
+            ModifyCustomerServices modifyCustomerServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
+            _modifyCustomerServices = modifyCustomerServices;
         }
 
         [Route("fetchcustdatabyid")]
@@ -42,6 +45,29 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             else
             {
                 return ResponseError<object>(c.Msg);
+            }
+        }
+
+        [Route("syncusttosap")]
+        [HttpPost]
+        public OutputResult<object> SynCustomerToSap([FromBody] SynSapModel model = null)
+        {
+            if (model == null || model.RecIds.Count == 0)
+                return ResponseError<object>("参数格式错误");
+
+            WriteOperateLog("同步Sap客户", model);
+            bool sendResult = false;
+            var recId = model.RecIds[0];
+            var entityId = model.EntityId;
+
+            var c = _modifyCustomerServices.SynSapCustData(entityId, recId, UserId);
+            if (c.Result)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
             }
         }
 

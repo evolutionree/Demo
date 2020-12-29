@@ -146,12 +146,12 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@recupdated", index_str), DateTime.Now);
                 addSingleParameters.Add(string.Concat("@reconlive", index_str), DateTime.Now);
 
-                //customertype,erpcode, customertype, recname, searchone,
+                //customertype,erpcode, customertype, recname,,
                 addSingleParameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);//客户账户组
                 addSingleParameters.Add(string.Concat("@erpcode", index_str), item.companyone);
                 //addSingleParameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
                 addSingleParameters.Add(string.Concat("@recname", index_str), item.recname);
-                addSingleParameters.Add(string.Concat("@customername", index_str), item.recname);
+                addSingleParameters.Add(string.Concat("@customername", index_str), item.searchone);
 
                 //customercompanyaddress, region, country, region, postcode,
                 addSingleParameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);
@@ -272,7 +272,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 //parameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
                 parameters.Add(string.Concat("@recname", index_str), item.recname);
                 parameters.Add(string.Concat("@reccode", index_str), item.reccode);
-                parameters.Add(string.Concat("@customername", index_str), item.recname);
+                parameters.Add(string.Concat("@customername", index_str), item.searchone);
 
                 //customercompanyaddress, city, country, saparea, postcode,
                 parameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);
@@ -396,7 +396,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 parameters.Add(string.Concat("@erpcode", index_str), item.companyone);
                 //parameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
                 parameters.Add(string.Concat("@recname", index_str), item.recname);
-                parameters.Add(string.Concat("@customername", index_str), item.recname);
+                parameters.Add(string.Concat("@customername", index_str), item.searchone);
 
                 //customercompanyaddress, city, country, saparea, postcode,
                 parameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);
@@ -700,7 +700,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
 
         public int UpdateCustomerSapCode(Guid recId, string sapCode, DbTransaction tran = null)
         { 
-            var updateSql = string.Format("update crm_sys_customer set companyone = @sapCode, recupdated = now() where recid = @recId;"); 
+            var updateSql = string.Format("update crm_sys_customer set erpcode = @sapCode, recupdated = now() where recid = @recId;"); 
 			var param = new DbParameter[]
 			{
 				new NpgsqlParameter("recId",recId),
