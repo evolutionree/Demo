@@ -12,6 +12,8 @@ using UBeat.Crm.CoreApi.Services.Models.WJXModel;
 using UBeat.Crm.CoreApi.Services.Services;
 using System.Linq;
 using UBeat.Crm.CoreApi.IRepository;
+using UBeat.Crm.CoreApi.DomainModel.Products;
+using UBeat.Crm.CoreApi.DomainModel;
 
 namespace UBeat.Crm.CoreApi.GL.Controllers
 {
@@ -22,11 +24,13 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly BaseDataServices _baseDataServices;
         private readonly FetchCustomerServices _fetchCustomerServices;
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
-        public SapApiController(IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
+        private readonly IProductsRepository _iProductsRepository;
+        public SapApiController(IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _iDynamicEntityRepository = iDynamicEntityRepository;
+            _iProductsRepository = iProductsRepository;
         }
 
         [Route("test")]
@@ -50,7 +54,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
-        [Route("saprequest")]  
+        [Route("saprequest")]
         [HttpPost]
         [AllowAnonymous]
         public OutputResult<object> SapRequest([FromBody] SynSapModel paramInfo = null)
@@ -89,7 +93,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户数据", string.Empty);
 
-            var sendResult = _fetchCustomerServices.FetchCustData(model,UserId,1);
+            var sendResult = _fetchCustomerServices.FetchCustData(model, UserId, 1);
             return new OutputResult<object>(sendResult);
         }
 
@@ -140,6 +144,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                     if (sapProduct != null && sapProduct.DATA != null)
                     {
                         List<String> keys = new List<string>();
+                        Dictionary<String, String> series = new Dictionary<String, String>();
                         sapProduct.DATA.MARA.ForEach(t =>
                         {
 
@@ -148,20 +153,36 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                             if (!keys.Contains(MATNR))
                             {
                                 dic.Add("productcode", MATNR);
-                                dic.Add("productsetid", "7f74192d-b937-403f-ac2a-8be34714278b");
-                                dic.Add("worker", 1);
-                                foreach (var data in sapProduct.DATA.MARA)
+                                if (!series.ContainsKey(t["MATKL"]))
                                 {
-                                    String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == data["MATNR"].ToString())["MAKTX"];
-                                    if (!string.IsNullOrEmpty(MAKTX))
+                                    var crmData = new ProductSeriesInsert()
                                     {
-                                        dic.Add("productname", MAKTX);
-                                        dic.Add("productdesciption", MAKTX);
-                                        break;
+                                        TopSeriesId = Guid.Parse("7f74192d-b937-403f-ac2a-8be34714278b"),
+                                        SeriesName = t["MATKL"],
+                                        SeriesCode = t["EKWSL"],
+                                        SeriesLanguage = null
+                                    };
+                                    OperateResult result = _iProductsRepository.AddProductSeries(null, crmData, UserId);
+
+                                    if (result.Flag == 1)
+                                    {
+                                        dic.Add("productsetid", result.Id);
+                                        dic.Add("worker", 1);
+                                        foreach (var data in sapProduct.DATA.MARA)
+                                        {
+                                            String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == data["MATNR"].ToString())["MAKTX"];
+                                            if (!string.IsNullOrEmpty(MAKTX))
+                                            {
+                                                dic.Add("productname", MAKTX);
+                                                dic.Add("productdesciption", MAKTX);
+                                                break;
+                                            }
+                                        }
+                                        _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), dic, null, UserId);
+                                        keys.Add(MATNR);
+                                        series.Add(t["MATKL"], result.Id);
                                     }
                                 }
-                                _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), dic, null, UserId);
-                                keys.Add(MATNR);
                             }
                         });
                     }
