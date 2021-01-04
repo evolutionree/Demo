@@ -13,6 +13,8 @@ using System.Data.Common;
 using System.Linq;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Utility;
+using Dapper;
+using UBeat.Crm.CoreApi.Repository.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -25,6 +27,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly Guid productEntityId = new Guid("59cf141c-4d74-44da-bca8-3ccf8582a1f2");//固定值
 
 
+
+        #region  国联新增对接接口方法
+        public ProductModel IsExitProduct(String productCode, int userId)
+        {
+            var sql = @"select *  from crm_sys_product where productcode=@productcode limit 1;";
+            var param = new DynamicParameters();
+            param.Add("productcode", productCode);
+            return DataBaseHelper.QuerySingle<ProductModel>(sql, param);
+        }
+        #endregion
 
         public ProductsServices(IProductsRepository repository,
             DynamicEntityServices dynamicEntityServices,
@@ -673,6 +685,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return result;
         }
+
+
+
+
     }
     /// <summary>
     /// 记录产品及产品系列的包

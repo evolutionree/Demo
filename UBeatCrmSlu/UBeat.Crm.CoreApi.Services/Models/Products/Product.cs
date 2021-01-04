@@ -49,7 +49,17 @@ namespace UBeat.Crm.CoreApi.Services.Models.Products
 
     }
 
+    public class ProductModel
+    {
+        public Guid recid { get; set; }
+        public string productcode { get; set; }
+        public string productname { get; set; }
+        public string productmodel { get; set; }
+        public string unit { get; set; }
+        public Int32 productgroup { get; set; }
+        public string matkl { get; set; }
 
+    }
 
     public class ProductListModel
     {

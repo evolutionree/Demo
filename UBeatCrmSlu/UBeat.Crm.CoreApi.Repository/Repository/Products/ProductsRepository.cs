@@ -56,6 +56,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Products
 
         }
 
+        public Object IsExistsProductSeries(DbTransaction trans, ProductSeriesEdit data, int userNumber)
+        {
+            var executeSql = @"SELECT productsetid FROM crm_sys_products_series where productsetcode=@seriescode";
+
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("seriescode", data.SeriesCode)
+
+            };
+            return ExecuteScalar(executeSql, param, trans);
+
+
+        }
+
         public OperateResult DeleteProductSeries(DbTransaction trans, Guid productSeriesId, int userNumber)
         {
             var executeSql = @"SELECT * FROM crm_func_productseries_delete(@productsetid,@userno)";

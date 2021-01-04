@@ -10,6 +10,7 @@ namespace UBeat.Crm.CoreApi.IRepository
     public interface IProductsRepository
     {
 
+        Object IsExistsProductSeries(DbTransaction trans, ProductSeriesEdit data, int userNumber);
 
         /// <summary>
         /// 添加产品系列
