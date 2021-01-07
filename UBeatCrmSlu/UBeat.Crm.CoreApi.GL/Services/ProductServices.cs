@@ -41,7 +41,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 sapProduct.DATA.MARA.ForEach(t =>
                 {
                     Dictionary<string, object> dic = new Dictionary<string, object>();
-                    String MATNR = t["MATNR"] != null ? t["MATNR"].ToString() : "";
+                    String MATNR = t["MATNR"] != null ? t["MATNR"].ToString().Substring(8) : "";
                     if (t["SPART"] != null)
                     {
                         List<SaveDicData> dicDatas = _iBaseDataRepository.GetDicDataByTypeId(65);
