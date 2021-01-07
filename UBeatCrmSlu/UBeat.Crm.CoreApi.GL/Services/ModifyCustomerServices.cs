@@ -129,21 +129,18 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
             #region bank
             CUST_BANK bank = new CUST_BANK();
-            //FAX_NUMBER, SMTP_ADDR, STCEG, BANKL, BANKN
-            //cust.FAX_NUMBER = string.Concat(resultData["fax"]).StringMax(0, 30);//第一个传真号: 拨号 + 编号
-            //cust.SMTP_ADDR = string.Concat(resultData["email"]).StringMax(0, 241);//电子邮件地址
-            cust.STCD5 = string.Concat(resultData["taxno"]).StringMax(0, 60);//增值税登记号
+
             //银行编号
             //var bankl = string.Concat(resultData["bank"]);
-            bank.BANKL = string.Concat(resultData["bank"]).StringMax(0, 15); 
+            //bank.BANKL = string.Concat(resultData["bank"]).StringMax(0, 15); 
             //cust.BANKL = _baseDataRepository.GetBankCodeByDataSource(bankl).StringMax(0, 15); 
-            bank.BANKN = string.Concat(resultData["accountcode"]).StringMax(0, 18);//银行账户
-            CUST_BANK.Add(bank);
+            //bank.BANKN = string.Concat(resultData["accountcode"]).StringMax(0, 18);//银行账户
+            //CUST_BANK.Add(bank);
             #endregion
 
             #region sale
             CUST_SALE sale = new CUST_SALE();
-            //VKORG, VTWEG, SPART, KVGR1, KVGR2
+            //VKORG, VTWEG, SPART, KVGR1, KVGR2 KALKS KTGRD
             var vkorg = string.Concat(resultData["salesorganization"]);
             sale.VKORG = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.销售组织, vkorg).StringMax(0, 4);//销售组织
             var vtweg = string.Concat(resultData["saledistribution"]);
@@ -151,11 +148,14 @@ namespace UBeat.Crm.CoreApi.GL.Services
             var spart = string.Concat(resultData["productgroup"]);
             sale.SPART = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.产品组, spart).StringMax(0, 2);//产品组
             var kvgr1 = string.Concat(resultData["custgpone"]);
+            sale.KALKS = "1";//默认1
+            sale.KTGRD = "03";//客户科目分配组
             /*sale.KVGR1 = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户组1, kvgr1).StringMax(0, 3);//客户组1
             var kvgr2 = string.Concat(resultData["custgptwo"]);
             sale.KVGR2 = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户组2, kvgr2).StringMax(0, 3);//客户组2*/
 
-            //BZIRK, VKBUR, KALKS, VWERK, VSBED,ZTERM
+            //STCD5,BZIRK, VKBUR, KALKS, VWERK, VSBED,ZTERM
+            cust.STCD5 = string.Concat(resultData["taxno"]).StringMax(0, 60);//增值税登记号
             var bzirk = string.Concat(resultData["area"]);
             sale.BZIRK = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.销售地区, bzirk).StringMax(0, 6);//销售地区 
             var vkbur = string.Concat(resultData["salesoffice"]);
@@ -200,10 +200,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
             #region comp
             CUST_COMP comp = new CUST_COMP();
             //BUKRS AKONT
-            //var bukrs = string.Concat(resultData["companycode"]);//公司代码 
-            comp.BUKRS = "9000";//默认9000
-            //var akont = string.Concat(resultData["accountantsub"]);//总帐中的统驭科目 
-            //cust.AKONT = akont.StringMax(0, 10);
+            var bukrs = string.Concat(resultData["companycode"]);//公司代码 
+            comp.BUKRS = bukrs;//默认9000
+            var akont = string.Concat(resultData["accountantsub"]);//总帐中的统驭科目 
+            comp.AKONT = akont.StringMax(0, 10);
             CUST_COMP.Add(comp);
             #endregion
 
