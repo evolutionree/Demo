@@ -60,6 +60,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                                     SeriesCode = t["SPART"].ToString(),
                                     SeriesName = dicData.DataVal,
                                 }, userId);
+                                setId = Guid.Parse(isExistProductSeries.ToString());
                             }
                             else
                             {
@@ -121,7 +122,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                                     break;
                                 }
                             }
-                            _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), isExistProduct.recid, dic, userId);
+                              result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), isExistProduct.recid, dic, userId);
                             keys.Add(MATNR);
                         }
                     }
