@@ -93,7 +93,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
 
             //字典值，必须改
-            cust.ANRED = string.Concat(resultData["appellation"]).StringMax(0,15);//称谓
+            cust.ANRED = "0003";
 
             //cust.TITLE = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeIdEnum.称谓, title).StringMax(0, 4);//地址关键字的表格
             cust.NAME1 = string.Concat(resultData["recname"]).StringMax(0, 35);//组织名称 1

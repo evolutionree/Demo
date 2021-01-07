@@ -86,6 +86,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string ExtField1 { get; set; }
         public string ExtField2 { get; set; }
         public string ExtField3 { get; set; }
+        public string ExtField4 { get; set; }
     }
     public enum DicTypeIdSynEnum
     {
@@ -104,7 +105,11 @@ namespace UBeat.Crm.CoreApi.GL.Model
         拒绝原因 = 61,
         成本中心 = 83,
         特殊处理标识 = 71,
-        行项目类别 = 72
+        行项目类别 = 72,
+        销售组织与公司关系 = 92,
+        销售组织与渠道关系 = 93,
+        销售组织与产品组关系 = 94,
+        销售组织与渠道与产品组关系 = 95
     }
     public class TVTWT
     {
@@ -185,6 +190,29 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string PSTYV { get; set; }
         public string VTEXT { get; set; }
     }
+    public class TVKO
+    {
+        public string VKORG { get; set; }
+        public string BUKRS { get; set; }
+    }
+    public class TVKOV
+    {
+        public string VKORG { get; set; }
+        public string VTWEG { get; set; }
+    }
+    public class TVKOS
+    {
+        public string VKORG { get; set; }
+        public string SPART { get; set; }
+    }
+    public class TVTA
+    {
+        public string VKORG { get; set; }
+        public string VTWEG { get; set; }
+        public string SPART { get; set; }
+        public string VTWKU { get; set; }
+        public string SPAKU { get; set; }
+    }
     public class SapDicModel
     {
         //渠道
@@ -217,6 +245,14 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public List<TVSAKT> TVSAKT { get; set; }
         //行项目类别
         public List<TVAPT> TVAPT { get; set; }
+        //分配关系：销售组织<->公司
+        public List<TVKO> TVKO { get; set; }
+        //分配关系：销售组织<->分销渠道
+        public List<TVKOV> TVKOV { get; set; }
+        //分配关系：销售组织<->产品组
+        public List<TVKOS> TVKOS { get; set; }
+        //分配关系：销售组织<->分销渠道<->产品组
+        public List<TVTA> TVTA { get; set; }
     }
     #endregion
 }

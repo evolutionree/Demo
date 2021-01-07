@@ -50,6 +50,12 @@ namespace UBeat.Crm.CoreApi.GL.Services
         {
             try
             {
+                int mainSaleOrg = 9001;
+                var Config = ServiceLocator.Current.GetInstance<IConfigurationRoot>().GetSection("SapConfig");
+                if (Config != null)
+                {
+                    mainSaleOrg = Config.GetValue<int>("MainSaleOrg");
+                }
                 var logTime = DateTime.Now;
                 var postData = new Dictionary<string, object>();
                 var headData = new Dictionary<string, string>();
@@ -150,21 +156,45 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 {
                     datas=convert_CSKT_ToCrm(sapRequest.DATA.CSKT);
                     initCrmData(datas, (Int32)DicTypeIdSynEnum.成本中心, false);
-                    logger.Info(string.Concat("同步成本中心条数：", sapRequest.DATA.CSKT.Count));
+                    logger.Info(string.Concat("同步成本中心条数：", datas.Count));
                 }
                 //特殊处理标识
                 if (sapRequest.DATA.TVSAKT.Count > 0)
                 {
                     datas=convert_TVSAKT_ToCrm(sapRequest.DATA.TVSAKT);
                     initCrmData(datas, (Int32)DicTypeIdSynEnum.特殊处理标识, false);
-                    logger.Info(string.Concat("同步特殊处理标识条数：", sapRequest.DATA.TVSAKT.Count));
+                    logger.Info(string.Concat("同步特殊处理标识条数：", datas.Count));
                 }
                 //销售项目类别 行项目类别
                 if (sapRequest.DATA.TVAPT.Count > 0)
                 {
                     datas=convert_TVAPT_ToCrm(sapRequest.DATA.TVAPT);
                     initCrmData(datas, (Int32)DicTypeIdSynEnum.行项目类别, false);
-                    logger.Info(string.Concat("同步销售项目类别条数：", sapRequest.DATA.TVAPT.Count));
+                    logger.Info(string.Concat("同步销售项目类别条数：", datas.Count));
+                }
+                if (sapRequest.DATA.TVKO.Count > 0)
+                {
+                    datas = convert_TVKO_ToCrm(sapRequest.DATA.TVKO, mainSaleOrg + "");
+                    initCrmData(datas, (Int32)DicTypeIdSynEnum.销售组织与公司关系, false);
+                    logger.Info(string.Concat("同步销售组织与公司关系条数：", datas.Count));
+                }
+                if (sapRequest.DATA.TVKOV.Count > 0)
+                {
+                    datas = convert_TVKOV_ToCrm(sapRequest.DATA.TVKOV, mainSaleOrg + "");
+                    initCrmData(datas, (Int32)DicTypeIdSynEnum.销售组织与渠道关系, true);
+                    logger.Info(string.Concat("同步销售组织与渠道关系条数：", datas.Count));
+                }
+                if (sapRequest.DATA.TVKOS.Count > 0)
+                {
+                    datas = convert_TVKOS_ToCrm(sapRequest.DATA.TVKOS, mainSaleOrg + "");
+                    initCrmData(datas, (Int32)DicTypeIdSynEnum.销售组织与产品组关系, true);
+                    logger.Info(string.Concat("同步销售组织与产品组关系条数：", datas.Count));
+                }
+                if (sapRequest.DATA.TVTA.Count > 0)
+                {
+                    datas = convert_TVTA_ToCrm(sapRequest.DATA.TVTA, mainSaleOrg + "");
+                    initCrmData(datas, (Int32)DicTypeIdSynEnum.销售组织与渠道与产品组关系, true);
+                    logger.Info(string.Concat("同步销售组织与渠道与产品组关系条数：", datas.Count));
                 }
                 logger.Info($"获取全量SAP字典处理耗时:{DateTime.Now - logTime}");
             }
@@ -194,7 +224,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     var key = "";
                     if (isDoubleKey)
                     {
-                        key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2);
+                        key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2, item.ExtField3);
                     }
                     else
                     {
@@ -210,6 +240,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         crmItem.ExtField1 = item.ExtField1;
                         crmItem.ExtField2 = item.ExtField2;
                         crmItem.ExtField3 = item.ExtField3;
+                        crmItem.ExtField4 = item.ExtField4;
                         updateList.Add(crmItem);
                     }
                     else
@@ -247,7 +278,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 var key = "";
                 if (isDoubleKey)
                 {
-                    key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2);
+                    key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2,item.ExtField3);
                 }
                 else
                 {
@@ -482,7 +513,73 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
             return list;
         }
+        private List<SaveDicData> convert_TVKO_ToCrm(List<TVKO> datas,string mainSaleOrg)
+        {
+            var list = new List<SaveDicData>();
+            foreach (var item in datas)
+            {
+                if (item.VKORG != mainSaleOrg)
+                    continue;
+                SaveDicData data = new SaveDicData();
+                data.DataVal = item.VKORG;
+                data.ExtField1 = item.BUKRS;
 
+                list.Add(data);
+            }
+
+            return list;
+        }
+        private List<SaveDicData> convert_TVKOV_ToCrm(List<TVKOV> datas, string mainSaleOrg)
+        {
+            var list = new List<SaveDicData>();
+            foreach (var item in datas)
+            {
+                if (item.VKORG != mainSaleOrg)
+                    continue;
+                SaveDicData data = new SaveDicData();
+                data.DataVal = item.VKORG;
+                data.ExtField1 = item.VTWEG;
+
+                list.Add(data);
+            }
+
+            return list;
+        }
+
+        private List<SaveDicData> convert_TVKOS_ToCrm(List<TVKOS> datas, string mainSaleOrg)
+        {
+            var list = new List<SaveDicData>();
+            foreach (var item in datas)
+            {
+                if (item.VKORG != mainSaleOrg)
+                    continue;
+                SaveDicData data = new SaveDicData();
+                data.DataVal = item.VKORG;
+                data.ExtField1 = item.SPART;
+
+                list.Add(data);
+            }
+            return list;
+        }
+        private List<SaveDicData> convert_TVTA_ToCrm(List<TVTA> datas, string mainSaleOrg)
+        {
+            var list = new List<SaveDicData>();
+            foreach (var item in datas)
+            {
+                if (item.VKORG != mainSaleOrg)
+                    continue;
+                SaveDicData data = new SaveDicData();
+                data.DataVal = item.VKORG;
+                data.ExtField1 = item.VTWEG;
+                data.ExtField2 = item.SPART;
+                data.ExtField3 = item.VTWKU;
+                data.ExtField4 = item.SPAKU;
+
+                list.Add(data);
+            }
+            return list;
+        }
+        
         #endregion
 
         #region 

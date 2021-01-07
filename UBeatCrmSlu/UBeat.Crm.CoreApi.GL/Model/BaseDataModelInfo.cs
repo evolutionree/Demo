@@ -42,7 +42,11 @@ namespace UBeat.Crm.CoreApi.GL.Model
         装运条件 =88,
         销售组=89,
         地区 = 90,
-        客户行业 =91
+        客户行业 =91,
+        销售组织与公司关系 = 92,
+        销售组织与渠道关系 = 93,
+        销售组织与产品组关系 = 94,
+        销售组织与渠道与产品组关系 = 95
     }
 
     public class DataSourceInfo

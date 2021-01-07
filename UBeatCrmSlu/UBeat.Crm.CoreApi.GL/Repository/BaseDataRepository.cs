@@ -57,11 +57,11 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             string sql = @"insert into crm_sys_dictionary(
                             dicid,dictypeid,dataid,dataval,recorder,
                             recstatus,reccreated,recupdated,reccreator,recupdator,
-                            extfield1,extfield2,extfield3)
+                            extfield1,extfield2,extfield3,extfield4)
                             values (
                             @dicid,@dictypeid::int4,@dataid,@dataval,@recorder,
                             @recstatus,@reccreated,@recupdated,@reccreator,@recupdator,
-                            @extfield1,@extfield2,@extfield3)";
+                            @extfield1,@extfield2,@extfield3,@extfield4)";
             var param = new DynamicParameters();
             param.Add("dicid", entity.DicId);
             param.Add("dictypeid", entity.DicTypeId);
@@ -78,6 +78,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             param.Add("extfield1", entity.ExtField1);
             param.Add("extfield2", entity.ExtField2);
             param.Add("extfield3", entity.ExtField3);
+            param.Add("extfield4", entity.ExtField4);
 
             return DataBaseHelper.ExecuteNonQuery(sql, param, CommandType.Text) > 0;
         }
@@ -92,7 +93,8 @@ namespace UBeat.Crm.CoreApi.GL.Repository
 
                             extfield1 = @extfield1,
                             extfield2 = @extfield2,
-                            extfield3 = @extfield3
+                            extfield3 = @extfield3,
+                            extfield4 = @extfield4
                             where dicid = @dicid";
 
             var param = new DynamicParameters();
@@ -104,6 +106,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             param.Add("extfield1", entity.ExtField1);
             param.Add("extfield2", entity.ExtField2);
             param.Add("extfield3", entity.ExtField3);
+            param.Add("extfield4", entity.ExtField4);
             param.Add("dicid", entity.DicId);
 
             return DataBaseHelper.ExecuteNonQuery(sql, param, CommandType.Text) > 0;
