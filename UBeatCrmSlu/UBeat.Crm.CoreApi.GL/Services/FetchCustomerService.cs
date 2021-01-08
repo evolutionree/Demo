@@ -199,7 +199,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
 					SaveCustomerMainView v = new SaveCustomerMainView();
 					v.companyone = item.PARTNER.Trim().PadLeft(10, '0');//客户编号
-					v.reccode = item.CRMCUST.Trim();//CRM流水号
+					v.reccode = item.CRMCUST.Trim().Replace("CRM","");//CRM流水号
 
 					if (!string.IsNullOrEmpty(item.KUKLA))
 					{

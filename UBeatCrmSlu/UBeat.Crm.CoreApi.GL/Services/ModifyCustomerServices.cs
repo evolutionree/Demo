@@ -87,7 +87,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
             #region main
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
-            cust.CRMCUST = string.Concat(resultData["reccode"]).StringMax(0, 20);
+            cust.CRMCUST = "CRM"+string.Concat(resultData["reccode"]).StringMax(0, 20);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -170,8 +170,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             sale.ZTERM = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.付款条件, zterm).StringMax(0, 4);//付款条件代码 
             var waers = string.Concat(resultData["currency"]);
             sale.WAERS = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.币种, waers).StringMax(0, 5);//货币
-            var ktgrd = string.Concat(resultData["accountgp"]);// 账户分配组
-            sale.KTGRD = ktgrd.StringMax(0, 2); ;
+            var ktgrd = string.Concat(resultData["accountgp"]);
+            sale.KTGRD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户科目分配组, ktgrd).StringMax(0, 2);//账户分配组
             CUST_SALE.Add(sale);
             #endregion
 
