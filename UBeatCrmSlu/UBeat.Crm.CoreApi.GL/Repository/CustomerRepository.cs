@@ -188,7 +188,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@payrequirement", index_str), item.payment_crmid);
 
                 //accountgp, taxgp, currency, creditperiod, rules, 
-                //addSingleParameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
+                addSingleParameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
                 addSingleParameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
                 addSingleParameters.Add(string.Concat("@currency", index_str), item.currency_crmid);
                 //addSingleParameters.Add(string.Concat("@creditperiod", index_str), item.creditperiod);
@@ -196,8 +196,8 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
 
                 //risklimit, companycode, accountantsub
                 addSingleParameters.Add(string.Concat("@credit", index_str), item.risklimit);
-                //addSingleParameters.Add(string.Concat("@companycode", index_str), item.companycode);//公司代码，核心
-                //addSingleParameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
+                addSingleParameters.Add(string.Concat("@companycode", index_str), item.companycode);//公司代码，核心
+                addSingleParameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
                 addSingleParameters.Add(string.Concat("@updatefrom", index_str), 0);
                 addSingleParameters.Add(string.Concat("@customerstatus", index_str), 2);
 
@@ -219,8 +219,8 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                                                 taxno, bank,account, salesorganization,
                                                 saledistribution, productgroup, sapcusttype,industry,area,
                                                 salesoffice, shipment, payrequirement,
-                                                taxgp, currency,
-                                                credit,updatefrom,customerstatus
+                                                accountgp,taxgp, currency,
+                                                credit,companycode,accountantsub,updatefrom,customerstatus
                                                 ) VALUES ({0});",
                                                 string.Join(",", parameters));
 
@@ -315,7 +315,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 parameters.Add(string.Concat("@payrequirement", index_str), item.payment_crmid);
 
                 //accountgp, taxgp, currency, creditperiod, rules, 
-                //parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
+                parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
                 parameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
                 parameters.Add(string.Concat("@currency", index_str), item.currency_crmid);
                 //parameters.Add(string.Concat("@creditperiod", index_str), item.creditperiod);
@@ -324,8 +324,8 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 //risktype, checkrules, risklimit, companycode, accountantsub
                 //parameters.Add(string.Concat("@risktype", index_str), item.risktype_crmid);
                 parameters.Add(string.Concat("@credit", index_str), item.risklimit);
-                //parameters.Add(string.Concat("@companycode", index_str), item.companycode);
-                //parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
+                parameters.Add(string.Concat("@companycode", index_str), item.companycode);
+                parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
                 //0sap 1crm
                 parameters.Add(string.Concat("@updatefrom", index_str), 0);
                 parameters.Add(string.Concat("@customerstatus", index_str), 2);
@@ -439,7 +439,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 parameters.Add(string.Concat("@payrequirement", index_str), item.payment_crmid);
 
                 //accountgp, taxgp, currency, creditperiod, rules, 
-                //parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
+                parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
                 parameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
                 parameters.Add(string.Concat("@currency", index_str), item.currency_crmid);
                 //parameters.Add(string.Concat("@creditperiod", index_str), item.creditperiod);
@@ -448,8 +448,8 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 //risktype, checkrules, risklimit, companycode, accountantsub
                 //parameters.Add(string.Concat("@risktype", index_str), item.risktype_crmid);
                 parameters.Add(string.Concat("@credit", index_str), item.risklimit);
-                //parameters.Add(string.Concat("@companycode", index_str), item.companycode);
-                //parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
+                parameters.Add(string.Concat("@companycode", index_str), item.companycode);
+                parameters.Add(string.Concat("@accountantsub", index_str), item.accountantsub);
                 //0sap 1crm
                 parameters.Add(string.Concat("@updatefrom", index_str), 0);
                 parameters.Add(string.Concat("@customerstatus", index_str), 2);

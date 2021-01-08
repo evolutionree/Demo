@@ -342,18 +342,18 @@ namespace UBeat.Crm.CoreApi.GL.Services
 								}
 							}
 						}
-						/*if (!string.IsNullOrEmpty(sales.KTGRD))
+						if (!string.IsNullOrEmpty(sales.KTGRD))
 						{
 							v.accountgp_sapcode = sales.KTGRD.Trim();//客户科目分配组 
-							if (_dicDicTypeData.ContainsKey((int)DicTypeEnum.账户分配组))
+							if (_dicDicTypeData.ContainsKey((int)DicTypeEnum.客户科目分配组))
 							{
-								var dic = _dicDicTypeData[(int)DicTypeEnum.账户分配组];
+								var dic = _dicDicTypeData[(int)DicTypeEnum.客户科目分配组];
 								if (dic.ContainsKey(v.accountgp_sapcode))
 								{
 									v.accountgp_crmid = dic[v.accountgp_sapcode].DataId;
 								}
 							}
-						}*/
+						}
 						//货币 默认值CNY 
 						if (!string.IsNullOrEmpty(sales.WAERS))
 						{

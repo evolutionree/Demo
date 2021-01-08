@@ -170,6 +170,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             sale.ZTERM = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.付款条件, zterm).StringMax(0, 4);//付款条件代码 
             var waers = string.Concat(resultData["currency"]);
             sale.WAERS = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.币种, waers).StringMax(0, 5);//货币
+            var ktgrd = string.Concat(resultData["accountgp"]);// 账户分配组
+            sale.KTGRD = ktgrd.StringMax(0, 2); ;
             CUST_SALE.Add(sale);
             #endregion
 

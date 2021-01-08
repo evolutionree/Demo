@@ -46,7 +46,8 @@ namespace UBeat.Crm.CoreApi.GL.Model
         销售组织与公司关系 = 92,
         销售组织与渠道关系 = 93,
         销售组织与产品组关系 = 94,
-        销售组织与渠道与产品组关系 = 95
+        销售组织与渠道与产品组关系 = 95,
+        客户科目分配组 = 96
     }
 
     public class DataSourceInfo
