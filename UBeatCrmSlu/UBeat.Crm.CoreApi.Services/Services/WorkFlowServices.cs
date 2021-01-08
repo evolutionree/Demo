@@ -1420,27 +1420,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (caseItemEntity.ChoiceStatus == 1)
                     {
-                        var type = typeof(SoapServices);
-                        var instance = ServiceLocator.Current.GetInstance<SoapServices>();
-                        var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
-                        if (methods != null)
-                        {
-                            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
-                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString() && t.FlowId == workflowInfo.FlowId.ToString());
-                            if (erpSync != null)
-                            {
-                                if (erpSync.IsFlow == 1)
-                                {
-                                    var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
-                                    var data = method.Invoke(instance, new object[] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId, tran });
-                                    var dataResult = data as OperateResult;
-                                    if (dataResult.Flag == 0)
-                                    {
-                                        message = dataResult.Msg;
-                                    }
-                                }
-                            }
-                        }
                         MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
                         tran.Commit();
                         WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
