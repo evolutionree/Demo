@@ -99,7 +99,18 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var sendResult = _fetchCustomerServices.FetchCustData(model, UserId, 1);
             return new OutputResult<object>(sendResult);
         }
+        [Route("getcustcreditlimit")]
+        [HttpPost]
+        [AllowAnonymous]
+        public OutputResult<object> getCustomerCreditLimit([FromBody] CustomerCreditLimitParam model = null)
+        {
+            if (model == null )
+                return ResponseError<object>("参数格式错误");
+            WriteOperateLog("获取SAP客户信用额度", string.Empty);
 
+            var sendResult = _fetchCustomerServices.getCustomerCreditLimit(model, 1);
+            return new OutputResult<object>(sendResult);
+        }
         [Route("fetchcustdatabyid")]
         [HttpPost]
         [AllowAnonymous]
@@ -149,6 +160,8 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                     break;
             }
         }
+
+        
 
     }
 }

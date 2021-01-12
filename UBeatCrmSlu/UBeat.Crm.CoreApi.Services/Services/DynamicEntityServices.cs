@@ -731,7 +731,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (fieldValue["id"] != null)
                     {
                         detailMapper.RecIds = fieldValue["id"].ToString();
-                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber,null);
+                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber, null);
                         var entityInfotemp = _entityProRepository.GetEntityInfo(noticeModel.EntityId);
                         foreach (var detail in detailList)
                         {
@@ -799,7 +799,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (fieldValue["id"] != null)
                     {
                         detailMapper.RecIds = fieldValue["id"].ToString();
-                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber,null);
+                        var detailList = _dynamicEntityRepository.DetailList(detailMapper, userNumber, null);
                         var entityInfotemp = _entityProRepository.GetEntityInfo(noticeModel.EntityId);
                         foreach (var detail in detailList)
                         {
@@ -2873,7 +2873,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return HandleValid(dynamicEntity);
             }
 
-            var result = _dynamicEntityRepository.DetailList(dynamicEntity, userNumber,null);
+            var result = _dynamicEntityRepository.DetailList(dynamicEntity, userNumber, null);
 
             return new OutputResult<object>(result);
         }
@@ -2901,6 +2901,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     funcs.AddRange(m.Functions.Where(a => a.EntityId == dynamicModel.EntityId && a.DeviceType == (int)DeviceClassic));
                 }
             }
+            if (info.FuncBtns == null) return new OutputResult<object>(funcBtns);
             foreach (var btn in info.FuncBtns)
             {
                 //if(btn.FunctionId==Guid.Empty|| funcs.Exists(m=>m.FuncId==btn.FunctionId))

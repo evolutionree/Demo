@@ -445,5 +445,11 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string customer { get; set; }
         public string companycode { get; set; } //默认值1000
         public string accountantsub { get; set; } //默认值 1122010000
-    } 
+    }
+
+    public class CustomerCreditLimitParam
+    {
+        public Guid RecId { get; set; }
+        public Guid EntityId { get; set; }
+    }
 }
