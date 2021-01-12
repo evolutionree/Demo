@@ -66,7 +66,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return new OutputResult<object>(result);
             }, data, userNumber);
         }
-       
+
         public OutputResult<object> WriteMessage(NotifyEntity readModel, int userNumber)
         {
 
@@ -93,7 +93,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         //增量获取消息
         public OutputResult<object> GetIncrementMessageList(IncrementMsgsParameter param, int userNumber)
-        {
+         {
             if (param == null)
             {
                 return ShowError<object>("参数不能为空");
@@ -115,7 +115,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<MsgWriteBackInfo> msgWriteBackInfoList = new List<MsgWriteBackInfo>();
             foreach (var mdata in dataList)
             {
-                if(mdata.ReadStatus != 0)
+                if (mdata.ReadStatus != 0)
                 {
                     continue;
                 }
@@ -137,13 +137,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> WriteMessage(MessageParameter data, int userNumber)
         {
-            MessageService.WriteMessage( null,data, userNumber);
+            MessageService.WriteMessage(null, data, userNumber);
             return new OutputResult<object>("OK");
         }
 
         public OutputResult<object> WriteMessageAsyn(MessageParameter data, int userNumber)
         {
-            MessageService.WriteMessageAsyn( data, userNumber);
+            MessageService.WriteMessageAsyn(data, userNumber);
             return new OutputResult<object>("OK");
         }
 
@@ -181,12 +181,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> GetDynamicsUnMsg(UnHandleMsgModel data, int userNumber)
         {
             return MessageService.GetDynamicsUnMsg(data, userNumber);
-              
+
         }
         public OutputResult<object> GetWorkFlowsMsg(UnHandleMsgModel data, int userNumber)
         {
             return MessageService.GetWorkFlowsMsg(data, userNumber);
-              
+
         }
         public OutputResult<object> GetMessageCount(int userNumber)
         {

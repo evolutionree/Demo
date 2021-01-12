@@ -94,15 +94,11 @@ namespace UBeat.Crm.CoreApi.GL.Services
                             dic.Add("productcode", MATNR);
                             dic.Add("productsetid", setId);
                             dic.Add("worker", 1);
-                            foreach (var data in sapProduct.DATA.MARA)
+                            String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == t["MATNR"].ToString())["MAKTX"];
+                            if (!string.IsNullOrEmpty(MAKTX))
                             {
-                                String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == data["MATNR"].ToString())["MAKTX"];
-                                if (!string.IsNullOrEmpty(MAKTX))
-                                {
-                                    dic.Add("productname", MAKTX);
-                                    dic.Add("productdesciption", MAKTX);
-                                    break;
-                                }
+                                dic.Add("productname", MAKTX);
+                                dic.Add("productdesciption", MAKTX);
                             }
                             _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), dic, null, userId);
                             keys.Add(MATNR);
@@ -112,17 +108,13 @@ namespace UBeat.Crm.CoreApi.GL.Services
                             dic.Add("productcode", MATNR);
                             dic.Add("productsetid", setId);
                             dic.Add("worker", 1);
-                            foreach (var data in sapProduct.DATA.MARA)
+                            String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == t["MATNR"].ToString())["MAKTX"];
+                            if (!string.IsNullOrEmpty(MAKTX))
                             {
-                                String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == data["MATNR"].ToString())["MAKTX"];
-                                if (!string.IsNullOrEmpty(MAKTX))
-                                {
-                                    dic.Add("productname", MAKTX);
-                                    dic.Add("productdesciption", MAKTX);
-                                    break;
-                                }
+                                dic.Add("productname", MAKTX);
+                                dic.Add("productdesciption", MAKTX);
                             }
-                              result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), isExistProduct.recid, dic, userId);
+                            result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"), isExistProduct.recid, dic, userId);
                             keys.Add(MATNR);
                         }
                     }
