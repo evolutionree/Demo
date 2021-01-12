@@ -38,6 +38,126 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public List<CUST_CRED> CUST_CRED { get; set; }
     }
 
+    public class CUST_MAIN_MODIFY
+    {
+        public CUST_MAIN_MODIFY()
+        {
+            UPDATE = "U";
+        }
+        public string PARTNER { get; set; }
+        public string CRMCUST { get; set; }
+        public string UPDATE { get; set; }
+        public string LOEVM { get; set; }
+        public string KTOKD { get; set; }
+        public string ANRED { get; set; }
+        public string NAME1 { get; set; }
+        public string NAME2 { get; set; }
+        public string SORTL { get; set; }
+        public string SORT2 { get; set; }
+        public string NAME_CO { get; set; }
+        public string STR_SUPPL1 { get; set; }
+        public string STR_SUPPL2 { get; set; }
+        public string STREET { get; set; }
+        public string STR_SUPPL3 { get; set; }
+        public string LOCATION { get; set; }
+        public string PSTLZ { get; set; } //邮编默认123456
+        public string ORT01 { get; set; }
+        public string LAND1 { get; set; }
+        public string REGIO { get; set; }
+        public string SPRAS { get; set; }
+        public string TELF2 { get; set; }
+        public string TELF1 { get; set; }
+        public string TELFX { get; set; }
+        public string SMTP_ADDR { get; set; }
+        public string STKZN { get; set; }
+        public string STCD5 { get; set; }
+        public string KUKLA { get; set; }
+        public string BRAN1 { get; set; }
+        public string TAXKD { get; set; }
+        public string ZTEXT1 { get; set; }
+        public string ZTEXT2 { get; set; }
+        public string ZTEXT3 { get; set; }
+        public string ZTEXT4 { get; set; }
+        public string ZTEXT5 { get; set; }
+        public string ZTEXT6 { get; set; }
+        public string ZTEXT7 { get; set; }
+        public string ZTEXT8 { get; set; }
+        public string ZTEXT9 { get; set; }
+        public string ZTEXT10 { get; set; }
+        public string ZTEXT11 { get; set; }
+        public string ZTEXT12 { get; set; }
+        public string VBUND { get; set; }
+    }
+
+    public class CUST_TAXN_MODIFY
+    {
+        public string PARTNER { get; set; }
+        public string TAXTYPE { get; set; }
+    }
+
+    public class CUST_BANK_MODIFY
+    {
+        public string PARTNER { get; set; }
+        public string BKVID { get; set; }
+        public string BANKS { get; set; }
+        public string BANKL { get; set; }
+        public string BANKN { get; set; }
+        public string BKREF { get; set; }
+        public string KOINH { get; set; }
+    }
+    public class CUST_COMP_MODIFY
+    {
+        public string PARTNER { get; set; }
+        public string BUKRS { get; set; }
+        public string LOEVM { get; set; }
+        public string WBRSL { get; set; }
+        public string AKONT { get; set; }
+        public string ZTERM { get; set; }
+    }
+
+    public class CUST_SALE_MODIFY
+    {
+        public string PARTNER { get; set; }
+        public string VKORG { get; set; }
+        public string VTWEG { get; set; }
+        public string SPART { get; set; }
+        public string LOEVM { get; set; }
+        public string BZIRK { get; set; }
+        public string VKBUR { get; set; }
+        public string VKGRP { get; set; }
+        public string WAERS { get; set; }
+        public string KDGRP { get; set; }
+        public string KALKS { get; set; }
+        public string VSBED { get; set; }
+        public string KLABC { get; set; }
+        public string INCO1 { get; set; }
+        public string INCO2 { get; set; }
+        public string ZTERM { get; set; }
+        public string KTGRD { get; set; }
+    }
+
+    public class CUST_LOAD_MODIFY
+    {
+        public string PARTNER { get; set; }
+        public string ABLAD { get; set; }
+        public string KNFAK { get; set; }
+    }
+    public class CUST_CRED_MODIFY
+    {
+        public CUST_CRED_MODIFY()
+        {
+            CREDIT_LIMIT = 0;
+            COMM_TOTAL_L = 0;
+            LIMIT_USED = 0;
+        }
+        public string PARTNER { get; set; }
+        public string CREDIT_SGMNT { get; set; }
+        public Decimal CREDIT_LIMIT { get; set; }
+        public string XBLOCKED { get; set; }
+        public string LIMIT_VALID_DATE { get; set; }
+        public Decimal COMM_TOTAL_L { get; set; }
+        public Decimal LIMIT_USED { get; set; }
+    }
     public class CUST_MAIN
     {
         public string PARTNER { get; set; }
