@@ -738,7 +738,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return dic;
         }
 
-        public OperateResult getCustomerCreditLimit(CustomerCreditLimitParam param, int userId)
+        public OutputResult<Object> getCustomerCreditLimit(CustomerCreditLimitParam param, int userId)
         {
             var detailData = _baseDataServices.GetEntityDetailData(null, param.EntityId, param.RecId, userId);
             if (detailData != null && detailData["erpcode"] != null && !string.IsNullOrEmpty(detailData["erpcode"].ToString()))
@@ -746,15 +746,20 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 var header = new Dictionary<String, string>();
                 header.Add("Transaction_ID", "CREDIT_QUERY");
                 var postData = new Dictionary<String, string>();
+                List<Dictionary<String, string>> postDataList = new List<Dictionary<string, string>>();
                 postData.Add("PARTNER", detailData["erpcode"].ToString());
-                String result = CallAPIHelper.ApiPostData(postData, header);
-
+                postDataList.Add(postData);
+                String result = CallAPIHelper.ApiPostData(postDataList, header);
+                if (!string.IsNullOrEmpty(result))
+                {
+                    var objResult = JsonConvert.DeserializeObject<CustomerCreditLimitModel>(result);
+                    if (objResult.TYPE == "S")
+                        return new OutputResult<object>(objResult.Data.FirstOrDefault());
+                    else
+                        return new OutputResult<object>(null, message: "获取客户信用额度失败", status: 1);
+                }
             }
-            return new OperateResult()
-            {
-                Flag = 0,
-                Msg = "客户号不能为null"
-            };
+            return new OutputResult<object>(null, message: "客户号不能为null", status: 1);
         }
 
     }

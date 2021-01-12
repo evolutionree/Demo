@@ -290,7 +290,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public Guid id { get; set; }
         public Guid rectype { get; set; }
         public Status status { get; set; }
-        public Int32 manager { get; set; } 
+        public Int32 manager { get; set; }
         public string reccode { get; set; }
         public DataSourceType createfrom { get; set; }
 
@@ -300,7 +300,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public Int32 appellation_crmid { get; set; }
         public string appellation_sapcode { get; set; } //默认值003
         public string recname { get; set; }//全称
-        public string customername { get; set; } 
+        public string customername { get; set; }
         public string searchone { get; set; }
 
         public string address { get; set; }
@@ -322,7 +322,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string valueadd { get; set; }
         public string open { get; set; }
         public string opencode { get; set; }
-        public string openname { get; set; } 
+        public string openname { get; set; }
         public string accountcode { get; set; }
         public Int32 salesorganization_crmid { get; set; }
         public string salesorganization_sapcode { get; set; }
@@ -340,7 +340,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
 
         public Int32 salesoffice_crmid { get; set; }
         public string salesoffice_sapcode { get; set; }
-        public Int32 pricingpro_crmid { get; set; } 
+        public Int32 pricingpro_crmid { get; set; }
         public string pricingpro_sapcode { get; set; } //默认值1
         public Int32 delivery_crmid { get; set; }
         public string delivery_sapcode { get; set; }
@@ -370,8 +370,8 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public List<SaveCustomerSalesView> salesView { get; set; }
         public List<SaveCustomerBurkView> burkView { get; set; }
 
-		//增量
-		public DateTime modifytime { get; set; }
+        //增量
+        public DateTime modifytime { get; set; }
     }
 
     public class SaveCustomerSalesView
@@ -390,33 +390,33 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string reccode { get; set; }
 
         public Int32 salesorganization_crmid { get; set; }
-        public string salesorganization_sapcode { get; set; } 
+        public string salesorganization_sapcode { get; set; }
         public Int32 distribution_crmid { get; set; }
         public string distribution_sapcode { get; set; }
         public Int32 productgroup_crmid { get; set; }
         public string productgroup_sapcode { get; set; }
-        public Int32 custgpone_crmid { get; set; } 
-        public string custgpone_sapcode { get; set; } 
+        public Int32 custgpone_crmid { get; set; }
+        public string custgpone_sapcode { get; set; }
         public Int32 custgptwo_crmid { get; set; }
         public string custgptwo_sapcode { get; set; }
 
         public Int32 salesarea_crmid { get; set; }
-        public string salesarea_sapcode { get; set; } 
+        public string salesarea_sapcode { get; set; }
         public Int32 salesoffice_crmid { get; set; }
         public string salesoffice_sapcode { get; set; }
         public Int32 pricingpro_crmid { get; set; }
         public string pricingpro_sapcode { get; set; } //默认值1 
         public Int32 delivery_crmid { get; set; }
-        public string delivery_sapcode { get; set; } 
+        public string delivery_sapcode { get; set; }
         public Int32 shipment_crmid { get; set; }
         public string shipment_sapcode { get; set; }
 
         public Int32 payment_crmid { get; set; }
-        public string payment_sapcode { get; set; } 
+        public string payment_sapcode { get; set; }
         public Int32 accountgp_crmid { get; set; }
         public string accountgp_sapcode { get; set; }
         public Int32 taxgp_crmid { get; set; }
-        public string taxgp_sapcode { get; set; } 
+        public string taxgp_sapcode { get; set; }
         public Int32 currency_crmid { get; set; } //默认值国内客户 
         public string currency_sapcode { get; set; } //默认CNY
 
@@ -438,7 +438,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public Guid rectype { get; set; }
         public Status status { get; set; }
         public Int32 manager { get; set; }
-        public string reccode { get; set; } 
+        public string reccode { get; set; }
 
         public Guid customer_id { get; set; }
         public string customer_name { get; set; }
@@ -451,5 +451,39 @@ namespace UBeat.Crm.CoreApi.GL.Model
     {
         public Guid RecId { get; set; }
         public Guid EntityId { get; set; }
+    }
+    public class CustomerCreditLimitModel
+    {
+        public String TYPE { get; set; }
+        public String MESSAGE { get; set; }
+        public List<CustomerCreditLimitDataModel> Data { get; set; }
+    }
+    public class CustomerCreditLimitDataModel
+    {
+        public String PARTNER { get; set; }
+        public String CREDIT_SGMNT { get; set; }
+        public String CURRENCY { get; set; }
+        public int AMOUNT { get; set; }
+        public int CREDIT_LIMIT { get; set; }
+        public decimal CREDIT_LIMIT_USED { get; set; }
+        public int CREDIT_LIMIT_USEDW { get; set; }
+        public int AMOUNT_SEC { get; set; }
+        public String CUST_GROUP { get; set; }
+        public int CRED_LIM_CALC { get; set; }
+        public String XBLOCKED { get; set; }
+        public String XCRITICAL { get; set; }
+        public String BLOCK_REASON { get; set; }
+        public String FOLLOW_UP_DT { get; set; }
+        public String RISK_CLASS { get; set; }
+        public int CREDIT_GROUP { get; set; }
+        public String CREDIT_SGMNT_TXT { get; set; }
+        public String DESCRIP { get; set; }
+        public String BP_COACH { get; set; }
+        public String BP_COACH_LIST { get; set; }
+        public int SECURITY_AMNT { get; set; }
+        public String SECURITY_WAERS { get; set; }
+        public int AMOUNT_DYN { get; set; }
+        public String HORIZON_DATE { get; set; }
+        public int HORIZON_DAYS { get; set; }
     }
 }
