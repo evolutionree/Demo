@@ -754,7 +754,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 {
                     var objResult = JsonConvert.DeserializeObject<CustomerCreditLimitModel>(result);
                     if (objResult.TYPE == "S")
-                        return new OutputResult<object>(objResult.Data.FirstOrDefault());
+                    {
+                        var data = objResult.Data.FirstOrDefault();
+                        return new OutputResult<object>(data);
+                    }
                     else
                         return new OutputResult<object>(null, message: "获取客户信用额度失败", status: 1);
                 }
