@@ -162,7 +162,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         {
         public string ZTERM { get; set; }
         public string ZTAGG { get; set; }
-        public string TEXT1 { get; set; }
+        public string ZTEXT { get; set; }
     }
     public class TVAUT
         {

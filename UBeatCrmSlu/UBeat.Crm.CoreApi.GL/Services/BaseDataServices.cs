@@ -431,9 +431,9 @@ namespace UBeat.Crm.CoreApi.GL.Services
             foreach (var item in datas)
             {
                 SaveDicData data = new SaveDicData();
-                data.DataVal = item.TEXT1;
+                data.DataVal = item.ZTEXT;
                 data.ExtField1 = item.ZTERM;
-                data.ExtField2 = item.ZTAGG;
+                //data.ExtField2 = item.ZTAGG;
 
                 list.Add(data);
             }
