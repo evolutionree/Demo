@@ -107,7 +107,12 @@ namespace UBeat.Crm.CoreApi.GL.Model
     }
     public class CUST_COMP_MODIFY
     {
+        public CUST_COMP_MODIFY()
+        {
+            UPDATE = "U";
+        }
         public string PARTNER { get; set; }
+        public string UPDATE { get; set; }
         public string BUKRS { get; set; }
         public string LOEVM { get; set; }
         public string WBRSL { get; set; }
@@ -117,7 +122,12 @@ namespace UBeat.Crm.CoreApi.GL.Model
 
     public class CUST_SALE_MODIFY
     {
+        public CUST_SALE_MODIFY()
+        {
+            UPDATE = "U";
+        }
         public string PARTNER { get; set; }
+        public string UPDATE { get; set; }
         public string VKORG { get; set; }
         public string VTWEG { get; set; }
         public string SPART { get; set; }
@@ -314,6 +324,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
 
         public string language { get; set; } //默认值ZH
         public string taxphone { get; set; }
+        public string contacts { get; set; }
         public string extension { get; set; }
         public string mobilephone { get; set; }
         public string fax { get; set; }
@@ -463,11 +474,11 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public String PARTNER { get; set; }
         public String CREDIT_SGMNT { get; set; }
         public String CURRENCY { get; set; }
-        public int AMOUNT { get; set; }
-        public int CREDIT_LIMIT { get; set; }
+        public decimal AMOUNT { get; set; }
+        public decimal CREDIT_LIMIT { get; set; }
         public decimal CREDIT_LIMIT_USED { get; set; }
-        public int CREDIT_LIMIT_USEDW { get; set; }
-        public int AMOUNT_SEC { get; set; }
+        public decimal CREDIT_LIMIT_USEDW { get; set; }
+        public decimal AMOUNT_SEC { get; set; }
         public String CUST_GROUP { get; set; }
         public int CRED_LIM_CALC { get; set; }
         public String XBLOCKED { get; set; }
@@ -482,8 +493,20 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public String BP_COACH_LIST { get; set; }
         public int SECURITY_AMNT { get; set; }
         public String SECURITY_WAERS { get; set; }
-        public int AMOUNT_DYN { get; set; }
+        public decimal AMOUNT_DYN { get; set; }
         public String HORIZON_DATE { get; set; }
         public int HORIZON_DAYS { get; set; }
+    }
+    //public class CustomerCreditLimitPushParam
+    //{
+    //    public List<CustomerCreditLimitPush> CustomerCreditLimitPush { get; set; }
+    //}
+    public class CustomerCreditLimitPush
+    {
+        public String PARTNER { get; set; }
+        public String CREDIT_SGMNT { get; set; }
+        public String UPDATE { get; set; }
+        public String CREDIT_LIMIT { get; set; }
+        public String LIMIT_VALID_DATE { get; set; }
     }
 }

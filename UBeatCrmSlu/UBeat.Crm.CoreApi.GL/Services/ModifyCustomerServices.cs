@@ -2,14 +2,18 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NLog;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
+using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.GL.Model;
 using UBeat.Crm.CoreApi.GL.Repository;
 using UBeat.Crm.CoreApi.GL.Utility;
+using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
 
@@ -28,14 +32,21 @@ namespace UBeat.Crm.CoreApi.GL.Services
             IBaseDataRepository baseDataRepository,
             CacheServices cacheService,
             BaseDataServices baseDataServices, CoreApi.IRepository.IDynamicEntityRepository dynamicEntityRepository)
+        private BaseDataServices _baseDataServices;
+        private FetchCustomerServices _fetchCustomerServices;
+        public ModifyCustomerServices(ICustomerRepository customerRepository,
+            IBaseDataRepository baseDataRepository,
+            CacheServices cacheService,
+            BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
         {
             _customerRepository = customerRepository;
             _baseDataRepository = baseDataRepository;
             _cacheService = cacheService;
             _baseDataServices = baseDataServices;
             _dynamicEntityRepository = dynamicEntityRepository;
+            _fetchCustomerServices = fetchCustomerServices;
         }
-
+        public ModifyCustomerServices() { }
         public SynResultModel SynSapCustData(Guid entityId, Guid recId, int UserId)
         {
             var result = new SynResultModel();
@@ -92,6 +103,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             #region main
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
             cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
+            //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL,ZTEXT1,TELF1
+            cust.CRMCUST = "CRM"+string.Concat(resultData["reccode"]).StringMax(0, 20);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -102,6 +115,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             //cust.TITLE = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeIdEnum.称谓, title).StringMax(0, 4);//地址关键字的表格
             cust.NAME1 = string.Concat(resultData["recname"]).StringMax(0, 35);//组织名称 1
             cust.SORTL = string.Concat(resultData["customername"]).StringMax(0, 10);//简称
+            cust.ZTEXT1 = string.Concat(resultData["contacts"]).StringMax(0, 30);//联系人 必填
+            cust.TELF1 = string.Concat(resultData["contactnumber"]).StringMax(0, 16);//联系电话 必填
             #endregion
 
             #region
@@ -245,14 +260,16 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 result.Message = sapResult;
                 _baseDataRepository.UpdateSynTipMsg(entityId, recId, sapResult, tran);
             }
-            else {
+            else
+            {
                 logger.Log(NLog.LogLevel.Error, $"创建SAP客户接口异常报错：{sapRequest.MESSAGE}");
                 sapResult = sapRequest.MESSAGE;
                 if (!string.IsNullOrEmpty(sapResult))
                 {
                     sapResult = string.Concat("同步创建SAP客户失败，SAP错误返回：", sapResult);
                 }
-                else {
+                else
+                {
                     sapResult = "同步创建SAP客户失败，SAP返回无客户号";
                 }
                 result.Message = sapResult;
@@ -275,12 +292,14 @@ namespace UBeat.Crm.CoreApi.GL.Services
             List<CUST_LOAD_MODIFY> CUST_LOAD = new List<CUST_LOAD_MODIFY>();
             List<CUST_CRED_MODIFY> CUST_CRED = new List<CUST_CRED_MODIFY>();
 
-            CUST_LOAD_MODIFY load = new CUST_LOAD_MODIFY();
-            CUST_LOAD.Add(load);
+            //CUST_LOAD_MODIFY load = new CUST_LOAD_MODIFY();
+            //CUST_LOAD.Add(load);
 
             #region main
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
             cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
+            cust.PARTNER= string.Concat(resultData["erpcode"]).StringMax(0, 10);
+            string erpcode=string.Concat(resultData["erpcode"]).StringMax(0, 10);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -291,6 +310,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             //cust.TITLE = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeIdEnum.称谓, title).StringMax(0, 4);//地址关键字的表格
             cust.NAME1 = string.Concat(resultData["recname"]).StringMax(0, 35);//组织名称 1
             cust.SORTL = string.Concat(resultData["customername"]).StringMax(0, 10);//简称
+            cust.ZTEXT1 = string.Concat(resultData["contacts"]).StringMax(0, 30);//联系人 必填
+            cust.TELF1 = string.Concat(resultData["contactnumber"]).StringMax(0, 16);//联系电话 必填
             #endregion
 
             #region
@@ -399,6 +420,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             comp.BUKRS = bukrs;//默认9000
             var akont = string.Concat(resultData["accountantsub"]);//总帐中的统驭科目 
             comp.AKONT = akont.StringMax(0, 10);
+            //comp.PARTNER = erpcode;
             CUST_COMP.Add(comp);
             #endregion
 
@@ -416,7 +438,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             postData.Add("CUST_LOAD", CUST_LOAD);
             postData.Add("CUST_CRED", CUST_CRED);
 
-            logger.Info(string.Concat("SAP客户创建接口请求参数：", JsonHelper.ToJson(postData)));
+            logger.Info(string.Concat("SAP客户修改接口请求参数：", JsonHelper.ToJson(postData)));
             var postResult = CallAPIHelper.ApiPostData(postData, headData);
             SapCustCreateModelResult sapRequest = JsonConvert.DeserializeObject<SapCustCreateModelResult>(postResult);
 
@@ -769,5 +791,81 @@ namespace UBeat.Crm.CoreApi.GL.Services
             _dynamicEntityRepository.DynamicAdd(null, interfaceEntityID, dic, null, 1);
         }
         #endregion
+        public OutputResult<object> SyncSapCustCreditLimitData(Guid entityId, Guid recId, Int32 userId)
+        {
+            if (_baseDataServices == null)
+                _baseDataServices = ServiceLocator.Current.GetInstance<BaseDataServices>();
+            var creditLimitApplyData = _baseDataServices.GetEntityDetailData(null, entityId, recId, userId);
+            StringBuilder sb = new StringBuilder();
+            if (creditLimitApplyData["customerdetail"] != null)
+            {
+                var detailData = (List<IDictionary<String, object>>)creditLimitApplyData["customerdetail"];
+                int index = 0;
+                List<CustomerCreditLimitPush> customerCreditLimitPush = new List<CustomerCreditLimitPush>();
+                detailData.ForEach(t =>
+                {
+                    var data = detailData[index];
+                    var custJson = data["customer"];
+                    JObject jObject = JObject.Parse(custJson.ToString());
+                    var custId = jObject["id"];
+                    CustomerCreditLimitPush push = new CustomerCreditLimitPush();
+                    if (custId != null && !string.IsNullOrEmpty(custId.ToString()))
+                    {
+                        var custDetail = _baseDataServices.GetEntityDetailData(null, Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"), Guid.Parse(custId.ToString()), userId);
+                        if (custDetail["erpcode"] != null && custDetail["creditlimitsgmnt"] != null)
+                        {
+                            push.PARTNER = custDetail["erpcode"].ToString();
+                            push.CREDIT_SGMNT = custDetail["creditlimitsgmnt"].ToString();
+                            push.CREDIT_LIMIT = data["credit"].ToString();
+                            push.LIMIT_VALID_DATE = data["creditlimitvaliddate"] == null ? "" : Convert.ToDateTime(data["creditlimitvaliddate"]).ToString("yyyyMMdd");
+                            if (_fetchCustomerServices == null)
+                                _fetchCustomerServices = ServiceLocator.Current.GetInstance<FetchCustomerServices>();
+                            var actTimeSapCredit = _fetchCustomerServices.getCustomerCreditLimit(new CustomerCreditLimitParam
+                            {
+                                RecId = Guid.Parse(custId.ToString()),
+                                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246")
+                            }, userId);
+                            if (actTimeSapCredit.Status == 0)
+                            {
+                                var actCreditData = (CustomerCreditLimitDataModel)actTimeSapCredit.DataBody;
+                                if (actCreditData.AMOUNT_DYN == 0 && actCreditData.CREDIT_LIMIT == 0 && actCreditData.CREDIT_LIMIT_USEDW == 0)
+                                    push.UPDATE = "I";
+                                else
+                                    push.UPDATE = "U";
+                                var header = new Dictionary<String, string>();
+                                header.Add("Transaction_ID", "CREDIT_CHANGE");
+                                var postData = new Dictionary<String, string>();
+                                List<Dictionary<String, string>> postDataList = new List<Dictionary<string, string>>();
+                                postData.Add("PARTNER", push.PARTNER);
+                                postData.Add("CREDIT_SGMNT", push.CREDIT_SGMNT);
+                                postData.Add("CREDIT_LIMIT", push.CREDIT_LIMIT);
+                                postData.Add("LIMIT_VALID_DATE", push.LIMIT_VALID_DATE);
+                                postData.Add("UPDATE", push.UPDATE);
+                                String result = CallAPIHelper.ApiPostData(postData, header);
+                                if (!string.IsNullOrEmpty(result))
+                                {
+                                    var objResult = JsonConvert.DeserializeObject<SapCustCreateModelResult>(result);
+                                    if (objResult.TYPE != "S")
+                                        sb.Append("[" + jObject["name"].ToString() + "]" + objResult.MESSAGE);
+                                }
+                            }
+                            else
+                                sb.Append("[" + jObject["name"].ToString() + "]的客户号或信用段不能为空");
+                        }
+                        else
+                            sb.Append("获取[" + jObject["name"].ToString() + "]实时信用额度失败");
+                    }
+                    else
+                    {
+                        sb.Append("获取客户信息异常");
+                        return;
+                    }
+                    index++;
+                });
+            }
+            if (string.IsNullOrEmpty(sb.ToString()))
+                return new OutputResult<object>("同步成功");
+            return new OutputResult<object>(null, sb.ToString(), 1);
+        }
     }
 }

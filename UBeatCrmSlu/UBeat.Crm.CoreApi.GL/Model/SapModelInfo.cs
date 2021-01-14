@@ -255,4 +255,9 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public List<TVTA> TVTA { get; set; }
     }
     #endregion
+
+    public class SyncCreditToSap
+    {
+        
+    }
 }

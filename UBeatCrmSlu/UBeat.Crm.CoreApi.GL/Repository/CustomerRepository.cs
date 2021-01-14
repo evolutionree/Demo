@@ -146,12 +146,14 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@recupdated", index_str), DateTime.Now);
                 addSingleParameters.Add(string.Concat("@reconlive", index_str), DateTime.Now);
 
-                //customertype,erpcode, customertype, recname,,
+                //customertype,erpcode, customertype, recname,contacts,contactnumber
                 addSingleParameters.Add(string.Concat("@customertype", index_str), item.customertype_crmid);//客户账户组
                 addSingleParameters.Add(string.Concat("@erpcode", index_str), item.companyone);
                 //addSingleParameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
                 addSingleParameters.Add(string.Concat("@recname", index_str), item.recname);
                 addSingleParameters.Add(string.Concat("@customername", index_str), item.searchone);
+                addSingleParameters.Add(string.Concat("@contacts", index_str), item.contacts);
+                addSingleParameters.Add(string.Concat("@contactnumber", index_str), item.taxphone);
 
                 //customercompanyaddress, region, country, region, postcode,
                 addSingleParameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);
@@ -213,7 +215,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 var insertSql = string.Format(@"INSERT INTO crm_sys_customer(
 												recid, rectype, recstatus, reccreator, issynchrosap,flowstatus,createfrom,
                                                 recupdator, recmanager, reccreated, recupdated, reconlive,
-                                                customertype,erpcode, recname, customername, 
+                                                customertype,erpcode, recname, customername,contacts,contactnumber 
                                                 customercompanyaddress, region, country, saparea,
                                                 language,
                                                 taxno, bank,account, salesorganization,
@@ -273,6 +275,8 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 parameters.Add(string.Concat("@recname", index_str), item.recname);
                 parameters.Add(string.Concat("@reccode", index_str), item.reccode);
                 parameters.Add(string.Concat("@customername", index_str), item.searchone);
+                parameters.Add(string.Concat("@contacts", index_str), item.contacts);
+                parameters.Add(string.Concat("@contactnumber", index_str), item.taxphone);
 
                 //customercompanyaddress, city, country, saparea, postcode,
                 parameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);
@@ -397,6 +401,8 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 //parameters.Add(string.Concat("@appellation", index_str), item.appellation_crmid);
                 parameters.Add(string.Concat("@recname", index_str), item.recname);
                 parameters.Add(string.Concat("@customername", index_str), item.searchone);
+                parameters.Add(string.Concat("@contacts", index_str), item.contacts);
+                parameters.Add(string.Concat("@contactnumber", index_str), item.taxphone);
 
                 //customercompanyaddress, city, country, saparea, postcode,
                 parameters.Add(string.Concat("@customercompanyaddress", index_str), item.address);

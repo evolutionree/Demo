@@ -48,6 +48,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             _baseDataServices = baseDataServices;
             initCrmBaseData();
         }
+ 
 
         public void initCrmBaseData()
         {
@@ -518,6 +519,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     if (!string.IsNullOrEmpty(item.TELFX))
                     {
                         v.fax = item.TELFX.Trim();//第一个传真号: 拨号 + 编号  
+                    }
+                    if (!string.IsNullOrEmpty(item.ZTEXT1))
+                    {
+                        v.contacts = item.ZTEXT1.Trim();//第一个联系人
                     }
                     #endregion
 

@@ -29,6 +29,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Services.Models.SoapErp;
+using System.IO;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -348,7 +349,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                         result.RelateDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detailtemp }, reldetailMapper.EntityId, userNumber, tran).FirstOrDefault();
                     }
-                    result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber,tran).FirstOrDefault();
+                    result.EntityDetail = dynamicEntityServices.DealLinkTableFields(new List<IDictionary<string, object>>() { detail }, detailMapper.EntityId, userNumber, tran).FirstOrDefault();
 
                     #endregion
 
@@ -1420,6 +1421,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (caseItemEntity.ChoiceStatus == 1)
                     {
+                        String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.GL.dll");
+                        Assembly assem = Assembly.LoadFrom(classPath);
+                        var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
+                        var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
+                        var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+                        if (methods != null)
+                        {
+                            var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
+                            var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
+                            var syncResult = data as OutputResult<object>;
+                            if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
+                        }
+
                         MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
                         tran.Commit();
                         WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
@@ -2254,22 +2268,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     if (caseItemEntity.ChoiceStatus == 1)
                     {
-                        var type = typeof(SoapServices);
-                        var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+                        String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.GL.dll");
+                        Assembly assem = Assembly.LoadFrom(classPath);
+                        var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
+                        var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
+                        var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
                         if (methods != null)
                         {
-                            var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
-                            var erpSync = config.GetSection("ERPSync").Get<List<ErpSyncFunc>>().FirstOrDefault(t => t.EntityId == workflowInfo.Entityid.ToString() && t.FlowId == workflowInfo.FlowId.ToString());
-                            if (erpSync != null)
-                            {
-                                if (erpSync.IsFlow == 1)
-                                {
-                                    var method = methods.FirstOrDefault(t => t.Name == erpSync.FuncName);
-                                    var data = method.Invoke(type, new object[4] { workflowInfo.Entityid, caseInfo.CaseId, caseInfo.RecId, userinfo.UserId });
-                                    var result = data as OperateResult;
-                                    if (result.Flag == 0) { message = result.Msg; status = 1; }
-                                }
-                            }
+                            var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
+                            var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
+                            var syncResult = data as OutputResult<object>;
+                            if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
                         }
                     }
                     //判断是否有附加函数_event_func
