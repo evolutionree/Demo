@@ -821,5 +821,14 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
 
 			return result;
 		}
-	}
+
+        #region 同步银行信息
+        public List<Dictionary<string, object>> GetCRMBankInfoList()
+        {
+            string sql = @"select recid,banks,bankl,erdat,ernam,banka,provz,ort01,bnklz
+                            from crm_gl_bankinfo where recstatus = 1";
+            return ExecuteQuery(sql, new DbParameter[] { });
+        }
+        #endregion
+    }
 }

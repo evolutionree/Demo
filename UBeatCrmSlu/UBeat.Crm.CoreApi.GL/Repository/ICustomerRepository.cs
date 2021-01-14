@@ -17,5 +17,8 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         bool ModifyFetchList(List<SaveCustomerMainView> dataList, int userId); 
 		bool DeleteList(List<string> codeList, int userId);
         int UpdateCustomerSapCode(Guid recId, string sapCode, DbTransaction tran = null);
+        #region 同步银行信息
+        List<Dictionary<string, object>> GetCRMBankInfoList();
+        #endregion
     }
 }

@@ -71,5 +71,19 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
+        [HttpPost("sysncbankinfo")]
+        public OutputResult<object> SyncBankInfo2CRM()
+        {
+            var c = _modifyCustomerServices.SyncBankInfo2CRM();
+            if (c.Result)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
+            }
+        }
+
     }
 }
