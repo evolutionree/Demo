@@ -11,6 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\ModifyCustomerServices_BACKUP_1810.cs" />
+    <Compile Remove="Services\ModifyCustomerServices_BASE_1810.cs" />
+    <Compile Remove="Services\ModifyCustomerServices_LOCAL_1810.cs" />
+    <Compile Remove="Services\ModifyCustomerServices_REMOTE_1810.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="ad_cert.cer" />
   </ItemGroup>
 

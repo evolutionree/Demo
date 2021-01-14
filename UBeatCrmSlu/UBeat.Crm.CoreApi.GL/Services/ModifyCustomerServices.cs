@@ -25,19 +25,13 @@ namespace UBeat.Crm.CoreApi.GL.Services
         private readonly ICustomerRepository _customerRepository;
         private readonly IBaseDataRepository _baseDataRepository;
         private readonly CacheServices _cacheService;
-        private readonly BaseDataServices _baseDataServices;
-        private readonly CoreApi.IRepository.IDynamicEntityRepository _dynamicEntityRepository;
-
-        public ModifyCustomerServices(ICustomerRepository customerRepository,
-            IBaseDataRepository baseDataRepository,
-            CacheServices cacheService,
-            BaseDataServices baseDataServices, CoreApi.IRepository.IDynamicEntityRepository dynamicEntityRepository)
         private BaseDataServices _baseDataServices;
+        private readonly CoreApi.IRepository.IDynamicEntityRepository _dynamicEntityRepository;
         private FetchCustomerServices _fetchCustomerServices;
         public ModifyCustomerServices(ICustomerRepository customerRepository,
             IBaseDataRepository baseDataRepository,
             CacheServices cacheService,
-            BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
+            BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, CoreApi.IRepository.IDynamicEntityRepository dynamicEntityRepository)
         {
             _customerRepository = customerRepository;
             _baseDataRepository = baseDataRepository;
