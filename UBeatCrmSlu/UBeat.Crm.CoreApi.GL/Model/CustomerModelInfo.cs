@@ -463,11 +463,11 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public String PARTNER { get; set; }
         public String CREDIT_SGMNT { get; set; }
         public String CURRENCY { get; set; }
-        public int AMOUNT { get; set; }
-        public int CREDIT_LIMIT { get; set; }
+        public decimal AMOUNT { get; set; }
+        public decimal CREDIT_LIMIT { get; set; }
         public decimal CREDIT_LIMIT_USED { get; set; }
-        public int CREDIT_LIMIT_USEDW { get; set; }
-        public int AMOUNT_SEC { get; set; }
+        public decimal CREDIT_LIMIT_USEDW { get; set; }
+        public decimal AMOUNT_SEC { get; set; }
         public String CUST_GROUP { get; set; }
         public int CRED_LIM_CALC { get; set; }
         public String XBLOCKED { get; set; }
@@ -482,8 +482,20 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public String BP_COACH_LIST { get; set; }
         public int SECURITY_AMNT { get; set; }
         public String SECURITY_WAERS { get; set; }
-        public int AMOUNT_DYN { get; set; }
+        public decimal AMOUNT_DYN { get; set; }
         public String HORIZON_DATE { get; set; }
         public int HORIZON_DAYS { get; set; }
+    }
+    //public class CustomerCreditLimitPushParam
+    //{
+    //    public List<CustomerCreditLimitPush> CustomerCreditLimitPush { get; set; }
+    //}
+    public class CustomerCreditLimitPush
+    {
+        public String PARTNER { get; set; }
+        public String CREDIT_SGMNT { get; set; }
+        public String UPDATE { get; set; }
+        public String CREDIT_LIMIT { get; set; }
+        public String LIMIT_VALID_DATE { get; set; }
     }
 }

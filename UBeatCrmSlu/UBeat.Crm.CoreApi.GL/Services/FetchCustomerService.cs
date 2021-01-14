@@ -48,6 +48,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             _baseDataServices = baseDataServices;
             initCrmBaseData();
         }
+ 
 
         public void initCrmBaseData()
         {

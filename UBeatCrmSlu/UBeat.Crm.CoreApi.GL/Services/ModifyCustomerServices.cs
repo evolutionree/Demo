@@ -1,41 +1,46 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NLog;
+using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.GL.Model;
 using UBeat.Crm.CoreApi.GL.Repository;
 using UBeat.Crm.CoreApi.GL.Utility;
+using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
 
 namespace UBeat.Crm.CoreApi.GL.Services
 {
-    public class ModifyCustomerServices: BasicBaseServices
+    public class ModifyCustomerServices : BasicBaseServices
     {
         private static readonly Logger logger = LogManager.GetLogger("UBeat.Crm.GL.Services.ModifyCustomerServices");
         private readonly ICustomerRepository _customerRepository;
         private readonly IBaseDataRepository _baseDataRepository;
         private readonly CacheServices _cacheService;
-        private readonly BaseDataServices _baseDataServices;
-         
+        private BaseDataServices _baseDataServices;
+        private FetchCustomerServices _fetchCustomerServices;
         public ModifyCustomerServices(ICustomerRepository customerRepository,
             IBaseDataRepository baseDataRepository,
             CacheServices cacheService,
-            BaseDataServices baseDataServices)
+            BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
         {
             _customerRepository = customerRepository;
             _baseDataRepository = baseDataRepository;
             _cacheService = cacheService;
-            _baseDataServices = baseDataServices; 
+            _baseDataServices = baseDataServices;
+            _fetchCustomerServices = fetchCustomerServices;
         }
-
+        public ModifyCustomerServices() { }
         public SynResultModel SynSapCustData(Guid entityId, Guid recId, int UserId)
         {
             var result = new SynResultModel();
-            var detailData = _baseDataServices.GetEntityDetailData(null,entityId, recId, UserId);
+            var detailData = _baseDataServices.GetEntityDetailData(null, entityId, recId, UserId);
             if (detailData != null)
             {
                 SynchrosapStatus isSyn = SynchrosapStatus.Yes;
@@ -54,19 +59,19 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         result = SynSapModifyCustData(detailData, entityId, recId);
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     var str = "同步客户失败，请联系管理员";
                     logger.Info(string.Format(@"{0},{1}", str, ex.Message));
                     result.Message = str;
-                }  
+                }
             }
             else
             {
                 result.Message = "同步失败，不存在客户记录";
             }
 
-            return result; 
+            return result;
         }
 
         public SynResultModel SynSapAddCustData(IDictionary<string, object> resultData, Guid entityId, Guid recId, DbTransaction tran = null)
@@ -82,12 +87,12 @@ namespace UBeat.Crm.CoreApi.GL.Services
             List<CUST_LOAD> CUST_LOAD = new List<CUST_LOAD>();
             List<CUST_CRED> CUST_CRED = new List<CUST_CRED>();
 
-            CUST_LOAD load =new CUST_LOAD();
+            CUST_LOAD load = new CUST_LOAD();
             CUST_LOAD.Add(load);
 
             #region main
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
-            cust.CRMCUST = "CRM"+string.Concat(resultData["reccode"]).StringMax(0, 20);
+            cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -241,14 +246,16 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 result.Message = sapResult;
                 _baseDataRepository.UpdateSynTipMsg(entityId, recId, sapResult, tran);
             }
-            else {
+            else
+            {
                 logger.Log(NLog.LogLevel.Error, $"创建SAP客户接口异常报错：{sapRequest.MESSAGE}");
                 sapResult = sapRequest.MESSAGE;
                 if (!string.IsNullOrEmpty(sapResult))
                 {
                     sapResult = string.Concat("同步创建SAP客户失败，SAP错误返回：", sapResult);
                 }
-                else {
+                else
+                {
                     sapResult = "同步创建SAP客户失败，SAP返回无客户号";
                 }
                 result.Message = sapResult;
@@ -258,7 +265,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return result;
         }
 
-        public dynamic SynSapModifyCustData(IDictionary<string, object> resultData, Guid entityId, Guid recId, DbTransaction tran=null)
+        public dynamic SynSapModifyCustData(IDictionary<string, object> resultData, Guid entityId, Guid recId, DbTransaction tran = null)
         {
             var result = new SynResultModel();
             var sapResult = string.Empty;
@@ -449,71 +456,71 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return result;
         }
 
-         public void AutoSubmitCustomerToSapNew(Guid caseId, int userId, DbTransaction tran)
-         {
-             /*var result = new SynResultModel();
-             logger.Info(string.Concat("ModifyCustomerServices.AutoSubmitCustomerToSap-Begin"));
-             var data = _baseDataRepository.GetEntityIdAndRecIdByCaseId(tran, caseId, userId);
-             if (data != null)
-             {
-                 //客户审批通过自动提交客户同步到SAP
-                 var custEntityId = EntityReg.CustomerEntityId();
-                 var detailData = _baseDataServices.GetEntityDetailData(tran, data.EntityId, data.RecId, userId);
-                 if (detailData != null)
-                 {
-                     SynchrosapStatus isSyn = SynchrosapStatus.Yes;
-                     var sapno = string.Concat(detailData["companyone"]);
-                     var issynchrosap = string.Concat(detailData["issynchrosap"]);
-                     if (!string.IsNullOrEmpty(sapno) && (issynchrosap == "1" || issynchrosap == "4"))
-                         isSyn = SynchrosapStatus.No;
-                     try
-                     {
-                         if (isSyn == SynchrosapStatus.Yes)
-                         {
-                             result = SynSapAddCustData(detailData, custEntityId, data.RecId);
-                         }
-                         else
-                         {
-                             result = SynSapModifyCustData(detailData, custEntityId, data.RecId);
-                         }
-                     }
-                     catch (Exception ex)
-                     {
-                         var str = "同步客户失败，请联系管理员";
-                         logger.Info(string.Format(@"{0},{1}", str, ex.Message));
-                         result.Message = str;
-                     }
-                 }
-                 else
-                 {
-                     result.Message = "同步失败，不存在客户记录";
-                 }
-             }*/
+        public void AutoSubmitCustomerToSapNew(Guid caseId, int userId, DbTransaction tran)
+        {
+            /*var result = new SynResultModel();
+            logger.Info(string.Concat("ModifyCustomerServices.AutoSubmitCustomerToSap-Begin"));
+            var data = _baseDataRepository.GetEntityIdAndRecIdByCaseId(tran, caseId, userId);
+            if (data != null)
+            {
+                //客户审批通过自动提交客户同步到SAP
+                var custEntityId = EntityReg.CustomerEntityId();
+                var detailData = _baseDataServices.GetEntityDetailData(tran, data.EntityId, data.RecId, userId);
+                if (detailData != null)
+                {
+                    SynchrosapStatus isSyn = SynchrosapStatus.Yes;
+                    var sapno = string.Concat(detailData["companyone"]);
+                    var issynchrosap = string.Concat(detailData["issynchrosap"]);
+                    if (!string.IsNullOrEmpty(sapno) && (issynchrosap == "1" || issynchrosap == "4"))
+                        isSyn = SynchrosapStatus.No;
+                    try
+                    {
+                        if (isSyn == SynchrosapStatus.Yes)
+                        {
+                            result = SynSapAddCustData(detailData, custEntityId, data.RecId);
+                        }
+                        else
+                        {
+                            result = SynSapModifyCustData(detailData, custEntityId, data.RecId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var str = "同步客户失败，请联系管理员";
+                        logger.Info(string.Format(@"{0},{1}", str, ex.Message));
+                        result.Message = str;
+                    }
+                }
+                else
+                {
+                    result.Message = "同步失败，不存在客户记录";
+                }
+            }*/
         }
 
         #region auto submit
         public void AutoSubmitCustomerToSap(Guid caseId, int userId, DbTransaction tran)
         {
             logger.Info(string.Concat("ModifyCustomerServices.AutoSubmitCustomerToSap-Begin"));
-            var data = _baseDataRepository.GetEntityIdAndRecIdByCaseId(tran,caseId,userId);
+            var data = _baseDataRepository.GetEntityIdAndRecIdByCaseId(tran, caseId, userId);
             if (data != null)
             {
-				//合同审批通过自动提交客户同步到SAP
-				var custEntityId = EntityReg.CustomerEntityId();
-				var detailData = _baseDataServices.GetEntityDetailData(tran,data.EntityId, data.RecId, userId);
-				logger.Info(string.Format("GetEntityDetailData:{0}", JsonHelper.ToJson(detailData)));
-				if (detailData != null)
-				{
-					var customerJson = string.Concat(detailData["customer"]);
-					if (!string.IsNullOrEmpty(customerJson))
-					{
-						var ds = JsonHelper.ToObject<DataSourceInfo>(customerJson);
-						if (ds != null)
-						{
-							detailData = _baseDataServices.GetEntityDetailData(tran,custEntityId, ds.id, userId);
-							if (detailData != null)
-							{
-                                if (detailData.ContainsKey("issynchrosap")  ==false 
+                //合同审批通过自动提交客户同步到SAP
+                var custEntityId = EntityReg.CustomerEntityId();
+                var detailData = _baseDataServices.GetEntityDetailData(tran, data.EntityId, data.RecId, userId);
+                logger.Info(string.Format("GetEntityDetailData:{0}", JsonHelper.ToJson(detailData)));
+                if (detailData != null)
+                {
+                    var customerJson = string.Concat(detailData["customer"]);
+                    if (!string.IsNullOrEmpty(customerJson))
+                    {
+                        var ds = JsonHelper.ToObject<DataSourceInfo>(customerJson);
+                        if (ds != null)
+                        {
+                            detailData = _baseDataServices.GetEntityDetailData(tran, custEntityId, ds.id, userId);
+                            if (detailData != null)
+                            {
+                                if (detailData.ContainsKey("issynchrosap") == false
                                     || detailData["issynchrosap"] == null
                                     || detailData["issynchrosap"].ToString() != "1")
                                 {
@@ -524,11 +531,11 @@ namespace UBeat.Crm.CoreApi.GL.Services
                                         logger.Error(string.Format("自动提交客户SAP数据失败:{0}", result.Message));
                                     }
                                 }
-								
-							}
-						}
-					}
-				} 
+
+                            }
+                        }
+                    }
+                }
             }
             logger.Info(string.Concat("ModifyCustomerServices.AutoSubmitCustomerToSap-End"));
         }
@@ -539,7 +546,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
         public dynamic EditCustAutoCommit(DbTransaction transaction, object basicParamData, object preActionResult, object actionResult, object userId)
         {
             var result = new SynResultModel();
-            var funRet=_baseDataRepository.ExcuteActionExt(transaction, "crm_fhsj_customer_edit", basicParamData, preActionResult, actionResult, (int)userId);
+            var funRet = _baseDataRepository.ExcuteActionExt(transaction, "crm_fhsj_customer_edit", basicParamData, preActionResult, actionResult, (int)userId);
             var paramData = basicParamData as DynamicEntityEditModel;
             Dictionary<string, object> fieldData = paramData.FieldData;
             logger.Info("修改客户开始：" + paramData.RecId.ToString());
@@ -547,7 +554,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             var detailData = _baseDataServices.GetEntityDetailData(transaction, Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"), paramData.RecId, (int)userId);
             if (detailData != null)
             {
-                logger.Info("修改客户调用sap开始："+ paramData.RecId.ToString());
+                logger.Info("修改客户调用sap开始：" + paramData.RecId.ToString());
                 SynchrosapStatus isSyn = SynchrosapStatus.Yes;
                 var sapno = string.Concat(detailData["companyone"]);
                 var flowstatus = string.Concat(detailData["flowstatus"]);
@@ -612,7 +619,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                             Guid companyId = Guid.Parse(JsonHelper.ToJsonDictionary(company.ToString())["id"].ToString());
                             if (companyId != null)
                             {
-                                this.SynSapCustDataJx(projectEntityId,companyId, userId);
+                                this.SynSapCustDataJx(projectEntityId, companyId, userId);
                             }
                         }
                     }
@@ -625,7 +632,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
         }
         public void AutoSubmitCustomerToSapNewJxT(Dictionary<string, object> param, int userId, DbTransaction tran)
         {
-            if (param.Count == 0  || !param.ContainsKey("recid")
+            if (param.Count == 0 || !param.ContainsKey("recid")
             || string.IsNullOrWhiteSpace(param["recid"]?.ToString()))
             {
             }
@@ -640,7 +647,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 try
                 {
                     //获取当前经销审批单明细
-                   this.SynSapCustDataJx(projectEntityId, recId, userId);
+                    this.SynSapCustDataJx(projectEntityId, recId, userId);
                 }
                 catch (Exception e)
                 {
@@ -656,7 +663,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             {
                 SynchrosapStatus isSyn = SynchrosapStatus.Yes;
                 var sapno = string.Concat(detailData["companyone"]);
-                detailData["distribution"]="3";//经销
+                detailData["distribution"] = "3";//经销
                 if (!string.IsNullOrEmpty(sapno))
                     isSyn = SynchrosapStatus.No;
                 try
@@ -683,6 +690,83 @@ namespace UBeat.Crm.CoreApi.GL.Services
             }
 
             return result;
+        }
+
+        public OutputResult<object> SyncSapCustCreditLimitData(Guid entityId, Guid recId, Int32 userId)
+        {
+            if (_baseDataServices == null)
+                _baseDataServices = ServiceLocator.Current.GetInstance<BaseDataServices>();
+            var creditLimitApplyData = _baseDataServices.GetEntityDetailData(null, entityId, recId, userId);
+            StringBuilder sb = new StringBuilder();
+            if (creditLimitApplyData["customerdetail"] != null)
+            {
+                var detailData = (List<IDictionary<String, object>>)creditLimitApplyData["customerdetail"];
+                int index = 0;
+                List<CustomerCreditLimitPush> customerCreditLimitPush = new List<CustomerCreditLimitPush>();
+                detailData.ForEach(t =>
+                {
+                    var data = detailData[index];
+                    var custJson = data["customer"];
+                    JObject jObject = JObject.Parse(custJson.ToString());
+                    var custId = jObject["id"];
+                    CustomerCreditLimitPush push = new CustomerCreditLimitPush();
+                    if (custId != null && !string.IsNullOrEmpty(custId.ToString()))
+                    {
+                        var custDetail = _baseDataServices.GetEntityDetailData(null, Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246"), Guid.Parse(custId.ToString()), userId);
+                        if (custDetail["erpcode"] != null && custDetail["creditlimitsgmnt"] != null)
+                        {
+                            push.PARTNER = custDetail["erpcode"].ToString();
+                            push.CREDIT_SGMNT = custDetail["creditlimitsgmnt"].ToString();
+                            push.CREDIT_LIMIT = data["credit"].ToString();
+                            push.LIMIT_VALID_DATE = data["creditlimitvaliddate"] == null ? "" : Convert.ToDateTime(data["creditlimitvaliddate"]).ToString("yyyyMMdd");
+                            if (_fetchCustomerServices == null)
+                                _fetchCustomerServices = ServiceLocator.Current.GetInstance<FetchCustomerServices>();
+                            var actTimeSapCredit = _fetchCustomerServices.getCustomerCreditLimit(new CustomerCreditLimitParam
+                            {
+                                RecId = Guid.Parse(custId.ToString()),
+                                EntityId = Guid.Parse("f9db9d79-e94b-4678-a5cc-aa6e281c1246")
+                            }, userId);
+                            if (actTimeSapCredit.Status == 0)
+                            {
+                                var actCreditData = (CustomerCreditLimitDataModel)actTimeSapCredit.DataBody;
+                                if (actCreditData.AMOUNT_DYN == 0 && actCreditData.CREDIT_LIMIT == 0 && actCreditData.CREDIT_LIMIT_USEDW == 0)
+                                    push.UPDATE = "I";
+                                else
+                                    push.UPDATE = "U";
+                                var header = new Dictionary<String, string>();
+                                header.Add("Transaction_ID", "CREDIT_CHANGE");
+                                var postData = new Dictionary<String, string>();
+                                List<Dictionary<String, string>> postDataList = new List<Dictionary<string, string>>();
+                                postData.Add("PARTNER", push.PARTNER);
+                                postData.Add("CREDIT_SGMNT", push.CREDIT_SGMNT);
+                                postData.Add("CREDIT_LIMIT", push.CREDIT_LIMIT);
+                                postData.Add("LIMIT_VALID_DATE", push.LIMIT_VALID_DATE);
+                                postData.Add("UPDATE", push.UPDATE);
+                                String result = CallAPIHelper.ApiPostData(postData, header);
+                                if (!string.IsNullOrEmpty(result))
+                                {
+                                    var objResult = JsonConvert.DeserializeObject<SapCustCreateModelResult>(result);
+                                    if (objResult.TYPE != "S")
+                                        sb.Append("[" + jObject["name"].ToString() + "]" + objResult.MESSAGE);
+                                }
+                            }
+                            else
+                                sb.Append("[" + jObject["name"].ToString() + "]的客户号或信用段不能为空");
+                        }
+                        else
+                            sb.Append("获取[" + jObject["name"].ToString() + "]实时信用额度失败");
+                    }
+                    else
+                    {
+                        sb.Append("获取客户信息异常");
+                        return;
+                    }
+                    index++;
+                });
+            }
+            if (string.IsNullOrEmpty(sb.ToString()))
+                return new OutputResult<object>("同步成功");
+            return new OutputResult<object>(null, sb.ToString(), 1);
         }
     }
 }

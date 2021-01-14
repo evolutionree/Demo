@@ -21,7 +21,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly FetchCustomerServices _fetchCustomerServices;
         private readonly ModifyCustomerServices _modifyCustomerServices;
 
-        public SapHttpApiController(BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, 
+        public SapHttpApiController(BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices,
             ModifyCustomerServices modifyCustomerServices)
         {
             _baseDataServices = baseDataServices;
@@ -70,6 +70,12 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>(c.Message);
             }
         }
-
+        [Route("synccredittosap")]
+        [HttpPost]
+        [AllowAnonymous]
+        public OutputResult<object> SyncSapCustCreditLimitData()
+        {
+            return _modifyCustomerServices.SyncSapCustCreditLimitData(Guid.Parse("67121d89-cc88-43cb-a459-f86370774259"), Guid.Parse("23f8d4ab-7b7e-491b-a5f2-eae02ad8b12b"), 1);
+        }
     }
 }
