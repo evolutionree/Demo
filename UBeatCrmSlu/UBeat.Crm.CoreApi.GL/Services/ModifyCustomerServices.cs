@@ -93,6 +93,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             #region main
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
             cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
+            //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL,ZTEXT1,TELF1
+            cust.CRMCUST = "CRM"+string.Concat(resultData["reccode"]).StringMax(0, 20);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -103,6 +105,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             //cust.TITLE = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeIdEnum.称谓, title).StringMax(0, 4);//地址关键字的表格
             cust.NAME1 = string.Concat(resultData["recname"]).StringMax(0, 35);//组织名称 1
             cust.SORTL = string.Concat(resultData["customername"]).StringMax(0, 10);//简称
+            cust.ZTEXT1 = string.Concat(resultData["contacts"]).StringMax(0, 30);//联系人 必填
+            cust.TELF1 = string.Concat(resultData["contactnumber"]).StringMax(0, 16);//联系电话 必填
             #endregion
 
             #region
@@ -278,12 +282,14 @@ namespace UBeat.Crm.CoreApi.GL.Services
             List<CUST_LOAD_MODIFY> CUST_LOAD = new List<CUST_LOAD_MODIFY>();
             List<CUST_CRED_MODIFY> CUST_CRED = new List<CUST_CRED_MODIFY>();
 
-            CUST_LOAD_MODIFY load = new CUST_LOAD_MODIFY();
-            CUST_LOAD.Add(load);
+            //CUST_LOAD_MODIFY load = new CUST_LOAD_MODIFY();
+            //CUST_LOAD.Add(load);
 
             #region main
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
             cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
+            cust.PARTNER= string.Concat(resultData["erpcode"]).StringMax(0, 10);
+            string erpcode=string.Concat(resultData["erpcode"]).StringMax(0, 10);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -294,6 +300,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             //cust.TITLE = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeIdEnum.称谓, title).StringMax(0, 4);//地址关键字的表格
             cust.NAME1 = string.Concat(resultData["recname"]).StringMax(0, 35);//组织名称 1
             cust.SORTL = string.Concat(resultData["customername"]).StringMax(0, 10);//简称
+            cust.ZTEXT1 = string.Concat(resultData["contacts"]).StringMax(0, 30);//联系人 必填
+            cust.TELF1 = string.Concat(resultData["contactnumber"]).StringMax(0, 16);//联系电话 必填
             #endregion
 
             #region
@@ -402,6 +410,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             comp.BUKRS = bukrs;//默认9000
             var akont = string.Concat(resultData["accountantsub"]);//总帐中的统驭科目 
             comp.AKONT = akont.StringMax(0, 10);
+            //comp.PARTNER = erpcode;
             CUST_COMP.Add(comp);
             #endregion
 
@@ -419,7 +428,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             postData.Add("CUST_LOAD", CUST_LOAD);
             postData.Add("CUST_CRED", CUST_CRED);
 
-            logger.Info(string.Concat("SAP客户创建接口请求参数：", JsonHelper.ToJson(postData)));
+            logger.Info(string.Concat("SAP客户修改接口请求参数：", JsonHelper.ToJson(postData)));
             var postResult = CallAPIHelper.ApiPostData(postData, headData);
             SapCustCreateModelResult sapRequest = JsonConvert.DeserializeObject<SapCustCreateModelResult>(postResult);
 

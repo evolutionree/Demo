@@ -520,6 +520,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     {
                         v.fax = item.TELFX.Trim();//第一个传真号: 拨号 + 编号  
                     }
+                    if (!string.IsNullOrEmpty(item.ZTEXT1))
+                    {
+                        v.contacts = item.ZTEXT1.Trim();//第一个联系人
+                    }
                     #endregion
 
                     #region TAXNUM, SMTP_ADDR 

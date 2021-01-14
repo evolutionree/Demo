@@ -107,7 +107,12 @@ namespace UBeat.Crm.CoreApi.GL.Model
     }
     public class CUST_COMP_MODIFY
     {
+        public CUST_COMP_MODIFY()
+        {
+            UPDATE = "U";
+        }
         public string PARTNER { get; set; }
+        public string UPDATE { get; set; }
         public string BUKRS { get; set; }
         public string LOEVM { get; set; }
         public string WBRSL { get; set; }
@@ -117,7 +122,12 @@ namespace UBeat.Crm.CoreApi.GL.Model
 
     public class CUST_SALE_MODIFY
     {
+        public CUST_SALE_MODIFY()
+        {
+            UPDATE = "U";
+        }
         public string PARTNER { get; set; }
+        public string UPDATE { get; set; }
         public string VKORG { get; set; }
         public string VTWEG { get; set; }
         public string SPART { get; set; }
@@ -314,6 +324,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
 
         public string language { get; set; } //默认值ZH
         public string taxphone { get; set; }
+        public string contacts { get; set; }
         public string extension { get; set; }
         public string mobilephone { get; set; }
         public string fax { get; set; }
