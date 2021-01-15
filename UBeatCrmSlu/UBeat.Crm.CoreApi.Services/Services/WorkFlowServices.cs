@@ -1421,19 +1421,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (caseItemEntity.ChoiceStatus == 1)
                     {
-                        String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.GL.dll");
-                        Assembly assem = Assembly.LoadFrom(classPath);
-                        var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
-                        var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
-                        var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
-                        if (methods != null)
+                        if (workflowInfo.Entityid == Guid.Parse("67121d89-cc88-43cb-a459-f86370774259"))
                         {
-                            var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
-                            var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
-                            var syncResult = data as OutputResult<object>;
-                            if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
+                            String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.GL.dll");
+                            Assembly assem = Assembly.LoadFrom(classPath);
+                            var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
+                            var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
+                            var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+                            if (methods != null)
+                            {
+                                var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
+                                var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
+                                var syncResult = data as OutputResult<object>;
+                                if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
+                            }
                         }
-
                         MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
                         tran.Commit();
                         WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
