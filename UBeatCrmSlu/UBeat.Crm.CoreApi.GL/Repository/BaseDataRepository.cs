@@ -504,5 +504,14 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
             var result = DataBaseHelper.Query<RegionCityClass>(sql, param, CommandType.Text);
             return result;
         }
+
+        public List<DataSourceInfo> GetCustData()
+        {
+            string sql = @"select recid as id, recname as name,erpcode as code  from crm_sys_customer where recstatus = 1;";
+
+            var param = new DynamicParameters();
+            return DataBaseHelper.Query<DataSourceInfo>(sql, param, CommandType.Text);
+        }
+
     }
 }
