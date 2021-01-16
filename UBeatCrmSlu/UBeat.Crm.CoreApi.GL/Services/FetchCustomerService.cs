@@ -23,6 +23,7 @@ using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Services.Services;
 using ICustomerRepository = UBeat.Crm.CoreApi.GL.Repository.ICustomerRepository;
 using System.Data.Common;
+using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.GL.Services
 {
@@ -48,7 +49,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             _baseDataServices = baseDataServices;
             initCrmBaseData();
         }
- 
+
 
         public void initCrmBaseData()
         {
@@ -769,6 +770,64 @@ namespace UBeat.Crm.CoreApi.GL.Services
             }
             return new OutputResult<object>(null, message: "客户号不能为null", status: 1);
         }
+        public OutputResult<Object> getOrders(SoOrderParamModel param, int userId)
+        {
+            var header = new Dictionary<String, string>();
+            header.Add("Transaction_ID", "SO_LIST");
+            var postData = new Dictionary<String, string>();
+            postData.Add("REQDATE", "");
+            postData.Add("ORDERID", "");
+            postData.Add("ERDAT_FR", "");
+            postData.Add("ERDAT_TO", "");
+            if (!string.IsNullOrEmpty(param.OrderId))
+            {
+                //查询单条
+                postData["ORDERID"] = "";
+            }
+            else if (!string.IsNullOrEmpty(param.ERDAT_FR) && !string.IsNullOrEmpty(param.ERDAT_TO))
+            {
+                //查询时间段
+                postData["ERDAT_FR"] = param.ERDAT_FR;
+                postData["ERDAT_TO"] = param.ERDAT_TO;
 
+                String result = CallAPIHelper.ApiPostData(postData, header);
+                if (!string.IsNullOrEmpty(result))
+                {
+                    var objResult = JsonConvert.DeserializeObject<SoOrderModel>(result);
+                    if (objResult.TYPE == "S")
+                    {
+                        var data = objResult.DATA["List"];
+                        return new OutputResult<object>(data);
+                    }
+                    else
+                        return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
+                }
+            }
+            return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
+        }
+        void saveOrders(List<SoOrderDataModel> orders)
+        {
+
+            var groupData = orders.GroupBy(t => t.VBELN).ToList();
+            var dicData = _baseDataRepository.GetDicDataByTypeId(69);
+            var custData = _baseDataRepository.GetCustData();
+            groupData.ForEach(t =>
+            {
+                Dictionary<String, object> data = new Dictionary<string, object>();
+                data.Add("typeid", "6f12d7b0-9666-4f36-a9b4-cd9ca8117794");
+                Dictionary<String, object> fieldData = new Dictionary<string, object>();
+                var collection = orders.Where(p => p.VBELN == t.Key);
+                if (collection.Count() > 0)
+                {
+                    var mainData = collection.FirstOrDefault();
+                    var orderType = dicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUART);
+                    fieldData.Add("ordertype", orderType == null ? 0 : orderType.DataId);
+                    var cust = custData.FirstOrDefault(t1 => t1.code == mainData.KUNNR);
+                    fieldData.Add("customer", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
+                    fieldData.Add("contractcode", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
+                }
+            });
+
+        }
     }
 }

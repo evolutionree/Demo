@@ -710,35 +710,35 @@ namespace UBeat.Crm.CoreApi.GL.Services
         public SynResultModel SyncBankInfo2CRM()
         {
             var result = new SynResultModel();
-            var sapResult = string.Empty;
+            //var sapResult = string.Empty;
 
-            var postData = new Dictionary<string, object>();
-            var headData = new Dictionary<string, string>();
-            headData.Add("Transaction_ID", "BANK_DATA");
-            var postResult = CallAPIHelper.ApiPostData(postData, headData);
-            SapBankModelResult sapRequest = JsonConvert.DeserializeObject<SapBankModelResult>(postResult);
-            if (sapRequest.TYPE == "S")
-            {
-                sapResult = sapRequest.MESSAGE;
-                result.Result = true;
-                result.Message = "同步SAP银行信息成功";
-              //  SubmitInterfaceData("同步SAP银行信息", postResult);
-                InitBankInfoData(sapRequest.DATA);
-            }
-            else
-            {
-                logger.Log(NLog.LogLevel.Error, $"同步SAP银行信息失败，提示消息：{sapRequest.MESSAGE}");
-                sapResult = sapRequest.MESSAGE;
-                if (!string.IsNullOrEmpty(sapResult))
-                {
-                    sapResult = string.Concat("同步SAP银行信息失败，提示消息：", sapResult);
-                }
-                else
-                {
-                    sapResult = "同步SAP银行信息失败，提示消息：无";
-                }
-                result.Message = sapResult;
-            }
+            //var postData = new Dictionary<string, object>();
+            //var headData = new Dictionary<string, string>();
+            //headData.Add("Transaction_ID", "BANK_DATA");
+            //var postResult = CallAPIHelper.ApiPostData(postData, headData);
+            //SapBankModelResult sapRequest = JsonConvert.DeserializeObject<SapBankModelResult>(postResult);
+            //if (sapRequest.TYPE == "S")
+            //{
+            //    sapResult = sapRequest.MESSAGE;
+            //    result.Result = true;
+            //    result.Message = "同步SAP银行信息成功";
+            //  //  SubmitInterfaceData("同步SAP银行信息", postResult);
+            //    InitBankInfoData(sapRequest.DATA);
+            //}
+            //else
+            //{
+            //    logger.Log(NLog.LogLevel.Error, $"同步SAP银行信息失败，提示消息：{sapRequest.MESSAGE}");
+            //    sapResult = sapRequest.MESSAGE;
+            //    if (!string.IsNullOrEmpty(sapResult))
+            //    {
+            //        sapResult = string.Concat("同步SAP银行信息失败，提示消息：", sapResult);
+            //    }
+            //    else
+            //    {
+            //        sapResult = "同步SAP银行信息失败，提示消息：无";
+            //    }
+            //    result.Message = sapResult;
+            //}
 
             return result;
         }
