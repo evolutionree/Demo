@@ -24,13 +24,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                     new Npgsql.NpgsqlParameter("recid",Guid.Parse(id))
                 };
                 List<EntityTransferRuleInfo> list = ExecuteQuery<EntityTransferRuleInfo>(cmdText, param, transaction);
-                if (list != null && list.Count > 0) {
+                if (list != null && list.Count > 0)
+                {
                     return list[0].parseAllJsonString();
                 }
                 return null;
 
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
 
             }
             return null;
@@ -47,7 +49,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             try
             {
                 if (queryModel.SrcEntityId != null && queryModel.SrcEntityId.Length > 0 && queryModel.SrcEntityId != Guid.Empty.ToString()
-                    && queryModel.DstEntityId != null && queryModel.DstEntityId.Length > 0 && queryModel.DstEntityId != Guid.Empty.ToString()) {
+                    && queryModel.DstEntityId != null && queryModel.DstEntityId.Length > 0 && queryModel.DstEntityId != Guid.Empty.ToString())
+                {
                     constructOtherCategoryRule(queryModel.SrcEntityId, queryModel.DstEntityId);
                 }
                 string cmdText = @"
@@ -67,34 +70,42 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                                     where rules.recstatus = 1  
                                         and dstCategory.recstatus = 1 
                                         and dstEntity.recstatus = 1 ";
-                if (queryModel.SrcEntityId != null && queryModel.SrcEntityId.Length != 0 && queryModel.SrcEntityId != Guid.Empty.ToString()) {
+                if (queryModel.SrcEntityId != null && queryModel.SrcEntityId.Length != 0 && queryModel.SrcEntityId != Guid.Empty.ToString())
+                {
                     cmdText = cmdText + " and rules.srcentity='" + queryModel.SrcEntityId.Replace("'", "'' ") + "'";
                 }
-                if (queryModel.SrcCategoryId != null && queryModel.SrcCategoryId.Length != 0 && queryModel.SrcCategoryId != Guid.Empty.ToString()) {
+                if (queryModel.SrcCategoryId != null && queryModel.SrcCategoryId.Length != 0 && queryModel.SrcCategoryId != Guid.Empty.ToString())
+                {
                     cmdText = cmdText + " and  (rules.srccategory is null or rules.srccategory = '' or  rules.srccategory='" + queryModel.SrcCategoryId.Replace("'", "''") + "') ";
                 }
-                if (queryModel.DstEntityId != null && queryModel.DstEntityId.Length != 0 && queryModel.DstEntityId != Guid.Empty.ToString()) {
+                if (queryModel.DstEntityId != null && queryModel.DstEntityId.Length != 0 && queryModel.DstEntityId != Guid.Empty.ToString())
+                {
                     cmdText = cmdText + " and rules.dstentity ='" + queryModel.DstEntityId.Replace("'", "''") + "' ";
                 }
-                if (queryModel.DstCategoryId != null && queryModel.DstCategoryId.Length != 0 && queryModel.DstCategoryId != Guid.Empty.ToString()) {
+                if (queryModel.DstCategoryId != null && queryModel.DstCategoryId.Length != 0 && queryModel.DstCategoryId != Guid.Empty.ToString())
+                {
                     cmdText = cmdText + " and rules.dstcategory ='" + queryModel.DstCategoryId.Replace("'", "''") + "'";
                 }
-                if (queryModel.IsInner == 1) {
+                if (queryModel.IsInner == 1)
+                {
                     cmdText = cmdText + " And rules.isuseforinner = 1";
                 }
                 cmdText = cmdText + " order by dstCategory.recorder ";
-                List<EntityTransferRuleInfo> data = ExecuteQuery<EntityTransferRuleInfo>(cmdText, new DbParameter[] { },transaction);
-                foreach (EntityTransferRuleInfo item in data) {
+                List<EntityTransferRuleInfo> data = ExecuteQuery<EntityTransferRuleInfo>(cmdText, new DbParameter[] { }, transaction);
+                foreach (EntityTransferRuleInfo item in data)
+                {
                     item.RecName = "转为" + item.DstEntityName + "(" + item.DstCategoryName + ")";
                 }
                 return data;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
 
             }
             return new List<EntityTransferRuleInfo>();
         }
-        private void constructOtherCategoryRule(string srcentityid, string dstentityid, DbTransaction transaction = null) {
+        private void constructOtherCategoryRule(string srcentityid, string dstentityid, DbTransaction transaction = null)
+        {
             string cmdText = string.Format(@"
                                 INSERT INTO crm_sys_entity_transfer_rule (
 	                                recname, reccode, recaudits, recstatus, reccreator,
@@ -128,9 +139,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                                 ) baserule  ", srcentityid, dstentityid);
             try
             {
-                ExecuteNonQuery(cmdText, new DbParameter[] { },transaction);
+                ExecuteNonQuery(cmdText, new DbParameter[] { }, transaction);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
 
             }
         }
@@ -145,9 +157,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             string cmdText = @"SELECT categoryname  FROM crm_sys_entity_category WHERE categoryid = " + categoryId + " LIMIT 1;";
             try
             {
-                return (string)ExecuteScalar(cmdText, new DbParameter[] { },transaction);
+                return (string)ExecuteScalar(cmdText, new DbParameter[] { }, transaction);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
 
             }
             return null;
@@ -159,12 +172,38 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         /// <param name="typeid"></param>
         /// <param name="userNum"></param>
         /// <returns></returns>
-        public string getDictNameByDataId(int dataid, int typeid, int userNum, DbTransaction transaction = null) {
-            string cmdText =string.Format( @"SELECT dataval
-                        FROM crm_sys_dictionary WHERE dictypeid ={0} and dataid={1} LIMIT 1",typeid,dataid);
+        public string getDictNameByDataId(int dataid, int typeid, int userNum, DbTransaction transaction = null)
+        {
+            string cmdText = string.Format(@"SELECT dataval
+                        FROM crm_sys_dictionary WHERE dictypeid ={0} and dataid={1} LIMIT 1", typeid, dataid);
             try
             {
-                return (string)ExecuteScalar(cmdText, new DbParameter[] { },transaction);
+                return (string)ExecuteScalar(cmdText, new DbParameter[] { }, transaction);
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 根据字典类型ID和字典数据,获取字典数的值
+        /// </summary>
+        /// <param name="vals"></param>
+        /// <param name="userNum"></param>
+        /// <returns></returns>
+        public string getDictByVal(int typeid, string vals)
+        {
+            string cmdText = string.Format(@" SELECT string_agg(dataval,',')  FROM crm_sys_dictionary 
+                  WHERE dictypeid = {0} AND dataid IN (
+							            SELECT dataid::INT from (
+										            SELECT UNNEST( string_to_array({1}::text, ',')) as dataid 
+							            ) as r WHERE dataid!=''
+                  )", typeid, vals);
+            try
+            {
+                return (string)ExecuteScalar(cmdText, new DbParameter[] { }, null);
             }
             catch (Exception ex)
             {
@@ -181,20 +220,22 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
         /// <param name="userNum"></param>
         /// <param name="userName"></param>
         /// <returns></returns>
-        public Guid getCustomIdByName(string CustName, int userNum, string userName, DbTransaction transaction = null) {
+        public Guid getCustomIdByName(string CustName, int userNum, string userName, DbTransaction transaction = null)
+        {
             try
             {
                 string RuleSQL = " 1=1 ";
                 string whereSQL = " e.recname ='" + CustName.Replace("''", "''") + "'";
                 string cmdText = string.Format(" select recid from crm_sys_customer e where 1=1 and {0} And {1}", RuleSQL, whereSQL);
-                return (Guid)ExecuteScalar(cmdText, new DbParameter[] { },transaction);
+                return (Guid)ExecuteScalar(cmdText, new DbParameter[] { }, transaction);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
             }
             return Guid.Empty;
         }
 
-        public Dictionary<string,object> getCustomerDataSourceByClue(string clueid, int userNum, string userName,DbTransaction transaction)
+        public Dictionary<string, object> getCustomerDataSourceByClue(string clueid, int userNum, string userName, DbTransaction transaction)
         {
             try
             {
@@ -202,7 +243,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 string whereSQL = " jsonb_extract_path_text(e.saleclue,'id') ='" + clueid + "'";
                 string cmdText = string.Format(" select recid as  id  ,recname  as name from crm_sys_customer e where 1=1 and {0} And {1}", RuleSQL, whereSQL);
                 List<Dictionary<string, object>> list = ExecuteQuery(cmdText, new DbParameter[] { }, transaction);
-                
+
                 if (list != null && list.Count > 0) return list[0];
                 return null;
             }
@@ -220,7 +261,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 string whereSQL = " jsonb_extract_path_text(e.belcust,'id') ='" + custid + "'";
                 string phoneMobileSQL = " e.mobilephone ='" + phone.Replace("'", "''") + "'";
                 string cmdText = string.Format(" select* from crm_sys_contact e where 1=1 and {0} And {1} and {2}", RuleSQL, whereSQL, phoneMobileSQL);
-                List<Dictionary<string, object>> list = ExecuteQuery(cmdText, new DbParameter[] { },transaction);
+                List<Dictionary<string, object>> list = ExecuteQuery(cmdText, new DbParameter[] { }, transaction);
 
                 if (list != null && list.Count > 0) return true;
                 return false;
@@ -236,9 +277,9 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             try
             {
                 string RuleSQL = " 1=1 ";
-                string whereSQL = " recid ='" + productid  + "'";
+                string whereSQL = " recid ='" + productid + "'";
                 string cmdText = string.Format(" select productname   from crm_sys_product e where 1=1 and {0} And {1} ", RuleSQL, whereSQL);
-                List<Dictionary<string, object>> list = ExecuteQuery(cmdText, new DbParameter[] { },null);
+                List<Dictionary<string, object>> list = ExecuteQuery(cmdText, new DbParameter[] { }, null);
 
                 if (list != null && list.Count > 0) return list[0]["productname"].ToString();
                 return "";
@@ -249,19 +290,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return "";
         }
 
-        public string getBaseCustomIdByName (string custName,int userNum, DbTransaction transaction = null)
+        public string getBaseCustomIdByName(string custName, int userNum, DbTransaction transaction = null)
         {
             try
             {
                 string cmdText = string.Format(@"Select recid from crm_sys_custcommon where recname like '{0}' ", custName.Replace("'", "''"));
-                object obj =  ExecuteScalar(cmdText, new DbParameter[] { },transaction);
+                object obj = ExecuteScalar(cmdText, new DbParameter[] { }, transaction);
                 if (obj != null) return obj.ToString();
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
 
             }
             return null;
         }
-        
+
     }
 }

@@ -366,6 +366,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
     public class DynamicProtocolValidResult
     {
         /// <summary>
+        /// 字段id
+        /// </summary>
+        public Guid FieldId { get; set; }
+        /// <summary>
         /// 数据库字段名
         /// </summary>
         public string FieldName { get; set; }

@@ -18,6 +18,7 @@ using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Dynamics;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel.Message;
+using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Version;
 using UBeat.Crm.CoreApi.DomainModel.Vocation;
 using UBeat.Crm.CoreApi.IRepository;
@@ -42,6 +43,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IDataSourceRepository _dataSourceRepository;
         private readonly ICustomerRepository _customerRepository;
         private readonly JavaScriptUtilsServices _javaScriptUtilsServices;
+        private readonly IEntityTransferRepository _entityTransferRepository = null;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService; 
@@ -52,6 +54,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 IWorkFlowRepository workFlowRepository, IDynamicRepository dynamicRepository, IAccountRepository accountRepository,
                 IDataSourceRepository dataSourceRepository,
                 ICustomerRepository customerRepository,
+                IEntityTransferRepository entityTransferRepository,
                 JavaScriptUtilsServices javaScriptUtilsServices)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
@@ -63,6 +66,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dataSourceRepository = dataSourceRepository;
             _customerRepository = customerRepository;
             _javaScriptUtilsServices = javaScriptUtilsServices;
+            _entityTransferRepository = entityTransferRepository;
             //_workflowService = workflowService; 
         }
 
@@ -1392,6 +1396,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //验证字段
             var validResults = DynamicProtocolHelper.ValidData(fields, dynamicModel.FieldData, DynamicProtocolOperateType.Edit, isMobile);
 
+            //必填字段 修改记录
+            var requireResults = DynamicProtocolHelper.ValidRequireData(validResults);
+
             //check if valid ok
             var data = new Dictionary<string, object>();
             var validTips = new List<string>();
@@ -1510,8 +1517,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                 var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber) as Dictionary<string, object>;
                                 msgparams = GetEditMessageParameter(oldDetail, detail, typeid, bussinessId, relbussinessId, userNumber);
                             }
+                            //修改记录，并发动态
+                            string modifyContent = ModifyRecord(oldDetail, requireResults, entityid, bussinessId, userNumber);
                             foreach (var msg in msgparams)
                             {
+                                msg.TemplateKeyValue.Add("modifycontent", modifyContent);
                                 MessageService.WriteMessage(null, msg, userNumber, null);
                             }
                             if (entityInfo.servicesjson != null)
@@ -3614,6 +3624,343 @@ namespace UBeat.Crm.CoreApi.Services.Services
             retDict.Add("detail", AllDetailDatas);
             return new OutputResult<object>(retDict);
         }
+        private string ModifyRecord(Dictionary<string, object> oldDetail, Dictionary<string, DynamicProtocolValidResult> requireData, Guid entityid, Guid bussinessId, int userId)
+        {
+            string msgContent = "";
+            try
+            {
+                Dictionary<string, DynamicEntityModifyMapper> tempData = new Dictionary<string, DynamicEntityModifyMapper>();
+                foreach (var requKey in requireData.Keys)
+                {
+                    DynamicProtocolValidResult requTarget = requireData[requKey];
+                    foreach (var oldkey in oldDetail.Keys)
+                    {
+                        if (oldkey == requKey)
+                        {
+                            var oldTarget = oldDetail[oldkey].ToString();
+                            var newTarget = requTarget.FieldData.ToString();
+                            switch ((DynamicProtocolControlType)requTarget.ControlType)
+                            {
+                                case DynamicProtocolControlType.NumberInt:
+                                    {
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldTarget, newTarget);
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.NumberDecimal:
+                                    {
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldTarget, newTarget);
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.Text:
+                                    {
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldTarget, newTarget);
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.SelectSingle:
+                                    {
+
+                                        if (oldTarget != newTarget)
+                                        {
+                                            if (!string.IsNullOrEmpty(requTarget.FieldConfig))
+                                            {
+                                                JObject jo = JObject.Parse(requTarget.FieldConfig);
+                                                jo = JObject.Parse(jo["dataSource"].ToString());
+                                                int dictdataid = Convert.ToInt32(jo["sourceId"].ToString());
+                                                string dictOldValue = _entityTransferRepository.getDictByVal(dictdataid, oldTarget);
+                                                string dictNewValue = _entityTransferRepository.getDictByVal(dictdataid, newTarget);
+                                                var modifyRecord = new DynamicEntityModifyMapper
+                                                {
+                                                    keyName = requKey,
+                                                    field = requTarget.FieldDisplay,
+                                                    oldVal = dictOldValue,
+                                                    newVal = dictNewValue
+                                                };
+                                                tempData.Add(requKey, modifyRecord);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.SelectMulti:
+                                    {
+
+                                        if (oldTarget != newTarget)
+                                        {
+                                            if (!string.IsNullOrEmpty(requTarget.FieldConfig))
+                                            {
+                                                JObject jo = JObject.Parse(requTarget.FieldConfig);
+                                                jo = JObject.Parse(jo["dataSource"].ToString());
+                                                int dictdataid = Convert.ToInt32(jo["sourceId"].ToString());
+                                                string dictOldValue = _entityTransferRepository.getDictByVal(dictdataid, oldTarget);
+                                                string dictNewValue = _entityTransferRepository.getDictByVal(dictdataid, newTarget);
+                                                var modifyRecord = new DynamicEntityModifyMapper
+                                                {
+                                                    keyName = requKey,
+                                                    field = requTarget.FieldDisplay,
+                                                    oldVal = dictOldValue,
+                                                    newVal = dictNewValue
+                                                };
+                                                tempData.Add(requKey, modifyRecord);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.PhoneNum:
+                                    {
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldTarget, newTarget);
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.EmailAddr:
+                                    {
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldTarget, newTarget);
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.Telephone:
+                                    {
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldTarget, newTarget);
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.Address:
+                                    {
+                                        Dictionary<string, object> oldAddress = JsonHelper.ToObject<Dictionary<string, object>>(oldTarget);
+                                        Dictionary<string, object> newAddress = JsonHelper.ToObject<Dictionary<string, object>>(newTarget);
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldAddress["address"].ToString(), newAddress["address"].ToString());
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.DataSourceSingle:
+                                    {
+                                        Dictionary<string, object> oldSource = JsonHelper.ToObject<Dictionary<string, object>>(oldTarget);
+                                        Dictionary<string, object> newSource = JsonHelper.ToObject<Dictionary<string, object>>(newTarget);
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldSource["name"].ToString(), newSource["name"].ToString());
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.DataSourceMulti:
+                                    {
+                                        Dictionary<string, object> oldSource = JsonHelper.ToObject<Dictionary<string, object>>(oldTarget);
+                                        Dictionary<string, object> newSource = JsonHelper.ToObject<Dictionary<string, object>>(newTarget);
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldSource["name"].ToString(), newSource["name"].ToString());
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.RecName:
+                                    {
+                                        tempData = AddModifyRecord(tempData, requKey, requTarget.FieldId.ToString(), requTarget.FieldDisplay, oldTarget, newTarget);
+                                        break;
+                                    }
+                                case DynamicProtocolControlType.RecManager:
+                                    {
+                                        if (oldTarget != newTarget)
+                                        {
+                                            UserInfo newUserInfo = this._accountRepository.GetUserInfoById(int.Parse(newTarget));
+                                            UserInfo oldUserInfo = this._accountRepository.GetUserInfoById(int.Parse(oldTarget));
+                                            var modifyRecord = new DynamicEntityModifyMapper
+                                            {
+                                                keyName = requKey,
+                                                field = requTarget.FieldDisplay,
+                                                oldVal = oldUserInfo.UserName,
+                                                newVal = newUserInfo.UserName
+                                            };
+                                            tempData.Add(requKey, modifyRecord);
+
+                                        }
+                                        break;
+                                    }
+                            }
+
+
+                            //check the change of productdetail
+
+                            /*if (requKey == "productdetail")
+                            {
+                                DynamicEntityDetailtListMapper modeltemp = new DynamicEntityDetailtListMapper()
+                                {
+                                    //order detail
+                                    EntityId = Guid.Parse("261ff2e5-81e0-4595-83fe-868235325f43"),
+                                    RecIds = oldTarget,
+                                    NeedPower = 0
+                                };
+
+                                List<IDictionary<string, object>> _theOrderDetailResult = _dynamicEntityRepository.DetailList(modeltemp, userId);
+                                List<string> _oldProductIds = new List<string>();
+                                foreach (var item in _theOrderDetailResult)
+                                {
+                                    string _id = item["product"].ToString();
+                                    _oldProductIds.Add(_id);
+                                }
+
+
+                                DynamicEntityDetailtListMapper modeltemp2 = new DynamicEntityDetailtListMapper()
+                                {
+                                    //order detail
+                                    EntityId = Guid.Parse("59cf141c-4d74-44da-bca8-3ccf8582a1f2"),
+                                    RecIds = string.Join(",", _oldProductIds.ToArray()),
+                                    NeedPower = 0
+                                };
+
+                                List<IDictionary<string, object>> _theProductDetailResult = _dynamicEntityRepository.DetailList(modeltemp2, userId);
+
+                                List<string> _finalMessageList = new List<string>();
+                                JArray _productDetailJson = JArray.Parse(newTarget);
+                                List<string> _newProductids = new List<string>();
+                                for (int j = 0; j < _productDetailJson.Count; j++)
+                                {
+                                    string _productid = _productDetailJson[j]["FieldData"]["product"].ToString();
+                                    _newProductids.Add(_productid);
+                                }
+
+
+                                List<string> _theDeletedProductList = new List<string>();
+                                List<string> _theDeletedProductIds = new List<string>();
+                                for (int i = 0; i < _oldProductIds.Count; i++)
+                                {
+                                    string _theProductid = _oldProductIds[i];
+                                    if (!_newProductids.Contains(_theProductid))
+                                    {
+                                        _theDeletedProductIds.Add(_theProductid);
+                                    }
+                                }
+
+
+                                foreach (var id in _theDeletedProductIds)
+                                {
+                                    foreach (var item in _theProductDetailResult)
+                                    {
+                                        if (item["recid"].ToString() == id)
+                                        {
+                                            _theDeletedProductList.Add(item["description"].ToString());
+                                        }
+                                    }
+                                }
+
+
+                                string _finalDeleteMessage = string.Empty;
+                                if (_theDeletedProductList.Count > 0)
+                                {
+                                    _finalDeleteMessage = "删除了商品:" + string.Join(",", _theDeletedProductList.ToArray());
+                                    _finalMessageList.Add(_finalDeleteMessage);
+                                }
+
+
+                                string _productName = "";
+                                List<string> _newProductList = new List<string>();
+                                foreach (string _id in _newProductids)
+                                {
+                                    if (!_oldProductIds.Contains(_id))
+                                    {
+                                        // the prodcut is new add
+                                        for (int j = 0; j < _productDetailJson.Count; j++)
+                                        {
+                                            string _productid = _productDetailJson[j]["FieldData"]["product"].ToString();
+                                            if (_id == _productid)
+                                            {
+                                                _productName = _productDetailJson[j]["FieldData"]["productcode"].ToString();
+                                                _newProductList.Add(_productName);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                string _finalNewAddProduct = string.Empty;
+                                if (_newProductList.Count > 0)
+                                {
+                                    _finalNewAddProduct = "新增了商品:" + string.Join(",", _newProductList.ToArray());
+                                    _finalMessageList.Add(_finalNewAddProduct);
+                                }
+
+
+                                var modifyRecord = new DynamicEntityModifyMapper
+                                {
+                                    keyName = requKey,
+                                    fieldId = requTarget.FieldId.ToString(),
+                                    field = requTarget.FieldDisplay,
+                                    oldVal = "",
+                                    newVal = string.Join(";", _finalMessageList.ToArray())
+                                };
+                                tempData.Add(requKey, modifyRecord);
+
+                            }*/
+                        }
+                    }
+                }
+                #region --泛海三江 联系人特殊逻辑，必须把名称和电话同时显示--
+                bool isModLink = false;
+                string linkname = "";
+                string tel = "";
+                #endregion
+                if (tempData.Count > 0)
+                {
+                    foreach (var key in tempData.Keys)
+                    {
+                        DynamicEntityModifyMapper modifyRecord = tempData[key];
+                        _dynamicEntityRepository.inertEntityModify(modifyRecord, entityid, bussinessId, userId);
+
+                        if (key == "productdetail")
+                        {
+                            msgContent = msgContent + string.Format("\n\t{0}:{1}。", modifyRecord.field, modifyRecord.newVal);
+                        }
+                        else
+                        {
+                            //泛海三江 联系人特殊逻辑，必须把名称和电话同时显示
+                            if (entityid== Guid.Parse("a1486d13-061b-4d92-990a-4d93cbe58694")) {
+                                if (modifyRecord.fieldId == "63766245-199e-491e-88db-5832d004550d")
+                                {
+                                    isModLink = true;
+                                    linkname= string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
+                                }
+                                else if (modifyRecord.fieldId == "61c2fa69-2d58-40b8-b123-e5f49f27f34d") {
+                                    isModLink = true;
+                                    tel = string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
+                                }
+                                else
+                                {
+                                    msgContent = msgContent + string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
+                                }
+                            }
+                            else {
+                                msgContent = msgContent + string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
+                            }
+                        }
+                    }
+                }
+
+                #region --泛海三江 联系人特殊逻辑，必须把名称和电话同时显示--
+                if (isModLink) {
+                    if (string.IsNullOrEmpty(linkname)) {
+                        //没修改
+                        linkname = string.Format("\n\t{0}:{1}->{2}。", requireData["recname"].FieldDisplay, oldDetail["recname"], oldDetail["recname"]);
+                    }
+                    if (string.IsNullOrEmpty(tel))
+                    {
+                        //没修改
+                        tel = string.Format("\n\t{0}:{1}->{2}。", requireData["phone"].FieldDisplay, oldDetail["phone"], oldDetail["phone"]);
+                    }
+                }
+                msgContent = linkname+ tel+ msgContent;
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("修改痕迹转换异常：" + ex.Message);
+            }
+            return msgContent;
+        }
+
+        private Dictionary<string, DynamicEntityModifyMapper> AddModifyRecord(Dictionary<string, DynamicEntityModifyMapper> tempData, string requKey, string fieldId, string fieldName, string oldTarget, string newTarget)
+        {
+            //发生改变
+            if (oldTarget != newTarget)
+            {
+                var modifyRecord = new DynamicEntityModifyMapper
+                {
+                    keyName = requKey,
+                    fieldId = fieldId,
+                    field = fieldName,
+                    oldVal = oldTarget,
+                    newVal = newTarget
+                };
+                tempData.Add(requKey, modifyRecord);
+            }
+            return tempData;
+        }
+
         private void TransferData(List<TransferTempInfo> thisDealed, int userId)
         {
             foreach (TransferTempInfo updateitem in thisDealed)

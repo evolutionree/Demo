@@ -69,6 +69,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         }
     }
 
+    public class DynamicEntityModifyMapper
+    {
+        public string keyName { get; set; }
+        public string field { get; set; }
+        public string fieldId { get; set; }
+        public string oldVal { get; set; }
+        public string newVal { get; set; }
+    }
     public class DataSrcDeleteRelationMapper:BaseEntity
     {
         public Guid RelId { get; set; }

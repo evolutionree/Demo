@@ -46,6 +46,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, List<IDictionary<string, object>>> DetailMulti(DynamicEntityDetailtMapper detailMapper, int userNumber, DbTransaction tran = null);
 
         List<GeneralDicItem> GetDicItemByKeys(string dicKeys);
+        int inertEntityModify(DynamicEntityModifyMapper record, Guid entityId, Guid businessid, int userNumber);
 
         Dictionary<string, List<IDictionary<string, object>>> PluginVisible(DynamicPluginVisibleMapper visibleMapper, int userNumber);
 

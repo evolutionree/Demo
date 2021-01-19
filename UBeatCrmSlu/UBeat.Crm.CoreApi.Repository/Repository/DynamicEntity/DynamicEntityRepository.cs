@@ -582,7 +582,21 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             var result = DataBaseHelper.ExecuteNonQuery(insertSql, args);
             return 1;
         }
-
+        public int inertEntityModify(DynamicEntityModifyMapper record, Guid entityId, Guid businessid, int userNumber)
+        {
+            string sql = @"INSERT into crm_sys_entity_modify(recid,reccreated,userid,entityid,businessid,tempdata)  
+                        values (uuid_generate_v4(),now(),@userid,@entityid,@businessid,@tempdata)";
+            List<dynamic> args = new List<dynamic>();
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("userid",userNumber),
+                new NpgsqlParameter("entityid",entityId),
+                new NpgsqlParameter("businessid",businessid),
+                new NpgsqlParameter("tempdata",Newtonsoft.Json.JsonConvert.SerializeObject(record)){ NpgsqlDbType= NpgsqlTypes.NpgsqlDbType.Jsonb}
+            };
+            var result = ExecuteNonQuery(sql, param);
+            return result;
+        }
         public Dictionary<string, List<IDictionary<string, object>>> RelTabListQuery_1(RelTabListMapper entity, int userNumber)
         {
             var procName =
