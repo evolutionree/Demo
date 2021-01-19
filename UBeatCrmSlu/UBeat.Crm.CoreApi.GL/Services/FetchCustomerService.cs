@@ -24,6 +24,7 @@ using UBeat.Crm.CoreApi.Services.Services;
 using ICustomerRepository = UBeat.Crm.CoreApi.GL.Repository.ICustomerRepository;
 using System.Data.Common;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
+using UBeat.Crm.CoreApi.Core.Utility;
 
 namespace UBeat.Crm.CoreApi.GL.Services
 {
@@ -796,7 +797,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     var objResult = JsonConvert.DeserializeObject<SoOrderModel>(result);
                     if (objResult.TYPE == "S")
                     {
-                        var data = objResult.DATA["List"];
+                        var data = objResult.DATA["LIST"];
+                        saveOrders(data, userId);
                         return new OutputResult<object>(data);
                     }
                     else
@@ -805,16 +807,18 @@ namespace UBeat.Crm.CoreApi.GL.Services
             }
             return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
         }
-        void saveOrders(List<SoOrderDataModel> orders)
+        void saveOrders(List<SoOrderDataModel> orders,int userId)
         {
-
             var groupData = orders.GroupBy(t => t.VBELN).ToList();
             var dicData = _baseDataRepository.GetDicDataByTypeId(69);
             var custData = _baseDataRepository.GetCustData();
+            var contractData = _baseDataRepository.GetContractData();
+            var products = _baseDataRepository.GetProductData();
+            IDynamicEntityRepository _iDynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
             groupData.ForEach(t =>
             {
-                Dictionary<String, object> data = new Dictionary<string, object>();
-                data.Add("typeid", "6f12d7b0-9666-4f36-a9b4-cd9ca8117794");
+                Dictionary<String, object> dic = new Dictionary<string, object>();
+                dic.Add("typeid", "6f12d7b0-9666-4f36-a9b4-cd9ca8117794");
                 Dictionary<String, object> fieldData = new Dictionary<string, object>();
                 var collection = orders.Where(p => p.VBELN == t.Key);
                 if (collection.Count() > 0)
@@ -824,8 +828,34 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     fieldData.Add("ordertype", orderType == null ? 0 : orderType.DataId);
                     var cust = custData.FirstOrDefault(t1 => t1.code == mainData.KUNNR);
                     fieldData.Add("customer", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
-                    fieldData.Add("contractcode", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
+                    var contract = contractData.FirstOrDefault(t1 => t1.code == mainData.BSTKD);
+                    fieldData.Add("contractcode", contract == null ? null : "{\"id\":\"" + contract.id.ToString() + "\",\"name\":\"" + contract.name + "\"}");
+                    fieldData.Add("orderdate", mainData.ERDAT);
+                    fieldData.Add("totalamount", mainData.KUKLA);
+                    fieldData.Add("deliveredamount", mainData.KUKLA);
+                    fieldData.Add("undeliveredamount", mainData.KUKLA);
+                    fieldData.Add("invoiceamount", mainData.KUKLA);
+                    fieldData.Add("uninvoiceamount", mainData.KUKLA);
                 }
+                List<Dictionary<String, object>> listDetail = new List<Dictionary<string, object>>();
+                collection.ToList().ForEach(t1 =>
+                {
+                    Dictionary<String, object> dicDetail = new Dictionary<string, object>();
+                    Dictionary<String, object> dicFieldData = new Dictionary<string, object>();
+                    dicDetail.Add("TypeId", "a1010450-2c42-423f-a248-55433b706581");
+                    var product = products.FirstOrDefault(t2 => t2.productcode == t1.MATNR.Substring(8));
+                    dicFieldData.Add("productname", product == null ? "" : product.productid.ToString());
+                    dicFieldData.Add("price", t1.ZHSDJ);
+                    dicFieldData.Add("productunit", 1); //t1.KMEIN2
+                    dicFieldData.Add("quantity", t1.KWMENG);
+                    dicFieldData.Add("subtotal", t1.KZWI2);
+                    dicDetail.Add("FieldData", dicFieldData);
+                    listDetail.Add(dicDetail);
+                });
+                fieldData.Add("orderdetail", listDetail);
+               // fieldData.Add("totalweight",)
+                dic.Add("fielddata", fieldData);
+               var result= _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), dic, null, userId);
             });
 
         }

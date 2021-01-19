@@ -354,7 +354,7 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
 
         public List<DataSourceInfo> GetContractData()
         {
-            string sql = @"select recid as id, recname as name,contractno as code from crm_sys_contract where recstatus = 1;";
+            string sql = @"select recid as id, recname as name,contractid as code from crm_sys_contract where recstatus = 1;";
 
             var param = new DynamicParameters();
             return DataBaseHelper.Query<DataSourceInfo>(sql, param, CommandType.Text);
@@ -388,7 +388,7 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
         public List<SimpleProductnfo> GetProductData()
         {
             //禁用也取回来
-            string sql = @"select recid as productid, productcode, productmodel
+            string sql = @"select recid as productid, productcode, productname productmodel
                             from crm_sys_product where 1 = 1;";
 
             var param = new DynamicParameters();
