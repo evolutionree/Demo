@@ -807,30 +807,40 @@ namespace UBeat.Crm.CoreApi.GL.Services
             }
             return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
         }
-        void saveOrders(List<SoOrderDataModel> orders,int userId)
+        void saveOrders(List<SoOrderDataModel> orders, int userId)
         {
             var groupData = orders.GroupBy(t => t.VBELN).ToList();
             var dicData = _baseDataRepository.GetDicDataByTypeId(69);
             var custData = _baseDataRepository.GetCustData();
             var contractData = _baseDataRepository.GetContractData();
             var products = _baseDataRepository.GetProductData();
+            var crmOrders = _baseDataRepository.GetOrderData();
             IDynamicEntityRepository _iDynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
             groupData.ForEach(t =>
             {
-                Dictionary<String, object> dic = new Dictionary<string, object>();
-                dic.Add("typeid", "6f12d7b0-9666-4f36-a9b4-cd9ca8117794");
                 Dictionary<String, object> fieldData = new Dictionary<string, object>();
+                bool isAdd = false;
+                Guid recId = Guid.Empty;
                 var collection = orders.Where(p => p.VBELN == t.Key);
                 if (collection.Count() > 0)
                 {
                     var mainData = collection.FirstOrDefault();
+                    var crmOrder = crmOrders.FirstOrDefault(t1 => t1.code == mainData.VBELN);
+                    if (crmOrder == null)
+                        isAdd = true;
+                    else
+                    {
+                        fieldData.Add("recid", crmOrder.id);
+                        recId = crmOrder.id;
+                    }
+                    fieldData.Add("orderid", mainData.VBELN);
                     var orderType = dicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUART);
                     fieldData.Add("ordertype", orderType == null ? 0 : orderType.DataId);
                     var cust = custData.FirstOrDefault(t1 => t1.code == mainData.KUNNR);
                     fieldData.Add("customer", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
                     var contract = contractData.FirstOrDefault(t1 => t1.code == mainData.BSTKD);
                     fieldData.Add("contractcode", contract == null ? null : "{\"id\":\"" + contract.id.ToString() + "\",\"name\":\"" + contract.name + "\"}");
-                    fieldData.Add("orderdate", mainData.ERDAT);
+                    fieldData.Add("orderdate", mainData.VDATU1);
                     fieldData.Add("totalamount", mainData.KUKLA);
                     fieldData.Add("deliveredamount", mainData.KUKLA);
                     fieldData.Add("undeliveredamount", mainData.KUKLA);
@@ -853,9 +863,12 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     listDetail.Add(dicDetail);
                 });
                 fieldData.Add("orderdetail", listDetail);
-               // fieldData.Add("totalweight",)
-                dic.Add("fielddata", fieldData);
-               var result= _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), dic, null, userId);
+                // fieldData.Add("totalweight",)
+                OperateResult result;
+                if (isAdd)
+                    result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), fieldData, null, userId);
+                else
+                    result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), recId, fieldData, userId);
             });
 
         }
