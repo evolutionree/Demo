@@ -862,7 +862,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     dicDetail.Add("FieldData", dicFieldData);
                     listDetail.Add(dicDetail);
                 });
-                fieldData.Add("orderdetail", listDetail);
+                fieldData.Add("orderdetail", JsonConvert.SerializeObject(listDetail));
                 // fieldData.Add("totalweight",)
                 OperateResult result;
                 if (isAdd)
