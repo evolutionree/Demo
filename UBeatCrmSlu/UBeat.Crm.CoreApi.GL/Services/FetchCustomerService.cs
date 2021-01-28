@@ -810,7 +810,15 @@ namespace UBeat.Crm.CoreApi.GL.Services
         void saveOrders(List<SoOrderDataModel> orders, int userId)
         {
             var groupData = orders.GroupBy(t => t.VBELN).ToList();
-            var dicData = _baseDataRepository.GetDicDataByTypeId(69);
+            var allDicData = _baseDataRepository.GetDicData();
+            var orderTypeDicData = allDicData.Where(t => t.DicTypeId == 69);
+            var salesOrgDicData = allDicData.Where(t => t.DicTypeId == 63);
+            var salesChannelDicData = allDicData.Where(t => t.DicTypeId == 62);
+            var productDicData = allDicData.Where(t => t.DicTypeId == 65);
+            var salesDeptDicData = allDicData.Where(t => t.DicTypeId == 64);
+            var salesTerritoryDicData = allDicData.Where(t => t.DicTypeId == 67);
+            var currencyDicData = allDicData.Where(t => t.DicTypeId == 54);
+            var factoryDicData = allDicData.Where(t => t.DicTypeId == 66);
             var custData = _baseDataRepository.GetCustData();
             var contractData = _baseDataRepository.GetContractData();
             var products = _baseDataRepository.GetProductData();
@@ -834,8 +842,16 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         recId = crmOrder.id;
                     }
                     fieldData.Add("orderid", mainData.VBELN);
-                    var orderType = dicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUART);
+                    var orderType = orderTypeDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUART);
                     fieldData.Add("ordertype", orderType == null ? 0 : orderType.DataId);
+                    var salesOffices = salesOrgDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VKORG);
+                    fieldData.Add("salesoffices", salesOffices == null ? 0 : salesOffices.DataId);
+                    var salesChannel = salesChannelDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VTWEG);
+                    fieldData.Add("distributionchanne", salesChannel == null ? 0 : salesChannel.DataId);
+                    var product = productDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.SPART);
+                    fieldData.Add("productteam", product == null ? 0 : product.DataId);
+                    var salesDept = salesDeptDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VKBUR);
+                    fieldData.Add("salesdepartments", salesDept == null ? 0 : salesDept.DataId);
                     var cust = custData.FirstOrDefault(t1 => t1.code == mainData.KUNNR);
                     fieldData.Add("customer", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
                     var contract = contractData.FirstOrDefault(t1 => t1.code == mainData.BSTKD);
@@ -846,6 +862,9 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     fieldData.Add("undeliveredamount", mainData.KUKLA);
                     fieldData.Add("invoiceamount", mainData.KUKLA);
                     fieldData.Add("uninvoiceamount", mainData.KUKLA);
+
+                    fieldData.Add("orderreason", mainData.AUGRU);
+                    fieldData.Add("deliverydate", mainData.VDATU1);
                 }
                 List<Dictionary<String, object>> listDetail = new List<Dictionary<string, object>>();
                 collection.ToList().ForEach(t1 =>
@@ -859,6 +878,23 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     dicFieldData.Add("productunit", 1); //t1.KMEIN2
                     dicFieldData.Add("quantity", t1.KWMENG);
                     dicFieldData.Add("subtotal", t1.KZWI2);
+
+
+                    dicFieldData.Add("kgunitprice", t1.KZWI2);
+                    dicFieldData.Add("packingway", t1.ZBZFS);
+                    dicFieldData.Add("waterglaze", t1.ZBINGYI);
+                    dicFieldData.Add("branchesnumber", t1.ZTIAOSHU);
+                    dicFieldData.Add("specification", t1.ZGUIGE);
+                    dicFieldData.Add("kgunitprice", t1.ZHSDJ);
+
+                    var currency = currencyDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.SPART);
+                    dicFieldData.Add("currency", currency == null ? 0 : currency.DataId);
+
+                    var factory = factoryDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.WERKS);
+                    dicFieldData.Add("factory", factory == null ? 0 : factory.DataId);
+                   dicFieldData.Add("linenumber", t1.POSNR2);
+
+
                     dicDetail.Add("FieldData", dicFieldData);
                     listDetail.Add(dicDetail);
                 });

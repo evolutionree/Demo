@@ -106,7 +106,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = "ltcwx.mos400.cn",
+                Domain = config.GetValue<string>("GLDomain"),
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);
@@ -288,7 +288,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = "ltcwx.mos400.cn",
+                Domain = config.GetValue<string>("GLDomain"),
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);
@@ -296,8 +296,6 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             HttpContext.Response.Cookies.Append("accountid", userData.AccountId.ToString(), cookie);
             HttpContext.Response.Headers.Add("Authorization", "Bearer " + result.DataBody.ToString());
             var page = config.GetSection("WeChatConfig").GetValue<string>("EnterpriseWeChatMainPage");
-            if (urlType.ToString()=="2")
-                page = config.GetSection("WeChatConfig").GetValue<string>("EnterpriseWeChatWaitApprovePage");
             HttpContext.Response.WriteAsync("<script type='text/javascript'>location.href='" + page + "';</script>");
         }
         [HttpGet]
