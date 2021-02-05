@@ -836,5 +836,39 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
             return ExecuteQuery(sql, new DbParameter[] { });
         }
         #endregion
+
+        public Guid IsExistsDelivnote(string code)
+        {
+            string sql = @"select recid from crm_glsc_deliveryorder 
+                    where code = @code and recstatus = 1  limit 1";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("code",code)
+            };
+            var res = ExecuteScalar(sql, p);
+            Guid g;
+            Guid.TryParse(res?.ToString(), out g);
+            return g;
+        }
+
+        public Dictionary<string, object> getUserInfo(string workCode)
+        {
+            string sql = @"select * from crm_sys_userinfo where recstatus = 1 and workcode = @code";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("code",workCode)
+            };
+            return ExecuteQuery(sql, p).FirstOrDefault();
+        }
+        public Dictionary<string, object> GetOrderInfo(string orderCode)
+        {
+            string sql = @"select customer,salesdepartments,salesterritory,jsonb_build_object('id',recid,'name',orderid) as orderjson
+                        from crm_sys_order where recstatus = 1 and  orderid = @code ";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("code",orderCode)
+            };
+            return ExecuteQuery(sql, p).FirstOrDefault();
+        }
     }
 }

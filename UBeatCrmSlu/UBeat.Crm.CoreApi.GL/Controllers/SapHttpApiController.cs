@@ -85,6 +85,22 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
+        [HttpPost("sysncdelivnote")]
+        public OutputResult<object> SyncDelivnote2CRM([FromBody] Sync2CRMInfo info)
+        {
+            if (info == null)
+                return ResponseError<object>("参数格式有误");
+            var c = _modifyCustomerServices.SyncDelivnote2CRM(info);
+            if (c.Result)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
+            }
+        }
+
         [Route("synccredittosap")]
         [HttpPost]
         [AllowAnonymous]

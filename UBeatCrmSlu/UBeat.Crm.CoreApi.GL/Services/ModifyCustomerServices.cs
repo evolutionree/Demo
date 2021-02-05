@@ -16,6 +16,7 @@ using UBeat.Crm.CoreApi.GL.Utility;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
+using UBeat.Crm.CoreApi.DomainModel;
 
 namespace UBeat.Crm.CoreApi.GL.Services
 {
@@ -98,7 +99,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
             cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL,ZTEXT1,TELF1
-            cust.CRMCUST = "CRM"+string.Concat(resultData["reccode"]).StringMax(0, 20);
+            cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -292,8 +293,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             #region main
             //CRMCUST, KTOKD,ANRED, TITLE, NAME1, SORTL
             cust.CRMCUST = "CRM" + string.Concat(resultData["reccode"]).StringMax(0, 20);
-            cust.PARTNER= string.Concat(resultData["erpcode"]).StringMax(0, 10);
-            string erpcode=string.Concat(resultData["erpcode"]).StringMax(0, 10);
+            cust.PARTNER = string.Concat(resultData["erpcode"]).StringMax(0, 10);
+            string erpcode = string.Concat(resultData["erpcode"]).StringMax(0, 10);
 
             var customertype = string.Concat(resultData["customertype"]);
             cust.KTOKD = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.客户账户组, customertype).StringMax(0, 4);//客户账户组
@@ -710,35 +711,35 @@ namespace UBeat.Crm.CoreApi.GL.Services
         public SynResultModel SyncBankInfo2CRM()
         {
             var result = new SynResultModel();
-            //var sapResult = string.Empty;
+            var sapResult = string.Empty;
 
-            //var postData = new Dictionary<string, object>();
-            //var headData = new Dictionary<string, string>();
-            //headData.Add("Transaction_ID", "BANK_DATA");
-            //var postResult = CallAPIHelper.ApiPostData(postData, headData);
-            //SapBankModelResult sapRequest = JsonConvert.DeserializeObject<SapBankModelResult>(postResult);
-            //if (sapRequest.TYPE == "S")
-            //{
-            //    sapResult = sapRequest.MESSAGE;
-            //    result.Result = true;
-            //    result.Message = "同步SAP银行信息成功";
-            //  //  SubmitInterfaceData("同步SAP银行信息", postResult);
-            //    InitBankInfoData(sapRequest.DATA);
-            //}
-            //else
-            //{
-            //    logger.Log(NLog.LogLevel.Error, $"同步SAP银行信息失败，提示消息：{sapRequest.MESSAGE}");
-            //    sapResult = sapRequest.MESSAGE;
-            //    if (!string.IsNullOrEmpty(sapResult))
-            //    {
-            //        sapResult = string.Concat("同步SAP银行信息失败，提示消息：", sapResult);
-            //    }
-            //    else
-            //    {
-            //        sapResult = "同步SAP银行信息失败，提示消息：无";
-            //    }
-            //    result.Message = sapResult;
-            //}
+            var postData = new Dictionary<string, object>();
+            var headData = new Dictionary<string, string>();
+            headData.Add("Transaction_ID", "BANK_DATA");
+            var postResult = CallAPIHelper.ApiPostData(postData, headData);
+            SapBankModelResult sapRequest = JsonConvert.DeserializeObject<SapBankModelResult>(postResult);
+            if (sapRequest.TYPE == "S")
+            {
+                sapResult = sapRequest.MESSAGE;
+                result.Result = true;
+                result.Message = "同步SAP银行信息成功";
+                //  SubmitInterfaceData("同步SAP银行信息", postResult);
+                InitBankInfoData(sapRequest.DATA);
+            }
+            else
+            {
+                logger.Log(NLog.LogLevel.Error, $"同步SAP银行信息失败，提示消息：{sapRequest.MESSAGE}");
+                sapResult = sapRequest.MESSAGE;
+                if (!string.IsNullOrEmpty(sapResult))
+                {
+                    sapResult = string.Concat("同步SAP银行信息失败，提示消息：", sapResult);
+                }
+                else
+                {
+                    sapResult = "同步SAP银行信息失败，提示消息：无";
+                }
+                result.Message = sapResult;
+            }
 
             return result;
         }
@@ -772,6 +773,128 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 }
             }
 
+        }
+        #endregion
+
+        #region 同步交货单
+        public SynResultModel SyncDelivnote2CRM(Sync2CRMInfo info)
+        {
+            var result = new SynResultModel();
+            var sapResult = string.Empty;
+
+            var postData = new Dictionary<string, object>();
+            var headData = new Dictionary<string, string>();
+            headData.Add("Transaction_ID", "DELIVNOTE_GET");
+            //if (string.IsNullOrEmpty(info.REQDate))
+            //{
+            //    postData.Add("REQDATE", DateTime.Now.ToString("yyyyMMdd"));
+            //}
+            //else
+            //{
+            //    postData.Add("REQDATE", info.REQDate);
+            //}
+            postData.Add("REQDATE", info.REQDate);
+            postData.Add("ERDAT_FR", info.ERDAT_FR);
+            postData.Add("ERDAT_TO", info.ERDAT_TO);
+            postData.Add("VBELN_JHDH", info.VBELN_JHDH);
+           // logger.Info(string.Concat("SAP同步交货单接口请求参数：", JsonHelper.ToJson(postData)));
+            var postResult = CallAPIHelper.ApiPostData(postData, headData);
+            SapDelivnoteResult sapRequest = JsonConvert.DeserializeObject<SapDelivnoteResult>(postResult);
+            if (sapRequest.TYPE == "S")
+            {
+                sapResult = sapRequest.MESSAGE;
+                result.Result = true;
+                result.Message = "同步SAP交货单信息成功";
+                InitDelivnoteInfoData(sapRequest.DATA);
+            }
+            else
+            {
+                logger.Log(NLog.LogLevel.Error, $"同步SAP交货单信息失败，提示消息：{sapRequest.MESSAGE}");
+                sapResult = sapRequest.MESSAGE;
+                if (!string.IsNullOrEmpty(sapResult))
+                {
+                    sapResult = string.Concat("同步SAP交货单信息失败，提示消息：", sapResult);
+                }
+                else
+                {
+                    sapResult = "同步SAP交货单信息失败，提示消息：无";
+                }
+                result.Message = sapResult;
+            }
+
+            return result;
+        }
+
+        public void InitDelivnoteInfoData(SapDelivnoteDATA dataList)
+        {
+            var mainEntity = new Guid("03b007dd-4600-4f4e-9b5c-23e8631d2f34");
+            var detailEntity = new Guid("59a5ebfb-3f1c-4a9a-a8cd-e451e6d0c806");
+
+            foreach (var item in dataList.LIKP)
+            {
+                var detailList = new List<Dictionary<string, object>>();
+                var entryList = dataList.LIPS.Where(r => r["VBELN_JHDH"].ToString() == item["VBELN_JHDH"].ToString()).ToList();
+                int index = 1;
+                foreach (var entry in entryList)
+                {
+                    Dictionary<string, object> dic = new Dictionary<string, object>();
+                    Dictionary<string, object> parentDic = new Dictionary<string, object>();
+                    #region MyRegion
+                    dic.Add("code", entry["VBELN_JHDH"]);
+                    dic.Add("lineno", entry["POSNR"]);
+                    dic.Add("deliverydate", entry["VDATU"]?.ToString() == "0000-00-00" ? "" : entry["VDATU"]);
+                    dic.Add("parentno", entry["UECHA"]);
+                    dic.Add("orderlineno", entry["POSNR_SO"]);
+                    dic.Add("materialcode", entry["MATNR"]);
+                    dic.Add("describe", entry["ARKTX"]);
+                    dic.Add("deliveryqty", entry["LFIMG"]);
+                    dic.Add("qty", entry["LGMNG"]);
+                    dic.Add("jpqty", entry["JPQTY"]);
+                    dic.Add("quantity", 0);
+                    dic.Add("charg", entry["CHARG"]);
+                    #endregion
+                    parentDic.Add("TypeId", detailEntity);
+                    parentDic.Add("FieldData", dic);
+                    detailList.Add(parentDic);
+                    if (index == entryList.Count)
+                    {
+                        // 找相关人会员
+                        var userInfo = _customerRepository.getUserInfo(item["ERNAM"]?.ToString());
+                        int userId = userInfo == null ? 1 : Convert.ToInt32(userInfo["userid"]);
+                        //找对应订单及客户、销售部门、销售区域
+                        var orderInfo = _customerRepository.GetOrderInfo(entry["VBELN_SO"].ToString());
+                        var res = new OperateResult();
+                        dic = new Dictionary<string, object>();
+                        dic.Add("code", item["VBELN_JHDH"].ToString());
+                        dic.Add("docdate", item["BLDAT"]);
+                        dic.Add("deliverydate", item["ZPOST_DATE"]);
+                        dic.Add("deliverytime", item["ZPOST_DATE"] + " " + item["ZPOST_TIME"]);
+                        dic.Add("reccreated", item["ERDAT"] + " " + item["ERZET"]);
+                        dic.Add("recupdated", item["AEDAT"]);
+                        dic.Add("plandate", item["WADAT"]);
+                        dic.Add("actualdate", item["WADAT_IST"]);
+                        dic.Add("pickingdate", item["KODAT"]);
+                        dic.Add("recmanager", userId);
+                        dic.Add("salesdept", orderInfo["salesdepartments"]);
+                        dic.Add("salesarea", orderInfo["salesterritory"]);
+                        dic.Add("sourceorder", orderInfo["orderjson"]);
+                        dic.Add("customer", orderInfo["customer"]);
+                        dic.Add("deliverydetail", JsonConvert.SerializeObject(detailList));
+
+                        var mainId = _customerRepository.IsExistsDelivnote(item["VBELN_JHDH"].ToString());
+                        if (mainId == Guid.Empty)
+                        {
+                            res = _dynamicEntityRepository.DynamicAdd(null, mainEntity, dic, null, userId);
+                        }
+                        else
+                        {
+                            res = _dynamicEntityRepository.DynamicEdit(null, mainEntity, mainId, dic, userId);
+                        }
+                    }
+                    else
+                        index++;
+                }
+            }
         }
         #endregion
 

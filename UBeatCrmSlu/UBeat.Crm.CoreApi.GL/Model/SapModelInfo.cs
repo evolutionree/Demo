@@ -260,4 +260,12 @@ namespace UBeat.Crm.CoreApi.GL.Model
     {
         
     }
+
+    public class Sync2CRMInfo
+    {
+        public string REQDate { get; set; }
+        public string ERDAT_FR { get; set; }
+        public string ERDAT_TO { get; set; }
+        public string VBELN_JHDH { get; set; }
+    }
 }
