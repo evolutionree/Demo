@@ -25,14 +25,14 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly BaseDataServices _baseDataServices;
         private readonly FetchCustomerServices _fetchCustomerServices;
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
-        private readonly IProductsRepository _iProductsRepository;
+        private readonly Services.OrderServices _orderServices;
         private readonly ProductServices _productServices;
-        public SapApiController(ProductServices productServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
+        public SapApiController(ProductServices productServices, Services.OrderServices orderServices, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _iDynamicEntityRepository = iDynamicEntityRepository;
-            _iProductsRepository = iProductsRepository;
+            _orderServices = orderServices;
             _productServices = productServices;
         }
 
@@ -120,7 +120,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP订单列表", string.Empty);
 
-            var sendResult = _fetchCustomerServices.getOrders(model, 1);
+            var sendResult = _orderServices.getOrders(model, 1);
             return (sendResult);
         }
         [Route("fetchcustdatabyid")]
@@ -143,6 +143,25 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
+        [Route("fetchorderdatabyid")]
+        [HttpPost]
+        [AllowAnonymous]
+        public OutputResult<object> FetchOrderDataById([FromBody] SoOrderParamModel model = null)
+        {
+            if (model == null)
+                return ResponseError<object>("参数格式错误");
+            WriteOperateLog("获取SAP订单数据根据id", string.Empty);
+            var c = _orderServices.getOrders(model);
+
+            if (c.Status == 0)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
+            }
+        }
 
         [Route("saptocrm")]
         [AllowAnonymous]
