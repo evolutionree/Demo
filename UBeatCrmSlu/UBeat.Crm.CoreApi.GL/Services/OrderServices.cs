@@ -98,6 +98,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             var salesChannelDicData = allDicData.Where(t => t.DicTypeId == 62);
             var productDicData = allDicData.Where(t => t.DicTypeId == 65);
             var salesDeptDicData = allDicData.Where(t => t.DicTypeId == 64);
+            var orderReasonDicData = allDicData.Where(t => t.DicTypeId == 60);
             var salesTerritoryDicData = allDicData.Where(t => t.DicTypeId == 67);
             var currencyDicData = allDicData.Where(t => t.DicTypeId == 54);
             var factoryDicData = allDicData.Where(t => t.DicTypeId == 66);
@@ -112,6 +113,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 bool isAdd = false;
                 Guid recId = Guid.Empty;
                 var collection = orders.Where(p => p.VBELN == t.Key);
+                decimal totalamount = 0;
                 if (collection.Count() > 0)
                 {
                     var mainData = collection.FirstOrDefault();
@@ -138,15 +140,32 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     fieldData.Add("customer", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
                     var contract = contractData.FirstOrDefault(t1 => t1.code == mainData.BSTKD);
                     fieldData.Add("contractcode", contract == null ? null : "{\"id\":\"" + contract.id.ToString() + "\",\"name\":\"" + contract.name + "\"}");
-                    fieldData.Add("orderdate", mainData.VDATU1);
-                    fieldData.Add("totalamount", mainData.KUKLA);
-                    fieldData.Add("deliveredamount", mainData.KUKLA);
-                    fieldData.Add("undeliveredamount", mainData.KUKLA);
-                    fieldData.Add("invoiceamount", mainData.KUKLA);
-                    fieldData.Add("uninvoiceamount", mainData.KUKLA);
+                    fieldData.Add("flowstatus", 3);//sap同步过来默认审核通过
+                    fieldData.Add("ifsap", 1);//是否已同步
+                    //sap创建
+                    fieldData.Add("datasource", 1);
+                    //fieldData.Add("deliveredamount", mainData.KUKLA);
+                    //fieldData.Add("undeliveredamount", mainData.KUKLA);
+                    //fieldData.Add("invoiceamount", mainData.KUKLA);
+                    //fieldData.Add("uninvoiceamount", mainData.KUKLA);
+                    var orderReason = orderReasonDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUGRU);
+                    fieldData.Add("orderreason", orderReason == null ? 0 : orderReason.DataId);
 
-                    fieldData.Add("orderreason", mainData.AUGRU);
-                    fieldData.Add("deliverydate", mainData.VDATU1);
+                    try
+                    {
+                        //订单销售日期
+                        if (!string.IsNullOrEmpty(mainData.ERDAT)&&mainData.ERDAT != "0000-00-00") {
+                            fieldData.Add("orderdate", DateTime.Parse(mainData.ERDAT));
+                        }
+                        if (!string.IsNullOrEmpty(mainData.VDATU1) && mainData.VDATU1 != "0000-00-00")
+                        {
+                            fieldData.Add("deliverydate", DateTime.Parse(mainData.VDATU1));
+                        }
+                    }
+                    catch (Exception ex1)
+                    {
+                        return;
+                    }
                 }
                 List<Dictionary<String, object>> listDetail = new List<Dictionary<string, object>>();
                 collection.ToList().ForEach(t1 =>
@@ -156,9 +175,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     dicDetail.Add("TypeId", "a1010450-2c42-423f-a248-55433b706581");
                     var product = products.FirstOrDefault(t2 => t2.productcode == t1.MATNR.Substring(8));
                     dicFieldData.Add("productname", product == null ? "" : product.productid.ToString());
+                    dicFieldData.Add("productcode", product == null ? "" : product.productcode.ToString());
                     dicFieldData.Add("price", t1.ZHSDJ);
                     dicFieldData.Add("productunit", 1); //t1.KMEIN2
-                    dicFieldData.Add("quantity", t1.KWMENG);
+                    dicFieldData.Add("kgnumber", t1.KWMENG);
                     dicFieldData.Add("subtotal", t1.KZWI2);
 
 
@@ -167,29 +187,35 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     dicFieldData.Add("branchesnumber", t1.ZTIAOSHU);
                     dicFieldData.Add("specification", t1.ZGUIGE);
                     dicFieldData.Add("kgunitprice", t1.ZHSDJKG);
+                    //sap创建
+                    dicFieldData.Add("datasource", 1);
+                    dicFieldData.Add("ifsap", 1);
+
 
                     var currency = currencyDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.SPART);
                     dicFieldData.Add("currency", currency == null ? 0 : currency.DataId);
 
                     var factory = factoryDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.WERKS);
                     dicFieldData.Add("factory", factory == null ? 0 : factory.DataId);
-                    dicFieldData.Add("linenumber",int.Parse(t1.POSNR.ToString()));
-
+                    dicFieldData.Add("rownum", t1.POSNR);
+                    totalamount += t1.KZWI2;
 
                     dicDetail.Add("FieldData", dicFieldData);
                     listDetail.Add(dicDetail);
                 });
+                fieldData.Add("totalamount", totalamount);
                 fieldData.Add("orderdetail", JsonConvert.SerializeObject(listDetail));
                 // fieldData.Add("totalweight",)
                 OperateResult result;
+                //会调用后置逻辑
                 if (isAdd)
                     result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), fieldData, null, userId);
                 else
-                    result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), recId, fieldData, userId);
+                    result = _iDynamicEntityRepository.DynamicEdit (null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), recId, fieldData, userId);
 
                 if (!string.IsNullOrEmpty(result.Codes))
                 {
-                    throw new Exception("保存异常:"+ result.Msg);
+                    throw new Exception("保存异常:"+ result.Msg+"||"+ fieldData["orderid"]);
                 }
 
             });
