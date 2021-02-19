@@ -25,15 +25,14 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly BaseDataServices _baseDataServices;
         private readonly FetchCustomerServices _fetchCustomerServices;
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
-        private readonly IProductsRepository _iProductsRepository;
+        private readonly Services.OrderServices _orderServices;
         private readonly ProductServices _productServices;
-        private readonly UBeat.Crm.CoreApi.GL.Services.OrderServices _orderServices;
         public SapApiController(ProductServices productServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, UBeat.Crm.CoreApi.GL.Services.OrderServices orderServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _iDynamicEntityRepository = iDynamicEntityRepository;
-            _iProductsRepository = iProductsRepository;
+            _orderServices = orderServices;
             _productServices = productServices;
             _orderServices = orderServices;
         }
@@ -145,6 +144,25 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
+        [Route("fetchorderdatabyid")]
+        [HttpPost]
+        [AllowAnonymous]
+        public OutputResult<object> FetchOrderDataById([FromBody] SoOrderParamModel model = null)
+        {
+            if (model == null)
+                return ResponseError<object>("参数格式错误");
+            WriteOperateLog("获取SAP订单数据根据id", string.Empty);
+            var c = _orderServices.getOrders(model);
+
+            if (c.Status == 0)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
+            }
+        }
 
         [Route("saptocrm")]
         [AllowAnonymous]

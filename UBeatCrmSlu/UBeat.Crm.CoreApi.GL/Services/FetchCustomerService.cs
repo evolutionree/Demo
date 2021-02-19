@@ -772,6 +772,5 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return new OutputResult<object>(null, message: "客户号不能为null", status: 1);
         }
  
- 
     }
 }

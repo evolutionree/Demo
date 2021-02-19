@@ -20,13 +20,15 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly BaseDataServices _baseDataServices;
         private readonly FetchCustomerServices _fetchCustomerServices;
         private readonly ModifyCustomerServices _modifyCustomerServices;
+        private readonly Services.OrderServices _orderServices;
 
         public SapHttpApiController(BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices,
-            ModifyCustomerServices modifyCustomerServices)
+            ModifyCustomerServices modifyCustomerServices, Services.OrderServices orderServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _modifyCustomerServices = modifyCustomerServices;
+            _orderServices = orderServices;
         }
 
         [Route("fetchcustdatabyid")]
@@ -45,6 +47,25 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             else
             {
                 return ResponseError<object>(c.Msg);
+            }
+        }
+
+        [Route("fetchorderdatabyid")]
+        [HttpPost]
+        public OutputResult<object> FetchOrderDataById([FromBody] SoOrderParamModel model = null)
+        {
+            if (model == null)
+                return ResponseError<object>("参数格式错误");
+            WriteOperateLog("获取SAP订单数据根据id", string.Empty);
+            var c = _orderServices.getOrders(model, UserId);
+
+            if (c.Status == 0)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
             }
         }
 
@@ -75,6 +96,22 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         public OutputResult<object> SyncBankInfo2CRM()
         {
             var c = _modifyCustomerServices.SyncBankInfo2CRM();
+            if (c.Result)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
+            }
+        }
+
+        [HttpPost("sysncdelivnote")]
+        public OutputResult<object> SyncDelivnote2CRM([FromBody] Sync2CRMInfo info)
+        {
+            if (info == null)
+                return ResponseError<object>("参数格式有误");
+            var c = _modifyCustomerServices.SyncDelivnote2CRM(info);
             if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
