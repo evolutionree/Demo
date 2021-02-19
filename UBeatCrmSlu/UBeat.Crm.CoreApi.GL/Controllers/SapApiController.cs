@@ -27,13 +27,15 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
         private readonly IProductsRepository _iProductsRepository;
         private readonly ProductServices _productServices;
-        public SapApiController(ProductServices productServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
+        private readonly UBeat.Crm.CoreApi.GL.Services.OrderServices _orderServices;
+        public SapApiController(ProductServices productServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, UBeat.Crm.CoreApi.GL.Services.OrderServices orderServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _iDynamicEntityRepository = iDynamicEntityRepository;
             _iProductsRepository = iProductsRepository;
             _productServices = productServices;
+            _orderServices = orderServices;
         }
 
         [Route("test")]
@@ -120,7 +122,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP订单列表", string.Empty);
 
-            var sendResult = _fetchCustomerServices.getOrders(model, 1);
+            var sendResult = _orderServices.getOrders(model, 1);
             return (sendResult);
         }
         [Route("fetchcustdatabyid")]
