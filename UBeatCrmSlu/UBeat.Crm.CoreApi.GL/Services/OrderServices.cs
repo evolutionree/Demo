@@ -201,8 +201,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
                         fieldData.Add("flowstatus", 3);//sap同步过来默认审核通过
                         fieldData.Add("ifsap", 1);//是否已同步
-                                                  //sap创建
-                        fieldData.Add("datasource", 1);
+                        //sap创建
+                        fieldData.Add("datasources", 1);
                         var orderReason = orderReasonDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUGRU);
                         fieldData.Add("orderreason", orderReason == null ? 0 : orderReason.DataId);
 
