@@ -49,7 +49,6 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
         public OperateResult InitOrdersData()
         {
-            var rowCount = 1;
             var total = 0;
             DateTime startDate = new DateTime(2018, 9, 30, 0, 0, 0);
             while (startDate<= DateTime.Now.Date)
@@ -57,8 +56,12 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 SoOrderParamModel param = new SoOrderParamModel();
                 param.ERDAT_FR = startDate.ToString("yyyy-MM-dd");
                 param.ERDAT_TO = startDate.ToString("yyyy-MM-dd");
-                this.getOrders(param);
-                startDate=startDate.AddDays(1);
+                var c = this.getOrders(param);
+                if (c.Status == 0)
+                {
+                    total += int.Parse(c.DataBody.ToString());
+                }
+                startDate =startDate.AddDays(1);
             }
             return new OperateResult
             {
@@ -68,7 +71,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
         }
 
-            public OutputResult<Object> getOrders(SoOrderParamModel param, int userId = 1)
+        public OutputResult<Object> getOrders(SoOrderParamModel param, int userId = 1)
         {
             var header = new Dictionary<String, string>();
             header.Add("Transaction_ID", "SO_LIST");
@@ -101,16 +104,20 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 var objResult = JsonConvert.DeserializeObject<SoOrderModel>(result);
                 if (objResult.TYPE == "S")
                 {
+                    int syncCount = 0;
+                    List<IGrouping<string, SoOrderDataModel>> groupData = new List<IGrouping<string, SoOrderDataModel>>();
                     var data = objResult.DATA["LIST"];
                     try
                     {
-                        saveOrders(data, userId);
+                        groupData = data.GroupBy(t => t.VBELN).ToList();
+                        syncCount =saveOrders(data, userId);
                     }
                     catch (Exception ex)
                     {
                         logger.Info(string.Concat("获取销售订单列表失败：", ex.Message));
                     }
-                    return new OutputResult<object>(data);
+                    logger.Log(LogLevel.Info, $"获取销售订单列表成功,读取数：{ groupData.Count },处理数：{ syncCount}");
+                    return new OutputResult<object>(syncCount, message: $"获取销售订单列表成功,读取数：{ groupData.Count },处理数：{ syncCount}");
                 }
                 else
                 {
@@ -121,8 +128,9 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
         }
 
-        void saveOrders(List<SoOrderDataModel> orders, int userId)
+        private int saveOrders(List<SoOrderDataModel> orders, int userId)
         {
+            int insertcount = 0;
             var groupData = orders.GroupBy(t => t.VBELN).ToList();
             var allDicData = _baseDataRepository.GetDicData();
             var orderTypeDicData = allDicData.Where(t => t.DicTypeId == 69);
@@ -186,20 +194,15 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         var contract = contractData.FirstOrDefault(t1 => t1.code == mainData.BSTKD);
                         fieldData.Add("contractcode", contract == null ? null : "{\"id\":\"" + contract.id.ToString() + "\",\"name\":\"" + contract.name + "\"}");
 
-                        fieldData.Add("totalamount", mainData.KUKLA);
-                        fieldData.Add("deliveredamount", mainData.KUKLA);
-                        fieldData.Add("undeliveredamount", mainData.KUKLA);
-                        fieldData.Add("invoiceamount", mainData.KUKLA);
-                        fieldData.Add("uninvoiceamount", mainData.KUKLA);
+                        //fieldData.Add("deliveredamount", mainData.KUKLA);
+                        //fieldData.Add("undeliveredamount", mainData.KUKLA);
+                        //fieldData.Add("invoiceamount", mainData.KUKLA);
+                        //fieldData.Add("uninvoiceamount", mainData.KUKLA);
 
                         fieldData.Add("flowstatus", 3);//sap同步过来默认审核通过
                         fieldData.Add("ifsap", 1);//是否已同步
                                                   //sap创建
                         fieldData.Add("datasource", 1);
-                        //fieldData.Add("deliveredamount", mainData.KUKLA);
-                        //fieldData.Add("undeliveredamount", mainData.KUKLA);
-                        //fieldData.Add("invoiceamount", mainData.KUKLA);
-                        //fieldData.Add("uninvoiceamount", mainData.KUKLA);
                         var orderReason = orderReasonDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUGRU);
                         fieldData.Add("orderreason", orderReason == null ? 0 : orderReason.DataId);
 
@@ -261,6 +264,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         dicDetail.Add("FieldData", dicFieldData);
                         listDetail.Add(dicDetail);
                     });
+                    fieldData.Add("totalamount", totalamount);
                     fieldData.Add("orderdetail", JsonConvert.SerializeObject(listDetail));
                     // fieldData.Add("totalweight",)
                     OperateResult result;
@@ -268,12 +272,13 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), fieldData, null, userId);
                     else
                         result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), recId, fieldData, userId);
+                    insertcount++;
                 }
                 catch (Exception ex) {
                     logger.Info(string.Concat("获取销售订单列表保存失败："+ saporder+":", ex.Message));
                 }
             });
-
+            return insertcount;
         }
  
     }
