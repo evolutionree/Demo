@@ -787,32 +787,30 @@ namespace UBeat.Crm.CoreApi.GL.Services
             if (!string.IsNullOrEmpty(param.KUNNR))
             {
                 //查询单条
-                postData["REQDATE"] = param.KUNNR;
+                postData["KUNNR"] = param.KUNNR;
             }
             if (!string.IsNullOrEmpty(param.BUDAT_FR))
             {
                 //查询单条
-                postData["ORDERID"] = param.BUDAT_FR;
+                postData["BUDAT_FR"] = param.BUDAT_FR;
             }
-            else if (!string.IsNullOrEmpty(param.BUDAT_FR) && !string.IsNullOrEmpty(param.BUDAT_TO))
+            if (!string.IsNullOrEmpty(param.BUDAT_TO))
             {
-                //查询时间段
-                postData["ERDAT_FR"] = param.BUDAT_FR;
-                postData["ERDAT_TO"] = param.BUDAT_TO;
-
+                //查询单条
+                postData["BUDAT_TO"] = param.BUDAT_TO;
             }
+ 
             if (!string.IsNullOrEmpty(param.HKONT_FR))
             {
                 //查询单条
                 postData["ORDERID"] = param.HKONT_FR;
             }
-            else if (!string.IsNullOrEmpty(param.HKONT_FR) && !string.IsNullOrEmpty(param.HKONT_TO))
+            if (!string.IsNullOrEmpty(param.HKONT_TO))
             {
-                //查询时间段
-                postData["ERDAT_FR"] = param.HKONT_FR;
-                postData["ERDAT_TO"] = param.HKONT_TO;
-
+                //查询单条
+                postData["ORDERID"] = param.HKONT_TO;
             }
+
             logger.Info(string.Concat("获取SAP订单请求参数：", JsonHelper.ToJson(postData)));
             String result = CallAPIHelper.ApiPostData(postData, header);
             if (!string.IsNullOrEmpty(result))
