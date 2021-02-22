@@ -779,7 +779,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             var header = new Dictionary<String, string>();
             header.Add("Transaction_ID", "ACCOUNT_RECEIVABLE");
             var postData = new Dictionary<String, string>();
-            postData.Add("KUNNR", "");
+            postData.Add("KUNNR", "");    
             postData.Add("BUDAT_FR", "");
             postData.Add("BUDAT_TO", "");
             postData.Add("HKONT_FR", "");
