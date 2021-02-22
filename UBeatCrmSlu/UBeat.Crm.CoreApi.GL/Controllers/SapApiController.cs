@@ -27,13 +27,14 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
         private readonly Services.OrderServices _orderServices;
         private readonly ProductServices _productServices;
-        public SapApiController(ProductServices productServices, Services.OrderServices orderServices, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices)
+        public SapApiController(ProductServices productServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, UBeat.Crm.CoreApi.GL.Services.OrderServices orderServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _iDynamicEntityRepository = iDynamicEntityRepository;
             _orderServices = orderServices;
             _productServices = productServices;
+            _orderServices = orderServices;
         }
 
         [Route("test")]

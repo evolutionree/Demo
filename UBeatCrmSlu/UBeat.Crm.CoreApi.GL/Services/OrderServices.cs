@@ -15,6 +15,13 @@ using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 using System.Linq;
 using UBeat.Crm.LicenseCore;
 using UBeat.Crm.CoreApi.Services.Services;
+
+using UBeat.Crm.CoreApi.GL.Model;
+using UBeat.Crm.CoreApi.GL.Repository;
+using UBeat.Crm.CoreApi.Core.Utility;
+using Newtonsoft.Json;
+using UBeat.Crm.CoreApi.GL.Utility;
+
 using UBeat.Crm.CoreApi.GL.Repository;
 using UBeat.Crm.CoreApi.GL.Model;
 using UBeat.Crm.CoreApi.GL.Utility;
@@ -22,6 +29,7 @@ using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using NLog;
+
 
 namespace UBeat.Crm.CoreApi.GL.Services
 {
@@ -39,7 +47,31 @@ namespace UBeat.Crm.CoreApi.GL.Services
             _baseDataRepository = baseDataRepository;
         }
 
-        public OutputResult<Object> getOrders(SoOrderParamModel param, int userId=1)
+        public OperateResult InitOrdersData()
+        {
+            var total = 0;
+            DateTime startDate = new DateTime(2018, 9, 30, 0, 0, 0);
+            while (startDate<= DateTime.Now.Date)
+            {
+                SoOrderParamModel param = new SoOrderParamModel();
+                param.ERDAT_FR = startDate.ToString("yyyy-MM-dd");
+                param.ERDAT_TO = startDate.ToString("yyyy-MM-dd");
+                var c = this.getOrders(param);
+                if (c.Status == 0)
+                {
+                    total += int.Parse(c.DataBody.ToString());
+                }
+                startDate =startDate.AddDays(1);
+            }
+            return new OperateResult
+            {
+                Flag = 1,
+                Msg = string.Format(@"SAP订单已同步条数：{0}", total)
+            };
+
+        }
+
+        public OutputResult<Object> getOrders(SoOrderParamModel param, int userId = 1)
         {
             var header = new Dictionary<String, string>();
             header.Add("Transaction_ID", "SO_LIST");
@@ -72,14 +104,20 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 var objResult = JsonConvert.DeserializeObject<SoOrderModel>(result);
                 if (objResult.TYPE == "S")
                 {
+                    int syncCount = 0;
+                    List<IGrouping<string, SoOrderDataModel>> groupData = new List<IGrouping<string, SoOrderDataModel>>();
                     var data = objResult.DATA["LIST"];
-                    try {
-                        saveOrders(data, userId);
+                    try
+                    {
+                        groupData = data.GroupBy(t => t.VBELN).ToList();
+                        syncCount =saveOrders(data, userId);
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         logger.Info(string.Concat("获取销售订单列表失败：", ex.Message));
                     }
-                    return new OutputResult<object>(data);
+                    logger.Log(LogLevel.Info, $"获取销售订单列表成功,读取数：{ groupData.Count },处理数：{ syncCount}");
+                    return new OutputResult<object>(syncCount, message: $"获取销售订单列表成功,读取数：{ groupData.Count },处理数：{ syncCount}");
                 }
                 else
                 {
@@ -89,8 +127,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
             }
             return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
         }
-        void saveOrders(List<SoOrderDataModel> orders, int userId)
+
+        private int saveOrders(List<SoOrderDataModel> orders, int userId)
         {
+            int insertcount = 0;
             var groupData = orders.GroupBy(t => t.VBELN).ToList();
             var allDicData = _baseDataRepository.GetDicData();
             var orderTypeDicData = allDicData.Where(t => t.DicTypeId == 69);
@@ -98,102 +138,148 @@ namespace UBeat.Crm.CoreApi.GL.Services
             var salesChannelDicData = allDicData.Where(t => t.DicTypeId == 62);
             var productDicData = allDicData.Where(t => t.DicTypeId == 65);
             var salesDeptDicData = allDicData.Where(t => t.DicTypeId == 64);
+
+            var orderReasonDicData = allDicData.Where(t => t.DicTypeId == 60);
+
             var salesTerritoryDicData = allDicData.Where(t => t.DicTypeId == 67);
             var currencyDicData = allDicData.Where(t => t.DicTypeId == 54);
             var factoryDicData = allDicData.Where(t => t.DicTypeId == 66);
             var custData = _baseDataRepository.GetCustData();
             var contractData = _baseDataRepository.GetContractData();
+            var userData = _baseDataRepository.GetUserData();
             var products = _baseDataRepository.GetProductData();
             var crmOrders = _baseDataRepository.GetOrderData();
             IDynamicEntityRepository _iDynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
             groupData.ForEach(t =>
             {
-                Dictionary<String, object> fieldData = new Dictionary<string, object>();
-                bool isAdd = false;
-                Guid recId = Guid.Empty;
-                var collection = orders.Where(p => p.VBELN == t.Key);
-                if (collection.Count() > 0)
-                {
-                    var mainData = collection.FirstOrDefault();
-                    var crmOrder = crmOrders.FirstOrDefault(t1 => t1.code == mainData.VBELN);
-                    if (crmOrder == null)
-                        isAdd = true;
-                    else
+                string saporder = t.Key;
+                try {
+                    Dictionary<String, object> fieldData = new Dictionary<string, object>();
+                    bool isAdd = false;
+                    Guid recId = Guid.Empty;
+                    var collection = orders.Where(p => p.VBELN == t.Key);
+
+                    decimal totalamount = 0;
+                    int sequencenumber = 0;
+
+                    if (collection.Count() > 0)
                     {
-                        fieldData.Add("recid", crmOrder.id);
-                        recId = crmOrder.id;
+                        var mainData = collection.FirstOrDefault();
+                        var crmOrder = crmOrders.FirstOrDefault(t1 => t1.code == mainData.VBELN);
+                        if (crmOrder == null)
+                            isAdd = true;
+                        else
+                        {
+                            fieldData.Add("recid", crmOrder.id);
+                            recId = crmOrder.id;
+                        }
+                        fieldData.Add("orderid", mainData.VBELN);
+                        var orderType = orderTypeDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUART);
+                        fieldData.Add("ordertype", orderType == null ? 0 : orderType.DataId);
+                        var salesOffices = salesOrgDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VKORG);
+                        fieldData.Add("salesoffices", salesOffices == null ? 0 : salesOffices.DataId);
+                        var salesChannel = salesChannelDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VTWEG);
+                        fieldData.Add("distributionchanne", salesChannel == null ? 0 : salesChannel.DataId);
+                        var product = productDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.SPART);
+                        fieldData.Add("productteam", product == null ? 0 : product.DataId);
+                        var salesDept = salesDeptDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VKBUR);
+                        fieldData.Add("salesdepartments", salesDept == null ? 0 : salesDept.DataId);
+
+                        //负责人
+                        var salerMan = userData.FirstOrDefault(t1 => t1.username == mainData.LNAME1);
+                        fieldData.Add("recmanager", salerMan == null ? 1 : salerMan.userid);
+
+                        var cust = custData.FirstOrDefault(t1 => t1.code == mainData.KUNNR);
+                        fieldData.Add("customer", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
+                        var contract = contractData.FirstOrDefault(t1 => t1.code == mainData.BSTKD);
+                        fieldData.Add("contractcode", contract == null ? null : "{\"id\":\"" + contract.id.ToString() + "\",\"name\":\"" + contract.name + "\"}");
+
+                        //fieldData.Add("deliveredamount", mainData.KUKLA);
+                        //fieldData.Add("undeliveredamount", mainData.KUKLA);
+                        //fieldData.Add("invoiceamount", mainData.KUKLA);
+                        //fieldData.Add("uninvoiceamount", mainData.KUKLA);
+
+                        fieldData.Add("flowstatus", 3);//sap同步过来默认审核通过
+                        fieldData.Add("ifsap", 1);//是否已同步
+                        //sap创建
+                        fieldData.Add("datasources", 1);
+                        var orderReason = orderReasonDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUGRU);
+                        fieldData.Add("orderreason", orderReason == null ? 0 : orderReason.DataId);
+
+                        try
+                        {
+                            //订单销售日期
+                            if (!string.IsNullOrEmpty(mainData.ERDAT) && mainData.ERDAT != "0000-00-00")
+                            {
+                                fieldData.Add("orderdate", DateTime.Parse(mainData.ERDAT));
+                            }
+                            if (!string.IsNullOrEmpty(mainData.VDATU1) && mainData.VDATU1 != "0000-00-00")
+                            {
+                                fieldData.Add("deliverydate", DateTime.Parse(mainData.VDATU1));
+                            }
+                        }
+                        catch (Exception ex1)
+                        {
+                            throw new Exception("订单转换日期异常");
+                        }
                     }
-                    fieldData.Add("orderid", mainData.VBELN);
-                    var orderType = orderTypeDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.AUART);
-                    fieldData.Add("ordertype", orderType == null ? 0 : orderType.DataId);
-                    var salesOffices = salesOrgDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VKORG);
-                    fieldData.Add("salesoffices", salesOffices == null ? 0 : salesOffices.DataId);
-                    var salesChannel = salesChannelDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VTWEG);
-                    fieldData.Add("distributionchanne", salesChannel == null ? 0 : salesChannel.DataId);
-                    var product = productDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.SPART);
-                    fieldData.Add("productteam", product == null ? 0 : product.DataId);
-                    var salesDept = salesDeptDicData.FirstOrDefault(t1 => t1.ExtField1 == mainData.VKBUR);
-                    fieldData.Add("salesdepartments", salesDept == null ? 0 : salesDept.DataId);
-                    var cust = custData.FirstOrDefault(t1 => t1.code == mainData.KUNNR);
-                    fieldData.Add("customer", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
-                    var contract = contractData.FirstOrDefault(t1 => t1.code == mainData.BSTKD);
-                    fieldData.Add("contractcode", contract == null ? null : "{\"id\":\"" + contract.id.ToString() + "\",\"name\":\"" + contract.name + "\"}");
-                    fieldData.Add("orderdate", mainData.VDATU1);
-                    fieldData.Add("totalamount", mainData.KUKLA);
-                    fieldData.Add("deliveredamount", mainData.KUKLA);
-                    fieldData.Add("undeliveredamount", mainData.KUKLA);
-                    fieldData.Add("invoiceamount", mainData.KUKLA);
-                    fieldData.Add("uninvoiceamount", mainData.KUKLA);
+                    List<Dictionary<String, object>> listDetail = new List<Dictionary<string, object>>();
+                    collection.ToList().ForEach(t1 =>
+                    {
+                        sequencenumber++;
+                        Dictionary<String, object> dicDetail = new Dictionary<string, object>();
+                        Dictionary<String, object> dicFieldData = new Dictionary<string, object>();
+                        dicDetail.Add("TypeId", "a1010450-2c42-423f-a248-55433b706581");
+                        var product = products.FirstOrDefault(t2 => t2.productcode == t1.MATNR.Substring(8));
+                        dicFieldData.Add("productname", product == null ? "" : product.productid.ToString());
 
-                    fieldData.Add("orderreason", mainData.AUGRU);
-                    fieldData.Add("deliverydate", mainData.VDATU1);
+                        dicFieldData.Add("price", t1.ZHSDJ);
+                        dicFieldData.Add("productunit", 1); //t1.KMEIN2
+                        dicFieldData.Add("quantity", t1.KWMENG);
+                        dicFieldData.Add("subtotal", t1.KZWI2);
+
+
+                        dicFieldData.Add("productcode", product == null ? "" : product.productcode.ToString());
+                        dicFieldData.Add("kgnumber", t1.KWMENG);
+                        dicFieldData.Add("packingway", t1.ZBZFS);
+                        dicFieldData.Add("waterglaze", t1.ZBINGYI);
+                        dicFieldData.Add("branchesnumber", t1.ZTIAOSHU);
+                        dicFieldData.Add("specification", t1.ZGUIGE);
+                        dicFieldData.Add("kgunitprice", t1.ZHSDJKG);
+                        //sap创建
+                        dicFieldData.Add("datasource", 1);
+                        dicFieldData.Add("ifsap", 1);
+
+                        var currency = currencyDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.SPART);
+                        dicFieldData.Add("currency", currency == null ? 0 : currency.DataId);
+
+                        var factory = factoryDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.WERKS);
+                        dicFieldData.Add("factory", factory == null ? 0 : factory.DataId);
+                        dicFieldData.Add("linenumber", sequencenumber);
+
+                        dicFieldData.Add("rownum", t1.POSNR);
+
+                        totalamount += t1.KZWI2;
+
+                        dicDetail.Add("FieldData", dicFieldData);
+                        listDetail.Add(dicDetail);
+                    });
+                    fieldData.Add("totalamount", totalamount);
+                    fieldData.Add("orderdetail", JsonConvert.SerializeObject(listDetail));
+                    // fieldData.Add("totalweight",)
+                    OperateResult result;
+                    if (isAdd)
+                        result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), fieldData, null, userId);
+                    else
+                        result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), recId, fieldData, userId);
+                    insertcount++;
                 }
-                List<Dictionary<String, object>> listDetail = new List<Dictionary<string, object>>();
-                collection.ToList().ForEach(t1 =>
-                {
-                    Dictionary<String, object> dicDetail = new Dictionary<string, object>();
-                    Dictionary<String, object> dicFieldData = new Dictionary<string, object>();
-                    dicDetail.Add("TypeId", "a1010450-2c42-423f-a248-55433b706581");
-                    var product = products.FirstOrDefault(t2 => t2.productcode == t1.MATNR.Substring(8));
-                    dicFieldData.Add("productname", product == null ? "" : product.productid.ToString());
-                    dicFieldData.Add("price", t1.ZHSDJ);
-                    dicFieldData.Add("productunit", 1); //t1.KMEIN2
-                    dicFieldData.Add("quantity", t1.KWMENG);
-                    dicFieldData.Add("subtotal", t1.KZWI2);
-
-
-                    dicFieldData.Add("packingway", t1.ZBZFS);
-                    dicFieldData.Add("waterglaze", t1.ZBINGYI);
-                    dicFieldData.Add("branchesnumber", t1.ZTIAOSHU);
-                    dicFieldData.Add("specification", t1.ZGUIGE);
-                    dicFieldData.Add("kgunitprice", t1.ZHSDJKG);
-
-                    var currency = currencyDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.SPART);
-                    dicFieldData.Add("currency", currency == null ? 0 : currency.DataId);
-
-                    var factory = factoryDicData.FirstOrDefault(t2 => t2.ExtField1 == t1.WERKS);
-                    dicFieldData.Add("factory", factory == null ? 0 : factory.DataId);
-                    dicFieldData.Add("linenumber",int.Parse(t1.POSNR.ToString()));
-
-
-                    dicDetail.Add("FieldData", dicFieldData);
-                    listDetail.Add(dicDetail);
-                });
-                fieldData.Add("orderdetail", JsonConvert.SerializeObject(listDetail));
-                // fieldData.Add("totalweight",)
-                OperateResult result;
-                if (isAdd)
-                    result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), fieldData, null, userId);
-                else
-                    result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("6f12d7b0-9666-4f36-a9b4-cd9ca8117794"), recId, fieldData, userId);
-
-                if (!string.IsNullOrEmpty(result.Codes))
-                {
-                    throw new Exception("保存异常:"+ result.Msg);
+                catch (Exception ex) {
+                    logger.Info(string.Concat("获取销售订单列表保存失败："+ saporder+":", ex.Message));
                 }
-
             });
-
+            return insertcount;
         }
+ 
     }
 }
