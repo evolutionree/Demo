@@ -870,5 +870,29 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
             };
             return ExecuteQuery(sql, p).FirstOrDefault();
         }
+        public int UpdateDeliverySapCode(Guid recId, string sapCode, DbTransaction tran = null)
+        {
+            var updateSql = string.Format("update crm_glsc_deliveryorder set code = @sapCode, recupdated = now() where recid = @recId;");
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("recId",recId),
+                new NpgsqlParameter("sapCode", sapCode),
+            };
+
+            if (tran == null)
+                return DBHelper.ExecuteNonQuery("", updateSql, param);
+
+            var result = DBHelper.ExecuteNonQuery(tran, updateSql, param);
+            return result;
+        }
+        public string GetOrderNoByRecId(string recid)
+        {
+            string sql = @"select orderid from crm_sys_order where recid = @recid::uuid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("recid",recid)
+            };
+            return ExecuteScalar(sql, p)?.ToString();
+        }
     }
 }

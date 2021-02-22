@@ -23,5 +23,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         Guid IsExistsDelivnote(string code);
         Dictionary<string, object> getUserInfo(string workCode);
         Dictionary<string, object> GetOrderInfo(string orderCode);
+        int UpdateDeliverySapCode(Guid recId, string sapCode, DbTransaction tran = null);
+        string GetOrderNoByRecId(string recid);
     }
 }

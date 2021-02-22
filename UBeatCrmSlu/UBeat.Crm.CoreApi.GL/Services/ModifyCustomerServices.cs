@@ -776,6 +776,109 @@ namespace UBeat.Crm.CoreApi.GL.Services
         }
         #endregion
 
+        #region 推送交货单至SAP
+        public SynResultModel SynSapDelivNoteData(Guid entityId, Guid recId, int UserId)
+        {
+            var result = new SynResultModel();
+            var detailData = _baseDataServices.GetEntityDetailData(null, entityId, recId, UserId);
+            if (detailData != null)
+            {
+                SynchrosapStatus isSyn = SynchrosapStatus.Yes;
+                var sapno = string.Concat(detailData["code"]);
+                var issynchrosap = string.Concat(detailData["issynchrosap"]);
+                if (!string.IsNullOrEmpty(sapno) && (issynchrosap == "1" || issynchrosap == "4"))
+                    isSyn = SynchrosapStatus.No;
+                try
+                {
+                    if (isSyn == SynchrosapStatus.Yes)
+                    {
+                        result = SynSapAddDelivNote(detailData, entityId, recId);
+                    }
+                    else
+                    {
+                        result = SynSapModifyCustData(detailData, entityId, recId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var str = "同步客户失败，请联系管理员";
+                    logger.Info(string.Format(@"{0},{1}", str, ex.Message));
+                    result.Message = str;
+                }
+            }
+            else
+            {
+                result.Message = "同步失败，不存在交货单记录";
+            }
+            return result;
+        }
+
+        public SynResultModel SynSapAddDelivNote(IDictionary<string, object> resultData, Guid entityId, Guid recId, DbTransaction tran = null)
+        {
+            var result = new SynResultModel();
+            var sapResult = string.Empty;
+
+            var postData = new Dictionary<string, object>();
+            var headData = new Dictionary<string, string>();
+            var mainData = new Dictionary<string, object>();
+            var entryData = new List<Dictionary<string, object>>();
+            headData.Add("Transaction_ID", "ODN_CREATE");
+            mainData.Add("WADAT", resultData["plandate"]);
+            #region entry
+            var entryStr =JsonConvert.SerializeObject(resultData["deliverydetail"]);
+            var entryList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(entryStr);
+            foreach (var item in entryList)
+            {
+                var dic = new Dictionary<string, object>();
+                dic.Add("VBELN", _customerRepository.GetOrderNoByRecId(resultData["sourceorder"]?.ToString().Substring(8, 36)));
+                dic.Add("POSNR",item["orderlineno"]);
+                dic.Add("JHQTY",item["deliveryqty"]);
+                dic.Add("JHDW", item["productunit"]);
+                dic.Add("BATCH", item["charg"]);
+                entryData.Add(dic);
+            }  
+            #endregion
+            postData.Add("HEADER", mainData);
+            postData.Add("ITEM", entryData);
+
+            logger.Info(string.Concat("SAP交货单创建接口请求参数：", JsonHelper.ToJson(postData)));
+            var postResult = CallAPIHelper.ApiPostData(postData, headData);
+            SapDeliveryCreateModelResult sapRequest = JsonConvert.DeserializeObject<SapDeliveryCreateModelResult>(postResult);
+
+            if (sapRequest.TYPE == "S")
+            {
+                var sapCode = sapRequest.JHDH;
+                sapResult = sapRequest.MESSAGE;
+                result.Result = true;
+                _baseDataRepository.UpdateSynStatus(entityId, recId, (int)SynchrosapStatus.Yes, tran);
+                _customerRepository.UpdateDeliverySapCode(recId, sapCode, tran);
+                if (!string.IsNullOrEmpty(sapResult))
+                    sapResult = string.Format(@"同步创建SAP交货单成功，返回SAP交货单号：{0}，SAP提示返回：{1}", sapCode, sapResult);
+                else
+                    sapResult = string.Format(@"同步创建SAP交货单成功，返回SAP交货单号：{0}", sapCode);
+                result.Message = sapResult;
+                _baseDataRepository.UpdateSynTipMsg(entityId, recId, sapResult, tran);
+            }
+            else
+            {
+                logger.Log(NLog.LogLevel.Error, $"创建SAP交货单接口异常报错：{sapRequest.MESSAGE}");
+                sapResult = sapRequest.MESSAGE;
+                if (!string.IsNullOrEmpty(sapResult))
+                {
+                    sapResult = string.Concat("同步创建SAP交货单失败，SAP错误返回：", sapResult);
+                }
+                else
+                {
+                    sapResult = "同步创建SAP交货单失败，SAP返回无交货单号";
+                }
+                result.Message = sapResult;
+                _baseDataRepository.UpdateSynTipMsg2(entityId, recId, sapResult, tran);
+            }
+
+            return result;
+        }
+        #endregion
+
         #region 同步交货单
         public SynResultModel SyncDelivnote2CRM(Sync2CRMInfo info)
         {
