@@ -771,6 +771,74 @@ namespace UBeat.Crm.CoreApi.GL.Services
             }
             return new OutputResult<object>(null, message: "客户号不能为null", status: 1);
         }
- 
+
+        
+
+        public OutputResult<Object> getCustomerReceivable(CustomerReceivable param, int userId = 1)
+        {
+            var header = new Dictionary<String, string>();
+            header.Add("Transaction_ID", "ACCOUNT_RECEIVABLE");
+            var postData = new Dictionary<String, string>();
+            postData.Add("KUNNR", "");
+            postData.Add("BUDAT_FR", "");
+            postData.Add("BUDAT_TO", "");
+            postData.Add("HKONT_FR", "");
+            postData.Add("HKONT_TO", "");
+            if (!string.IsNullOrEmpty(param.KUNNR))
+            {
+                //查询单条
+                postData["REQDATE"] = param.KUNNR;
+            }
+            if (!string.IsNullOrEmpty(param.BUDAT_FR))
+            {
+                //查询单条
+                postData["ORDERID"] = param.BUDAT_FR;
+            }
+            else if (!string.IsNullOrEmpty(param.BUDAT_FR) && !string.IsNullOrEmpty(param.BUDAT_TO))
+            {
+                //查询时间段
+                postData["ERDAT_FR"] = param.BUDAT_FR;
+                postData["ERDAT_TO"] = param.BUDAT_TO;
+
+            }
+            if (!string.IsNullOrEmpty(param.HKONT_FR))
+            {
+                //查询单条
+                postData["ORDERID"] = param.HKONT_FR;
+            }
+            else if (!string.IsNullOrEmpty(param.HKONT_FR) && !string.IsNullOrEmpty(param.HKONT_TO))
+            {
+                //查询时间段
+                postData["ERDAT_FR"] = param.HKONT_FR;
+                postData["ERDAT_TO"] = param.HKONT_TO;
+
+            }
+            logger.Info(string.Concat("获取SAP订单请求参数：", JsonHelper.ToJson(postData)));
+            String result = CallAPIHelper.ApiPostData(postData, header);
+            if (!string.IsNullOrEmpty(result))
+            {
+                var objResult = JsonConvert.DeserializeObject<SoOrderModel>(result);
+                if (objResult.TYPE == "S")
+                {
+                    var data = objResult.DATA["LIST"];
+                    try
+                    {
+                   //     saveOrders(data, userId);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Info(string.Concat("获取销售订单列表失败：", ex.Message));
+                    }
+                    return new OutputResult<object>(data);
+                }
+                else
+                {
+                    logger.Log(LogLevel.Error, $"获取SAP订单接口异常报错：{objResult.MESSAGE}");
+                    return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
+                }
+            }
+            return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
+        }
+
     }
 }

@@ -509,4 +509,11 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public String CREDIT_LIMIT { get; set; }
         public String LIMIT_VALID_DATE { get; set; }
     }
+    public class CustomerReceivable {
+        public String KUNNR { get; set; }
+        public String BUDAT_FR { get; set; }
+        public String BUDAT_TO { get; set; }
+        public String HKONT_FR { get; set; }
+        public String HKONT_TO { get; set; }
+    }
 }

@@ -15,13 +15,6 @@ using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 using System.Linq;
 using UBeat.Crm.LicenseCore;
 using UBeat.Crm.CoreApi.Services.Services;
-
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Repository;
-using UBeat.Crm.CoreApi.Core.Utility;
-using Newtonsoft.Json;
-using UBeat.Crm.CoreApi.GL.Utility;
-
 using UBeat.Crm.CoreApi.GL.Repository;
 using UBeat.Crm.CoreApi.GL.Model;
 using UBeat.Crm.CoreApi.GL.Utility;
