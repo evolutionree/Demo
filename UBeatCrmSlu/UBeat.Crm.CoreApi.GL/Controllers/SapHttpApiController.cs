@@ -122,6 +122,28 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
+        [Route("syndeliverytosap")]
+        public OutputResult<object> SynDelivNoteToSap([FromBody] SynSapModel model = null)
+        {
+            if (model == null || model.RecIds.Count == 0)
+                return ResponseError<object>("参数格式错误");
+
+            WriteOperateLog("同步Sap交货单", model);
+            bool sendResult = false;
+            var recId = model.RecIds[0];
+            var entityId = model.EntityId;
+
+            var c = _modifyCustomerServices.SynSapDelivNoteData(entityId, recId, UserId);
+            if (c.Result)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
+            }
+        }
+
         [Route("synccredittosap")]
         [HttpPost]
         [AllowAnonymous]

@@ -35,4 +35,12 @@ namespace UBeat.Crm.CoreApi.GL.Model
         /// </summary>
         public SapDelivnoteDATA DATA { get; set; }
     }
+
+    public class SapDeliveryCreateModelResult
+    {
+        public string TYPE { get; set; }
+        public string MESSAGE { get; set; }
+        public string JHDH { get; set; }
+
+    }
 }
