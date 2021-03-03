@@ -14,7 +14,7 @@ using UBeat.Crm.CoreApi.Repository.Utility;
 
 namespace UBeat.Crm.CoreApi.FHSJ.Repository
 {
-    public class CustomerRepository: RepositoryBase, ICustomerRepository
+    public class CustomerRepository : RepositoryBase, ICustomerRepository
     {
         public List<string> getAddCode(List<string> codeList)
         {
@@ -138,7 +138,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@issynchrosap", index_str), (int)SynchrosapStatus.Yes);
                 addSingleParameters.Add(string.Concat("@flowstatus", index_str), 3);
                 addSingleParameters.Add(string.Concat("@createfrom", index_str), (int)item.createfrom);
-                 
+
                 //recupdator, recmanager, reccreated, recupdated, reconlive,
                 addSingleParameters.Add(string.Concat("@recupdator", index_str), userId);
                 addSingleParameters.Add(string.Concat("@recmanager", index_str), item.manager);
@@ -204,14 +204,14 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 addSingleParameters.Add(string.Concat("@customerstatus", index_str), 2);
 
                 foreach (var p in addSingleParameters.ParameterNames)
-                { 
+                {
                     if (p.Contains("customercompanyaddress"))
                         parameters.Add(string.Concat(@"@", p, "::jsonb"));
                     else
-                        parameters.Add(string.Concat(@"@", p)); 
+                        parameters.Add(string.Concat(@"@", p));
                 }
 
-                addParameters.AddDynamicParams(addSingleParameters); 
+                addParameters.AddDynamicParams(addSingleParameters);
                 var insertSql = string.Format(@"INSERT INTO crm_sys_customer(
 												recid, rectype, recstatus, reccreator, issynchrosap,flowstatus,createfrom,
                                                 recupdator, recmanager, reccreated, recupdated, reconlive,
@@ -228,7 +228,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
 
                 sql.Append(insertSql);
                 var comSql = insertCustomerCommon(item, string.Concat(index_str, "_com"), addParameters, userId);
-                if(!string.IsNullOrEmpty(comSql))
+                if (!string.IsNullOrEmpty(comSql))
                 {
                     sql.Append(comSql);
                 }
@@ -346,9 +346,9 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                             setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p)));
                     }
                 }
-               var updateSql = string.Format(@"update crm_sys_customer set {1} where reccode = '{0}';",
-                    item.reccode,
-                    string.Join(",", setters));
+                var updateSql = string.Format(@"update crm_sys_customer set {1} where reccode = '{0}';",
+                     item.reccode,
+                     string.Join(",", setters));
 
                 sql.Append(updateSql);
 
@@ -475,7 +475,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 var updateSql = string.Format(@"update crm_sys_customer set {1} where erpcode = '{0}';",
                     item.companyone,
                     string.Join(",", setters));
-                 
+
                 sql.Append(updateSql);
 
                 var comSql = updateCustomerCommon(item, string.Concat(index_str, "_com"), parameters, userId);
@@ -528,10 +528,10 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
             var addSingleParameters = new DynamicParameters();
 
             //recid, recname, recstatus, reccreator, recupdator,
-            addSingleParameters.Add(string.Concat("@recid", index), item.id);  
-            addSingleParameters.Add(string.Concat("@recname", index), item.recname); 
+            addSingleParameters.Add(string.Concat("@recid", index), item.id);
+            addSingleParameters.Add(string.Concat("@recname", index), item.recname);
             addSingleParameters.Add(string.Concat("@recstatus", index), (int)item.status);
-            addSingleParameters.Add(string.Concat("@reccreator", index), userId); 
+            addSingleParameters.Add(string.Concat("@reccreator", index), userId);
             addSingleParameters.Add(string.Concat("@recupdator", index), userId);
 
             //recmanager, reccreated, recupdated, rectype,
@@ -541,7 +541,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
             addSingleParameters.Add(string.Concat("@rectype", index), item.rectype);
 
             foreach (var p in addSingleParameters.ParameterNames)
-            { 
+            {
                 parameters.Add(string.Concat(@"@", p));
             }
 
@@ -555,7 +555,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                                             ",
                                             string.Join(",", parameters), item.id, item.id);
 
-            sql.Append(string.Format(@"DELETE FROM crm_sys_custcommon WHERE recid = '{0}';",item.id)); 
+            sql.Append(string.Format(@"DELETE FROM crm_sys_custcommon WHERE recid = '{0}';", item.id));
             sql.Append(string.Format(@"DELETE FROM crm_sys_custcommon_customer_relate WHERE custid = '{0}';", item.id));
             sql.Append(insertSql);
 
@@ -565,14 +565,14 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
         public string updateCustomerCommon(SaveCustomerMainView item, string index_str, DynamicParameters param, int userId)
         {
             StringBuilder sql = new StringBuilder();
-             
+
             var parameters = new DynamicParameters();
             var setters = new List<string>();
 
             parameters.Add(string.Concat("@recid", index_str), item.id);
             parameters.Add(string.Concat("@recname", index_str), item.recname);
             parameters.Add(string.Concat("@recstatus", index_str), (int)item.status);
-             
+
             param.AddDynamicParams(parameters);
 
             foreach (var p in parameters.ParameterNames)
@@ -624,7 +624,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
             addSingleParameters.Add(string.Concat("@shipment", index_str), item.shipment_crmid);
 
             //payment, accountgp, taxgp, currency,
-            addSingleParameters.Add(string.Concat("@payment", index_str), item.payment_crmid); 
+            addSingleParameters.Add(string.Concat("@payment", index_str), item.payment_crmid);
             addSingleParameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
             addSingleParameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
             addSingleParameters.Add(string.Concat("@currency", index_str), item.currency_crmid);
@@ -637,7 +637,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 if (p.Contains("customer"))
                     parameters.Add(string.Concat(@"@", p, "::jsonb"));
                 else
-                    parameters.Add(string.Concat(@"@", p)); 
+                    parameters.Add(string.Concat(@"@", p));
             }
 
             param.AddDynamicParams(addSingleParameters);
@@ -651,7 +651,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                                                 payment, accountgp, taxgp, currency,
                                                 customer
                                                 ) VALUES ({0});",
-                                                string.Join(",", parameters)); 
+                                                string.Join(",", parameters));
             sql.Append(insertSql);
 
             return sql.ToString();
@@ -665,7 +665,7 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
             var addSingleParameters = new DynamicParameters();
 
             //recid, recstatus, reccreator, recupdator,
-            addSingleParameters.Add(string.Concat("@recid", index_str), item.id); 
+            addSingleParameters.Add(string.Concat("@recid", index_str), item.id);
             addSingleParameters.Add(string.Concat("@recstatus", index_str), (int)item.status);
             addSingleParameters.Add(string.Concat("@reccreator", index_str), userId);
             addSingleParameters.Add(string.Concat("@recupdator", index_str), userId);
@@ -698,135 +698,135 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                                             recname, accountingsubjects,
                                             customer) VALUES ({0});
                                             ",
-                                            string.Join(",", parameters)); 
+                                            string.Join(",", parameters));
             sql.Append(insertSql);
 
             return sql.ToString();
         }
 
         public int UpdateCustomerSapCode(Guid recId, string sapCode, DbTransaction tran = null)
-        { 
-            var updateSql = string.Format("update crm_sys_customer set erpcode = @sapCode, recupdated = now() where recid = @recId;"); 
-			var param = new DbParameter[]
-			{
-				new NpgsqlParameter("recId",recId),
-				new NpgsqlParameter("sapCode", sapCode),
-			};
+        {
+            var updateSql = string.Format("update crm_sys_customer set erpcode = @sapCode, recupdated = now() where recid = @recId;");
+            var param = new DbParameter[]
+            {
+                new NpgsqlParameter("recId",recId),
+                new NpgsqlParameter("sapCode", sapCode),
+            };
 
-			if (tran == null)
-				return DBHelper.ExecuteNonQuery("", updateSql, param);
+            if (tran == null)
+                return DBHelper.ExecuteNonQuery("", updateSql, param);
 
-			var result = DBHelper.ExecuteNonQuery(tran, updateSql, param); 
+            var result = DBHelper.ExecuteNonQuery(tran, updateSql, param);
             return result;
         }
 
-		public bool ModifyFetchList(List<SaveCustomerMainView> dataList, int userId)
-		{
-			var result = false;
+        public bool ModifyFetchList(List<SaveCustomerMainView> dataList, int userId)
+        {
+            var result = false;
 
-			StringBuilder sql = new StringBuilder();
-			var index = 0;
-			var index_key = "XXupdateXX";
-			var parameters = new DynamicParameters();
-			foreach (var item in dataList)
-			{
-				index++;
-				var index_str = string.Concat(index, index_key);
-				var setters = new List<string>();
+            StringBuilder sql = new StringBuilder();
+            var index = 0;
+            var index_key = "XXupdateXX";
+            var parameters = new DynamicParameters();
+            foreach (var item in dataList)
+            {
+                index++;
+                var index_str = string.Concat(index, index_key);
+                var setters = new List<string>();
 
-				//parameters
-				//recupdator, recmanager, recupdated, reconlive, recstatus,
-				parameters.Add(string.Concat("@recupdator", index_str), userId);
-				parameters.Add(string.Concat("@recmanager", index_str), item.manager);
-				parameters.Add(string.Concat("@recupdated", index_str), DateTime.Now);
-				parameters.Add(string.Concat("@reconlive", index_str), DateTime.Now);
-				parameters.Add(string.Concat("@recstatus", index_str), (int)item.status); 
-				 
-				//salesorganization,
-				parameters.Add(string.Concat("@salesorganization", index_str), item.salesorganization_crmid);
+                //parameters
+                //recupdator, recmanager, recupdated, reconlive, recstatus,
+                parameters.Add(string.Concat("@recupdator", index_str), userId);
+                parameters.Add(string.Concat("@recmanager", index_str), item.manager);
+                parameters.Add(string.Concat("@recupdated", index_str), DateTime.Now);
+                parameters.Add(string.Concat("@reconlive", index_str), DateTime.Now);
+                parameters.Add(string.Concat("@recstatus", index_str), (int)item.status);
 
-				//distribution, productgroup, custgpone, custgptwo, salesarea,
-				parameters.Add(string.Concat("@distribution", index_str), item.distribution_crmid);
-				parameters.Add(string.Concat("@productgroup", index_str), item.productgroup_crmid);
-				parameters.Add(string.Concat("@custgpone", index_str), item.custgpone_crmid);
-				parameters.Add(string.Concat("@custgptwo", index_str), item.custgptwo_crmid);
-				parameters.Add(string.Concat("@salesarea", index_str), item.salesarea_crmid);
+                //salesorganization,
+                parameters.Add(string.Concat("@salesorganization", index_str), item.salesorganization_crmid);
 
-				//salesoffice, pricingpro, delivery, shipment, payment,
-				parameters.Add(string.Concat("@salesoffice", index_str), item.salesoffice_crmid);
-				parameters.Add(string.Concat("@pricingpro", index_str), item.pricingpro_crmid);
-				parameters.Add(string.Concat("@delivery", index_str), item.delivery_crmid);
-				parameters.Add(string.Concat("@shipment", index_str), item.shipment_crmid);
-				parameters.Add(string.Concat("@payment", index_str), item.payment_crmid);
+                //distribution, productgroup, custgpone, custgptwo, salesarea,
+                parameters.Add(string.Concat("@distribution", index_str), item.distribution_crmid);
+                parameters.Add(string.Concat("@productgroup", index_str), item.productgroup_crmid);
+                parameters.Add(string.Concat("@custgpone", index_str), item.custgpone_crmid);
+                parameters.Add(string.Concat("@custgptwo", index_str), item.custgptwo_crmid);
+                parameters.Add(string.Concat("@salesarea", index_str), item.salesarea_crmid);
 
-				//accountgp, taxgp, currency, creditperiod, rules, 
-				parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
-				parameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
-				parameters.Add(string.Concat("@currency", index_str), item.currency_crmid); 
+                //salesoffice, pricingpro, delivery, shipment, payment,
+                parameters.Add(string.Concat("@salesoffice", index_str), item.salesoffice_crmid);
+                parameters.Add(string.Concat("@pricingpro", index_str), item.pricingpro_crmid);
+                parameters.Add(string.Concat("@delivery", index_str), item.delivery_crmid);
+                parameters.Add(string.Concat("@shipment", index_str), item.shipment_crmid);
+                parameters.Add(string.Concat("@payment", index_str), item.payment_crmid);
 
-				//setters
-				foreach (var p in parameters.ParameterNames)
-				{
-					if (p.Contains(index_str))
-					{
-						var para = p.Replace(index_str, "");
-						if (p.Contains("address"))
-							setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p, "::jsonb")));
-						else
-							setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p)));
-					}
-				}
-				var updateSql = string.Format(@"update crm_sys_customer set {1} where companyone = '{0}';",
-					item.companyone,
-					string.Join(",", setters));
+                //accountgp, taxgp, currency, creditperiod, rules, 
+                parameters.Add(string.Concat("@accountgp", index_str), item.accountgp_crmid);
+                parameters.Add(string.Concat("@taxgp", index_str), item.taxgp_crmid);
+                parameters.Add(string.Concat("@currency", index_str), item.currency_crmid);
 
-				sql.Append(updateSql);
+                //setters
+                foreach (var p in parameters.ParameterNames)
+                {
+                    if (p.Contains(index_str))
+                    {
+                        var para = p.Replace(index_str, "");
+                        if (p.Contains("address"))
+                            setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p, "::jsonb")));
+                        else
+                            setters.Add(string.Format("{0} = {1}", para, string.Concat("@", p)));
+                    }
+                }
+                var updateSql = string.Format(@"update crm_sys_customer set {1} where companyone = '{0}';",
+                    item.companyone,
+                    string.Join(",", setters));
 
-				var comSql = updateCustomerCommon(item, string.Concat(index_str, "_com"), parameters, userId);
-				if (!string.IsNullOrEmpty(comSql))
-				{
-					sql.Append(comSql);
-				}
+                sql.Append(updateSql);
 
-				if (item.salesView.Count > 0)
-				{
-					var indexDetail = 0;
-					sql.Append(string.Format(@"DELETE FROM crm_sys_sales where (customer->>'id')::text = '{0}';", item.id));
-					foreach (var detail in item.salesView)
-					{
-						indexDetail++;
-						var detailSql = insertCustomerSalesView(detail, string.Concat(index, "sales", indexDetail), parameters, userId);
-						if (!string.IsNullOrEmpty(detailSql))
-						{
-							sql.Append(detailSql);
-						}
-					}
-				}
+                var comSql = updateCustomerCommon(item, string.Concat(index_str, "_com"), parameters, userId);
+                if (!string.IsNullOrEmpty(comSql))
+                {
+                    sql.Append(comSql);
+                }
 
-				if (item.burkView.Count > 0)
-				{
-					var indexDetail = 0;
-					sql.Append(string.Format(@"DELETE FROM crm_fhsj_cust_finance where (customer->>'id')::text = '{0}';", item.id));
-					foreach (var detail in item.burkView)
-					{
-						indexDetail++;
-						var detailSql = insertCustomerBurkView(detail, string.Concat(index, "burk", indexDetail), parameters, userId);
-						if (!string.IsNullOrEmpty(detailSql))
-						{
-							sql.Append(detailSql);
-						}
-					}
-				}
-			}
+                if (item.salesView.Count > 0)
+                {
+                    var indexDetail = 0;
+                    sql.Append(string.Format(@"DELETE FROM crm_sys_sales where (customer->>'id')::text = '{0}';", item.id));
+                    foreach (var detail in item.salesView)
+                    {
+                        indexDetail++;
+                        var detailSql = insertCustomerSalesView(detail, string.Concat(index, "sales", indexDetail), parameters, userId);
+                        if (!string.IsNullOrEmpty(detailSql))
+                        {
+                            sql.Append(detailSql);
+                        }
+                    }
+                }
 
-			var finalSql = sql.ToString();
-			if (!string.IsNullOrEmpty(finalSql))
-			{
-				result = DataBaseHelper.ExecuteNonQuery(finalSql, parameters, CommandType.Text) > 0;
-			}
+                if (item.burkView.Count > 0)
+                {
+                    var indexDetail = 0;
+                    sql.Append(string.Format(@"DELETE FROM crm_fhsj_cust_finance where (customer->>'id')::text = '{0}';", item.id));
+                    foreach (var detail in item.burkView)
+                    {
+                        indexDetail++;
+                        var detailSql = insertCustomerBurkView(detail, string.Concat(index, "burk", indexDetail), parameters, userId);
+                        if (!string.IsNullOrEmpty(detailSql))
+                        {
+                            sql.Append(detailSql);
+                        }
+                    }
+                }
+            }
 
-			return result;
-		}
+            var finalSql = sql.ToString();
+            if (!string.IsNullOrEmpty(finalSql))
+            {
+                result = DataBaseHelper.ExecuteNonQuery(finalSql, parameters, CommandType.Text) > 0;
+            }
+
+            return result;
+        }
 
         #region 同步银行信息
         public List<Dictionary<string, object>> GetCRMBankInfoList()
@@ -893,6 +893,16 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 new NpgsqlParameter("recid",recid)
             };
             return ExecuteScalar(sql, p)?.ToString();
+        }
+
+        public void DeleteCustomerReceivable(String KUNNR)
+        {
+            string sql = " delete from crm_glsc_customerreceivable where kunnr=@kunnr";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("kunnr",KUNNR)
+            };
+            ExecuteNonQuery(sql, p);
         }
     }
 }

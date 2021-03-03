@@ -512,6 +512,7 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
             var param = new DynamicParameters();
             return DataBaseHelper.Query<DataSourceInfo>(sql, param, CommandType.Text);
         }
+ 
 
     }
 }
