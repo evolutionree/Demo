@@ -362,7 +362,7 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
 
         public List<DataSourceInfo> GetOrderData()
         {
-            string sql = @"select recid as id, orderid as name,orderid as code  from crm_sys_order where recstatus = 1;";
+            string sql = @"select recid as id, orderid as name,orderid as code,datasources  from crm_sys_order where recstatus = 1;";
 
             var param = new DynamicParameters();
             return DataBaseHelper.Query<DataSourceInfo>(sql, param, CommandType.Text);

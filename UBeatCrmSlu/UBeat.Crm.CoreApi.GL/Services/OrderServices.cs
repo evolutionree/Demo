@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using NLog;
-
+using IOrderRepository = UBeat.Crm.CoreApi.GL.Repository.IOrderRepository;
 
 namespace UBeat.Crm.CoreApi.GL.Services
 {
@@ -32,10 +32,12 @@ namespace UBeat.Crm.CoreApi.GL.Services
         private readonly IConfigurationRoot _configurationRoot;
         private readonly DynamicEntityServices _dynamicEntityServices;
         private readonly IBaseDataRepository _baseDataRepository;
+        private readonly IOrderRepository _orderRepository;
 
-        public OrderServices(IConfigurationRoot configurationRoot, DynamicEntityServices dynamicEntityServices, IBaseDataRepository baseDataRepository)
+        public OrderServices(IConfigurationRoot configurationRoot, DynamicEntityServices dynamicEntityServices, IBaseDataRepository baseDataRepository, IOrderRepository orderRepository)
         {
             _configurationRoot = configurationRoot;
+            _orderRepository = orderRepository;
             _dynamicEntityServices = dynamicEntityServices;
             _baseDataRepository = baseDataRepository;
         }
@@ -55,6 +57,25 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     total += int.Parse(c.DataBody.ToString());
                 }
                 startDate =startDate.AddDays(1);
+            }
+            return new OperateResult
+            {
+                Flag = 1,
+                Msg = string.Format(@"SAP订单已同步条数：{0}", total)
+            };
+
+        }
+
+        public OperateResult IncremOrdersData()
+        {
+            var total = 0;
+            SoOrderParamModel param = new SoOrderParamModel();
+            param.ERDAT_FR = DateTime.Now.ToString("yyyy-MM-dd");
+            param.ERDAT_TO = DateTime.Now.ToString("yyyy-MM-dd");
+            var c = this.getOrders(param);
+            if (c.Status == 0)
+            {
+                total += int.Parse(c.DataBody.ToString());
             }
             return new OperateResult
             {
@@ -163,6 +184,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
                             isAdd = true;
                         else
                         {
+                            if (crmOrder.datasources == 2) {
+                                ///crm创建不处理
+                                return;
+                            }
                             fieldData.Add("recid", crmOrder.id);
                             recId = crmOrder.id;
                         }
