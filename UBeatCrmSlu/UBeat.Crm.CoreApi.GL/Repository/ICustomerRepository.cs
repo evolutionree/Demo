@@ -25,5 +25,6 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         Dictionary<string, object> GetOrderInfo(string orderCode);
         int UpdateDeliverySapCode(Guid recId, string sapCode, DbTransaction tran = null);
         string GetOrderNoByRecId(string recid);
+        void DeleteCustomerReceivable(String KUNNR);
     }
 }

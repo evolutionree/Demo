@@ -772,62 +772,68 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return new OutputResult<object>(null, message: "客户号不能为null", status: 1);
         }
 
-        
 
-        public OutputResult<Object> getCustomerReceivable(CustomerReceivable param, int userId = 1)
+
+        public OutputResult<Object> getCustomerReceivable(CustomerReceivableParam param, int userId = 1)
         {
             var header = new Dictionary<String, string>();
             header.Add("Transaction_ID", "ACCOUNT_RECEIVABLE");
-            var postData = new Dictionary<String, string>();
-            postData.Add("KUNNR", "");    
-            postData.Add("BUDAT_FR", "");
-            postData.Add("BUDAT_TO", "");
-            postData.Add("HKONT_FR", "");
-            postData.Add("HKONT_TO", "");
-            if (!string.IsNullOrEmpty(param.KUNNR))
+            var postData = new Dictionary<String, List<Dictionary<string, string>>>();
+            List<Dictionary<string, string>> dicList = new List<Dictionary<string, string>>();
+            foreach (var p in param.LIST)
             {
-                //查询单条
-                postData["KUNNR"] = param.KUNNR;
-            }
-            if (!string.IsNullOrEmpty(param.BUDAT_FR))
-            {
-                //查询单条
-                postData["BUDAT_FR"] = param.BUDAT_FR;
-            }
-            if (!string.IsNullOrEmpty(param.BUDAT_TO))
-            {
-                //查询单条
-                postData["BUDAT_TO"] = param.BUDAT_TO;
-            }
- 
-            if (!string.IsNullOrEmpty(param.HKONT_FR))
-            {
-                //查询单条
-                postData["ORDERID"] = param.HKONT_FR;
-            }
-            if (!string.IsNullOrEmpty(param.HKONT_TO))
-            {
-                //查询单条
-                postData["ORDERID"] = param.HKONT_TO;
-            }
+                Dictionary<string, string> tmp = new Dictionary<string, string>();
+                tmp.Add("KUNNR", "");
+                tmp.Add("BUDAT_FR", "");
+                tmp.Add("BUDAT_TO", "");
+                tmp.Add("HKONT_FR", "");
+                tmp.Add("HKONT_TO", "");
+                if (!string.IsNullOrEmpty(p.KUNNR))
+                {
+                    //查询单条
+                    tmp["KUNNR"] = p.KUNNR;
+                }
+                if (!string.IsNullOrEmpty(p.BUDAT_FR))
+                {
+                    //查询单条
+                    tmp["BUDAT_FR"] = p.BUDAT_FR;
+                }
+                if (!string.IsNullOrEmpty(p.BUDAT_TO))
+                {
+                    //查询单条
+                    tmp["BUDAT_TO"] = p.BUDAT_TO;
+                }
 
+                if (!string.IsNullOrEmpty(p.HKONT_FR))
+                {
+                    //查询单条
+                    tmp["HKONT_FR"] = p.HKONT_FR;
+                }
+                if (!string.IsNullOrEmpty(p.HKONT_TO))
+                {
+                    //查询单条
+                    tmp["HKONT_TO"] = p.HKONT_TO;
+                }
+                dicList.Add(tmp);
+            }
+            postData.Add("LIST", dicList);
             logger.Info(string.Concat("获取SAP订单请求参数：", JsonHelper.ToJson(postData)));
             String result = CallAPIHelper.ApiPostData(postData, header);
             if (!string.IsNullOrEmpty(result))
             {
-                var objResult = JsonConvert.DeserializeObject<SoOrderModel>(result);
+                var objResult = JsonConvert.DeserializeObject<CustomerReceivableResultModel>(result);
                 if (objResult.TYPE == "S")
                 {
-                    var data = objResult.DATA["LIST"];
+                    var data = objResult.DATA.LIST;
                     try
                     {
-                   //     saveOrders(data, userId);
+                        saveCustomerReceivable(data, userId);
                     }
                     catch (Exception ex)
                     {
                         logger.Info(string.Concat("获取销售订单列表失败：", ex.Message));
                     }
-                    return new OutputResult<object>(data);
+                    return new OutputResult<object>(null);
                 }
                 else
                 {
@@ -837,6 +843,58 @@ namespace UBeat.Crm.CoreApi.GL.Services
             }
             return new OutputResult<object>(null, message: "获取销售订单列表失败", status: 1);
         }
+        int saveCustomerReceivable(List<CustomerReceivableModel> data, int userId)
+        {
 
+            int insertcount = 0;
+
+            var allDicData = _baseDataRepository.GetDicData();
+            var custData = _baseDataRepository.GetCustData();
+
+            IDynamicEntityRepository _iDynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
+            var groupData = data.GroupBy(t => t.KUNNR).ToList();
+            groupData.ForEach(t =>
+            {
+                try
+                {
+                    Dictionary<String, object> fieldData = new Dictionary<string, object>();
+                    bool isAdd = false;
+                    Guid recId = Guid.Empty;
+                    var custReceivable = data.Where(t1 => t1.KUNNR == t.Key).ToList();
+                    custReceivable.ForEach(t2 =>
+                    {
+                        fieldData.Add("budate", t2.BUDAT);
+                        fieldData.Add("belnr", t2.BUDAT);
+                        var cust = custData.FirstOrDefault(t3 => t3.code == t2.KUNNR);
+                        fieldData.Add("kunnr", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
+                        fieldData.Add("custname", t2.NAME1);
+                        fieldData.Add("txt50", t2.HKONT);
+                        fieldData.Add("sgtxt", t2.HKONT);
+                        fieldData.Add("jfjepzhb", t2.HKONT);
+                        fieldData.Add("jfjebwb", t2.HKONT);
+                        fieldData.Add("dfjepzhb", t2.HKONT);
+                        fieldData.Add("dfjebwb", t2.HKONT);
+                        fieldData.Add("fx", t2.HKONT);
+                        fieldData.Add("yepzhb", t2.HKONT);
+                        fieldData.Add("yebwb", t2.HKONT);
+                        fieldData.Add("recmanager", userId);
+
+
+                        OperateResult result;
+                        if (isAdd)
+                            result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), fieldData, null, userId);
+                        else
+                            result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), recId, fieldData, userId);
+                        insertcount++;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    logger.Info(string.Concat("获取销售订单列表保存失败：" + 11 + ":", ex.Message));
+                }
+            });
+            return insertcount;
+
+        }
     }
 }
