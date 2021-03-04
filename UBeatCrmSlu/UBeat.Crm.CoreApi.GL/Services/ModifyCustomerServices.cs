@@ -796,7 +796,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     }
                     else
                     {
-                        result = SynSapModifyCustData(detailData, entityId, recId);
+                        result = SynSapModifyDelivNote(detailData, entityId, recId);
                     }
                 }
                 catch (Exception ex)
@@ -833,7 +833,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 dic.Add("VBELN", _customerRepository.GetOrderNoByRecId(resultData["sourceorder"]?.ToString().Substring(8, 36)));
                 dic.Add("POSNR",item["orderlineno"]);
                 dic.Add("JHQTY",item["deliveryqty"]);
-                dic.Add("JHDW", item["productunit"]);
+                dic.Add("JHDW", item["productunit_name"]);
                 dic.Add("BATCH", item["charg"]);
                 entryData.Add(dic);
             }  
@@ -875,6 +875,45 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 _baseDataRepository.UpdateSynTipMsg2(entityId, recId, sapResult, tran);
             }
 
+            return result;
+        }
+
+        public SynResultModel SynSapModifyDelivNote(IDictionary<string, object> resultData, Guid entityId, Guid recId, DbTransaction tran = null)
+        {
+            var result = new SynResultModel();
+            var sapResult = string.Empty;
+
+            var postData = new Dictionary<string, object>();
+            var headData = new Dictionary<string, string>();
+            var entryData = new List<Dictionary<string, object>>();
+            headData.Add("Transaction_ID", "ODN_CHANGE");
+            postData.Add("VBELN_JHDH",resultData["code"]);
+            postData.Add("DELETE", "");
+            postData.Add("BLDAT", resultData["docdate"]);
+            postData.Add("WADAT", resultData["plandate"]);
+            postData.Add("WADAT_IST", resultData["actualdate"]);
+            postData.Add("KODAT", resultData["pickingdate"]);
+           // postData.Add("ROUTE", "");
+            #region entry
+            var entryStr = JsonConvert.SerializeObject(resultData["deliverydetail"]);
+            var entryList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(entryStr);
+            foreach (var item in entryList)
+            {
+                var dic = new Dictionary<string, object>();
+                dic.Add("VBELN_JHDH", resultData["code"]);
+                dic.Add("POSNR", item["lineno"]);
+               // dic.Add("LGORT", "");  //库存地点
+                dic.Add("LFIMG", item["deliveryqty"]);
+                dic.Add("VRKME", item["productunit_name"]); 
+                dic.Add("JPQTY", item["jpqty"]);
+                dic.Add("JPDNW", item["productunit_name"]);
+                dic.Add("CHARG", item["charg"]);
+                entryData.Add(dic);
+            }
+            #endregion
+            postData.Add("LIPS", entryData);
+            logger.Info(string.Concat("SAP交货单创建接口请求参数：", JsonHelper.ToJson(postData)));
+            var postResult = CallAPIHelper.ApiPostData(postData, headData);
             return result;
         }
         #endregion
@@ -938,17 +977,28 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 var detailList = new List<Dictionary<string, object>>();
                 var entryList = dataList.LIPS.Where(r => r["VBELN_JHDH"].ToString() == item["VBELN_JHDH"].ToString()).ToList();
                 int index = 1;
+                Dictionary<string, object> orderInfo = null;    
                 foreach (var entry in entryList)
                 {
                     Dictionary<string, object> dic = new Dictionary<string, object>();
                     Dictionary<string, object> parentDic = new Dictionary<string, object>();
+                    if (orderInfo == null)
+                    {
+                        //找对应订单及客户、销售部门、销售区域
+                        orderInfo = _customerRepository.GetOrderInfo(entry["VBELN_SO"].ToString());
+                        if (orderInfo == null)
+                            continue;
+                    }
                     #region MyRegion
+                    var material = entry["MATNR"].ToString().TrimStart('0');
+                    var product = _customerRepository.GetCrmProduct(material);
                     dic.Add("code", entry["VBELN_JHDH"]);
                     dic.Add("lineno", entry["POSNR"]);
                     dic.Add("deliverydate", entry["VDATU"]?.ToString() == "0000-00-00" ? "" : entry["VDATU"]);
                     dic.Add("parentno", entry["UECHA"]);
                     dic.Add("orderlineno", entry["POSNR_SO"]);
-                    dic.Add("materialcode", entry["MATNR"]);
+                    dic.Add("materialcode", material);
+                    dic.Add("productname", product);
                     dic.Add("describe", entry["ARKTX"]);
                     dic.Add("deliveryqty", entry["LFIMG"]);
                     dic.Add("qty", entry["LGMNG"]);
@@ -962,22 +1012,21 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     if (index == entryList.Count)
                     {
                         // 找相关人会员
-                        var userInfo = _customerRepository.getUserInfo(item["ERNAM"]?.ToString());
-                        int userId = userInfo == null ? 1 : Convert.ToInt32(userInfo["userid"]);
-                        //找对应订单及客户、销售部门、销售区域
-                        var orderInfo = _customerRepository.GetOrderInfo(entry["VBELN_SO"].ToString());
+                        //var userInfo = _customerRepository.getUserInfo(item["ERNAM"]?.ToString());
+                        //int userId = userInfo == null ? 1 : Convert.ToInt32(userInfo["userid"]);
+                      
                         var res = new OperateResult();
                         dic = new Dictionary<string, object>();
                         dic.Add("code", item["VBELN_JHDH"].ToString());
                         dic.Add("docdate", item["BLDAT"]);
-                        dic.Add("deliverydate", item["ZPOST_DATE"]);
-                        dic.Add("deliverytime", item["ZPOST_DATE"] + " " + item["ZPOST_TIME"]);
+                        dic.Add("deliverydate", item["ZPOST_DATE"]?.ToString() == "0000-00-00" ? "" : item["ZPOST_DATE"]);
+                        dic.Add("deliverytime", item["ZPOST_DATE"]?.ToString() == "0000-00-00" ? "" : item["ZPOST_DATE"] + " " + item["ZPOST_TIME"]);
                         dic.Add("reccreated", item["ERDAT"] + " " + item["ERZET"]);
                         dic.Add("recupdated", item["AEDAT"]);
                         dic.Add("plandate", item["WADAT"]);
                         dic.Add("actualdate", item["WADAT_IST"]);
                         dic.Add("pickingdate", item["KODAT"]);
-                        dic.Add("recmanager", userId);
+                        dic.Add("recmanager", orderInfo["recmanager"]);
                         dic.Add("salesdept", orderInfo["salesdepartments"]);
                         dic.Add("salesarea", orderInfo["salesterritory"]);
                         dic.Add("sourceorder", orderInfo["orderjson"]);
@@ -987,11 +1036,11 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         var mainId = _customerRepository.IsExistsDelivnote(item["VBELN_JHDH"].ToString());
                         if (mainId == Guid.Empty)
                         {
-                            res = _dynamicEntityRepository.DynamicAdd(null, mainEntity, dic, null, userId);
+                            res = _dynamicEntityRepository.DynamicAdd(null, mainEntity, dic, null, 1);
                         }
                         else
                         {
-                            res = _dynamicEntityRepository.DynamicEdit(null, mainEntity, mainId, dic, userId);
+                            res = _dynamicEntityRepository.DynamicEdit(null, mainEntity, mainId, dic, 1);
                         }
                     }
                     else

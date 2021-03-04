@@ -862,13 +862,24 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
         }
         public Dictionary<string, object> GetOrderInfo(string orderCode)
         {
-            string sql = @"select customer,salesdepartments,salesterritory,jsonb_build_object('id',recid,'name',orderid) as orderjson
+            string sql = @"select customer,salesdepartments,salesterritory,jsonb_build_object('id',recid,'name',orderid) as orderjson,
+                        recmanager
                         from crm_sys_order where recstatus = 1 and  orderid = @code ";
             var p = new DbParameter[]
             {
                 new NpgsqlParameter("code",orderCode)
             };
             return ExecuteQuery(sql, p).FirstOrDefault();
+        }
+
+        public string GetCrmProduct(string productCode)
+        {
+            string sql = @"select recid from crm_sys_product where productcode = @code and recstatus = 1";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("code",productCode)
+            };
+            return ExecuteScalar(sql, p)?.ToString();
         }
         public int UpdateDeliverySapCode(Guid recId, string sapCode, DbTransaction tran = null)
         {

@@ -23,6 +23,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         Guid IsExistsDelivnote(string code);
         Dictionary<string, object> getUserInfo(string workCode);
         Dictionary<string, object> GetOrderInfo(string orderCode);
+        string GetCrmProduct(string productCode);
         int UpdateDeliverySapCode(Guid recId, string sapCode, DbTransaction tran = null);
         string GetOrderNoByRecId(string recid);
     }
