@@ -848,7 +848,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
             int insertcount = 0;
 
-            var allDicData = _baseDataRepository.GetDicData();
+            //var allDicData = _baseDataRepository.GetDicData();
             var custData = _baseDataRepository.GetCustData();
 
             IDynamicEntityRepository _iDynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
@@ -858,33 +858,34 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 try
                 {
                     Dictionary<String, object> fieldData = new Dictionary<string, object>();
-                    bool isAdd = false;
+               //     bool isAdd = false;
                     Guid recId = Guid.Empty;
                     var custReceivable = data.Where(t1 => t1.KUNNR == t.Key).ToList();
                     custReceivable.ForEach(t2 =>
                     {
+
                         fieldData.Add("budate", t2.BUDAT);
                         fieldData.Add("belnr", t2.BUDAT);
                         var cust = custData.FirstOrDefault(t3 => t3.code == t2.KUNNR);
+                        _customerRepository.DeleteCustomerReceivable(cust.id.ToString());
                         fieldData.Add("kunnr", cust == null ? null : "{\"id\":\"" + cust.id.ToString() + "\",\"name\":\"" + cust.name + "\"}");
                         fieldData.Add("custname", t2.NAME1);
-                        fieldData.Add("txt50", t2.HKONT);
-                        fieldData.Add("sgtxt", t2.HKONT);
-                        fieldData.Add("jfjepzhb", t2.HKONT);
-                        fieldData.Add("jfjebwb", t2.HKONT);
-                        fieldData.Add("dfjepzhb", t2.HKONT);
-                        fieldData.Add("dfjebwb", t2.HKONT);
-                        fieldData.Add("fx", t2.HKONT);
-                        fieldData.Add("yepzhb", t2.HKONT);
-                        fieldData.Add("yebwb", t2.HKONT);
+                        fieldData.Add("txt50", t2.TXT50);
+                        fieldData.Add("sgtxt", t2.SGTXT);
+                        fieldData.Add("jfjepzhb", t2.JFJEPZHB);
+                        fieldData.Add("jfjebwb", t2.JFJEBWB);
+                        fieldData.Add("dfjepzhb", t2.DFJEPZHB);
+                        fieldData.Add("dfjebwb", t2.DFJEBWB);
+                        fieldData.Add("fx", t2.FX);
+                        fieldData.Add("yepzhb", t2.YEPZHB);
+                        fieldData.Add("yebwb", t2.YEBWB);
                         fieldData.Add("recmanager", userId);
 
-
                         OperateResult result;
-                        if (isAdd)
+                  //      if (isAdd)
                             result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), fieldData, null, userId);
-                        else
-                            result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), recId, fieldData, userId);
+                      //  else
+                           // result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), recId, fieldData, userId);
                         insertcount++;
                     });
                 }
