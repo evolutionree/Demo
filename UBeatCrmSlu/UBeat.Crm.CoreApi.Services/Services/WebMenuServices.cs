@@ -66,7 +66,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (allMenus.ContainsKey(item.ParentId))
                     {
                         WebMenuItem parentItem = allMenus[item.ParentId];
-                        parentItem.ChildRen.Add(item);
+                        if (!parentItem.ChildRen.Select(t => t.Id).Contains(item.Id))
+                            parentItem.ChildRen.Add(item);
                     }
                 }
 

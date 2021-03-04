@@ -57,11 +57,14 @@ namespace UBeat.Crm.CoreApi.GL.Model
             id = Guid.Empty;
             code = string.Empty;
             name = string.Empty;
+            datasources = 2;
         }
 
         public Guid id { get; set; }
         public string code { get; set; }
         public string name { get; set; }
+        //数据来源 1sap 2crm
+        public int datasources { get; set; }
     }
 
     public class SaveDataSourceInfo

@@ -115,11 +115,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         [Route("getcustomerreceivable")]
         [HttpPost]
         [AllowAnonymous]
-        public OutputResult<object> getCustomerReceivable([FromBody] CustomerReceivable model = null)
+        public OutputResult<object> getCustomerReceivable([FromBody] CustomerReceivableParam model = null)
         {
             if (model == null)
                 return ResponseError<object>("参数格式错误");
-            WriteOperateLog("获取SAP客户信用额度", string.Empty);
+            WriteOperateLog("获取SAP客户应收账款", string.Empty);
 
             var sendResult = _fetchCustomerServices.getCustomerReceivable(model, 1);
             return (sendResult);
