@@ -257,19 +257,18 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         var product = products.FirstOrDefault(t2 => t2.productcode == t1.MATNR.Substring(8));
                         dicFieldData.Add("productname", product == null ? "" : product.productid.ToString());
 
-                        dicFieldData.Add("price", t1.ZHSDJ);
                         dicFieldData.Add("productunit", 1); //t1.KMEIN2
                         dicFieldData.Add("quantity", t1.KWMENG);
-                        dicFieldData.Add("subtotal", t1.KZWI2);
+                        dicFieldData.Add("totalmoney", t1.KZWI2);
 
 
                         dicFieldData.Add("productcode", product == null ? "" : product.productcode.ToString());
-                        dicFieldData.Add("kgnumber", t1.KWMENG);
+                        dicFieldData.Add("totalnetweight", t1.KWMENG);
                         dicFieldData.Add("packingway", t1.ZBZFS);
                         dicFieldData.Add("waterglaze", t1.ZBINGYI);
                         dicFieldData.Add("branchesnumber", t1.ZTIAOSHU);
                         dicFieldData.Add("specification", t1.ZGUIGE);
-                        dicFieldData.Add("kgunitprice", t1.ZHSDJKG);
+                        dicFieldData.Add("price", t1.ZHSDJKG);
                         //sap创建
                         dicFieldData.Add("datasource", 1);
                         dicFieldData.Add("synchronoustatus", 1);
@@ -489,22 +488,22 @@ namespace UBeat.Crm.CoreApi.GL.Services
                             order.POSNR = int.Parse(posnr);
                         }
                         order.KSCHL = "ZPC1";//价格类型 默认
-                        var kgunitprice = string.Concat(itemData["kgunitprice"]).StringMax(0, 15);//含税单价
-                        decimal kgunitprice_decimal = 0;
-                        if (decimal.TryParse(kgunitprice, out kgunitprice_decimal))
+                        var price = string.Concat(itemData["price"]).StringMax(0, 15);//含税单价
+                        decimal price_decimal = 0;
+                        if (decimal.TryParse(price, out price_decimal))
                         {
-                            order.KBETR_ZPSG = decimal.Round(kgunitprice_decimal, 3);
+                            order.KBETR_ZPSG = decimal.Round(price_decimal, 3);
                         }
                         order.KPEIN = 1;//定价单位 默认1
                         order.KMEIN = "KG";//计量单位 默认KG
 
 
                         //KWMENG, VRKME,EDATU, NTGEW, GEWEI, ZBZFS
-                        var kgnumber = string.Concat(itemData["kgnumber"]).StringMax(0, 15);//订单数量
-                        decimal kgnumber_decimal = 0;
-                        if (decimal.TryParse(kgnumber, out kgnumber_decimal))
+                        var totalnetweight = string.Concat(itemData["totalnetweight"]).StringMax(0, 15);//订单数量
+                        decimal totalnetweight_decimal = 0;
+                        if (decimal.TryParse(totalnetweight, out totalnetweight_decimal))
                         {
-                            order.KWMENG = decimal.Round(kgnumber_decimal, 3);
+                            order.KWMENG = decimal.Round(totalnetweight_decimal, 3);
                         }
                         order.VRKME = "KG";//销售单位
                         order.EDATU = "";//计划行日期
