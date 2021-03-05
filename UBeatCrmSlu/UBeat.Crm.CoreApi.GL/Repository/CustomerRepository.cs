@@ -906,6 +906,19 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
             return ExecuteScalar(sql, p)?.ToString();
         }
 
+        public Guid GetRecIdByCaseId(Guid caseId, DbTransaction tran)
+        {
+            string sql = @"select recid from crm_sys_workflow_case where caseid = @id";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("id",caseId)
+            };
+            var result = ExecuteScalar(sql, p, tran);
+            Guid g;
+            Guid.TryParse(result.ToString(), out g);
+            return g;
+        }
+
         public void DeleteCustomerReceivable(String KUNNR)
         {
             string sql = " delete from crm_glsc_customerreceivable where kunnr=@kunnr";

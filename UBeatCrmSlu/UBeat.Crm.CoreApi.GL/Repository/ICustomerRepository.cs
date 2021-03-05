@@ -26,6 +26,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         string GetCrmProduct(string productCode);
         int UpdateDeliverySapCode(Guid recId, string sapCode, DbTransaction tran = null);
         string GetOrderNoByRecId(string recid);
+        Guid GetRecIdByCaseId(Guid caseId, DbTransaction tran);
         void DeleteCustomerReceivable(String KUNNR);
     }
 }
