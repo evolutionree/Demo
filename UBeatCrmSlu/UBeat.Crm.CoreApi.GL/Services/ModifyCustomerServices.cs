@@ -777,6 +777,33 @@ namespace UBeat.Crm.CoreApi.GL.Services
         #endregion
 
         #region 推送交货单至SAP
+        //供审批通过时调用
+        public SynResultModel SynSapDelivNoteData(Guid caseId, int userId, string userName, DbTransaction tran)
+        {
+            var result = new SynResultModel();
+            var recId = _customerRepository.GetRecIdByCaseId(caseId, tran);
+            var entityId = new Guid("03b007dd-4600-4f4e-9b5c-23e8631d2f34");
+            var detailData = _baseDataServices.GetEntityDetailData(null, entityId, recId, userId);
+            if (detailData != null)
+            {
+                try
+                {
+                    result = SynSapAddDelivNote(detailData, entityId, recId);
+                }
+                catch (Exception ex)
+                {
+                    var str = "同步交货单失败，请联系管理员";
+                    logger.Info(string.Format(@"{0},{1}", str, ex.Message));
+                    result.Message = str;
+                }
+            }
+            else
+            {
+                result.Message = "同步失败，不存在交货单记录";
+            }
+            return result;
+        }
+
         public SynResultModel SynSapDelivNoteData(Guid entityId, Guid recId, int UserId)
         {
             var result = new SynResultModel();
@@ -801,7 +828,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 }
                 catch (Exception ex)
                 {
-                    var str = "同步客户失败，请联系管理员";
+                    var str = "同步交货单失败，请联系管理员";
                     logger.Info(string.Format(@"{0},{1}", str, ex.Message));
                     result.Message = str;
                 }
@@ -904,9 +931,9 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 dic.Add("POSNR", item["lineno"]);
                // dic.Add("LGORT", "");  //库存地点
                 dic.Add("LFIMG", item["deliveryqty"]);
-                dic.Add("VRKME", item["productunit_name"]); 
+                dic.Add("VRKME", "KG"); 
                 dic.Add("JPQTY", item["jpqty"]);
-                dic.Add("JPDNW", item["productunit_name"]);
+                dic.Add("JPDNW", "KG");
                 dic.Add("CHARG", item["charg"]);
                 entryData.Add(dic);
             }
@@ -975,7 +1002,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
             foreach (var item in dataList.LIKP)
             {
                 var detailList = new List<Dictionary<string, object>>();
-                var entryList = dataList.LIPS.Where(r => r["VBELN_JHDH"].ToString() == item["VBELN_JHDH"].ToString()).ToList();
+                var entryList = dataList.LIPS.Where(r => r["VBELN_JHDH"].ToString() == item["VBELN_JHDH"].ToString() && r["CHARG"] == null).ToList();
                 int index = 1;
                 Dictionary<string, object> orderInfo = null;    
                 foreach (var entry in entryList)
