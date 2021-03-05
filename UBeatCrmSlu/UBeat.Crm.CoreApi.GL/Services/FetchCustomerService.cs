@@ -845,10 +845,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
         }
         int saveCustomerReceivable(List<CustomerReceivableModel> data, int userId)
         {
-
             int insertcount = 0;
-
-            //var allDicData = _baseDataRepository.GetDicData();
             var custData = _baseDataRepository.GetCustData();
 
             IDynamicEntityRepository _iDynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
@@ -858,7 +855,6 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 try
                 {
                     Dictionary<String, object> fieldData = new Dictionary<string, object>();
-               //     bool isAdd = false;
                     Guid recId = Guid.Empty;
                     var custReceivable = data.Where(t1 => t1.KUNNR == t.Key).ToList();
                     custReceivable.ForEach(t2 =>
@@ -881,11 +877,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         fieldData.Add("yebwb", t2.YEBWB);
                         fieldData.Add("recmanager", userId);
 
-                        OperateResult result;
-                  //      if (isAdd)
-                            result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), fieldData, null, userId);
-                      //  else
-                           // result = _iDynamicEntityRepository.DynamicEdit(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), recId, fieldData, userId);
+                        OperateResult result = _iDynamicEntityRepository.DynamicAdd(null, Guid.Parse("71f7fe25-2966-4044-b1fc-9f42a73daff9"), fieldData, null, userId);
                         insertcount++;
                     });
                 }
