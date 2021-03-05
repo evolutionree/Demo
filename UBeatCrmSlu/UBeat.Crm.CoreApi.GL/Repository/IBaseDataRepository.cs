@@ -28,6 +28,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         int UpdateLastDateTime(Guid entityId, DateTime dt);
         string GetProductCodeById(string recId);
         string getUserCodeById(string userId);
+        SimpleUserInfo GetUserDataById(int userid);
         string getUserIdByCode(string workcode);
         List<DataSourceInfo> GetCustomerData();
         List<DataSourceInfo> GetOpporData();
@@ -46,5 +47,6 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         dynamic DoCloseCRMOrderRow(DbTransaction transaction, string _entityid, string _recids, string _inputstatus, int usernumber);
         List<RegionCityClass> GetRegionCityData();
         List<DataSourceInfo> GetCustData();
+        string GetCustomerCodeByDataSource(string ds);
     }
 }

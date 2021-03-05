@@ -17,18 +17,18 @@ namespace UBeat.Crm.CoreApi.GL.Repository
     {
         public int UpdateOrderSapCode(Guid recId, string sapCode, Dictionary<string, string> lineDic, DbTransaction tran = null)
         {
-            var updateSql = @"update crm_fhsj_order set orderid = @sapCode, recupdated = now() where recid = @recId;
-                    update crm_fhsj_product_detail set sapsynchstatus=2
+            var updateSql = @"update crm_sys_order set orderid = @sapCode, recupdated = now() where recid = @recId;
+                    update crm_sys_order_detail set synchronoustatus=1
                            where recid in (SELECT  d.recid
 						                    FROM
-							                    crm_fhsj_product_detail d
+							                    crm_sys_order_detail d
 						                    INNER JOIN (
 							                    SELECT
 								                    UNNEST (
-									                    string_to_array(productdetail, ',')
+									                    string_to_array(orderdetail, ',')
 								                    ) :: uuid AS detailid
 							                    FROM
-								                    crm_fhsj_order de
+								                    crm_sys_order de
 							                    WHERE
 								                    recstatus = 1 and  recId=@recId
 						                    ) o ON o.detailid = d.recid)";
@@ -43,8 +43,6 @@ namespace UBeat.Crm.CoreApi.GL.Repository
                 result = DBHelper.ExecuteNonQuery("", updateSql, param);
             else
                 result = DBHelper.ExecuteNonQuery(tran, updateSql, param);
-            if (result > 0 && lineDic.Count > 0)
-                result = InsertOrderDetailSap(recId, lineDic);
             return result;
         }
 
@@ -68,7 +66,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
 
         public Dictionary<string, object> GetSapOrderByCode(string code)
         {
-            var sql = @"select * from crm_fhsj_order a where recstatus=1 and orderid =lpad(@orderid, 10, '0');";
+            var sql = @"select * from crm_sys_order a where recstatus=1 and orderid =lpad(@orderid, 10, '0');";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("orderid",code)
@@ -86,8 +84,8 @@ namespace UBeat.Crm.CoreApi.GL.Repository
 
         public List<Dictionary<string, object>> GetOrderDetailByCodeSortProdAndAccount(string code, DbTransaction tran = null)
         {
-            var sql = @"select *,COALESCE(d.saleprice,0) price  from crm_fhsj_product_detail d inner join (
-                select regexp_split_to_table(productdetail, ',')::uuid as itemid,recid orderid,saletocode,orderid ocode  from crm_fhsj_order  where   recstatus=1  and saletocode is not null and productdetail<>'' and orderid=lpad(@orderid, 10, '0') ) m
+            var sql = @"select *,COALESCE(d.saleprice,0) price  from crm_sys_order_detail d inner join (
+                select regexp_split_to_table(productdetail, ',')::uuid as itemid,recid orderid,saletocode,orderid ocode  from crm_sys_order  where   recstatus=1  and saletocode is not null and productdetail<>'' and orderid=lpad(@orderid, 10, '0') ) m
                   on m.itemid=d.recid  order by d.productname,(d.shippingaccount - d.returnaccount-d.salereturnaccount) desc ;";
             var param = new DbParameter[]
             {
@@ -103,7 +101,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         {
             var sql = @"select recid,account,rownum::int,orderrownum::int,orirecid,m.shipmentordercode,m.targetrecid from crm_fhsj_shipment_order_detail d  inner join (
 					 select regexp_split_to_table(shipmentdetail,'','')::uuid itemid,recid targetrecid,shipmentordercode,(ordercode->>''id'')::uuid orirecid
-						from crm_fhsj_shipment_order where  ordercode is not null and (ordercode->>''id'')::uuid in (select orirecid from crm_fhsj_order_return where returnid=@returnId )
+						from crm_fhsj_shipment_order where  ordercode is not null and (ordercode->>''id'')::uuid in (select orirecid from crm_sys_order_return where returnid=@returnId )
 					and recstatus=1 and shipmentdetail<>'''' and pickstatus=2) m
 			 on  m.itemid=d.recid where d.orderrownum is not null  order by orirecid,orderrownum,account desc  ;";
             var param = new DbParameter[]
@@ -117,8 +115,8 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         }
         public List<Dictionary<string, object>> GetOrderDetailByContractSortProdAndAccount(string code, DbTransaction tran = null)
         {
-            var sql = @" select *,COALESCE(d.saleprice,0) price from crm_fhsj_product_detail d inner join (
-				select regexp_split_to_table(productdetail, ',')::uuid as itemid,recid orderid,orderid ocode,saletocode,ordertype  from crm_fhsj_order where recstatus=1  and ordertype in (4,11)  and saletocode is not null  and productdetail<>'' 
+            var sql = @" select *,COALESCE(d.saleprice,0) price from crm_sys_order_detail d inner join (
+				select regexp_split_to_table(productdetail, ',')::uuid as itemid,recid orderid,orderid ocode,saletocode,ordertype  from crm_sys_order where recstatus=1  and ordertype in (4,11)  and saletocode is not null  and productdetail<>'' 
                 and contractno is not null and (contractno->>'id')::uuid in (select recid from crm_sys_contract where contractno=@contractno limit 1)  ) m
 		        on m.itemid=d.recid order by ordertype,d.productname,(d.shippingaccount - d.returnaccount-d.salereturnaccount) desc  ;";
             var param = new DbParameter[]
@@ -132,7 +130,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         }
         public List<Guid> GetOrderListInitReturnByBooking()
         {
-            var sql = @"select recid from crm_fhsj_order where direction=-1 and recstatus=1 and  productdetail<>''
+            var sql = @"select recid from crm_sys_order where direction=-1 and recstatus=1 and  productdetail<>''
                 and oldordercode is null  and perdormstatus in (1,2) and custrefernum ~'^预售\d'   and orderid is not null;";
             var param = new DynamicParameters();
             return DataBaseHelper.Query<Guid>(sql, param, CommandType.Text);
@@ -141,7 +139,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
 
         public List<Guid> GetOrderListInitReturn()
         {
-            var sql = @"select recid from crm_fhsj_order where direction=-1 and recstatus=1 and  productdetail<>''
+            var sql = @"select recid from crm_sys_order where direction=-1 and recstatus=1 and  productdetail<>''
                 and oldordercode is null  and perdormstatus in (1,2) and custrefernum ~'^\d'   and orderid is not null;";
             var param = new DynamicParameters();
             return DataBaseHelper.Query<Guid>(sql, param, CommandType.Text);
@@ -149,7 +147,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         }
         public List<Guid> GetOrderListInitCrmReturn()
         {
-            var sql = @"select returnid from crm_fhsj_order_return where type in(0,1) group by returnid;";
+            var sql = @"select returnid from crm_sys_order_return where type in(0,1) group by returnid;";
             var param = new DynamicParameters();
             return DataBaseHelper.Query<Guid>(sql, param, CommandType.Text);
 
@@ -157,8 +155,8 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         public List<Guid> GetOrderListInitReturnByContract()
         {
             var sql = @"select o.recid from  (
-                select recid,custrefernum from crm_fhsj_order where direction=-1 and recstatus=1 and  productdetail<>''  and oldordercode is null and custrefernum ~ '^[a-zA-z]'   
-                  and perdormstatus in (1,2) and orderid is not null and recid not in (select returnid from crm_fhsj_order_return group by returnid) ) o
+                select recid,custrefernum from crm_sys_order where direction=-1 and recstatus=1 and  productdetail<>''  and oldordercode is null and custrefernum ~ '^[a-zA-z]'   
+                  and perdormstatus in (1,2) and orderid is not null and recid not in (select returnid from crm_sys_order_return group by returnid) ) o
                   inner join crm_sys_contract c on o.custrefernum=c.contractno and c.recstatus=1 ;";
             var param = new DynamicParameters();
             return DataBaseHelper.Query<Guid>(sql, param, CommandType.Text);
@@ -166,7 +164,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         }
         public List<Dictionary<string, object>> GetOrderListInitOccupy()
         {
-            var sql = @"select (tuningincontract->>'id')::uuid contractid,tuningincontract->>'name' contractno,recid returnid from crm_fhsj_order where  recstatus=1 and tuningincontract is not null  
+            var sql = @"select (tuningincontract->>'id')::uuid contractid,tuningincontract->>'name' contractno,recid returnid from crm_sys_order where  recstatus=1 and tuningincontract is not null  
                        and isntincludecontract=1  and ordertype=11 ";
             var param = new DbParameter[]
             {
@@ -179,7 +177,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
 
         public bool DropHasReturnOrderDetailById(Guid returnId, DbTransaction tran = null)
         {
-            var sql = @"delete from crm_fhsj_order_return where type in (0,1) and returnid=@returnId;";
+            var sql = @"delete from crm_sys_order_return where type in (0,1) and returnid=@returnId;";
             var param = new DbParameter[]
             {
                 new NpgsqlParameter("returnId",returnId)
@@ -195,7 +193,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             List<string> list = new List<string>();
 
             var sql = string.Format(@"
-                select orderid from crm_fhsj_order where recstatus = 1 and orderid in ('{0}');", string.Join("','", codeList));
+                select orderid from crm_sys_order where recstatus = 1 and orderid in ('{0}');", string.Join("','", codeList));
 
             var result = DataBaseHelper.Query(sql, null, CommandType.Text);
             if (result.Count > 0)
@@ -218,7 +216,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             List<string> list = new List<string>();
 
             var sql = string.Format(@"
-                select orderid from crm_fhsj_order where recstatus = 1 and orderid in ('{0}');", string.Join("','", codeList));
+                select orderid from crm_sys_order where recstatus = 1 and orderid in ('{0}');", string.Join("','", codeList));
 
             var result = DataBaseHelper.Query(sql, null, CommandType.Text);
             if (result.Count > 0)
@@ -240,7 +238,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             List<string> list = new List<string>();
 
             var sql = string.Format(@"
-                select orderid from crm_fhsj_order where recstatus = 1 and orderid in ('{0}');", string.Join("','", codeList), Guid.Empty);
+                select orderid from crm_sys_order where recstatus = 1 and orderid in ('{0}');", string.Join("','", codeList), Guid.Empty);
 
             var result = DataBaseHelper.Query(sql, null, CommandType.Text);
             if (result.Count > 0)
@@ -283,7 +281,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
                 setters.Add(string.Format("{0} = '{1}'", "recupdated", DateTime.Now));
                 setters.Add(string.Format("{0} = '{1}'", "reconlive", DateTime.Now));
 
-                var updateSql = string.Format(@"update crm_fhsj_order set {0} where orderid = '{1}';", string.Join(",", setters), item);
+                var updateSql = string.Format(@"update crm_sys_order set {0} where orderid = '{1}';", string.Join(",", setters), item);
 
                 sql.Append(updateSql);
             }
@@ -303,7 +301,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             var sqlSB = new StringBuilder();
             foreach (var item in lineDic)
             {
-                sqlSB.AppendFormat(@"INSERT INTO crm_fhsj_order_detail_reg(recid, orderid, recitemid, rownum, status, cttime, sapflag)
+                sqlSB.AppendFormat(@"INSERT INTO crm_sys_order_detail_reg(recid, orderid, recitemid, rownum, status, cttime, sapflag)
 									VALUES('{0}', '{1}', '{2}', {3}, 1, now(), 1);", Guid.NewGuid().ToString(), orderId.ToString(), item.Value, item.Key);
             }
             var param = new DbParameter[]
@@ -323,7 +321,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
             var sqlSB = new StringBuilder();
             foreach (var item in recItemIds)
             {
-                sqlSB.AppendFormat("delete from crm_fhsj_order_detail_reg where recitemid = '{0}';", item);
+                sqlSB.AppendFormat("delete from crm_sys_order_detail_reg where recitemid = '{0}';", item);
             }
 
             var param = new DbParameter[]
@@ -339,7 +337,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
 
         public int UpdateOrderDetailStatusSap(Guid orderId, int isSynchrosap, DbTransaction tran = null)
         {
-            var sqlSB = @"update crm_fhsj_product_detail set sapsynchstatus = @isSynchrosap, recupdated = now() where recid in (select regexp_split_to_table(productdetail, ',')::uuid ids from crm_fhsj_order   where productdetail <> '' and recid = @orderId); ";
+            var sqlSB = @"update crm_sys_order_detail set sapsynchstatus = @isSynchrosap, recupdated = now() where recid in (select regexp_split_to_table(productdetail, ',')::uuid ids from crm_sys_order   where productdetail <> '' and recid = @orderId); ";
 
             var param = new DbParameter[]
              {

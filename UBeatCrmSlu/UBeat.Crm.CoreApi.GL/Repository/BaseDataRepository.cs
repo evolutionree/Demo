@@ -336,6 +336,18 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
             return result;
         }
 
+        public SimpleUserInfo GetUserDataById(int userid)
+        {
+            //禁用也取
+            string sql = @"select userid, username, workcode from crm_sys_userinfo  where userid=@userid ;";
+
+            var updateParam = new DynamicParameters();
+            updateParam.Add("userid", userid);
+
+            var result = DataBaseHelper.QuerySingle<SimpleUserInfo>(sql, updateParam, CommandType.Text);
+            return result;
+        }
+
         public List<DataSourceInfo> GetCustomerData()
         {
             string sql = @"select recid as id, companyone as code, recname as name from crm_sys_customer where recstatus = 1;";
@@ -512,7 +524,27 @@ where e.recid = @recId and e.recstatus = 1 limit 1;");
             var param = new DynamicParameters();
             return DataBaseHelper.Query<DataSourceInfo>(sql, param, CommandType.Text);
         }
- 
+
+        public string GetCustomerCodeByDataSource(string ds)
+        {
+            if (string.IsNullOrEmpty(ds)) return string.Empty;
+
+            var obj = JsonHelper.ToObject<SaveDataSourceInfo>(ds);
+            if (obj == null) return string.Empty;
+
+            var recIdGuid = obj.id;
+            var sql = string.Format(@"
+                select e.erpcode from crm_sys_customer e
+                    where e.recid = @recId and e.recstatus = 1 limit 1;");
+
+            var param = new
+            {
+                recId = recIdGuid
+            };
+            var result = DataBaseHelper.ExecuteScalar<string>(sql, param, CommandType.Text);
+            return result;
+        }
+
 
     }
 }

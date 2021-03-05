@@ -205,6 +205,29 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             }
         }
 
+        [Route("synordertosap")]
+        [AllowAnonymous]
+        [HttpPost]
+        public OutputResult<object> SynOrderToSap([FromBody] SynSapModel model = null)
+        {
+            if (model == null || model.RecIds.Count == 0)
+                return ResponseError<object>("参数格式错误");
+
+            WriteOperateLog("同步Sap订单", model);
+            bool sendResult = false;
+            var recId = model.RecIds[0];
+            var entityId = model.EntityId;
+
+            var c = _orderServices.SynSapOrderDataByHttp(entityId, recId, UserId);
+            if (c.Result)
+            {
+                return new OutputResult<object>(c.Message);
+            }
+            else
+            {
+                return ResponseError<object>(c.Message);
+            }
+        }
 
 
     }

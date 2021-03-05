@@ -19,12 +19,20 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string MESSAGE { get; set; }
         public Dictionary<String, List<SoOrderDataModel>> DATA { get; set; }
     }
+    public class SapOrderCreateModelResult
+    {
+        public string TYPE { get; set; }
+        public string MESSAGE { get; set; }
+        public string VBELN { get; set; }
+
+    }
     public class SoOrderDataModel
     {
 
         public string VBELN { get; set; }
         public int POSNR { get; set; }
         public string AUART { get; set; }
+        public string BSTNK { get; set; }
         public string BEZEI { get; set; }
         public string ERNAM { get; set; }
         public string NAME_TEXT { get; set; }
@@ -166,6 +174,17 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public decimal NTGEW { get; set; }
         public string GEWEI { get; set; }
         public string KOSTL { get; set; }
-
+        public string LIFNR_HYDL { get; set; }
+        public string LIFNR_YWY { get; set; }
+        public string AUDAT { get; set; }
+        public string PRSDT { get; set; }
+        public string KSCHL { get; set; }
+        public decimal KBETR_ZPSG { get; set; }
+        public int KPEIN { get; set; }
+        public string VRKME { get; set; }
+        public string EDATU { get; set; }
+        public decimal KBETR_GWYF { get; set; }
+        public decimal KBETR_GWBX { get; set; }
+        public decimal KBETR_YJ { get; set; }
     }
 }
