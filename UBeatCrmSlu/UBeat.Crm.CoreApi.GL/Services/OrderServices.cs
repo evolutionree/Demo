@@ -443,7 +443,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         order.ERNAM = salerMan.username;//创建者账号
                         var auart = string.Concat(resultData["ordertype"]);//销售凭证类型
                         order.AUART = _baseDataRepository.GetSapCodeByTypeIdAndId((int)DicTypeEnum.订单类型, auart).StringMax(0, 4);
-                        order.BSTNK = string.Concat(resultData["reccode"]).StringMax(0, 20);//客户参考号
+                        order.BSTNK = string.Concat(resultData["custrefernum"]).StringMax(0, 20);//客户参考号
                         var customer = string.Concat(resultData["customer"]);//售达方编码
                         var kunnr=_baseDataRepository.GetCustomerCodeByDataSource(customer).StringMax(0, 10);//
                         order.KUNNR1 = kunnr;
