@@ -20,13 +20,7 @@ namespace UBeat.Crm.CoreApi.GL.Repository
         #region 同步银行信息
         List<Dictionary<string, object>> GetCRMBankInfoList();
         #endregion
-        Guid IsExistsDelivnote(string code);
-        Dictionary<string, object> getUserInfo(string workCode);
-        Dictionary<string, object> GetOrderInfo(string orderCode);
-        string GetCrmProduct(string productCode);
-        int UpdateDeliverySapCode(Guid recId, string sapCode, DbTransaction tran = null);
-        string GetOrderNoByRecId(string recid);
-        Guid GetRecIdByCaseId(Guid caseId, DbTransaction tran);
+       
         void DeleteCustomerReceivable(String KUNNR);
     }
 }

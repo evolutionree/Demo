@@ -21,14 +21,16 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly FetchCustomerServices _fetchCustomerServices;
         private readonly ModifyCustomerServices _modifyCustomerServices;
         private readonly Services.OrderServices _orderServices;
+        private readonly DelivnoteServices _delivnoteServices;
 
         public SapHttpApiController(BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices,
-            ModifyCustomerServices modifyCustomerServices, Services.OrderServices orderServices)
+            ModifyCustomerServices modifyCustomerServices, Services.OrderServices orderServices, DelivnoteServices delivnoteServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _modifyCustomerServices = modifyCustomerServices;
             _orderServices = orderServices;
+            _delivnoteServices = delivnoteServices;
         }
 
         [Route("fetchcustdatabyid")]
@@ -111,7 +113,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         {
             if (info == null)
                 return ResponseError<object>("参数格式有误");
-            var c = _modifyCustomerServices.SyncDelivnote2CRM(info);
+            var c = _delivnoteServices.SyncDelivnote2CRM(info);
             if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
@@ -156,7 +158,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var recId = model.RecIds[0];
             var entityId = model.EntityId;
 
-            var c = _modifyCustomerServices.SynSapDelivNoteData(entityId, recId, UserId);
+            var c = _delivnoteServices.SynSapDelivNoteData(entityId, recId, UserId);
             if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
