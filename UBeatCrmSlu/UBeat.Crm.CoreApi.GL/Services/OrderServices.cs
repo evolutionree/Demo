@@ -437,7 +437,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     {
                         SoOrderDataModel order = new SoOrderDataModel();
                         #region main
-                        //ERNAM, AUART,BSTNK, KUNNR1, KUNNR2, KUNNR,WAERK
+                        //IHREZ,ERNAM, AUART,BSTNK, KUNNR1, KUNNR2, KUNNR,WAERK
+                        order.IHREZ = string.Concat(resultData["reccode"]);//CRM流水号 您的参考
                         var recmanager = string.Concat(resultData["recmanager"]);//销售代表id 
                         var salerMan = _baseDataRepository.GetUserDataById(int.Parse(recmanager));
                         order.ERNAM = salerMan.username;//创建者账号
