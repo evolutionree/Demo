@@ -17,13 +17,15 @@ namespace UBeat.Crm.CoreApi.GL.Services
         private readonly IBaseDataRepository _iBaseDataRepository;
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
         private readonly IProductsRepository _iProductsRepository;
+        private readonly ISapProductRepository _iSapProductsRepository;
         private readonly ProductsServices _productsServices;
-        public ProductServices(ProductsServices productsServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, IBaseDataRepository iBaseDataRepository)
+        public ProductServices(ProductsServices productsServices, IProductsRepository iProductsRepository, ISapProductRepository iSapProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, IBaseDataRepository iBaseDataRepository)
         {
             _iBaseDataRepository = iBaseDataRepository;
             _iDynamicEntityRepository = iDynamicEntityRepository;
             _iProductsRepository = iProductsRepository;
             _productsServices = productsServices;
+            _iSapProductsRepository = iSapProductsRepository;
         }
 
 
@@ -123,5 +125,86 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return new OutputResult<object>("同步成功");
 
         }
+
+        #region 产品库存 
+        public dynamic GetProductStockByIds(List<Guid> productIds)
+        {
+            var list = new List<ProductStockModel>();
+            var dic = new Dictionary<string, ProductStockModel>();
+            var plist = _iSapProductsRepository.getProductInfoByIds(productIds) as List<IDictionary<string, object>>;
+
+            if (plist != null && plist.Count > 0)
+            {
+                /*List<ZppCrm004> mats = new List<ZppCrm004>();
+                foreach (var p in plist)
+                {
+                    string productId = string.Concat(p["recid"]);
+                    string productCode = string.Concat(p["productcode"]);
+                    string productName = string.Concat(p["productname"]);
+                    string productRemark = string.Concat(p["productdesciption"]);
+                    string productModel = string.Concat(p["productmodel"]);
+
+                    ProductStockModel model = new ProductStockModel();
+                    model.ProductId = Guid.Parse(productId);
+                    model.ProductCode = productCode;
+                    model.ProductName = productName;
+                    model.ProductRemark = productRemark;
+                    model.ProductModel = productModel;
+
+                    if (!dic.ContainsKey(productCode))
+                        dic.Add(productCode, model);
+
+                    ZppCrm004 mat = new ZppCrm004();
+                    mat.Matnr = productCode;
+                    mats.Add(mat);
+                }
+
+                var remoteAddress = new System.ServiceModel.EndpointAddress(string.Format("{0}/{1}", SapServer,
+                    string.Format("sap/bc/srt/rfc/sap/zmm_crm_001/{0}/zmm_crm_001_s/zmm_crm_001_s", SapClientId)));
+                var binding = InitBind(remoteAddress);
+
+                ZMM_CRM_001Client client = new ZMM_CRM_001Client(binding, remoteAddress);
+                AuthBasic(client.ClientCredentials.UserName, client.Endpoint, 1);
+
+                var crmdata = new ZmmCrm0011();
+                crmdata.ItMatnr = mats.ToArray();
+                crmdata.ItLgort = new ZmmCrm001[] { };
+                ZmmCrm001Request request = new ZmmCrm001Request();
+                request.ZmmCrm001 = crmdata;
+
+                logger.Info(string.Concat("SAP产品库存接口请求参数：", JsonHelper.ToJson(request)));
+                var ret = client.ZmmCrm001Async(request).Result;
+                logger.Info(string.Concat("SAP返回产品库存接口数据：", JsonHelper.ToJson(ret)));
+                if (ret != null && ret.ZmmCrm001Response != null && ret.ZmmCrm001Response.ItLgort != null)
+                {
+                    foreach (var item in ret.ZmmCrm001Response.ItLgort)
+                    {
+                        if (!string.IsNullOrEmpty(item.Sobkz)) continue;
+                        if (dic.ContainsKey(item.Matnr))
+                        {
+                            //物料只有一个，但返回值有个仓库，不能直接取引用
+                            ProductStockModel model = new ProductStockModel();
+                            model.ProductId = dic[item.Matnr].ProductId;
+                            model.ProductName = dic[item.Matnr].ProductName;
+                            model.ProductRemark = dic[item.Matnr].ProductRemark;
+                            model.ProductModel = dic[item.Matnr].ProductModel;
+
+                            model.ProductCode = item.Matnr;
+                            model.Factory = item.Werks;
+                            model.StockAddress = item.Lgort;
+                            model.Unit = item.Meins;
+                            model.LABST = item.Labst;
+                            model.SpeciFlag = item.Sobkz;
+
+                            if (item.Labst > 0)
+                                list.Add(model);
+                        }
+                    }
+                }*/
+            }
+
+            return list;
+        }
+        #endregion
     }
 }
