@@ -155,7 +155,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 if (sapRequest.DATA.CSKT.Count > 0)
                 {
                     datas=convert_CSKT_ToCrm(sapRequest.DATA.CSKT);
-                    initCrmData(datas, (Int32)DicTypeIdSynEnum.成本中心, false);
+                    initCrmData(datas, (Int32)DicTypeIdSynEnum.成本中心, true);
                     logger.Info(string.Concat("同步成本中心条数：", datas.Count));
                 }
                 //特殊处理标识
@@ -457,6 +457,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             {
                 SaveDicData data = new SaveDicData();
                 data.DataVal = item.ZTEXT;
+                if (string.IsNullOrEmpty(item.ZTERM))
+                    continue;
                 data.ExtField1 = item.ZTERM;
                 //data.ExtField2 = item.ZTAGG;
 
