@@ -221,6 +221,10 @@ namespace UBeat.Crm.CoreApi.GL.Services
             // logger.Info(string.Concat("SAP同步交货单接口请求参数：", JsonHelper.ToJson(postData)));
             var postResult = CallAPIHelper.ApiPostData(postData, headData);
             SapDelivnoteResult sapRequest = JsonConvert.DeserializeObject<SapDelivnoteResult>(postResult);
+            if (sapRequest == null)
+            {
+                return result;
+            }
             if (sapRequest.TYPE == "S")
             {
                 sapResult = sapRequest.MESSAGE;
