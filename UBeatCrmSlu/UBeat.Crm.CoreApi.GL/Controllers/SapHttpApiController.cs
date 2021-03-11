@@ -176,5 +176,12 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         {
             return _modifyCustomerServices.SyncSapCustCreditLimitData(Guid.Parse("67121d89-cc88-43cb-a459-f86370774259"), Guid.Parse("23f8d4ab-7b7e-491b-a5f2-eae02ad8b12b"), 1);
         }
+
+        [HttpPost("test")]
+        public OutputResult<object> Test()
+        {
+            _delivnoteServices.InitDelivnoteData();
+            return new OutputResult<object>("ok");
+        }
     }
 }
