@@ -155,7 +155,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 if (sapRequest.DATA.CSKT.Count > 0)
                 {
                     datas=convert_CSKT_ToCrm(sapRequest.DATA.CSKT);
-                    initCrmData(datas, (Int32)DicTypeIdSynEnum.成本中心, false);
+                    initCrmData(datas, (Int32)DicTypeIdSynEnum.成本中心, true);
                     logger.Info(string.Concat("同步成本中心条数：", datas.Count));
                 }
                 //特殊处理标识
@@ -224,7 +224,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     var key = "";
                     if (isDoubleKey)
                     {
-                        key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2, item.ExtField3);
+                        key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2);
                     }
                     else
                     {
@@ -238,9 +238,34 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         crmItem.RecUpdator = item.RecUpdator;
                         crmItem.RecStatus = 1;
                         crmItem.ExtField1 = item.ExtField1;
-                        crmItem.ExtField2 = item.ExtField2;
-                        crmItem.ExtField3 = item.ExtField3;
-                        crmItem.ExtField4 = item.ExtField4;
+                        if (isDoubleKey)
+                        {
+                            crmItem.ExtField2 = item.ExtField2;
+
+                            //对于已经赋值的不处理
+                            if (string.IsNullOrEmpty(crmItem.ExtField3))
+                            {
+                                crmItem.ExtField3 = item.ExtField3;
+                            }
+                            if (string.IsNullOrEmpty(crmItem.ExtField4))
+                            {
+                                crmItem.ExtField4 = item.ExtField4;
+                            }
+                        }
+                        else {
+                            if (string.IsNullOrEmpty(crmItem.ExtField2))
+                            {
+                                crmItem.ExtField2 = item.ExtField2;
+                            }
+                            if (string.IsNullOrEmpty(crmItem.ExtField3))
+                            {
+                                crmItem.ExtField3 = item.ExtField3;
+                            }
+                            if (string.IsNullOrEmpty(crmItem.ExtField4))
+                            {
+                                crmItem.ExtField4 = item.ExtField4;
+                            }
+                        }
                         updateList.Add(crmItem);
                     }
                     else
@@ -278,7 +303,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 var key = "";
                 if (isDoubleKey)
                 {
-                    key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2,item.ExtField3);
+                    key = string.Concat(item.DataVal, item.ExtField1, item.ExtField2);
                 }
                 else
                 {
@@ -432,6 +457,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
             {
                 SaveDicData data = new SaveDicData();
                 data.DataVal = item.ZTEXT;
+                if (string.IsNullOrEmpty(item.ZTERM))
+                    continue;
                 data.ExtField1 = item.ZTERM;
                 //data.ExtField2 = item.ZTAGG;
 

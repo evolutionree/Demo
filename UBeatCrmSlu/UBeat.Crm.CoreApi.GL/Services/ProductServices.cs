@@ -9,21 +9,28 @@ using UBeat.Crm.CoreApi.DomainModel.Products;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
+using UBeat.Crm.CoreApi.DomainModel.Utility;
+using NLog;
+using UBeat.Crm.CoreApi.GL.Utility;
+using Newtonsoft.Json;
 
 namespace UBeat.Crm.CoreApi.GL.Services
 {
     public class ProductServices
     {
+        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.GL.Services.ProductServices");
         private readonly IBaseDataRepository _iBaseDataRepository;
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
         private readonly IProductsRepository _iProductsRepository;
+        private readonly ISapProductRepository _iSapProductsRepository;
         private readonly ProductsServices _productsServices;
-        public ProductServices(ProductsServices productsServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, IBaseDataRepository iBaseDataRepository)
+        public ProductServices(ProductsServices productsServices, IProductsRepository iProductsRepository, ISapProductRepository iSapProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, IBaseDataRepository iBaseDataRepository)
         {
             _iBaseDataRepository = iBaseDataRepository;
             _iDynamicEntityRepository = iDynamicEntityRepository;
             _iProductsRepository = iProductsRepository;
             _productsServices = productsServices;
+            _iSapProductsRepository = iSapProductsRepository;
         }
 
 
@@ -123,5 +130,90 @@ namespace UBeat.Crm.CoreApi.GL.Services
             return new OutputResult<object>("同步成功");
 
         }
+
+        #region 产品库存 
+        public dynamic GetProductStockByIds(List<Guid> productIds)
+        {
+            var list = new List<ProductStockModel>();
+            var dic = new Dictionary<string, ProductStockModel>();
+            try {
+                if (productIds.Count == 0)
+                    return dic;
+                var plist = _iSapProductsRepository.getProductInfoByIds(productIds) as List<IDictionary<string, object>>;
+
+
+                List<ProductStockRequest> stockReqList = new List<ProductStockRequest>();
+                if (plist != null && plist.Count > 0)
+                {
+                    foreach (var p in plist)
+                    {
+                        string productId = string.Concat(p["recid"]);
+                        string productCode = string.Concat(p["productcode"]);
+                        string productName = string.Concat(p["productname"]);
+                        string productRemark = string.Concat(p["productdesciption"]);
+                        string productModel = string.Concat(p["productmodel"]);
+
+                        ProductStockModel model = new ProductStockModel();
+                        model.ProductId = Guid.Parse(productId);
+                        model.ProductCode = productCode;
+                        model.ProductName = productName;
+                        model.ProductRemark = productRemark;
+                        model.ProductModel = productModel;
+
+                        if (!dic.ContainsKey(productCode))
+                            dic.Add(productCode, model);
+
+                        //请求参数
+                        ProductStockRequest stockRequest = new ProductStockRequest();
+                        stockRequest.MATNR = productCode;
+                        stockReqList.Add(stockRequest);
+                    }
+
+                    var headData = new Dictionary<String, string>();
+                    headData.Add("Transaction_ID", "MATERIAL_STOCK");
+                    var postData = new Dictionary<String, object>();
+
+                    postData.Add("LIST", stockReqList);
+
+                    logger.Info(string.Concat("获取物料库存请求参数：", JsonHelper.ToJson(postData)));
+                    var postResult = CallAPIHelper.ApiPostData(postData, headData);
+                    SapStockModelResult sapRequest = JsonConvert.DeserializeObject<SapStockModelResult>(postResult);
+
+                    if (sapRequest.TYPE == "S")
+                    {
+                        var data = sapRequest.DATA["LIST"];
+                        foreach (var item in data)
+                        {
+                            item.MATNR = int.Parse(item.MATNR).ToString();//去掉0
+                            if (dic.ContainsKey(item.MATNR))
+                            {
+                                //物料只有一个，但返回值有个仓库，不能直接取引用
+                                ProductStockModel model = new ProductStockModel();
+                                model.ProductId = dic[item.MATNR].ProductId;
+                                model.ProductName = dic[item.MATNR].ProductName;
+                                model.ProductRemark = dic[item.MATNR].ProductRemark;
+                                model.ProductModel = dic[item.MATNR].ProductModel;
+
+                                model.ProductCode = item.MATNR;
+                                model.Factory = item.MATNR;
+                                model.StockAddress = item.LGORT;
+                                model.Unit = item.MEINS;
+                                model.enableSapStock = item.LABST;
+
+                                if (item.LABST > 0)
+                                    list.Add(model);
+                            }
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex) {
+                logger.Log(NLog.LogLevel.Error, $"获取物料库存异常：{ex.Message}");
+            }
+
+            return list;
+        }
+        #endregion
     }
 }

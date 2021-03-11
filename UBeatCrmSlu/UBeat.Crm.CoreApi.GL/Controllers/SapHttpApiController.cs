@@ -22,15 +22,18 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly ModifyCustomerServices _modifyCustomerServices;
         private readonly Services.OrderServices _orderServices;
         private readonly DelivnoteServices _delivnoteServices;
+        private readonly ProductServices _productServices;
 
         public SapHttpApiController(BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices,
-            ModifyCustomerServices modifyCustomerServices, Services.OrderServices orderServices, DelivnoteServices delivnoteServices)
+            ModifyCustomerServices modifyCustomerServices, Services.OrderServices orderServices, DelivnoteServices delivnoteServices,
+            ProductServices productServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;
             _modifyCustomerServices = modifyCustomerServices;
             _orderServices = orderServices;
             _delivnoteServices = delivnoteServices;
+            _productServices = productServices;
         }
 
         [Route("fetchcustdatabyid")]
@@ -177,11 +180,16 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             return _modifyCustomerServices.SyncSapCustCreditLimitData(Guid.Parse("67121d89-cc88-43cb-a459-f86370774259"), Guid.Parse("23f8d4ab-7b7e-491b-a5f2-eae02ad8b12b"), 1);
         }
 
-        [HttpPost("test")]
-        public OutputResult<object> Test()
+        [Route("getproductstocks")]
+        [AllowAnonymous]
+        [HttpPost]
+        public OutputResult<object> Getproductstocks([FromBody] QueryProductStockModel model = null)
         {
-            _delivnoteServices.InitDelivnoteData();
-            return new OutputResult<object>("ok");
+            if (model == null || model.ProductIds == null) return ResponseError<object>("参数格式错误");
+            WriteOperateLog("获取SAP产品库存数据", model);
+
+            var sendResult = _productServices.GetProductStockByIds(model.ProductIds);
+            return new OutputResult<object>(sendResult);
         }
     }
 }
