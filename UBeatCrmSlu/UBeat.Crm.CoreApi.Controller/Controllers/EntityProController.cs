@@ -98,7 +98,14 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             return _entityProService.SaveEntityGlobalJs(entityModel, UserId);
         }
+        [HttpPost]
+        [Route("savenestedtablesEntity")]
+        public OutputResult<object> SaveNestedTablesEntity([FromBody] NestedTablesModel entityModel = null)
+        {
+            if (entityModel == null) return ResponseError<object>("参数格式错误");
 
+            return _entityProService.SaveNestedTablesEntity(entityModel, UserId);
+        }
         [HttpPost]
         [Route("entityclassquery")]
         public OutputResult<object> EntityClassQuery([FromBody]EntityProModel entityModel = null)

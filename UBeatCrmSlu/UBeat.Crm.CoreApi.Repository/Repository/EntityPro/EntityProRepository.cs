@@ -172,6 +172,34 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             }
         }
 
+        public OperateResult SaveNestedTablesEntity(NestedTablesMapper entity, int userNumber)
+        {
+            var sql = @"
+                Update crm_sys_entity_fields Set fieldconfig=json_object_set_key(COALESCE(fieldconfig,'{}')::json,'nested',@detail::jsonb)::jsonb Where fieldid=@fieldid;
+            ";
+            string field = string.Empty;
+            var param = new DbParameter[]
+            {
+                    new NpgsqlParameter("fieldid",entity.FieldId),
+                    new NpgsqlParameter("detail",JsonConvert.SerializeObject(entity.NestedTables))
+            };
+            var result = ExecuteNonQuery(sql, param);
+            if (result == 1)
+            {
+                return new OperateResult()
+                {
+                    Flag = 1,
+                    Msg = "保存成功"
+                };
+            }
+            else
+            {
+                return new OperateResult()
+                {
+                    Msg = "保存失败"
+                };
+            }
+        }
         public OperateResult UpdateEntityPro(EntityProSaveMapper entity, int userNumber)
         {
             var sql = @"

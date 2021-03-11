@@ -93,6 +93,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return result;
         }
+        public OutputResult<object> SaveNestedTablesEntity(NestedTablesModel entityModel, int userNumber)
+        {
+            var entity = _mapper.Map<NestedTablesModel, NestedTablesMapper>(entityModel);
+            OperateResult newEntity = _entityProRepository.SaveNestedTablesEntity(entity, userNumber);
+            if (newEntity.Flag == 0)
+                return HandleResult(newEntity);
+            var result = HandleResult(newEntity);
+            if (result.Status == 0)
+            {
+                RemoveCommonCache();
+                RemoveAllUserCache();
+                IncreaseDataVersion(DataVersionType.EntityData);
+                IncreaseDataVersion(DataVersionType.PowerData);
+            }
+
+            return result;
+        }
         public OutputResult<object> UpdateEntityPro(EntityProModel entityModel, int userNumber)
         {
             var entity = _mapper.Map<EntityProModel, EntityProSaveMapper>(entityModel);

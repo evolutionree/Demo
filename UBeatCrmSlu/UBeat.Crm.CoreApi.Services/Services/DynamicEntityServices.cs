@@ -2887,7 +2887,68 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>(result);
         }
+        public OutputResult<object> DetailRelList(DynamicEntityDetailRellistModel dynamicModel, int userNumber)
+        {
+            if (dynamicModel.FieldId == Guid.Empty || dynamicModel.RelEntityId == Guid.Empty || dynamicModel.RelRecId == Guid.Empty)
+                return new OutputResult<object>
+                {
+                    Status = 1,
+                    Message = "获取数据失败"
+                };
+            // 主实体数据，例如合同下的某个表格控件，对于表格控件合同就是主实体
+            //IDictionary<string, object> relDetail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
+            //{
+            //    EntityId = dynamicModel.RelEntityId,
+            //    NeedPower = dynamicModel.NeedPower,
+            //    RecId = dynamicModel.RelRecId,
+            //}, userNumber);
 
+            var protocols = this.GeneralProtocol(new DynamicEntityGeneralModel
+            {
+                OperateType = 2,
+                TypeId = dynamicModel.EntityId
+            }, userNumber).DataBody as List<DynamicEntityDataFieldMapper>;
+            var nestedTablesProtocol = protocols.FirstOrDefault(t => t.FieldId == dynamicModel.FieldId && t.ControlType == 24);
+
+            IDictionary<string, List<IDictionary<string, object>>> dicResult = new Dictionary<string, List<IDictionary<string, object>>>();
+
+            var jo = JObject.Parse(nestedTablesProtocol.FieldConfig);
+            var nesteds = jo["nested"].FirstOrDefault(t => t["sourcefieldid"].ToString() == dynamicModel.SourceFieldId.ToString() && t["nestedtablesfieldid"].ToString() == dynamicModel.NestedTablesFieldId.ToString());
+            List<IDictionary<string, object>> result = null;
+
+            if (nesteds["sourceentityid"] == null && nesteds["sourcefieldid"] == null)
+                return HandleResult(new OperateResult { Flag = 0, Msg = "表格控件关联的数据源实体Id或字段id不能为空" });
+            if (nesteds["nestedtablesentityid"] == null && nesteds["nestedtablesfieldid"] == null)
+                return HandleResult(new OperateResult { Flag = 0, Msg = "表格控件关联的表格控件实体Id或字段id不能为空" });
+
+            var sourceField = protocols.FirstOrDefault(t2 => t2.FieldId == Guid.Parse(nesteds["sourcefieldid"].ToString()));
+            if (sourceField == null)
+                throw new Exception("数据源关联异常");
+
+
+            var r1 = this.Detail(new DynamicEntityDetailtMapper
+            {
+                EntityId = Guid.Parse(nesteds["sourceentityid"].ToString()),
+                NeedPower = dynamicModel.NeedPower,
+                RecId = dynamicModel.RelRecId
+            }, userNumber);
+            var r1Data = r1["Detail"].FirstOrDefault();
+            if (r1Data != null)
+            {
+                var p1 = this.GeneralProtocol(new DynamicEntityGeneralModel
+                {
+                    OperateType = 2,
+                    TypeId = Guid.Parse(r1["Detail"].FirstOrDefault()["rectype"].ToString())
+                }, userNumber).DataBody as List<DynamicEntityDataFieldMapper>;
+                var nestedTablesField = p1.FirstOrDefault(t2 => t2.FieldId == Guid.Parse(nesteds["nestedtablesfieldid"].ToString()));
+                if (nestedTablesField == null)
+                    throw new Exception("表格控件关联异常");
+                var nestedTablesFieldValue = r1Data[nestedTablesField.FieldName];
+                if (nestedTablesFieldValue != null && (r1Data[nestedTablesField.FieldName] is List<IDictionary<string, object>>))
+                    result = (r1Data[nestedTablesField.FieldName] as List<IDictionary<string, object>>);
+            }
+            return new OutputResult<object>(result);
+        }
         /// <summary>
         /// 获取功能按钮列表
         /// </summary>

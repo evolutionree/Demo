@@ -436,4 +436,25 @@ namespace UBeat.Crm.CoreApi.Services.Models.EntityPro
         public string SearchOrder { get; set; }
         public Dictionary<string, object> ColumnFilter { get; set; }
     }
+    public class NestedTablesDetailModel
+    {
+        public string SourceFieldId { get; set; }
+        public string NestedTablesFieldId { get; set; }
+        public string Btn { get; set; }
+        public string FilterJs { get; set; }
+        public string AcceptJs { get; set; }
+        public string SourceEntityId { get; set; }
+        public string NestedTablesEntityId { get; set; }
+        public string SourceFieldName { get; set; }
+        public string SourceDisplayName { get; set; }
+        public int SourceAgreement { get; set; }
+        public string Url { get; set; }
+
+    }
+    public class NestedTablesModel
+    {
+        public Guid FieldId { get; set; }
+        public List<NestedTablesDetailModel> NestedTables { get; set; }
+
+    }
 }

@@ -647,5 +647,60 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         }
 
     }
-    
+
+    public class NestedTablesDetailMapper : BaseEntity
+    {
+        [JsonProperty("sourcefieldid")]
+        public string SourceFieldId { get; set; }
+        [JsonProperty("nestedtablesfieldid")]
+        public string NestedTablesFieldId { get; set; }
+        [JsonProperty("btn")]
+        public string Btn { get; set; }
+        [JsonProperty("filterjs")]
+        public string FilterJs { get; set; }
+        [JsonProperty("acceptjs")]
+        public string AcceptJs { get; set; }
+        [JsonProperty("sourceentityid")]
+        public string SourceEntityId { get; set; }
+        [JsonProperty("nestedtablesentityid")]
+        public string NestedTablesEntityId { get; set; }
+        [JsonProperty("sourcefieldname")]
+        public string SourceFieldName { get; set; }
+        [JsonProperty("sourcedisplayname")]
+        public string SourceDisplayName { get; set; }
+        [JsonProperty("sourceagreement")]
+        public int SourceAgreement { get; set; }
+        [JsonProperty("url")]
+        public string Url { get; set; }
+        protected override IValidator GetValidator()
+        {
+            return new NestedTablesDetailMapperValidator();
+        }
+        class NestedTablesDetailMapperValidator : AbstractValidator<NestedTablesDetailMapper>
+        {
+            public NestedTablesDetailMapperValidator()
+            {
+                RuleFor(d => d.Btn).NotNull().WithMessage("按钮名称不能为空");
+            }
+        }
+    }
+    public class NestedTablesMapper : BaseEntity
+    {
+        public Guid FieldId { get; set; }
+        public List<NestedTablesDetailMapper> NestedTables { get; set; }
+
+        protected override IValidator GetValidator()
+        {
+            return new EntityGlobalJsMapperValidator();
+        }
+        class EntityGlobalJsMapperValidator : AbstractValidator<EntityGlobalJsMapper>
+        {
+            public EntityGlobalJsMapperValidator()
+            {
+                RuleFor(d => d.EntityId).NotNull().WithMessage("实体Id不能为空");
+            }
+        }
+
+    }
+
 }

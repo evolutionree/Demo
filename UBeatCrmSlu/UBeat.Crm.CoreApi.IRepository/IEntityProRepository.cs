@@ -16,6 +16,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         OperateResult InsertEntityPro(EntityProSaveMapper entity, int userNumber);
 
         OperateResult SaveEntityGlobalJs(EntityGlobalJsMapper entity, int userNumber);
+        OperateResult SaveNestedTablesEntity(NestedTablesMapper entity, int userNumber);
         OperateResult UpdateEntityPro(EntityProSaveMapper entity, int userNumber);
 
         List<IDictionary<string, object>> CheckDeleteEntityPro(EntityProMapper entity, int userNumber);

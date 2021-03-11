@@ -172,6 +172,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _dynamicEntityServices.Detail(dynamicModel, UserId);
         }
         [HttpPost]
+        [Route("detailrellist")]
+        public OutputResult<object> DetailRelList([FromBody] DynamicEntityDetailRellistModel dynamicModel = null)
+        {
+            if (dynamicModel == null) return ResponseError<object>("参数格式错误");
+            return _dynamicEntityServices.DetailRelList(dynamicModel, UserId);
+        }
+        [HttpPost]
         [Route("detailList")]
         public OutputResult<object> DetailList([FromBody] DynamicEntityDetaillistModel dynamicModel = null)
         {

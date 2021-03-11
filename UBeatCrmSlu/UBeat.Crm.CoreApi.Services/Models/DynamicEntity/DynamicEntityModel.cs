@@ -92,6 +92,18 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 
     }
 
+    public class DynamicEntityDetailRellistModel
+    {
+        public Guid FieldId { get; set; }
+        public Guid RelEntityId { get; set; }
+        public Guid RelRecId { get; set; }
+        public Guid NestedTablesFieldId { get; set; }
+        public Guid SourceFieldId { get; set; }
+        public Guid EntityId { get; set; }
+        public int? NeedPower { get; set; }
+
+    }
+
     public class DynamicEntityGeneralModel
     {
         public Guid TypeId { get; set; }
