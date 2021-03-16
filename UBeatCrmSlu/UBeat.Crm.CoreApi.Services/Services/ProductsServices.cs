@@ -562,7 +562,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             foreach (ProductSetsSearchInfo item in list)
             {
-                char[] chs = item.FullPathName.ToCharArray();
+                char[] chs = item.FullPathId.ToCharArray();
                 int count = 0;
                 foreach (char ch in chs)
                 {
@@ -927,7 +927,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             if (ret.RootProductSet != null)
             {
-                this.GenerateFullName(ret.RootProductSet, "");
+                this.GenerateFullName(ret.RootProductSet, "", "");
                 CalcChildrenCount(ret.RootProductSet);
             }
             ret.MaxProductVersion = maxProductVersion;
@@ -949,14 +949,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 item.ChildrenCount = 0;
             }
         }
-        private void GenerateFullName(ProductSetsSearchInfo root, string prefix)
+        private void GenerateFullName(ProductSetsSearchInfo root, string prefix, string prefixId)
         {
+            root.FullPathId = prefixId + root.ProductSetId;
             root.FullPathName = prefix + root.ProductSetName;
             if (root.Children != null)
             {
                 foreach (ProductSetsSearchInfo item in root.Children)
                 {
-                    GenerateFullName(item, root.FullPathName + ".");
+                    GenerateFullName(item, root.FullPathName + ".", root.FullPathId + ".");
                 }
             }
         }
@@ -1050,7 +1051,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public string ProductSetCode { get; set; }
         public int RecOrder { get; set; }
         public string FullPathName { get; set; }
-
+        public string FullPathId { get; set; }
         public long RecVersion { get; set; }
         public int SetOrProduct { get; set; }
         public int Nodepath { get; set; }
@@ -1070,6 +1071,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             ret.ProductSetCode = this.ProductSetCode;
             ret.RecOrder = this.RecOrder;
             ret.FullPathName = this.FullPathName;
+            ret.FullPathId = this.FullPathId;
             ret.SetOrProduct = this.SetOrProduct;
             ret.ProductSetName_Pinyin = this.ProductSetName_Pinyin;
             ret.ProductDetail = ProductDetail;
