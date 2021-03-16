@@ -562,7 +562,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             foreach (ProductSetsSearchInfo item in list)
             {
-                char[] chs = item.FullPathId.ToCharArray();
+                char[] chs = item.FullPathId.ToCharArray();    
                 int count = 0;
                 foreach (char ch in chs)
                 {
