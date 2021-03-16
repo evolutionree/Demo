@@ -790,19 +790,24 @@ namespace UBeat.Crm.CoreApi.GL.Services
         {
             if (_baseDataServices == null)
                 _baseDataServices = ServiceLocator.Current.GetInstance<BaseDataServices>();
-            var creditLimitApplyData = _baseDataServices.GetEntityDetailData(null, entityId, recId, userId);
-            StringBuilder sb = new StringBuilder();
-            if (creditLimitApplyData["customerdetail"] != null)
+            // var creditLimitApplyData = _baseDataServices.GetEntityDetailData(null, entityId, recId, userId);
+            var creditLimitApplyData = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
             {
-                var detailData = (List<IDictionary<String, object>>)creditLimitApplyData["customerdetail"];
+                EntityId = entityId,
+                RecId = recId,
+                NeedPower = 0
+            }, userId);
+            StringBuilder sb = new StringBuilder();
+            if (creditLimitApplyData != null)
+            {
+                List<IDictionary<String, object>> detailData = new List<IDictionary<string, object>>();
+                detailData.Add(creditLimitApplyData);
+
                 int index = 0;
                 List<CustomerCreditLimitPush> customerCreditLimitPush = new List<CustomerCreditLimitPush>();
                 detailData.ForEach(t =>
                 {
-                    var data = detailData[index];
-                    var custJson = data["customer"];
-                    JObject jObject = JObject.Parse(custJson.ToString());
-                    var custId = jObject["id"];
+                    var custId = creditLimitApplyData["recrelateid"].ToString();
                     CustomerCreditLimitPush push = new CustomerCreditLimitPush();
                     if (custId != null && !string.IsNullOrEmpty(custId.ToString()))
                     {
@@ -811,8 +816,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         {
                             push.PARTNER = custDetail["erpcode"].ToString();
                             push.CREDIT_SGMNT = custDetail["creditlimitsgmnt"].ToString();
-                            push.CREDIT_LIMIT = data["credit"].ToString();
-                            push.LIMIT_VALID_DATE = data["creditlimitvaliddate"] == null ? "" : Convert.ToDateTime(data["creditlimitvaliddate"]).ToString("yyyyMMdd");
+                            push.CREDIT_LIMIT = t["credit"].ToString();
+                            push.LIMIT_VALID_DATE = t["expiredate"] == null ? "" : Convert.ToDateTime(t["expiredate"]).ToString("yyyyMMdd");
                             if (_fetchCustomerServices == null)
                                 _fetchCustomerServices = ServiceLocator.Current.GetInstance<FetchCustomerServices>();
                             var actTimeSapCredit = _fetchCustomerServices.getCustomerCreditLimit(new CustomerCreditLimitParam
@@ -840,24 +845,26 @@ namespace UBeat.Crm.CoreApi.GL.Services
                                 if (!string.IsNullOrEmpty(result))
                                 {
                                     var objResult = JsonConvert.DeserializeObject<SapCustCreateModelResult>(result);
-                                    if (objResult.TYPE != "S")
-                                        sb.Append("[" + jObject["name"].ToString() + "]" + objResult.MESSAGE);
+                                    sb.Append("" + custDetail["recname"].ToString() + "" + objResult.MESSAGE);
                                 }
                             }
                             else
-                                sb.Append("[" + jObject["name"].ToString() + "]的客户号或信用段不能为空");
+                                sb.Append("" + custDetail["recname"].ToString() + "的客户号或信用段不能为空");
                         }
                         else
-                            sb.Append("获取[" + jObject["name"].ToString() + "]实时信用额度失败");
+                            sb.Append("" + custDetail["recname"].ToString() + "的客户号或信用段不能为空");
                     }
                     else
                     {
                         sb.Append("获取客户信息异常");
-                        return;
                     }
                     index++;
+                    Dictionary<String, object> dic = new Dictionary<string, object>();
+                    dic.Add("sychresult", sb.ToString());
+                    _dynamicEntityRepository.DynamicEdit(null, entityId, recId, dic, 1);
                 });
             }
+
             if (string.IsNullOrEmpty(sb.ToString()))
                 return new OutputResult<object>("同步成功");
             return new OutputResult<object>(null, sb.ToString(), 1);

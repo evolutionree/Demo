@@ -1421,7 +1421,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (caseItemEntity.ChoiceStatus == 1)
                     {
-                        if (workflowInfo.Entityid == Guid.Parse("67121d89-cc88-43cb-a459-f86370774259"))
+                        if (workflowInfo.Entityid == Guid.Parse("a62a6832-3ef3-4338-9764-d9a27ffdb854"))
                         {
                             String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.GL.dll");
                             Assembly assem = Assembly.LoadFrom(classPath);
