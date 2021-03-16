@@ -139,6 +139,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string VBKD_BEZEI { get; set; }
         public decimal KKURS { get; set; }
         public string WAERK { get; set; }
+        public string WAERS { get; set; }
         public string ZWAERK { get; set; }
         public decimal ZLGMNG { get; set; }
         public decimal ZHSDJKG { get; set; }

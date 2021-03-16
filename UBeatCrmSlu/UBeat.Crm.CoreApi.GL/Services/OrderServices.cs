@@ -452,7 +452,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                         var kunnr2 = _baseDataRepository.GetCustomerCodeByDataSource(deliverycode).StringMax(0, 10);//售达方编码
                         order.KUNNR2 = kunnr2;
                         order.KUNNR = kunnr;//付款方编码
-                        order.WAERK = "CNY";//销售和分销凭证货币 默认CNY
+                        order.WAERS = "CNY";//销售和分销凭证货币 默认CNY
 
                         //VKORG, VTWEG,SPART, VKBUR, VKGRP, LIFNR_YWY,AUGRU
                         var vkorg = string.Concat(resultData["salesoffices"]);//销售组织
