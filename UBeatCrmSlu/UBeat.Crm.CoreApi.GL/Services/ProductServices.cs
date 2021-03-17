@@ -45,6 +45,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 Guid topSetId = Guid.Parse("7f74192d-b937-403f-ac2a-8be34714278b");
                 Guid setId = Guid.Parse("7f74192d-b937-403f-ac2a-8be34714278b");
 
+                List<SaveDicData> saleOrgDicDatas = _iBaseDataRepository.GetDicDataByTypeId(63);
+
                 sapProduct.DATA.MARA.ForEach(t =>
                 {
                     Dictionary<string, object> dic = new Dictionary<string, object>();
@@ -96,10 +98,14 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     if (!keys.Contains(MATNR))
                     {
                         var isExistProduct = _productsServices.IsExitProduct(MATNR, userId);
+                        string orgCode=sapProduct.DATA.MVKE.FirstOrDefault(t1 =>t1["VKORG"].ToString()=="9001")["VKORG"];
+                        var orgDicData = saleOrgDicDatas.FirstOrDefault(t1 => t1.ExtField1 == orgCode);
                         if (isExistProduct == null)
                         {
                             dic.Add("productcode", MATNR);
                             dic.Add("productsetid", setId);
+                            if (orgDicData != null) 
+                                dic.Add("salesorganization", orgDicData.DataId);
                             dic.Add("worker", 1);
                             String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == t["MATNR"].ToString())["MAKTX"];
                             if (!string.IsNullOrEmpty(MAKTX))
@@ -115,6 +121,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
                             dic.Add("productcode", MATNR);
                             dic.Add("productsetid", setId);
                             dic.Add("worker", 1);
+                            if (orgDicData != null)
+                                dic.Add("salesorganization", orgDicData.DataId);
                             String MAKTX = sapProduct.DATA.MAKT.FirstOrDefault(t2 => t2["MATNR"].ToString() == t["MATNR"].ToString())["MAKTX"];
                             if (!string.IsNullOrEmpty(MAKTX))
                             {
@@ -209,6 +217,92 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 }
             }
             catch (Exception ex) {
+                logger.Log(NLog.LogLevel.Error, $"获取物料库存异常：{ex.Message}");
+            }
+
+            return list;
+        }
+
+        //获取可用库存
+        public dynamic GetProductEnableStockByIds(List<Guid> productIds)
+        {
+            var list = new List<ProductStockModel>();
+            var dic = new Dictionary<string, ProductStockModel>();
+            try
+            {
+                if (productIds.Count == 0)
+                    return dic;
+                var plist = _iSapProductsRepository.getProductInfoByIds(productIds) as List<IDictionary<string, object>>;
+
+
+                List<ProductStockRequest> stockReqList = new List<ProductStockRequest>();
+                if (plist != null && plist.Count > 0)
+                {
+                    foreach (var p in plist)
+                    {
+                        string productId = string.Concat(p["recid"]);
+                        string productCode = string.Concat(p["productcode"]);
+                        string productName = string.Concat(p["productname"]);
+                        string productRemark = string.Concat(p["productdesciption"]);
+                        string productModel = string.Concat(p["productmodel"]);
+
+                        ProductStockModel model = new ProductStockModel();
+                        model.ProductId = Guid.Parse(productId);
+                        model.ProductCode = productCode;
+                        model.ProductName = productName;
+                        model.ProductRemark = productRemark;
+                        model.ProductModel = productModel;
+
+                        if (!dic.ContainsKey(productCode))
+                            dic.Add(productCode, model);
+
+                        //请求参数
+                        ProductStockRequest stockRequest = new ProductStockRequest();
+                        stockRequest.MATNR = productCode;
+                        stockReqList.Add(stockRequest);
+                    }
+
+                    var headData = new Dictionary<String, string>();
+                    headData.Add("Transaction_ID", "MATERIAL_STOCK");
+                    var postData = new Dictionary<String, object>();
+
+                    postData.Add("LIST", stockReqList);
+
+                    logger.Info(string.Concat("获取物料库存请求参数：", JsonHelper.ToJson(postData)));
+                    var postResult = CallAPIHelper.ApiPostData(postData, headData);
+                    SapStockModelResult sapRequest = JsonConvert.DeserializeObject<SapStockModelResult>(postResult);
+
+                    if (sapRequest.TYPE == "S")
+                    {
+                        var data = sapRequest.DATA["LIST"];
+                        foreach (var item in data)
+                        {
+                            item.MATNR = int.Parse(item.MATNR).ToString();//去掉0
+                            if (dic.ContainsKey(item.MATNR))
+                            {
+                                //物料只有一个，但返回值有个仓库，不能直接取引用
+                                ProductStockModel model = new ProductStockModel();
+                                model.ProductId = dic[item.MATNR].ProductId;
+                                model.ProductName = dic[item.MATNR].ProductName;
+                                model.ProductRemark = dic[item.MATNR].ProductRemark;
+                                model.ProductModel = dic[item.MATNR].ProductModel;
+
+                                model.ProductCode = item.MATNR;
+                                model.Factory = item.MATNR;
+                                model.StockAddress = item.LGORT;
+                                model.Unit = item.MEINS;
+                                model.enableSapStock = item.LABST;
+
+                                if (item.LABST > 0)
+                                    list.Add(model);
+                            }
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
                 logger.Log(NLog.LogLevel.Error, $"获取物料库存异常：{ex.Message}");
             }
 

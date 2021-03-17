@@ -362,8 +362,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
         {
             var total = 0;
             Sync2CRMInfo param = new Sync2CRMInfo();
-            param.ERDAT_FR = DateTime.Now.ToString("yyyy-MM-dd");
-            param.ERDAT_TO = DateTime.Now.ToString("yyyy-MM-dd");
+            param.REQDate = DateTime.Now.ToString("yyyy-MM-dd");
             var c = this.SyncDelivnote2CRM(param);
             //if (c.Status == 0)
             //{
