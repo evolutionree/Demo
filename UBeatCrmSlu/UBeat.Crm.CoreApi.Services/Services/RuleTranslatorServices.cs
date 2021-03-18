@@ -49,7 +49,72 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _salesTargetRepository = salesTargetRepository;
             _reminderRepository = reminderRepository;
         }
+        public void SaveEntityRule(EntityRule entity, Guid RelId, int userNumber, DbTransaction tran)
+        {
+            List<EntityFieldProMapper> fields = _entityProRepository.FieldQuery(entity.EntityId.ToString(), userNumber);
+            foreach (var rule in entity.RuleItems)
+            {
+                switch (rule.RuleType)
+                {
+                    case 0:
+                    case 1:
+                        {
+                            var entityField = fields.SingleOrDefault(t => t.FieldId == rule.FieldId);
+                            //  if (entityField == null || entityField.ControlType != rule.ControlType) throw new Exception("配置字段类型不匹配");   //暂时屏蔽
+                            rule.RuleSql = TranslateRuleConditionSql(rule.Operate, rule.RuleType, rule.RuleData, userNumber, entityField); //生成条件sql
+                            break;
+                        }
+                    case 2:
+                        {
+                            var data = JObject.Parse(rule.RuleData);
+                            rule.RuleSql = string.Format(@"({0})", data["dataVal"].ToString());
+                            break;
+                        }
+                    default: throw new Exception("尚未实现的规则类型");
+                }
+                rule.Relation.ParamIndex = -1;
+            }
+            var ruleItemList = entity.RuleItems.ToList();
+            entity.RuleSet.RuleFormat = TranslateRuleSet(entity.RuleSet.RuleSet, ref ruleItemList);
 
+            var ruleData = mapper.Map<RuleContent, RuleContentMapper>(entity.Rule);
+            List<RuleItemDataMapper> listItem = new List<RuleItemDataMapper>();
+            List<RuleItemRelationDataMapper> relationList = new List<RuleItemRelationDataMapper>();
+            foreach (var item in entity.RuleItems)
+            {
+                var ruleItems = mapper.Map<RuleItemModel, RuleItemDataMapper>(item);
+                var itemRelation = mapper.Map<RuleItemRelationModel, RuleItemRelationDataMapper>(item.Relation);
+                var itemId = Guid.NewGuid();
+                ruleItems.ItemId = itemId;
+
+                itemRelation.ItemId = itemId;
+                itemRelation.RuleId = entity.PageId;
+                ruleItems.RuleSql = ruleItems.RuleSql.Replace("'", "''");
+                listItem.Add(ruleItems);
+                relationList.Add(itemRelation);
+            }
+            var ruleSet = mapper.Map<RuleSetModel, RuleSetDataMapper>(entity.RuleSet);
+
+
+            //不存在则新增
+            #region 新增Rule
+            ruleData.RuleId = entity.PageId;
+            _dynamicEntityRepository.AddRule(ruleData, RelId, tran, userNumber);
+            #endregion
+
+            #region 新增RuleItems
+            _dynamicEntityRepository.AddRuleItems(listItem, RelId, tran, userNumber);
+            #endregion
+
+            #region 新增RuleSet
+            ruleSet.RuleId = entity.PageId;
+            _dynamicEntityRepository.AddRuleSet(ruleSet, RelId, tran, userNumber);
+            #endregion
+
+            #region 新增RuleItemRelation
+            _dynamicEntityRepository.AddRuleItemRelation(relationList, RelId, tran, userNumber);
+            #endregion
+        }
         public OutputResult<object> MenuRuleInfoQuery(MenuRuleModel entityModel, int userId)
         {
             var entity = mapper.Map<MenuRuleModel, MenuRuleMapper>(entityModel);
