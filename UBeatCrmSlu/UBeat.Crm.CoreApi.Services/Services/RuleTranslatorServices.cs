@@ -84,7 +84,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             foreach (var item in entity.RuleItems)
             {
                 var ruleItems = mapper.Map<RuleItemModel, RuleItemDataMapper>(item);
-                var itemRelation = mapper.Map<RuleItemRelationModel, RuleItemRelationDataMapper>(item.Relation);
+                var itemRelation = mapper.Map<UBeat.Crm.CoreApi.Services.Models.Rule.RuleItemRelationModel, RuleItemRelationDataMapper>(item.Relation);
                 var itemId = Guid.NewGuid();
                 ruleItems.ItemId = itemId;
 

@@ -304,7 +304,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.WorkFlow
 
         public RuleContent Rule { get; set; }
         public ICollection<RuleItemModel> RuleItems { get; set; }
-        public RuleSetModel RuleSet { get; set; }
+        public UBeat.Crm.CoreApi.Services.Models.DynamicEntity.RuleSetModel RuleSet { get; set; }
     }
     public class WorkflowIdByEntityIdParamInfo
     {

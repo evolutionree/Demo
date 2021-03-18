@@ -17,6 +17,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
             CreateMap<RoleRuleModel, RoleRuleMapper>();
             CreateMap<MenuRuleModel, MenuRuleMapper>();
             CreateMap<DynamicRuleModel, DynamicRuleMapper>();
+            CreateMap<DynamicRuleModel, DynamicRuleMapper>();
         }
     }
 }

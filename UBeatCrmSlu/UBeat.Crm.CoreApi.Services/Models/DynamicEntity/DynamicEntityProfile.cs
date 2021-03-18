@@ -29,6 +29,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
             CreateMap<UpdateRelTabModel, UpdateRelTabMapper>();
             CreateMap<DisabledRelTabModel, DisabledRelTabMapper>();
             CreateMap<AddRelTabRelationDataSrcModel, AddRelTabRelationDataSrcMapper>();
+            CreateMap<EntityRuleMapper, EntityRule>();
         }
     }
 }

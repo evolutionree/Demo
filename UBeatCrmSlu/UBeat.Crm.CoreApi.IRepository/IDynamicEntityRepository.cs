@@ -129,7 +129,10 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<Dictionary<string,object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran);
         bool DeleteTemporaryList(List<Guid> cacheIds,int userNumber,DbTransaction tran);
         void AddRule(RuleContentMapper ruleData, Guid RelId, DbTransaction tran, int userNumber);
-
+    
+        void AddRuleItems(List<RuleItemDataMapper> listItem, Guid RelId, DbTransaction tran, int userNumber);
+        void AddRuleSet(RuleSetDataMapper ruleSet, Guid RelId, DbTransaction tran, int userNumber);
+        void AddRuleItemRelation(List<RuleItemRelationDataMapper> relaList, Guid RelId, DbTransaction tran, int userNumber);
 
 
     }

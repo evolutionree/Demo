@@ -1728,7 +1728,44 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             };
             var res = DBHelper.ExecuteNonQuery(tran, sql, p);
         }
+        public void AddRuleItems(List<RuleItemDataMapper> listItem, Guid RelId, DbTransaction tran, int userNumber)
+        {
+            string sql = "";
+            int i = 1;
+            foreach (var item in listItem)
+            {
+                sql += string.Format("INSERT INTO crm_sys_rule_item (itemid, itemname, fieldid, operate, ruledata, ruletype, rulesql, usetype, recorder, recstatus, reccreator, recupdator, reccreated, recupdated,relid) " +
+                "VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{10}', '{11}', '{11}','{12}');\n", item.ItemId, item.ItemName, item.FieldId, item.Operate, item.RuleData, item.RuleType, item.RuleSql.Replace("'", "''"), item.UseType, i, 1, userNumber, DateTime.Now, RelId);
+                i++;
+            }
+            var res = DBHelper.ExecuteNonQuery(tran, sql, new DbParameter[] { });
+        }
 
+        public void AddRuleSet(RuleSetDataMapper ruleSet, Guid RelId, DbTransaction tran, int userNumber)
+        {
+            string sql = @"INSERT INTO crm_sys_rule_set (ruleid, ruleset, userid, ruleformat,relid)
+                            VALUES (@ruleid,@ruleset,@userid,@ruleformat,@relid);";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("ruleid",ruleSet.RuleId),
+                new NpgsqlParameter("ruleset",ruleSet.RuleSet),
+                new NpgsqlParameter("userid",userNumber),
+                new NpgsqlParameter("ruleformat",ruleSet.RuleFormat),
+                new NpgsqlParameter("relid",RelId)
+            };
+            var res = DBHelper.ExecuteNonQuery(tran, sql, p);
+        }
+
+        public void AddRuleItemRelation(List<RuleItemRelationDataMapper> relaList, Guid RelId, DbTransaction tran, int userNumber)
+        {
+            string sql = "";
+            foreach (var item in relaList)
+            {
+                sql += string.Format("INSERT INTO public.crm_sys_rule_item_relation (ruleid, itemid, userid, rolesub, paramindex,relid) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}','{5}');\n",
+                    item.RuleId, item.ItemId, userNumber, item.RoleSub, item.ParamIndex, RelId);
+            }
+            var res = DBHelper.ExecuteNonQuery(tran, sql, new DbParameter[] { });
+        }
         public bool UpdateTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
         {
             string sql = @"update crm_sys_temporary_entity 
