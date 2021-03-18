@@ -10,6 +10,7 @@ namespace UBeat.Crm.CoreApi.IRepository
 {
     public interface IDynamicEntityRepository : IBaseRepository
     {
+        bool ExistsRule(Guid ruleId);
         List<DynamicEntityDataFieldMapper> GetTypeFields(Guid typeId, int operateType, int userNumber);
         Guid getGridTypeByMainType(Guid typeId, Guid entityId);
         RelConfigInfo GetRelConfig(Guid RelId, int userNumber);

@@ -50,6 +50,41 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _reminderRepository = reminderRepository;
             _dynamicEntityRepository = dynamicEntityRepository;
         }
+        public EntityRuleMapper SelectEntityRule(Guid ruleId, int userNumber)
+        {
+            DbTransaction tran = null;
+            EntityRuleMapper entity = new EntityRuleMapper();
+            var ruleData = _dynamicEntityRepository.SelectRule(ruleId, tran, userNumber);
+            entity.Rule = ruleData;
+            var relationData = _dynamicEntityRepository.SelectRuleRelation(ruleId, tran, userNumber);
+            List<RuleItemDataMapper> itemList = new List<RuleItemDataMapper>();
+            var ruleItemData = _dynamicEntityRepository.SelectRuleItem(ruleId, tran, userNumber);
+            for (int i = 0; i < relationData.Count(); i++)
+            {
+                RuleItemDataMapper ruleItem = new RuleItemDataMapper
+                {
+                    ItemId = ruleItemData[i].ItemId,
+                    EntityId = ruleData.EntityId.ToString(),
+                    ControlType = ruleItemData[i].ControlType,
+                    FieldId = ruleItemData[i].FieldId,
+                    Relation = relationData[i],
+                    RuleData = ruleItemData[i].RuleData,
+                    ItemName = ruleItemData[i].ItemName,
+                    Operate = ruleItemData[i].Operate,
+                    RuleSql = ruleItemData[i].RuleSql,
+                    RuleType = ruleItemData[i].RuleType,
+                    UseType = ruleItemData[i].UseType
+                };
+                itemList.Add(ruleItem);
+            }
+            entity.RuleItems = itemList;
+            var ruleSet = _dynamicEntityRepository.SelectRuleSet(ruleId, tran, userNumber);
+            entity.RuleSet = ruleSet;
+            entity.EntityId = ruleData.EntityId;
+            entity.PageId = ruleData.RuleId;
+            return entity;
+        }
+
         public void SaveEntityRule(EntityRule entity, Guid RelId, int userNumber, DbTransaction tran)
         {
             List<EntityFieldProMapper> fields = _entityProRepository.FieldQuery(entity.EntityId.ToString(), userNumber);

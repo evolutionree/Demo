@@ -45,7 +45,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly JavaScriptUtilsServices _javaScriptUtilsServices;
         private readonly IEntityTransferRepository _entityTransferRepository = null;
         private readonly RuleTranslatorServices _translatorServices;
-        private readonly RuleServices _ruleServices;
+        private readonly RuleTranslatorServices _ruleServices;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService; 

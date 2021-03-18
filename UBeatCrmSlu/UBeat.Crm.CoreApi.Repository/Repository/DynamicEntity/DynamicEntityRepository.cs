@@ -19,7 +19,15 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
     public class DynamicEntityRepository : RepositoryBase, IDynamicEntityRepository
     {
 
-
+        public bool ExistsRule(Guid ruleId)
+        {
+            string sql = @"select count(1) from crm_sys_rule where ruleid=@ruleid ";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("@ruleid",ruleId)
+            };
+            return int.Parse(ExecuteScalar(sql, p).ToString()) > 0;
+        }
         public Guid getGridTypeByMainType(Guid typeId, Guid entityId)
         {
             string cmdText = "Select categoryid from crm_sys_entity_category where relcategoryid = @relcategoryid and EntityId=@entityid";
