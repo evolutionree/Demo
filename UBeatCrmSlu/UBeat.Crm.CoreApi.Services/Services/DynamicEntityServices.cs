@@ -44,6 +44,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly ICustomerRepository _customerRepository;
         private readonly JavaScriptUtilsServices _javaScriptUtilsServices;
         private readonly IEntityTransferRepository _entityTransferRepository = null;
+        private readonly RuleTranslatorServices _translatorServices;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService; 
@@ -55,6 +56,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 IDataSourceRepository dataSourceRepository,
                 ICustomerRepository customerRepository,
                 IEntityTransferRepository entityTransferRepository,
+                               RuleTranslatorServices translatorServices,
                 JavaScriptUtilsServices javaScriptUtilsServices)
         {
             _dynamicEntityRepository = dynamicEntityRepository;
@@ -67,6 +69,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _customerRepository = customerRepository;
             _javaScriptUtilsServices = javaScriptUtilsServices;
             _entityTransferRepository = entityTransferRepository;
+            _translatorServices = translatorServices;
             //_workflowService = workflowService; 
         }
 
@@ -3960,13 +3963,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         else
                         {
                             //泛海三江 联系人特殊逻辑，必须把名称和电话同时显示
-                            if (entityid== Guid.Parse("a1486d13-061b-4d92-990a-4d93cbe58694")) {
+                            if (entityid == Guid.Parse("a1486d13-061b-4d92-990a-4d93cbe58694"))
+                            {
                                 if (modifyRecord.fieldId == "63766245-199e-491e-88db-5832d004550d")
                                 {
                                     isModLink = true;
-                                    linkname= string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
+                                    linkname = string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
                                 }
-                                else if (modifyRecord.fieldId == "61c2fa69-2d58-40b8-b123-e5f49f27f34d") {
+                                else if (modifyRecord.fieldId == "61c2fa69-2d58-40b8-b123-e5f49f27f34d")
+                                {
                                     isModLink = true;
                                     tel = string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
                                 }
@@ -3975,7 +3980,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                     msgContent = msgContent + string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
                                 }
                             }
-                            else {
+                            else
+                            {
                                 msgContent = msgContent + string.Format("\n\t{0}:{1}->{2}。", modifyRecord.field, modifyRecord.oldVal, modifyRecord.newVal);
                             }
                         }
@@ -3983,8 +3989,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
 
                 #region --泛海三江 联系人特殊逻辑，必须把名称和电话同时显示--
-                if (isModLink) {
-                    if (string.IsNullOrEmpty(linkname)) {
+                if (isModLink)
+                {
+                    if (string.IsNullOrEmpty(linkname))
+                    {
                         //没修改
                         linkname = string.Format("\n\t{0}:{1}->{2}。", requireData["recname"].FieldDisplay, oldDetail["recname"], oldDetail["recname"]);
                     }
@@ -3994,7 +4002,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         tel = string.Format("\n\t{0}:{1}->{2}。", requireData["phone"].FieldDisplay, oldDetail["phone"], oldDetail["phone"]);
                     }
                 }
-                msgContent = linkname+ tel+ msgContent;
+                msgContent = linkname + tel + msgContent;
                 #endregion
             }
             catch (Exception ex)
@@ -4521,31 +4529,48 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> SaveRelConfig(SaveRelConfigModel entityModel, int userNumber)
         {
-            if (entityModel?.RelId == null || entityModel.RelId == new Guid("00000000-0000-0000-0000-000000000000"))
+            using (var conn = GetDbConnect())
             {
-                return ShowError<object>("页签id不能为空");
-            }
-
-            var configs = entityModel.Configs;
-
-            var configSets = entityModel.ConfigSets;
-            var configResult = _dynamicEntityRepository.SaveRelConfig(configs, entityModel.RelId, userNumber);
-            var setResult = _dynamicEntityRepository.SaveRelConfigSet(configSets, entityModel.RelId, userNumber);
-            if (configResult.Flag == 1 && setResult.Flag == 1)
-            {
-                return new OutputResult<object>(new OperateResult()
+                conn.Open();
+                var tran = conn.BeginTransaction();
+                if (entityModel?.RelId == null || entityModel.RelId == new Guid("00000000-0000-0000-0000-000000000000"))
                 {
-                    Flag = 1,
-                    Msg = "保存配置成功"
-                });
-            }
-            else
-            {
-                return new OutputResult<object>(new OperateResult()
+                    return ShowError<object>("页签id不能为空");
+                }
+
+                var configs = entityModel.Configs;
+                var configSets = entityModel.ConfigSets;
+                foreach (var conf in configs)
                 {
-                    Flag = 0,
-                    Msg = "保存配置失败"
-                });
+                    Guid uuid = Guid.NewGuid();
+                    conf.RecId = uuid;
+                    if (conf.EntityRule != null)
+                    {
+                        conf.EntityRule.PageId = uuid;
+                        var entityRule = _mapper.Map<EntityRuleMapper, EntityRule>(conf.EntityRule);
+                        _translatorServices.SaveEntityRule(entityRule, entityModel.RelId, userNumber, tran);
+                    }
+                }
+
+   
+                var configResult = _dynamicEntityRepository.SaveRelConfig(configs, entityModel.RelId, userNumber);
+                var setResult = _dynamicEntityRepository.SaveRelConfigSet(configSets, entityModel.RelId, userNumber);
+                if (configResult.Flag == 1 && setResult.Flag == 1)
+                {
+                    return new OutputResult<object>(new OperateResult()
+                    {
+                        Flag = 1,
+                        Msg = "保存配置成功"
+                    });
+                }
+                else
+                {
+                    return new OutputResult<object>(new OperateResult()
+                    {
+                        Flag = 0,
+                        Msg = "保存配置失败"
+                    });
+                }
             }
         }
 
