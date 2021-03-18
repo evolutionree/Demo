@@ -45,6 +45,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly JavaScriptUtilsServices _javaScriptUtilsServices;
         private readonly IEntityTransferRepository _entityTransferRepository = null;
         private readonly RuleTranslatorServices _translatorServices;
+        private readonly RuleServices _ruleServices;
         private Logger _logger = LogManager.GetLogger("UBeat.Crm.CoreApi.Services.Services.DynamicEntityServices");
 
         //private readonly WorkFlowServices _workflowService; 
@@ -4668,7 +4669,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("页签id不能为空");
             }
-            return new OutputResult<object>(_dynamicEntityRepository.GetRelConfig(entityModel.RelId, userNumber));
+            var data = _dynamicEntityRepository.GetRelConfig(entityModel.RelId, userNumber);
+            foreach (var conf in data.Configs)
+            {
+                if (_dynamicEntityRepository.ExistsRule(conf.RecId))
+                    conf.EntityRule = _ruleServices.SelectEntityRule(conf.RecId, userNumber);
+            }
+            return new OutputResult<object>();
 
         }
 
