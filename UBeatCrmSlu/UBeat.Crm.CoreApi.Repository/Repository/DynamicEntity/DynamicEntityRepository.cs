@@ -19,6 +19,46 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
     public class DynamicEntityRepository : RepositoryBase, IDynamicEntityRepository
     {
 
+        public RuleContentMapper SelectRule(Guid ruleId, DbTransaction tran, int userNumber)
+        {
+            string sql = @"select * from crm_sys_rule where ruleid =@ruleid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("ruleid",ruleId)
+            };
+            return ExecuteQuery<RuleContentMapper>(sql, p, tran).FirstOrDefault();
+        }
+
+        public List<RuleItemRelationDataMapper> SelectRuleRelation(Guid ruleId, DbTransaction tran, int userNumber)
+        {
+            string sql = @"select * from crm_sys_rule_item_relation where ruleid =@ruleid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("ruleid",ruleId)
+            };
+            return ExecuteQuery<RuleItemRelationDataMapper>(sql, p, tran);
+        }
+
+        public List<RuleItemDataMapper> SelectRuleItem(Guid ruleId, DbTransaction tran, int userNumber)
+        {
+            string sql = @"select * from crm_sys_rule_item where itemid in 
+                        (select itemid from crm_sys_rule_item_relation where ruleid =@ruleid)";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("ruleid",ruleId)
+            };
+            return ExecuteQuery<RuleItemDataMapper>(sql, p, tran);
+        }
+
+        public RuleSetDataMapper SelectRuleSet(Guid ruleId, DbTransaction tran, int userNumber)
+        {
+            string sql = @"select * from crm_sys_rule_set where ruleid =@ruleid";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("ruleid",ruleId)
+            };
+            return ExecuteQuery<RuleSetDataMapper>(sql, p, tran).FirstOrDefault();
+        }
         public bool ExistsRule(Guid ruleId)
         {
             string sql = @"select count(1) from crm_sys_rule where ruleid=@ruleid ";
@@ -772,13 +812,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
                 new NpgsqlParameter("relid",RelId)
             };
             ExecuteQuery(delSql, delParam);
-            string sql = @"INSERT into crm_sys_entity_rel_config(type,relid,relentityid,fieldid,calcutetype,entityid,index,func)  
-                        values (@type,@relid,@relentityid,@fieldid,@calcutetype,@entityid,@index,@func)";
+            string sql = @"INSERT into crm_sys_entity_rel_config(recid,type,relid,relentityid,fieldid,calcutetype,entityid,index,func)  
+                        values (@recid,@type,@relid,@relentityid,@fieldid,@calcutetype,@entityid,@index,@func)";
             Boolean isSuf = true;
             foreach (var item in configs)
             {
                 var param = new DbParameter[]
                 {
+                        new NpgsqlParameter("recid",item.RecId),
                         new NpgsqlParameter("type",item.Type),
                         new NpgsqlParameter("relid",RelId),
                         new NpgsqlParameter("relentityid",item.RelentityId),
@@ -804,7 +845,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             {
                 return new OperateResult()
                 {
-                    Flag = 0, 
+                    Flag = 0,
                     Msg = "新增配置失败"
                 };
             }
@@ -883,16 +924,16 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             }
             else
             {
-				string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
+                string parentEntitySql = @"select c.entitytable,b.fieldname,b.controltype from crm_sys_entity_rel_tab a 
                                          inner JOIN crm_sys_entity c on c.entityid=a.relentityid
                                          inner join crm_sys_entity_fields b on  b.fieldid=a.fieldid
                                           where a.relentityid=@relentityid and a.entityid = @entityid";
-				var param = new DbParameter[]
-				{
-					new NpgsqlParameter("relentityid",config.RelentityId),
-					new NpgsqlParameter("entityid",config.EntityId),
-				};
-				parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
+                var param = new DbParameter[]
+                {
+                    new NpgsqlParameter("relentityid",config.RelentityId),
+                    new NpgsqlParameter("entityid",config.EntityId),
+                };
+                parentTableInfo = ExecuteQuery(parentEntitySql, param).FirstOrDefault();
                 string childfieldSql = @"select a.fieldname  from crm_sys_entity_fields a where  a.fieldid=@fieldid";
                 var param1 = new DbParameter[]
                 {
@@ -1490,7 +1531,8 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             {
                 return ExecuteQueryRefCursor(strSQL, param, tran);
             }
-            else if (funcInfo.ReturnType == EntityExtFunctionReturnType.SingleRow) {
+            else if (funcInfo.ReturnType == EntityExtFunctionReturnType.SingleRow)
+            {
                 return ExecuteQuery(strSQL, param, tran).FirstOrDefault();
             }
             else

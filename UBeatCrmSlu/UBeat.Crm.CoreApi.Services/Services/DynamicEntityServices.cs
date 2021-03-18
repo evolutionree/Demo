@@ -71,6 +71,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _javaScriptUtilsServices = javaScriptUtilsServices;
             _entityTransferRepository = entityTransferRepository;
             _translatorServices = translatorServices;
+            _ruleServices = translatorServices;
             //_workflowService = workflowService; 
         }
 
@@ -4558,6 +4559,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 var setResult = _dynamicEntityRepository.SaveRelConfigSet(configSets, entityModel.RelId, userNumber);
                 if (configResult.Flag == 1 && setResult.Flag == 1)
                 {
+                    tran.Commit();
                     return new OutputResult<object>(new OperateResult()
                     {
                         Flag = 1,
@@ -4566,6 +4568,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 else
                 {
+                    tran.Rollback();
                     return new OutputResult<object>(new OperateResult()
                     {
                         Flag = 0,
@@ -4675,7 +4678,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (_dynamicEntityRepository.ExistsRule(conf.RecId))
                     conf.EntityRule = _ruleServices.SelectEntityRule(conf.RecId, userNumber);
             }
-            return new OutputResult<object>();
+            return new OutputResult<object>(data);
 
         }
 

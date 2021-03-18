@@ -10,6 +10,10 @@ namespace UBeat.Crm.CoreApi.IRepository
 {
     public interface IDynamicEntityRepository : IBaseRepository
     {
+        RuleContentMapper SelectRule(Guid ruleId, DbTransaction tran, int userNumber);
+        List<RuleItemRelationDataMapper> SelectRuleRelation(Guid ruleId, DbTransaction tran, int userNumber);
+        RuleSetDataMapper SelectRuleSet(Guid ruleId, DbTransaction tran, int userNumber);
+          List<RuleItemDataMapper> SelectRuleItem(Guid ruleId, DbTransaction tran, int userNumber);
         bool ExistsRule(Guid ruleId);
         List<DynamicEntityDataFieldMapper> GetTypeFields(Guid typeId, int operateType, int userNumber);
         Guid getGridTypeByMainType(Guid typeId, Guid entityId);
