@@ -1709,7 +1709,25 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return ExecuteNonQuery(sql, p, tran) > 0;
         }
 
-
+        public void AddRule(RuleContentMapper ruleData, Guid RelId, DbTransaction tran, int userNumber)
+        {
+            string sql = @"INSERT INTO public.crm_sys_rule (ruleid, rulename, entityid, rulesql, recstatus, reccreator, recupdator, reccreated, recupdated,relid) 
+                                VALUES (@ruleid,@rulename,@entityid,@rulesql,@recstatus,@reccreator,@recupdator,@reccreated,@recupdated,@relid);";
+            var p = new DbParameter[]
+            {
+                new NpgsqlParameter("ruleid",ruleData.RuleId),
+                new NpgsqlParameter("rulename",ruleData.RuleName),
+                new NpgsqlParameter("entityid",ruleData.EntityId),
+                new NpgsqlParameter("rulesql",ruleData.RuleSql),
+                new NpgsqlParameter("recstatus",1),
+                new NpgsqlParameter("reccreator",userNumber),
+                new NpgsqlParameter("recupdator",userNumber),
+                new NpgsqlParameter("reccreated",DateTime.Now),
+                new NpgsqlParameter("recupdated",DateTime.Now),
+                new NpgsqlParameter("relid",RelId)
+            };
+            var res = DBHelper.ExecuteNonQuery(tran, sql, p);
+        }
 
         public bool UpdateTemporaryData(TemporarySaveMapper data, int userNumber, DbTransaction tran)
         {

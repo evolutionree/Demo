@@ -128,7 +128,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         void DeleteTemporary(Guid CacheId, int userNumber, DbTransaction tran);
         List<Dictionary<string,object>> SelectTemporaryDetails(Guid cacheId, int userNumber, DbTransaction tran);
         bool DeleteTemporaryList(List<Guid> cacheIds,int userNumber,DbTransaction tran);
- 
+        void AddRule(RuleContentMapper ruleData, Guid RelId, DbTransaction tran, int userNumber);
+
+
 
     }
 }
