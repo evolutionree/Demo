@@ -37,9 +37,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IVocationRepository _vocationRepository;
         private readonly ISalesTargetRepository _salesTargetRepository;
         private readonly IReminderRepository _reminderRepository;
+        private readonly IDynamicEntityRepository _dynamicEntityRepository;
 
-
-        public RuleTranslatorServices(IMapper _mapper, IEntityProRepository entityProRepository, IRuleRepository ruleRepository, IVocationRepository vocationRepository, ISalesTargetRepository salesTargetRepository, IReminderRepository reminderRepository)
+        public RuleTranslatorServices(IMapper _mapper, IEntityProRepository entityProRepository, IRuleRepository ruleRepository, IVocationRepository vocationRepository, ISalesTargetRepository salesTargetRepository, IReminderRepository reminderRepository, IDynamicEntityRepository dynamicEntityRepository)
         {
             mapper = _mapper;
             _entityProRepository = entityProRepository;
@@ -48,6 +48,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             _salesTargetRepository = salesTargetRepository;
             _reminderRepository = reminderRepository;
+            _dynamicEntityRepository = dynamicEntityRepository;
         }
         public void SaveEntityRule(EntityRule entity, Guid RelId, int userNumber, DbTransaction tran)
         {
@@ -93,7 +94,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 listItem.Add(ruleItems);
                 relationList.Add(itemRelation);
             }
-            var ruleSet = mapper.Map<RuleSetModel, RuleSetDataMapper>(entity.RuleSet);
+            var ruleSet = mapper.Map<UBeat.Crm.CoreApi.Services.Models.Rule.RuleSetModel, RuleSetDataMapper>(entity.RuleSet);
 
 
             //不存在则新增
@@ -151,10 +152,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     RuleSet = group.Key.RuleSet
                 },
-                MenuName_Lang=group.Key.MenuName_Lang
+                MenuName_Lang = group.Key.MenuName_Lang
             }).ToList();
             List<RuleInfoModel> tmp = (List<RuleInfoModel>)obj;
-            foreach (RuleInfoModel i in tmp) {
+            foreach (RuleInfoModel i in tmp)
+            {
                 List<RuleItemInfoModel> tmpList = i.RuleItems.ToList();
                 tmpList.Sort((x, y) => x.ItemName.CompareTo(y.ItemName));
                 i.RuleItems = tmpList;
@@ -167,13 +169,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
             try
             {
                 DbTransaction trans = null;
-                foreach (EntityMenuOrderByModel item in paramInfo) {
-                    this._ruleRepository.SaveMenuOrder(item.MenuId,item.OrderBy, userId, trans);
+                foreach (EntityMenuOrderByModel item in paramInfo)
+                {
+                    this._ruleRepository.SaveMenuOrder(item.MenuId, item.OrderBy, userId, trans);
                 }
-                
+
 
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw (ex);
             }
         }
@@ -200,8 +204,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> SaveRule(RuleModel entityModel, int userId)
         {
 
-            var ruleSetEntity = mapper.Map<RuleSetModel, RuleSetMapper>(entityModel.RuleSet);
-            
+            var ruleSetEntity = mapper.Map<UBeat.Crm.CoreApi.Services.Models.Rule.RuleSetModel, RuleSetMapper>(entityModel.RuleSet);
+
             if (ruleSetEntity == null || !ruleSetEntity.IsValid())
             {
                 return HandleValid(ruleSetEntity);
@@ -240,21 +244,21 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         }
                     case 10://分支流程条件--实体字段
                         {
-                            List<EntityFieldProMapper> entityfields= _entityProRepository.FieldQuery(entityModel.EntityId, userId);
-                            
+                            List<EntityFieldProMapper> entityfields = _entityProRepository.FieldQuery(entityModel.EntityId, userId);
+
                             var entityField = entityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
-                            if (entityField == null||entityField.ControlType != entity.ControlType)
+                            if (entityField == null || entityField.ControlType != entity.ControlType)
                                 throw new Exception("配置字段类型不匹配");
                             entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField);
-                            
+
                         }
                         break;
                     case 11://分支流程条件--rel实体字段
                         {
-                           
+
                             List<EntityFieldProMapper> relentityfields = _entityProRepository.FieldQuery(entityModel.RelEntityId, userId);
                             var entityField = relentityfields.SingleOrDefault(t => t.FieldId == entity.FieldId);
-                            if (entityField == null||entityField.ControlType != entity.ControlType)
+                            if (entityField == null || entityField.ControlType != entity.ControlType)
                                 throw new Exception("配置字段类型不匹配");
                             entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField, "rel");
 
@@ -278,14 +282,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     case 2004://分支流程条件--发起人角色
                         {
                             entity.RuleSql = FormatInOrNotIn(entity.Operate, "flowluancherroleid", entity.RuleData);
-                            
+
                         }
                         break;
                     case 2005://分支流程条件--是否是领导
                         {
                             var data = JObject.Parse(entity.RuleData);
                             var dataValue = data["dataVal"].ToString();
-                            entity.RuleSql = string.Format(@"(flowluancherisleader = {0})",  dataValue);
+                            entity.RuleSql = string.Format(@"(flowluancherisleader = {0})", dataValue);
                         }
                         break;
 
@@ -347,7 +351,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 
 
-        private string UserIdFormatInOrNotIn(string operate, string fieldName,string strData)
+        private string UserIdFormatInOrNotIn(string operate, string fieldName, string strData)
         {
             var data = JObject.Parse(strData);
             string ruleSql = null;
@@ -398,7 +402,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     if (!string.IsNullOrEmpty(userIds))
                     {
-                       var strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), userIds);
+                        var strSql = string.Format(@" AND (EXISTS( SELECT * FROM (select regexp_split_to_table({0}::text,',')::int4 AS sel ) AS t WHERE t.sel {1} ({2}))) ", fieldName, Condition.In.GetSqlOperate(), userIds);
                         sb.Append(strSql);
                     }
                     if (!string.IsNullOrEmpty(deptIds))
@@ -423,17 +427,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         string strSql = "";
                         if (dataValue == "{currentUser}")
                         {
-                             strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
+                            strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM (SELECT UNNEST(ARRAY[{0}]) userid) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
                         }
                         else if (dataValue == "{currentDepartment}" || dataValue == "{subDepartment}")
                         {
-                             strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM ({0}) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
+                            strSql = string.Format(@"  (NOT EXISTS ( SELECT * FROM ({0}) AS arr INNER JOIN (SELECT splitable.regexp_split_to_table::int4 as splitid FROM  (select * FROM  regexp_split_to_table({1}::text,',')) as splitable ) AS tmp ON tmp.splitid=arr.userid))", dataValue, fieldName);
                         }
                         sb.Append(strSql);
                     }
                     else
                     {
-                       var strSql = "1=1";
+                        var strSql = "1=1";
                         sb.Append(strSql);
                     }
                     if (!string.IsNullOrEmpty(userIds))
@@ -514,8 +518,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             var entity = new FlowRuleMapper
             {
-                ruleid= entityModel.RuleId,
-                flowid= entityModel.FlowId
+                ruleid = entityModel.RuleId,
+                flowid = entityModel.FlowId
             };
             if (entity == null || !entity.IsValid())
             {
@@ -549,7 +553,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return new OutputResult<object>(obj);
         }
 
-            public OutputResult<object> DynamicRuleInfoQuery(DynamicRuleModel entityModel, int userId)
+        public OutputResult<object> DynamicRuleInfoQuery(DynamicRuleModel entityModel, int userId)
         {
             var entity = mapper.Map<DynamicRuleModel, DynamicRuleMapper>(entityModel);
             if (entity == null || !entity.IsValid())
@@ -645,46 +649,46 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ruleSet;
         }
 
-		private string TranslateRuleSetCom(string ruleSet, ref List<ComRuleItemModel> rel)
-		{
+        private string TranslateRuleSetCom(string ruleSet, ref List<ComRuleItemModel> rel)
+        {
 
-			string[] splitSet = ruleSet.Split(' ');
-			int indexPara = 0;
-			foreach (var tmp in splitSet)
-			{
-				if (!tmp.Contains("$")) continue;
-				ruleSet = ruleSet.Replace(tmp, "%s");
-				string paraIndex = tmp.Replace("$", "");
-				if (Int32.TryParse(paraIndex, out indexPara))
-				{
-					if (indexPara > rel.Count) throw new Exception("规则明细索引溢出");
-					if (indexPara < 0) throw new Exception("规则明细索引不能为0");
-					rel[indexPara - 1].Relation.ParamIndex = indexPara - 1;
-				}
-				else
-				{
-					throw new Exception("规则参数格式异常");
-				}
-			}
-			IncreaseDataVersion(DataVersionType.EntityData);
-			return ruleSet;
-		}
-		/// <summary>
-		/// 处理不同的操作符
-		/// </summary>
-		/// <param name="operate"></param>
-		/// <param name="fieldName"></param>
-		/// <param name="strData"></param>
-		/// <param name="userId"></param>
-		/// <returns></returns>
-		private string TranslateRuleConditionSql(string operate, int ruleType, string strData, int userId, EntityFieldProMapper entityField = null,string prestring=null)
+            string[] splitSet = ruleSet.Split(' ');
+            int indexPara = 0;
+            foreach (var tmp in splitSet)
+            {
+                if (!tmp.Contains("$")) continue;
+                ruleSet = ruleSet.Replace(tmp, "%s");
+                string paraIndex = tmp.Replace("$", "");
+                if (Int32.TryParse(paraIndex, out indexPara))
+                {
+                    if (indexPara > rel.Count) throw new Exception("规则明细索引溢出");
+                    if (indexPara < 0) throw new Exception("规则明细索引不能为0");
+                    rel[indexPara - 1].Relation.ParamIndex = indexPara - 1;
+                }
+                else
+                {
+                    throw new Exception("规则参数格式异常");
+                }
+            }
+            IncreaseDataVersion(DataVersionType.EntityData);
+            return ruleSet;
+        }
+        /// <summary>
+        /// 处理不同的操作符
+        /// </summary>
+        /// <param name="operate"></param>
+        /// <param name="fieldName"></param>
+        /// <param name="strData"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        private string TranslateRuleConditionSql(string operate, int ruleType, string strData, int userId, EntityFieldProMapper entityField = null, string prestring = null)
         {
             string fieldName = string.Empty;
             int controlType = -1;
 
             if (entityField != null)
             {
-                if(string.IsNullOrEmpty(prestring))
+                if (string.IsNullOrEmpty(prestring))
                 {
                     fieldName = entityField.FieldName;
                 }
@@ -1766,98 +1770,98 @@ namespace UBeat.Crm.CoreApi.Services.Services
             return ruleData;
         }
 
-		#region 页签可见规则
-		public OutputResult<object> SaveRuleForRelTab(RelTabRuleSaveModel entityModel, int userId)
-		{ 
-			List<EntityFieldProMapper> fields = _entityProRepository.FieldQuery(entityModel.EntityId.ToString(), userId);
-			foreach (var entity in entityModel.RuleItems)
-			{
-				switch (entity.RuleType)
-				{
-					case 0:
-					case 1:
-						{
-							var entityField = fields.SingleOrDefault(t => t.FieldId == entity.FieldId.ToString());
-							if (entityField.ControlType != entity.ControlType) throw new Exception("配置字段类型不匹配");
-							entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField);
-							break;
-						}
-					case 2:
-						{
-							var data = JObject.Parse(entity.RuleData);
-							entity.RuleSql = string.Format(@"({0})", data["dataVal"].ToString());
-							break;
-						}
-					default: throw new Exception("尚未实现的规则类型");
-				}
-				entity.Relation.ParamIndex = -1;
-			}
-			var ruleItemList = entityModel.RuleItems.ToList();
-			entityModel.RuleSet.RuleFormat = TranslateRuleSetCom(entityModel.RuleSet.RuleSet, ref ruleItemList);
-	  
-			OperateResult result = new OperateResult();
-			entityModel.IsAdd = false;
-			if (entityModel.Rule.RuleId.HasValue == false)
-			{
-				entityModel.IsAdd = true;
-				entityModel.Rule.RuleId = Guid.NewGuid();
-				entityModel.RuleSet.RuleId = entityModel.Rule.RuleId.Value;  
-			}  
-			foreach (var tmp in entityModel.RuleItems)
-			{
-				tmp.ItemId = Guid.NewGuid();
-				tmp.Relation.ItemId = tmp.ItemId; 
-			}
-			
-			result = _vocationRepository.SaveRelTabRule(entityModel, userId);  
-			IncreaseDataVersion(DataVersionType.EntityData);
-			return HandleResult(result); 
-		}
+        #region 页签可见规则
+        public OutputResult<object> SaveRuleForRelTab(RelTabRuleSaveModel entityModel, int userId)
+        {
+            List<EntityFieldProMapper> fields = _entityProRepository.FieldQuery(entityModel.EntityId.ToString(), userId);
+            foreach (var entity in entityModel.RuleItems)
+            {
+                switch (entity.RuleType)
+                {
+                    case 0:
+                    case 1:
+                        {
+                            var entityField = fields.SingleOrDefault(t => t.FieldId == entity.FieldId.ToString());
+                            if (entityField.ControlType != entity.ControlType) throw new Exception("配置字段类型不匹配");
+                            entity.RuleSql = TranslateRuleConditionSql(entity.Operate, entity.RuleType, entity.RuleData, userId, entityField);
+                            break;
+                        }
+                    case 2:
+                        {
+                            var data = JObject.Parse(entity.RuleData);
+                            entity.RuleSql = string.Format(@"({0})", data["dataVal"].ToString());
+                            break;
+                        }
+                    default: throw new Exception("尚未实现的规则类型");
+                }
+                entity.Relation.ParamIndex = -1;
+            }
+            var ruleItemList = entityModel.RuleItems.ToList();
+            entityModel.RuleSet.RuleFormat = TranslateRuleSetCom(entityModel.RuleSet.RuleSet, ref ruleItemList);
 
-		public dynamic GetRelTabFunctionRule(RelTabRuleSelectModel body, int userNumber)
-		{
-			var crmData = new RelTabRuleSelect()
-			{
-				RelTabId = body.RelTabId, 
-				EntityId = body.EntityId
-			};
+            OperateResult result = new OperateResult();
+            entityModel.IsAdd = false;
+            if (entityModel.Rule.RuleId.HasValue == false)
+            {
+                entityModel.IsAdd = true;
+                entityModel.Rule.RuleId = Guid.NewGuid();
+                entityModel.RuleSet.RuleId = entityModel.Rule.RuleId.Value;
+            }
+            foreach (var tmp in entityModel.RuleItems)
+            {
+                tmp.ItemId = Guid.NewGuid();
+                tmp.Relation.ItemId = tmp.ItemId;
+            }
 
-			if (!crmData.IsValid())
-			{
-				return HandleValid(crmData);
-			}
+            result = _vocationRepository.SaveRelTabRule(entityModel, userId);
+            IncreaseDataVersion(DataVersionType.EntityData);
+            return HandleResult(result);
+        }
 
-			var ruleList = _vocationRepository.GetRelTabRule(crmData, userNumber);
-			var obj = ruleList.GroupBy(t => new
-			{ 
-				t.RelTabId,
-				t.RuleId,
-				t.RuleName,
-				t.RuleSet,
-			}).Select(group => new VocationRuleInfoModel
-			{
-				RuleId = group.Key.RuleId.ToString(),
-				RelTabId = group.Key.RelTabId.ToString(), 
-				RuleName = group.Key.RuleName,
-				RuleItems = group.Select(t => new RuleItemInfoModel
-				{
-					ItemId = t.ItemId.ToString(),
-					ItemName = t.ItemName,
-					FieldId = t.FieldId.ToString(),
-					Operate = t.Operate,
-					UseType = t.UseType,
-					RuleData = t.RuleData,
-					RuleType = t.RuleType
-				}).ToList(),
-				RuleSet = new RuleSetInfoModel
-				{
-					RuleSet = group.Key.RuleSet
-				}
-			}).ToList();
-			return new OutputResult<object>(obj);
-		}
-		#endregion
-	}
+        public dynamic GetRelTabFunctionRule(RelTabRuleSelectModel body, int userNumber)
+        {
+            var crmData = new RelTabRuleSelect()
+            {
+                RelTabId = body.RelTabId,
+                EntityId = body.EntityId
+            };
+
+            if (!crmData.IsValid())
+            {
+                return HandleValid(crmData);
+            }
+
+            var ruleList = _vocationRepository.GetRelTabRule(crmData, userNumber);
+            var obj = ruleList.GroupBy(t => new
+            {
+                t.RelTabId,
+                t.RuleId,
+                t.RuleName,
+                t.RuleSet,
+            }).Select(group => new VocationRuleInfoModel
+            {
+                RuleId = group.Key.RuleId.ToString(),
+                RelTabId = group.Key.RelTabId.ToString(),
+                RuleName = group.Key.RuleName,
+                RuleItems = group.Select(t => new RuleItemInfoModel
+                {
+                    ItemId = t.ItemId.ToString(),
+                    ItemName = t.ItemName,
+                    FieldId = t.FieldId.ToString(),
+                    Operate = t.Operate,
+                    UseType = t.UseType,
+                    RuleData = t.RuleData,
+                    RuleType = t.RuleType
+                }).ToList(),
+                RuleSet = new RuleSetInfoModel
+                {
+                    RuleSet = group.Key.RuleSet
+                }
+            }).ToList();
+            return new OutputResult<object>(obj);
+        }
+        #endregion
+    }
 
 
 

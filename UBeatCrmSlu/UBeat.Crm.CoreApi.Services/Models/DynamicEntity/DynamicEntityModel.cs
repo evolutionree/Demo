@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
+ 
+using UBeat.Crm.CoreApi.Services.Models.Rule;
+using UBeat.Crm.CoreApi.Services.Models.Vocation;
 
 namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
 {
@@ -495,6 +498,33 @@ namespace UBeat.Crm.CoreApi.Services.Models.DynamicEntity
         public string RelateTypeId { get; set; }
         public string EntityId { get; set; }
     }
+    public class EntityRule
+    {
+        public Guid EntityId { get; set; }
+        public Guid PageId { get; set; }
+        public RuleContent Rule { get; set; }
+        public ICollection<RuleItemModel> RuleItems { get; set; }
+        public UBeat.Crm.CoreApi.Services.Models.Rule.RuleSetModel RuleSet { get; set; }
+    }
+ 
+
+    public class RuleItemRelationModel
+    {
+        public string ItemId { get; set; }
+        public string RuleId { get; set; }
+        public int UserId { get; set; }
+        public int RoleSub { get; set; }
+        public int ParamIndex { get; set; }
+    }
+
+    public class RuleSetModel
+    {
+        public string RuleId { get; set; }
+        public string RuleSet { get; set; }
+        public int UserId { get; set; }
+        public string RuleFormat { get; set; }
+    }
+
 
     public class TemporaryDetailMode
     {

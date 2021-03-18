@@ -51,14 +51,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.Rule
         public int UserId { get; set; }
         public string RuleFormat { get; set; }
     }
-    public class EntityRule
-    {
-        public Guid EntityId { get; set; }
-        public Guid PageId { get; set; }
-        public RuleContent Rule { get; set; }
-        public ICollection<RuleItemModel> RuleItems { get; set; }
-        public RuleSetModel RuleSet { get; set; }
-    }
+
     public class RuleContent
     {
         public Guid EntityId { get; set; }

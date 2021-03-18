@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 
 namespace UBeat.Crm.CoreApi.Services.Models.Rule
 {
@@ -95,14 +96,7 @@ namespace UBeat.Crm.CoreApi.Services.Models.Rule
         public RuleItemRelationModel Relation { get; set; }
     }
 
-    public class RuleItemRelationModel
-    {
-        public string ItemId { get; set; }
-        public string RuleId { get; set; }
-        public int UserId { get; set; }
-        public int RoleSub { get; set; }
-        public int ParamIndex { get; set; }
-    }
+
 
     public class RuleSetModel
     {
