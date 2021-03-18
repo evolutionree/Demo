@@ -327,6 +327,7 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
         public int CalcuteType { get; set; }
         public Guid EntityId { get; set; }
         public string Func { get; set; }
+        public EntityRuleMapper EntityRule { get; set; }
         protected override IValidator GetValidator()
         {
             return new RelConfigValidator();
@@ -338,6 +339,52 @@ namespace UBeat.Crm.CoreApi.DomainModel.DynamicEntity
                 RuleFor(d => d.EntityId).NotNull().WithMessage("实体ID不能为空");
             }
         }
+    }
+    public class EntityRuleMapper
+    {
+        public Guid EntityId { get; set; }
+        public Guid PageId { get; set; }
+        public RuleContentMapper Rule { get; set; }
+        public ICollection<RuleItemDataMapper> RuleItems { get; set; }
+        public RuleSetDataMapper RuleSet { get; set; }
+    }
+    public class RuleSetDataMapper
+    {
+        public Guid RuleId { get; set; }
+        public string RuleSet { get; set; }
+        public int UserId { get; set; }
+        public string RuleFormat { get; set; }
+    }
+    public class RuleItemDataMapper
+    {
+        public Guid ItemId { get; set; }
+        public int ControlType { get; set; }
+        public string ItemName { get; set; }
+        public string EntityId { get; set; }
+        public Guid FieldId { get; set; }
+        public string Operate { get; set; }
+
+        public string RuleData { get; set; }
+        public int RuleType { get; set; }
+        public string RuleSql { get; set; }
+        public int UseType { get; set; }
+        public RuleItemRelationDataMapper Relation { get; set; }
+    }
+    public class RuleItemRelationDataMapper
+    {
+        public Guid ItemId { get; set; }
+        public Guid RuleId { get; set; }
+        public int UserId { get; set; }
+        public int RoleSub { get; set; }
+        public int ParamIndex { get; set; }
+    }
+    public class RuleContentMapper
+    {
+
+        public Guid EntityId { get; set; }
+        public string RuleName { get; set; }
+        public string RuleSql { get; set; }
+        public Guid RuleId { get; set; }
     }
 
     public class RelConfigSet : BaseEntity
