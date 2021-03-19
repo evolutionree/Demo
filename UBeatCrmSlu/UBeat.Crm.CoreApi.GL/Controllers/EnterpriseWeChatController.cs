@@ -25,8 +25,10 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
     {
         private readonly EnterpriseWeChatServices _enterpriseWeChatServices;
         private readonly AccountServices _accountServices;
+        private readonly CacheServices _cacheService;
         public EnterpriseWeChatController(EnterpriseWeChatServices enterpriseWeChatServices)
         {
+            _cacheService = new CacheServices();
             _enterpriseWeChatServices = enterpriseWeChatServices;
             _accountServices = ServiceLocator.Current.GetInstance<AccountServices>();
         }
@@ -156,6 +158,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         }
         [HttpPost]
         [Route("getsignature")]
+        [AllowAnonymous]
         public OutputResult<Object> GetSignature([FromBody]EnterpriseWeChatSignatureModel signature)
         {
             var timestamp = GetTimeStamp();
@@ -166,21 +169,38 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             string agentId = config.GetValue<string>("AgentId");
             string enterpriseWeChatJsApi = config.GetValue<string>("EnterpriseWeChatJsApi");
             string enterpriseWeChatToken = config.GetValue<string>("EnterpriseWeChatToken");
-            var getToken = HttpLib.Get(string.Format(enterpriseWeChatToken, corpId, secret));
-            var tokenObj = JObject.Parse(getToken);
-            if (tokenObj["errcode"].ToString() != "0")
+
+            var token = _cacheService.Repository.Get("qiyeweixintoken");
+            if (token == null || String.IsNullOrEmpty(token.ToString()))
             {
-                return new OutputResult<object>("获取企业Token异常");
+                token = HttpLib.Get(string.Format(enterpriseWeChatToken, corpId, secret));
+                var tokenObj = JObject.Parse(token.ToString());
+                if (tokenObj["errcode"].ToString() != "0")
+                {
+                    return new OutputResult<object>("获取企业Token异常");
+                }
+                TimeSpan expiration = DateTime.UtcNow.AddSeconds(3400) - DateTime.UtcNow;
+                _cacheService.Repository.Add("qiyeweixintoken", tokenObj["access_token"].ToString(), expiration);//, 
+                token = tokenObj["access_token"].ToString();
             }
-            var getTicket = HttpLib.Get(string.Format(enterpriseWeChatJsApi, tokenObj["access_token"].ToString()));
-            //jsapi_ticket=sM4AOVdWfPE4DxkXGEs8VMCPGGVi4C3VM0P37wVUCFvkVAy_90u5h9nbSlYy3-Sl-HhTdfl2fzFy1AOcHKP7qg&noncestr=Wm3WZYTPz0wzccnW&timestamp=1414587457&url=http://mp.weixin.qq.com?params=value
-            var ticketObj = JObject.Parse(getTicket);
-            if (ticketObj["errcode"].ToString() != "0")
+
+            var ticket = _cacheService.Repository.Get("qiyeweixinticket");
+            if (ticket == null || String.IsNullOrEmpty(ticket.ToString()))
             {
-                return new OutputResult<object>("获取企业Ticket异常");
+                ticket = HttpLib.Get(string.Format(enterpriseWeChatJsApi, token.ToString()));
+                //jsapi_ticket=sM4AOVdWfPE4DxkXGEs8VMCPGGVi4C3VM0P37wVUCFvkVAy_90u5h9nbSlYy3-Sl-HhTdfl2fzFy1AOcHKP7qg&noncestr=Wm3WZYTPz0wzccnW&timestamp=1414587457&url=http://mp.weixin.qq.com?params=value
+                var ticketObj = JObject.Parse(ticket.ToString());
+                if (ticketObj["errcode"].ToString() != "0")
+                {
+                    return new OutputResult<object>("获取企业Ticket异常");
+                }
+
+                TimeSpan expiration = DateTime.UtcNow.AddSeconds(3400) - DateTime.UtcNow;
+                _cacheService.Repository.Add("qiyeweixinticket", ticketObj["ticket"].ToString(), expiration);//, 
+                ticket = ticketObj["ticket"].ToString();
             }
-            var str = SignatureHelper.Sha1Signature("jsapi_ticket=" + ticketObj["ticket"].ToString() + "&noncestr=" + ranCode + "&timestamp=" + timestamp + "&url=" + signature.Url).ToLower();
-            return new OutputResult<object>(new { agentid = agentId, appid = corpId, jsapi_ticket = ticketObj["ticket"].ToString(), timestamp = timestamp, noncestr = ranCode, signature = str });
+            var str = SignatureHelper.Sha1Signature("jsapi_ticket=" + ticket.ToString() + "&noncestr=" + ranCode + "&timestamp=" + timestamp + "&url=" + signature.Url);
+            return new OutputResult<object>(new { agentid = agentId, appid = corpId, jsapi_ticket = ticket.ToString(), timestamp = timestamp, noncestr = ranCode, signature = str });
         }
         /// <summary>
         /// 获取时间戳
@@ -189,7 +209,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         string GetTimeStamp()
         {
             TimeSpan ts = DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0);
-            return Convert.ToInt64(ts.TotalSeconds).ToString();
+            return ((DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000000).ToString();
         }
         private void ClearExpiredSession(LoginSessionModel sessions)
         {
