@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Web;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Dynamics;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using UBeat.Crm.CoreApi.DomainModel.Message;
@@ -32,6 +33,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly PushServices _pushServices;
         private readonly CacheServices _cacheService;
         private readonly IDynamicRepository _dynamicRepository;
+        private readonly IDynamicEntityRepository _dynamicEntityRepository;
         private readonly IEntityProRepository _iEntityProRepository;
         private static NLog.ILogger _logger = NLog.LogManager.GetLogger(typeof(MessageServices).FullName);
         private readonly IMapper _mapper;
@@ -65,6 +67,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dynamicRepository = ServiceLocator.Current.GetInstance<IDynamicRepository>();
             _iEntityProRepository = ServiceLocator.Current.GetInstance<IEntityProRepository>();
             _mapper = ServiceLocator.Current.GetInstance<IMapper>();
+            _dynamicEntityRepository = ServiceLocator.Current.GetInstance<IDynamicEntityRepository>();
         }
 
 
@@ -451,12 +454,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         break;
                                     case MessageStyleType.EntityDynamic:
                                         var rec3 = new List<string>();
+                                        string title = string.Empty;
+                                        if (entityInfo.modeltype == 3)
+                                        {
+                                            var relDetail = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper { EntityId = msgparam.RelEntityId.Value, RecId = msgparam.RelBusinessId, NeedPower = 0 }, userNumber);
+                                            if (relDetail == null) break;
+                                            DynamicEntityFieldSearch fieldList = this._dynamicEntityRepository.GetEntityFields(msgparam.EntityId, userNumber).FirstOrDefault(t => t.ControlType == 30);
+
+                                            if (fieldList == null) break;
+                                            JObject jo = JObject.Parse(fieldList.FieldConfig);
+                                            if (jo["relentityid"] == null || jo["relfieldid"] == null)
+                                                throw new Exception("关联对象信息配置异常");
+                                            var relEntityInfo = _iEntityProRepository.GetEntityInfo(Guid.Parse(jo["relentityid"].ToString()));
+                                            var relField = _iEntityProRepository.GetFieldInfo(Guid.Parse(jo["relfieldid"].ToString()), userNumber);
+
+                                            if (relDetail.ContainsKey(relField.fieldname + "_name"))
+                                                title = relDetail[relField.fieldname + "_name"];
+                                            else if (relDetail.ContainsKey(relField.fieldname))
+                                                title = relDetail[relField.fieldname];
+                                        }
                                         foreach (var tmp in wcUsers)
                                         {
                                             rec3.Add(tmp);
                                             string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=3&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString() + "&typeid=" + msgparam.TypeId.ToString());
                                             packageMsg.recevier = rec3;
-                                            packageMsg.title = msgparam.EntityName + "   [" + packageMsg.title + "]";
+                                            packageMsg.title = msgparam.EntityName + "  [" + title + "]";
                                             packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
                                             packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, pushMsg.Message + " \n " + packageMsg.DateTime);
                                             MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
