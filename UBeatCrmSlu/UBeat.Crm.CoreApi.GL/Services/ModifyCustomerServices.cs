@@ -472,18 +472,26 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
         public void AutoSubmitCustomerToSapNew(Guid caseId, int userId, DbTransaction tran)
         {
-            /*var result = new SynResultModel();
+            var result = new SynResultModel();
             logger.Info(string.Concat("ModifyCustomerServices.AutoSubmitCustomerToSap-Begin"));
+            //同步客户动态
             var data = _baseDataRepository.GetEntityIdAndRecIdByCaseId(tran, caseId, userId);
             if (data != null)
             {
                 //客户审批通过自动提交客户同步到SAP
                 var custEntityId = EntityReg.CustomerEntityId();
-                var detailData = _baseDataServices.GetEntityDetailData(tran, data.EntityId, data.RecId, userId);
+                var detailSyncData = _baseDataServices.GetEntityDetailData(tran, data.EntityId, data.RecId,userId);
+                if (detailSyncData == null)
+                {
+                    logger.Error(string.Format("同步失败，不存在客户记录"));
+                    return;
+                }
+                //客户信息
+                var detailData = _baseDataServices.GetEntityDetailData(tran, custEntityId,Guid.Parse(detailSyncData["recrelateid"].ToString()),userId);
                 if (detailData != null)
                 {
                     SynchrosapStatus isSyn = SynchrosapStatus.Yes;
-                    var sapno = string.Concat(detailData["companyone"]);
+                    var sapno = string.Concat(detailData["erpcode"]);
                     var issynchrosap = string.Concat(detailData["issynchrosap"]);
                     if (!string.IsNullOrEmpty(sapno) && (issynchrosap == "1" || issynchrosap == "4"))
                         isSyn = SynchrosapStatus.No;
@@ -491,11 +499,11 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     {
                         if (isSyn == SynchrosapStatus.Yes)
                         {
-                            result = SynSapAddCustData(detailData, custEntityId, data.RecId);
+                            result = SynSapAddCustData(detailData, custEntityId, Guid.Parse(detailSyncData["recrelateid"].ToString()));
                         }
                         else
                         {
-                            result = SynSapModifyCustData(detailData, custEntityId, data.RecId);
+                            result = SynSapModifyCustData(detailData, custEntityId, Guid.Parse(detailSyncData["recrelateid"].ToString()));
                         }
                     }
                     catch (Exception ex)
@@ -509,7 +517,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                 {
                     result.Message = "同步失败，不存在客户记录";
                 }
-            }*/
+            }
         }
 
         #region auto submit

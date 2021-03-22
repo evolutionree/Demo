@@ -2947,7 +2947,33 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);
                     if (eventInfo != null && !string.IsNullOrEmpty(eventInfo.FuncName))
                     {
-                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                        if (!eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains(".")) // 有&标识但没有服务路径
+                        {
+                            throw new Exception("如需执行服务，则必须在首位加“&”标识");
+                        }
+                        if (!eventInfo.FuncName.Contains("&"))
+                        {
+                            _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                        }
+                        if (eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains("."))
+                        {
+                            //如果是funcname&servicename 则先后执行
+                            var arrSplit = eventInfo.FuncName.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var item in arrSplit)
+                            {
+                                if (item.Contains('.'))
+                                {
+ 
+                                     if (caseItemEntity.ChoiceStatus == 1)
+                                        executeService(item, caseInfo, userinfo,tran);
+                                }
+                                else
+                                {
+                                    eventInfo.FuncName = item;
+                                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                                }
+                            }
+                        }
                     }
                 }
                 else if (canAddNextNode) //添加下一步骤审批节点
