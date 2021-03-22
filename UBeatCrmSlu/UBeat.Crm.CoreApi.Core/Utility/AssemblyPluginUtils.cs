@@ -12,16 +12,20 @@ namespace UBeat.Crm.CoreApi.Utility
     {
         private static AssemblyPluginUtils instance = null;
         private List<Assembly> assembles = new List<Assembly>();
-        public static AssemblyPluginUtils getInstance() {
-            if (instance == null) {
+        public static AssemblyPluginUtils getInstance()
+        {
+            if (instance == null)
+            {
                 instance = new AssemblyPluginUtils();
             }
             return instance;
         }
-        private AssemblyPluginUtils() {
+        private AssemblyPluginUtils()
+        {
             LoadUKAssemble();
         }
-        private void LoadUKAssemble() {
+        private void LoadUKAssemble()
+        {
 
             dynamic type = this.GetType();
             string currentDirectory = Path.GetDirectoryName(type.Assembly.Location);
@@ -34,17 +38,21 @@ namespace UBeat.Crm.CoreApi.Utility
                 assembles.Add(assembly);
             }
         }
-        public Type getUKType(string typename,bool isrec =true) {
-            foreach (Assembly a in assembles) {
+        public Type getUKType(string typename, bool isrec = true)
+        {
+            foreach (Assembly a in assembles)
+            {
                 try
                 {
                     Type t = a.GetType(typename);
                     if (t != null) return t;
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                 }
             }
-            if (isrec) {
+            if (isrec)
+            {
                 return PlugInsUtils.getInstance().getTypeWithName(typename, false);
             }
             return null;

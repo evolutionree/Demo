@@ -30,6 +30,7 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Services.Models.SoapErp;
 using System.IO;
+using UBeat.Crm.CoreApi.Utility;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -908,7 +909,43 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 //判断是否有附加函数_event_func
                 eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);
-                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, newcaseid, -1, 1, userinfo.UserId, tran);
+                if (eventInfo != null && !string.IsNullOrEmpty(eventInfo.FuncName))
+                {
+                    if (!eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains(".")) // 有&标识但没有服务路径
+                    {
+                        throw new Exception("如需执行服务，则必须在首位加“&”标识");
+                    }
+                    if (!eventInfo.FuncName.Contains("&"))
+                    {
+                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, newcaseid, -1, 1, userinfo.UserId, tran);
+                    }
+                    if (eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains("."))
+                    {
+                        //如果是funcname&servicename 则先后执行
+                        var arrSplit = eventInfo.FuncName.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var subitem in arrSplit)
+                        {
+                            if (subitem.Contains('.'))
+                            {
+                                if (ispresubmit == false && 1 == 1)
+                                {
+                                    //虚拟一个caseinfo
+
+                                    WorkFlowCaseInfo subCaseInfo = new WorkFlowCaseInfo()
+                                    {
+                                        CaseId = newcaseid
+                                    };
+                                    executeService(subitem, subCaseInfo, userinfo, tran);
+                                }
+                            }
+                            else
+                            {
+                                eventInfo.FuncName = subitem;
+                                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, newcaseid, -1, 1, userinfo.UserId, tran);
+                            }
+                        }
+                    }
+                }
 
                 if (!ispresubmit)//如果正式提交成功，则发动态消息
                 {
@@ -1362,7 +1399,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 //判断是否有附加函数_event_func
                 var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, tran);
-                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                //_workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                if (eventInfo != null && !string.IsNullOrEmpty(eventInfo.FuncName))
+                {
+                    if (!eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains(".")) // 有&标识但没有服务路径
+                    {
+                        throw new Exception("如需执行服务，则必须在首位加“&”标识");
+                    }
+                    if (!eventInfo.FuncName.Contains("&"))
+                    {
+                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                    }
+                    if (eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains("."))
+                    {
+                        //如果是funcname&servicename 则先后执行
+                        var arrSplit = eventInfo.FuncName.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var item in arrSplit)
+                        {
+                            if (item.Contains('.'))
+                            {
+                                /*
+                                 * 预提交不执行服务型后置函数，避免提交到SAP中
+                                 if (caseItemEntity.ChoiceStatus == 1)
+                                    executeService(item, caseInfo, userinfo, service, tran);
+                                    */
+                            }
+                            else
+                            {
+                                eventInfo.FuncName = item;
+                                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                            }
+                        }
+                    }
+                }
 
                 //走完审批所有操作，获取下一步数据
                 result = GetNextNodeData(tran, caseInfo, workflowInfo, flowNodeInfo, userinfo);
@@ -1578,8 +1647,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                 //判断是否有附加函数_event_func
                 var eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, nodeid, trans);
-                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, trans);
-
+                //_workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, caseInfo.NodeNum, caseItemEntity.ChoiceStatus, userinfo.UserId, trans);
+                if (eventInfo != null && !string.IsNullOrEmpty(eventInfo.FuncName))
+                {
+                    if (!eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains(".")) // 有&标识但没有服务路径
+                    {
+                        throw new Exception("如需执行服务，则必须在首位加“&”标识");
+                    }
+                    if (!eventInfo.FuncName.Contains("&"))
+                    {
+                        _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, trans);
+                    }
+                    if (eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains("."))
+                    {
+                        //如果是funcname&servicename 则先后执行
+                        var arrSplit = eventInfo.FuncName.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var item in arrSplit)
+                        {
+                            if (item.Contains('.'))
+                            {
+                                /*
+                                 * 预提交不执行服务型后置函数，避免提交到SAP中
+                                 if (caseItemEntity.ChoiceStatus == 1)
+                                    executeService(item, caseInfo, userinfo, service, tran);
+                                    */
+                            }
+                            else
+                            {
+                                eventInfo.FuncName = item;
+                                _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, trans);
+                            }
+                        }
+                    }
+                }
                 //走完审批所有操作，获取下一步数据
                 result = GetNextNodeData(trans, caseInfo, workflowInfo, flowNodeInfo, userinfo);
                 //这是预处理操作，获取到结果后不需要提交事务，直接全部回滚
@@ -2290,7 +2390,35 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     //判断是否有附加函数_event_func
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);
-                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                    if (eventInfo != null && !string.IsNullOrEmpty(eventInfo.FuncName))
+                    {
+                        if (!eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains(".")) // 有&标识但没有服务路径
+                        {
+                            throw new Exception("如需执行服务，则必须在首位加“&”标识");
+                        }
+                        if (!eventInfo.FuncName.Contains("&"))
+                        {
+                            _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                        }
+                        if (eventInfo.FuncName.Contains("&") && eventInfo.FuncName.Contains("."))
+                        {
+                            //如果是funcname&servicename 则先后执行
+                            var arrSplit = eventInfo.FuncName.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var item in arrSplit)
+                            {
+                                if (item.Contains('.'))
+                                {
+                                    if (caseItemEntity.ChoiceStatus == 1)
+                                        executeService(item, caseInfo, userinfo, tran);
+                                }
+                                else
+                                {
+                                    eventInfo.FuncName = item;
+                                    _workFlowRepository.ExecuteWorkFlowEvent(eventInfo, caseInfo.CaseId, -1, caseItemEntity.ChoiceStatus, userinfo.UserId, tran);
+                                }
+                            }
+                        }
+                    }
                 }
                 else if (canAddNextNode) //添加下一步骤审批节点
                 {
@@ -2860,6 +2988,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return new OutputResult<object>(null);
+        }
+        private void executeService(string serviceFullName,
+            WorkFlowCaseInfo caseInfo,
+            UserInfo userinfo,
+            DbTransaction tran = null)
+        {
+            int tmp = serviceFullName.LastIndexOf(".", StringComparison.CurrentCulture);
+            string serviceName = serviceFullName.Substring(0, tmp);
+            string methodName = serviceFullName.Substring(tmp + 1);
+            Type type = AssemblyPluginUtils.getInstance().getUKType(serviceName);
+            object servicePro = this.ServiceProvider.GetService(type);
+            System.Reflection.MethodInfo methodInfo = null;
+            methodInfo = type.GetMethod(methodName, new Type[] { typeof(Guid), typeof(int), typeof(DbTransaction) });
+
+            var param = new object[] { caseInfo.CaseId, userinfo.UserId, tran };
+            methodInfo.Invoke(servicePro, param);
         }
         #endregion
 
