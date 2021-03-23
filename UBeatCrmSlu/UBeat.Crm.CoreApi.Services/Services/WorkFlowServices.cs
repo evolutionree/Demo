@@ -1513,16 +1513,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
                         tran.Commit();
                         WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
-                        if (!string.IsNullOrEmpty(message))
-                        {
-                            var reminder = ServiceLocator.Current.GetInstance<ReminderServices>();
-                            var detail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper { RecId = caseInfo.RecId, EntityId = caseInfo.EntityId, NeedPower = 0 }, userinfo.UserId, null);
-                            Dictionary<string, object> dic = new Dictionary<string, object>();
-                            dic.Add("reminderid", "392aba4a-2a31-4824-813d-e6c26d909e80");
-                            dic.Add("busrecid", JObject.Parse(detail["belongcust"].ToString())["id"]);
-                            dic.Add("message", message);
-                            reminder.QrtExecuteTaskNow(dic);
-                        }
+                        //if (!string.IsNullOrEmpty(message))
+                        //{
+                        //    var reminder = ServiceLocator.Current.GetInstance<ReminderServices>();
+                        //    var detail = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper { RecId = caseInfo.RecId, EntityId = caseInfo.EntityId, NeedPower = 0 }, userinfo.UserId, null);
+                        //    Dictionary<string, object> dic = new Dictionary<string, object>();
+                        //    dic.Add("reminderid", "392aba4a-2a31-4824-813d-e6c26d909e80");
+                        //    dic.Add("busrecid", JObject.Parse(detail["belongcust"].ToString())["id"]);
+                        //    dic.Add("message", message);
+                        //    reminder.QrtExecuteTaskNow(dic);
+                        //}
                     }
                     if (operatetype == 0)
                     {

@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
         private readonly IBaseDataRepository _baseDataRepository;
         private readonly CacheServices _cacheService;
         private BaseDataServices _baseDataServices;
-        private readonly CoreApi.IRepository.IDynamicEntityRepository _dynamicEntityRepository;
+        private   CoreApi.IRepository.IDynamicEntityRepository _dynamicEntityRepository;
         private FetchCustomerServices _fetchCustomerServices;
         public ModifyCustomerServices(ICustomerRepository customerRepository,
             IBaseDataRepository baseDataRepository,
@@ -798,6 +798,8 @@ namespace UBeat.Crm.CoreApi.GL.Services
         {
             if (_baseDataServices == null)
                 _baseDataServices = ServiceLocator.Current.GetInstance<BaseDataServices>();
+            if (_dynamicEntityRepository == null)
+                _dynamicEntityRepository = ServiceLocator.Current.GetInstance<CoreApi.IRepository.IDynamicEntityRepository>();
             // var creditLimitApplyData = _baseDataServices.GetEntityDetailData(null, entityId, recId, userId);
             var creditLimitApplyData = _dynamicEntityRepository.Detail(new DynamicEntityDetailtMapper
             {
