@@ -499,11 +499,11 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     {
                         if (isSyn == SynchrosapStatus.Yes)
                         {
-                            result = SynSapAddCustData(detailData, custEntityId, Guid.Parse(detailSyncData["recrelateid"].ToString()));
+                            result = SynSapAddCustData(detailData, custEntityId, Guid.Parse(detailSyncData["recrelateid"].ToString()),tran);
                         }
                         else
                         {
-                            result = SynSapModifyCustData(detailData, custEntityId, Guid.Parse(detailSyncData["recrelateid"].ToString()));
+                            result = SynSapModifyCustData(detailData, custEntityId, Guid.Parse(detailSyncData["recrelateid"].ToString()), tran);
                         }
                     }
                     catch (Exception ex)
