@@ -1500,7 +1500,7 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                                                       urr.roleid AS flowluancherroleid,
                                                       u.isleader AS flowluancherisleader
                                                FROM crm_sys_workflow_case AS c
-                                               LEFT JOIN crm_sys_account_userinfo_relate AS aur ON aur.userid=c.reccreator
+                                               LEFT JOIN crm_sys_account_userinfo_relate AS aur ON aur.userid=c.reccreator and aur.recstatus=1
                                                LEFT JOIN crm_sys_department AS d ON d.deptid=aur.deptid
                                                LEFT JOIN crm_sys_userinfo AS u ON u.userid=c.reccreator
                                                LEFT JOIN crm_sys_userinfo_role_relate AS urr ON urr.userid=c.reccreator
