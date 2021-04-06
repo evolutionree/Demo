@@ -116,7 +116,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                     parentregionid = newRegionID;
                 }
             }
-            RegionSQL = " e.custregion in (select descendant from crm_sys_region_treepaths where ancestor = " + parentregionid + ") ";
+            RegionSQL = " e.region in (select descendant from crm_sys_region_treepaths where ancestor = " + parentregionid + ") ";
             #endregion
             #region  处理客户的查询脚本
             #region 处理客户状态过滤条件
@@ -280,7 +280,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
 	                                    ) regionmap
                                      inner JOIN (
 	                                    {0}
-                                    ) customer ON customer.custregion = regionmap.descendant
+                                    ) customer ON customer.region = regionmap.descendant
                                     INNER JOIN crm_sys_region regionInfo ON regionInfo.regionid = regionmap.regionid
                                     GROUP BY
 	                                    regionmap.regionid,

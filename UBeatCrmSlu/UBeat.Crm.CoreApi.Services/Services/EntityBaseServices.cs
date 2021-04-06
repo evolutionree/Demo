@@ -105,7 +105,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     return ShowError<object>("对不起，您没有该功能的权限");
                 }
             }
-            
+
 
             using (var conn = GetDbConnect(connectString))
             {
@@ -119,15 +119,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         case 2:
                         case 3:
-                             checkAccess = userData.HasDataAccess(tran, RoutePath, entityId, DeviceClassic, recIds, recidFieldName);
-                            if(checkAccess==false)
+                            checkAccess = userData.HasDataAccess(tran, RoutePath, entityId, DeviceClassic, recIds, recidFieldName);
+                            if (checkAccess == false)
                             {
                                 throw new Exception("对不起，您没有操作该数据的权限");
                             }
                             break;
                         default: break;
                     }
-                    
+
 
                     if (PreActionExtModelList != null && PreActionExtModelList.Count > 0)
                     {
@@ -138,7 +138,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             outResult = ActionExtService.ExcutePreAction(tran, arg, userData, actionExtModel);
                             preActionResult = outResult.DataBody;
                             //如果配置了立即终止，则立刻返回，不执行后面逻辑
-                            if ( actionExtModel.resulttype == 1)
+                            if (actionExtModel.resulttype == 1)
                             {
                                 tran.Commit();
                                 return outResult;
@@ -160,33 +160,39 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
 
                     if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0)
-                    Logger.Error("FinishActionExtModelList:" + Newtonsoft.Json.JsonConvert.SerializeObject(FinishActionExtModelList));
+                        Logger.Error("FinishActionExtModelList:" + Newtonsoft.Json.JsonConvert.SerializeObject(FinishActionExtModelList));
                     Logger.Error("entityid=" + entityId);
-                    if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0&& outResult.Status==0)
+                    if (FinishActionExtModelList != null && FinishActionExtModelList.Count > 0 && outResult.Status == 0)
                     {
                         var actionExtModel = FinishActionExtModelList.Where(m => m.entityid == entityId).FirstOrDefault();
                         if (actionExtModel != null)
                         {
                             //执行预处理逻辑，返回值必须与func返回值一致，参数为func参数的json对象和func执行结果数据的json
                             var tmp = ActionExtService.ExcuteFinishAction(tran, arg, preActionResult, actionResult, userData, actionExtModel);
-                            //if (tmp != null&& tmp.DataBody != null ) {
-                            //    outResult = tmp;
-                            //}
+                            if (tmp != null && tmp.DataBody != null)
+                            {
+                                var flag = (tmp.DataBody as dynamic)[0]["flag"];
+                                var dataMsg = (tmp.DataBody as dynamic)[0]["msg"];
+                                if (flag == 0)
+                                    outResult = new OutputResult<object>(null, dataMsg, 1);
+                            }
+
                         }
                     }
-                    
+
                     tran.Commit();
                 }
                 catch (Exception ex)
                 {
-                    
+
                     tran.Rollback();
                     Logger.Error(ex, "数据库执行出错");
                     if (ex.InnerException != null)
                     {
                         return ShowError<object>(ex.InnerException.Message);
                     }
-                    else {
+                    else
+                    {
                         return ShowError<object>(ex.Message);
                     }
                 }
@@ -199,6 +205,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             outResult.Versions = userData.GetUserVersionData(commonData.DataVersions);
             return outResult;
         }
-        
+
     }
 }
