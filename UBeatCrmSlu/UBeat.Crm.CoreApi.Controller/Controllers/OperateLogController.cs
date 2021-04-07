@@ -27,5 +27,5 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (recordModel == null) return ResponseError<object>("参数格式错误");
             return _operateLogServices.RecordList(recordModel, UserId);
         }
-    }
+    }   
 }

@@ -747,7 +747,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
 
         public OutputResult<Object> getCustomerCreditLimit(CustomerCreditLimitParam param, int userId)
         {
-            var detailData = _baseDataServices.GetEntityDetailData(null, param.EntityId, param.RecId, userId);
+            var detailData = _baseDataServices.GetEntityDetailData(null, param.EntityId, param.RecIds.FirstOrDefault(), userId);
             if (detailData != null && detailData["erpcode"] != null && !string.IsNullOrEmpty(detailData["erpcode"].ToString()))
             {
                 var header = new Dictionary<String, string>();

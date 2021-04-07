@@ -461,6 +461,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
     public class CustomerCreditLimitParam
     {
         public Guid RecId { get; set; }
+        public List<Guid> RecIds { get; set; }
         public Guid EntityId { get; set; }
     }
     public class CustomerCreditLimitModel

@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 namespace UBeat.Crm.CoreApi.GL.Controllers
 {
 
-    [Route("gl/[controller]")]
+    [Route("api/gl/[controller]")]
     public class SapApiController : BaseController
     {
         private readonly BaseDataServices _baseDataServices;
