@@ -203,7 +203,7 @@ namespace UBeat.Crm.CoreApi.GL.Services
                                 model.ProductModel = dic[item.MATNR].ProductModel;
 
                                 model.ProductCode = item.MATNR;
-                                model.Factory = item.MATNR;
+                                model.Factory = item.WERKS;
                                 model.StockAddress = item.LGORT;
                                 model.Unit = item.MEINS;
                                 model.enableSapStock = item.LABST;
@@ -234,7 +234,6 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     return dic;
                 var plist = _iSapProductsRepository.getProductInfoByIds(productIds) as List<IDictionary<string, object>>;
 
-
                 List<ProductStockRequest> stockReqList = new List<ProductStockRequest>();
                 if (plist != null && plist.Count > 0)
                 {
@@ -263,12 +262,12 @@ namespace UBeat.Crm.CoreApi.GL.Services
                     }
 
                     var headData = new Dictionary<String, string>();
-                    headData.Add("Transaction_ID", "MATERIAL_STOCK");
+                    headData.Add("Transaction_ID", "MATERIAL_AVAILABLE");
                     var postData = new Dictionary<String, object>();
 
                     postData.Add("LIST", stockReqList);
 
-                    logger.Info(string.Concat("获取物料库存请求参数：", JsonHelper.ToJson(postData)));
+                    logger.Info(string.Concat("获取物料可用库存请求参数：", JsonHelper.ToJson(postData)));
                     var postResult = CallAPIHelper.ApiPostData(postData, headData);
                     SapStockModelResult sapRequest = JsonConvert.DeserializeObject<SapStockModelResult>(postResult);
 
@@ -288,8 +287,11 @@ namespace UBeat.Crm.CoreApi.GL.Services
                                 model.ProductModel = dic[item.MATNR].ProductModel;
 
                                 model.ProductCode = item.MATNR;
-                                model.Factory = item.MATNR;
+  
+                                model.Factory = item.WERKS;
+                                model.FactoryName = item.NAME1;
                                 model.StockAddress = item.LGORT;
+                                model.StockAddressName = item.LGOBE;
                                 model.Unit = item.MEINS;
                                 model.enableSapStock = item.LABST;
 

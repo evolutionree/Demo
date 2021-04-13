@@ -36,6 +36,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
         public string ProductCode { get; set; } //物料编码
         public string ProductName { get; set; } //物料名称
         public string Factory { get; set; } //工厂
+        public string FactoryName { get; set; } //工厂名称
         public string StockAddress { get; set; } //库存地点
         public string StockAddressName { get; set; }
         public decimal enableSapStock { get; set; } //非限制使用的估价的库存 
@@ -77,6 +78,7 @@ namespace UBeat.Crm.CoreApi.GL.Model
             TRAME = 0;
         }
         public String WERKS { get; set; } //工厂
+        public String NAME1 { get; set; } //工厂名称
         public String LGORT { get; set; }//库位
         public String LGOBE { get; set; }//库位名称
         public String MATNR { get; set; }//物料编号
@@ -108,5 +110,6 @@ namespace UBeat.Crm.CoreApi.GL.Model
     public class QueryProductStockModel
     {
         public List<Guid> ProductIds { get; set; }
+        public Guid EntityId { get; set; }
     }
 }

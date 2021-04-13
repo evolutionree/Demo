@@ -188,7 +188,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             if (model == null || model.ProductIds == null) return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP产品库存数据", model);
 
-            var sendResult = _productServices.GetProductStockByIds(model.ProductIds);
+            var sendResult = _productServices.GetProductEnableStockByIds(model.ProductIds);
             return new OutputResult<object>(sendResult);
         }
     }
