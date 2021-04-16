@@ -120,7 +120,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     Guid caseItemId = Guid.Empty;
                     var caseItemList = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber);
                     var lastCaseItem = _workFlowRepository.CaseItemList(caseInfo.CaseId, userNumber).LastOrDefault();
-                    var lastCaseItemTmp = caseItemList.Where(t => t["nodenum"].ToString() == lastCaseItem["nodenum"].ToString() && t["handleuser"].ToString() == userNumber.ToString()&& (t["choicestatus"].ToString() == "4" || t["choicestatus"].ToString() == "6")).ToList();
+                    var lastCaseItemTmp = caseItemList.Where(t => t["nodenum"].ToString() == lastCaseItem["nodenum"].ToString() && t["handleuser"].ToString() == userNumber.ToString() && (t["choicestatus"].ToString() == "4" || t["choicestatus"].ToString() == "6")).ToList();
                     if (lastCaseItemTmp.Count > 0)
                     {
                         lastCaseItem = lastCaseItemTmp.FirstOrDefault();
@@ -2385,7 +2385,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
                             var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
                             var syncResult = data as OutputResult<object>;
-                            if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
+                            if (syncResult.Status == 1) { message = syncResult.Message; status = 1; throw new Exception(message); }
                         }
                     }
                     //判断是否有附加函数_event_func
@@ -2963,9 +2963,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             {
                                 if (item.Contains('.'))
                                 {
- 
-                                     if (caseItemEntity.ChoiceStatus == 1)
-                                        executeService(item, caseInfo, userinfo,tran);
+
+                                    if (caseItemEntity.ChoiceStatus == 1)
+                                        executeService(item, caseInfo, userinfo, tran);
                                 }
                                 else
                                 {
