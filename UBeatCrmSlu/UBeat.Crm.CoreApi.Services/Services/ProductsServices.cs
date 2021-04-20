@@ -805,12 +805,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //OutputResult<object> tmp = _dynamicEntityServices.DataList2(dynamicEntity, false, 1);
             dynamic tmp = _repository.GetProducts(null, "", new PageParam { PageIndex = 1, PageSize = Int32.MaxValue }, new ProductList
             {
+                SearchQuery="1",//表示启动存储过程advancequery 逻辑
                 IsAllProduct = true,
                 ProductSeriesId = Guid.Parse("7f74192d-b937-403f-ac2a-8be34714278b"),
                 RecStatus = 1,
                 RecVersion = 0,
                 ExitField = 3
-            }, filterKey, userNumber);
+            }, filterKey, userNumber);;
             var pagedata = tmp.GetType().GetProperty("pagedata").GetValue(tmp, null);
             List<Dictionary<string, object>> products = (List<Dictionary<string, object>>)pagedata;
             foreach (Dictionary<string, object> item in products)
