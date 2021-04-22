@@ -232,6 +232,11 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 {
                     sql.Append(comSql);
                 }
+
+                //更新客户编号
+                var fetchDateTime = DateTime.Now.ToString("yyyy-MM-dd");
+                var codeupdateSql = string.Format(@"update crm_sys_customer set custcode=crm_fun_create_custcode_glsc('{0}') where recstatus=1 and custcode is null and erpcode = '{1}';", fetchDateTime, item.companyone);
+                sql.Append(codeupdateSql);
             }
 
             var finalSql = sql.ToString();
@@ -357,6 +362,10 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 {
                     sql.Append(comSql);
                 }
+                //更新客户编号
+                var fetchDateTime = DateTime.Now.ToString("yyyy-MM-dd");
+                var codeupdateSql = string.Format(@"update crm_sys_customer set custcode=crm_fun_create_custcode_glsc('{0}') where recstatus=1 and custcode is null and reccode = '{1}';", fetchDateTime, item.reccode);
+                sql.Append(codeupdateSql);
             }
 
             var finalSql = sql.ToString();
@@ -483,6 +492,10 @@ namespace UBeat.Crm.CoreApi.FHSJ.Repository
                 {
                     sql.Append(comSql);
                 }
+                //更新客户编号
+                var fetchDateTime = DateTime.Now.ToString("yyyy-MM-dd");
+                var codeupdateSql = string.Format(@"update crm_sys_customer set custcode=crm_fun_create_custcode_glsc('{0}') where recstatus=1  and custcode is null and erpcode = '{1}';", fetchDateTime, item.companyone);
+                sql.Append(codeupdateSql);
             }
 
             var finalSql = sql.ToString();
