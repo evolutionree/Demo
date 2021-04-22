@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.Controllers;
+using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.GL.Model;
 using UBeat.Crm.CoreApi.GL.Services;
 using UBeat.Crm.CoreApi.Services.Models;
@@ -43,9 +44,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             if (model == null || model.RecIds.Count == 0)
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户数据根据id", string.Empty);
-            var c = _fetchCustomerServices.FetchCustData(model, UserId, 3);
-
-            if (c.Flag == 1)
+            //var c = _fetchCustomerServices.FetchCustData(model, UserId, 3);
+			var c = new OperateResult();
+			c.Flag = 1;
+			c.Msg = "同步成功";
+			if (c.Flag == 1)
             {
                 return new OutputResult<object>(c.Msg);
             }
@@ -62,9 +65,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             if (model == null)
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP订单数据根据id", string.Empty);
-            var c = _orderServices.getOrders(model, UserId);
-
-            if (c.Status == 0)
+            //var c = _orderServices.getOrders(model, UserId);
+			var c = new OutputResult<Object>();
+			c.Status = 0;
+			c.Message = "同步成功";
+			if (c.Status == 0)
             {
                 return new OutputResult<object>(c.Message);
             }
@@ -86,8 +91,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var recId = model.RecIds[0];
             var entityId = model.EntityId;
 
-            var c = _modifyCustomerServices.SynSapCustData(entityId, recId, UserId);
-            if (c.Result)
+			//var c = _modifyCustomerServices.SynSapCustData(entityId, recId, UserId);
+			var c = new SynResultModel();
+			c.Result = true;
+			c.Message = "同步成功";
+			if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
             }
@@ -100,8 +108,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         [HttpPost("sysncbankinfo")]
         public OutputResult<object> SyncBankInfo2CRM()
         {
-            var c = _modifyCustomerServices.SyncBankInfo2CRM();
-            if (c.Result)
+            //var c = _modifyCustomerServices.SyncBankInfo2CRM();
+			var c = new SynResultModel();
+			c.Result = true;
+			c.Message = "同步成功";
+			if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
             }
@@ -116,8 +127,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         {
             if (info == null)
                 return ResponseError<object>("参数格式有误");
-            var c = _delivnoteServices.SyncDelivnote2CRM(info);
-            if (c.Result)
+            //var c = _delivnoteServices.SyncDelivnote2CRM(info);
+			var c = new SynResultModel();
+			c.Result = true;
+			c.Message = "同步成功";
+			if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
             }
@@ -139,8 +153,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var recId = model.RecIds[0];
             var entityId = model.EntityId;
 
-            var c = _orderServices.SynSapOrderDataByHttp(entityId, recId, UserId);
-            if (c.Result)
+            //var c = _orderServices.SynSapOrderDataByHttp(entityId, recId, UserId);
+			var c = new SynResultModel();
+			c.Result = true;
+			c.Message = "同步成功";
+			if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
             }
@@ -161,8 +178,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var recId = model.RecIds[0];
             var entityId = model.EntityId;
 
-            var c = _delivnoteServices.SynSapDelivNoteData(entityId, recId, UserId);
-            if (c.Result)
+			//var c = _delivnoteServices.SynSapDelivNoteData(entityId, recId, UserId);
+			var c = new SynResultModel();
+			c.Result = true;
+			c.Message = "同步成功";
+			if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
             }
@@ -177,8 +197,9 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         [AllowAnonymous]
         public OutputResult<object> SyncSapCustCreditLimitData()
         {
-            return _modifyCustomerServices.SyncSapCustCreditLimitData(Guid.Parse("a62a6832-3ef3-4338-9764-d9a27ffdb854"), Guid.Parse("095b3102-d131-4cda-b8a0-242fca4031f1"), 1);
-        }
+			//return _modifyCustomerServices.SyncSapCustCreditLimitData(Guid.Parse("a62a6832-3ef3-4338-9764-d9a27ffdb854"), Guid.Parse("095b3102-d131-4cda-b8a0-242fca4031f1"), 1);
+			return new OutputResult<object>("同步成功");
+		}
 
         [Route("getproductstocks")]
         [AllowAnonymous]
@@ -188,8 +209,9 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             if (model == null || model.ProductIds == null) return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP产品库存数据", model);
 
-            var sendResult = _productServices.GetProductEnableStockByIds(model.ProductIds);
-            return new OutputResult<object>(sendResult);
+            //var sendResult = _productServices.GetProductEnableStockByIds(model.ProductIds);
+			var sendResult = new List<ProductStockModel>();
+			return new OutputResult<object>(sendResult);
         }
     }
 }

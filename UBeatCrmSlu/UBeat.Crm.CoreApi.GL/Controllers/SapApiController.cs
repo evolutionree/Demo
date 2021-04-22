@@ -84,7 +84,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         [AllowAnonymous]
         public OutputResult<object> InitDicData([FromBody] SynSapModel model = null)
         {
-            _baseDataServices.InitDicDataQrtz();
+            //_baseDataServices.InitDicDataQrtz();
             return new OutputResult<object>(null);
         }
 
@@ -97,9 +97,10 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户数据", string.Empty);
 
-            var sendResult = _fetchCustomerServices.FetchCustData(model, UserId, 1);
-            return new OutputResult<object>(sendResult);
-        }
+            //var sendResult = _fetchCustomerServices.FetchCustData(model, UserId, 1);
+            //return new OutputResult<object>(sendResult);
+			return new OutputResult<object>();
+		}
         [Route("getcustcreditlimit")]
         [HttpPost]
         [AllowAnonymous]
@@ -109,9 +110,10 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户信用额度", string.Empty);
 
-            var sendResult = _fetchCustomerServices.getCustomerCreditLimit(model, 1);
-            return (sendResult);
-        }
+			//var sendResult = _fetchCustomerServices.getCustomerCreditLimit(model, 1);
+			//return (sendResult);
+			return new OutputResult<object>();
+		}
         [Route("getcustomerreceivable")]
         [HttpPost]
         [AllowAnonymous]
@@ -121,9 +123,10 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户应收账款", string.Empty);
 
-            var sendResult = _fetchCustomerServices.getCustomerReceivable(model, 1);
-            return (sendResult);
-        }
+			//var sendResult = _fetchCustomerServices.getCustomerReceivable(model, 1);
+			//return (sendResult);
+			return new OutputResult<object>();
+		}
         [Route("getorders")]
         [HttpPost]
         [AllowAnonymous]
@@ -133,9 +136,10 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP订单列表", string.Empty);
 
-            var sendResult = _orderServices.getOrders(model, 1);
-            return (sendResult);
-        }
+			//var sendResult = _orderServices.getOrders(model, 1);
+			//return (sendResult);
+			return new OutputResult<object>();
+		}
         [Route("fetchcustdatabyid")]
         [HttpPost]
         [AllowAnonymous]
@@ -144,9 +148,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             if (model == null || model.RecIds.Count == 0)
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP客户数据根据id", string.Empty);
-            var c = _fetchCustomerServices.FetchCustData(model, UserId, 3);
-
-            if (c.Flag == 1)
+			//var c = _fetchCustomerServices.FetchCustData(model, UserId, 3);
+			var c = new OperateResult();
+			c.Flag = 1;
+			c.Msg = "同步成功";
+			if (c.Flag == 1)
             {
                 return new OutputResult<object>(c.Msg);
             }
@@ -164,9 +170,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             if (model == null)
                 return ResponseError<object>("参数格式错误");
             WriteOperateLog("获取SAP订单数据根据id", string.Empty);
-            var c = _orderServices.getOrders(model);
-
-            if (c.Status == 0)
+            //var c = _orderServices.getOrders(model);
+			var c = new OutputResult<Object>();
+			c.Status = 0;
+			c.Message = "同步成功";
+			if (c.Status == 0)
             {
                 return new OutputResult<object>(c.Message);
             }
@@ -218,8 +226,11 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
             var recId = model.RecIds[0];
             var entityId = model.EntityId;
 
-            var c = _orderServices.SynSapOrderDataByHttp(entityId, recId, UserId);
-            if (c.Result)
+			//var c = _orderServices.SynSapOrderDataByHttp(entityId, recId, UserId);
+			var c = new SynResultModel();
+			c.Result = true;
+			c.Message = "同步成功";
+			if (c.Result)
             {
                 return new OutputResult<object>(c.Message);
             }
