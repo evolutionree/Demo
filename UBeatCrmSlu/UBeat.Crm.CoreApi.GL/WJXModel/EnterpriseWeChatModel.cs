@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace UBeat.Crm.CoreApi.GL.WJXModel
+namespace UBeat.Crm.CoreApi.ZGQY.WJXModel
 {
     public enum UrlTypeEnum
     {

@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
-using UBeat.Crm.CoreApi.GL.IRepository;
+using UBeat.Crm.CoreApi.ZGQY.IRepository;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository;
 using UBeat.Crm.CoreApi.Services.Models.WJXModel;
 
-namespace UBeat.Crm.CoreApi.GL.Repository
+namespace UBeat.Crm.CoreApi.ZGQY.Repository
 {
     public class WJXRepository : RepositoryBase, IWJXRepository
     {

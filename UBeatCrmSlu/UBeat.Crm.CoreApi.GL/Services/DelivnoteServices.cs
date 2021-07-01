@@ -7,16 +7,16 @@ using System.Linq;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Repository;
-using UBeat.Crm.CoreApi.GL.Utility;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Repository;
+using UBeat.Crm.CoreApi.ZGQY.Utility;
 using UBeat.Crm.CoreApi.Services.Services;
 
-namespace UBeat.Crm.CoreApi.GL.Services
+namespace UBeat.Crm.CoreApi.ZGQY.Services
 {
     public class DelivnoteServices: BasicBaseServices
     {
-        private static readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.GL.Services.DelivnoteServices");
+        private static readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.ZGQY.Services.DelivnoteServices");
         private BaseDataServices _baseDataServices;
         private IDelivnoteRepository _delivnoteRepository;
         private readonly IBaseDataRepository _baseDataRepository;

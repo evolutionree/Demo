@@ -4,8 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.Controllers;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Services;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Services;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.WJXModel;
@@ -16,7 +16,7 @@ using UBeat.Crm.CoreApi.DomainModel.Products;
 using UBeat.Crm.CoreApi.DomainModel;
 using Newtonsoft.Json;
 
-namespace UBeat.Crm.CoreApi.GL.Controllers
+namespace UBeat.Crm.CoreApi.ZGQY.Controllers
 {
 
     [Route("api/gl/[controller]")]
@@ -27,7 +27,7 @@ namespace UBeat.Crm.CoreApi.GL.Controllers
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
         private readonly Services.OrderServices _orderServices;
         private readonly ProductServices _productServices;
-        public SapApiController(ProductServices productServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, UBeat.Crm.CoreApi.GL.Services.OrderServices orderServices)
+        public SapApiController(ProductServices productServices, IProductsRepository iProductsRepository, IDynamicEntityRepository iDynamicEntityRepository, BaseDataServices baseDataServices, FetchCustomerServices fetchCustomerServices, UBeat.Crm.CoreApi.ZGQY.Services.OrderServices orderServices)
         {
             _baseDataServices = baseDataServices;
             _fetchCustomerServices = fetchCustomerServices;

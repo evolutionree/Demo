@@ -15,10 +15,10 @@ using UBeat.Crm.CoreApi.Models;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Utility;
-using UBeat.Crm.CoreApi.GL.Services;
-using UBeat.Crm.CoreApi.GL.WJXModel;
+using UBeat.Crm.CoreApi.ZGQY.Services;
+using UBeat.Crm.CoreApi.ZGQY.WJXModel;
 
-namespace UBeat.Crm.CoreApi.GL.Controllers
+namespace UBeat.Crm.CoreApi.ZGQY.Controllers
 {
     [Route("api/[controller]")]
     public class EnterpriseWeChatController : BaseController

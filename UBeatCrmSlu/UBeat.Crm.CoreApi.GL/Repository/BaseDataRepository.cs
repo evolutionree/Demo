@@ -6,11 +6,11 @@ using System.Linq;
 using Dapper;
 using Npgsql;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
-using UBeat.Crm.CoreApi.GL.Model;
+using UBeat.Crm.CoreApi.ZGQY.Model;
 using UBeat.Crm.CoreApi.Repository.Repository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 
-namespace UBeat.Crm.CoreApi.GL.Repository
+namespace UBeat.Crm.CoreApi.ZGQY.Repository
 {
     public class BaseDataRepository: RepositoryBase, IBaseDataRepository
 	{

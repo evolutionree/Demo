@@ -15,22 +15,22 @@ using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 using System.Linq;
 using UBeat.Crm.LicenseCore;
 using NLog;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Repository;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Repository;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
-using UBeat.Crm.CoreApi.GL.Utility;
+using UBeat.Crm.CoreApi.ZGQY.Utility;
 using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Services.Services;
-using ICustomerRepository = UBeat.Crm.CoreApi.GL.Repository.ICustomerRepository;
+using ICustomerRepository = UBeat.Crm.CoreApi.ZGQY.Repository.ICustomerRepository;
 using System.Data.Common;
 using UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity;
 using UBeat.Crm.CoreApi.Core.Utility;
 
-namespace UBeat.Crm.CoreApi.GL.Services
+namespace UBeat.Crm.CoreApi.ZGQY.Services
 {
     public class FetchCustomerServices : BasicBaseServices
     {
-        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.GL.Services.FetchCustomerService");
+        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.ZGQY.Services.FetchCustomerService");
 
         private readonly IBaseDataRepository _baseDataRepository;
         private readonly BaseDataServices _baseDataServices;

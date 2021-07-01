@@ -15,21 +15,21 @@ using UBeat.Crm.CoreApi.Services.Utility.MsgForPug_inUtility;
 using System.Linq;
 using UBeat.Crm.LicenseCore;
 using UBeat.Crm.CoreApi.Services.Services;
-using UBeat.Crm.CoreApi.GL.Repository;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Utility;
+using UBeat.Crm.CoreApi.ZGQY.Repository;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Utility;
 using Newtonsoft.Json;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using NLog;
-using IOrderRepository = UBeat.Crm.CoreApi.GL.Repository.IOrderRepository;
+using IOrderRepository = UBeat.Crm.CoreApi.ZGQY.Repository.IOrderRepository;
 using System.Data.Common;
 
-namespace UBeat.Crm.CoreApi.GL.Services
+namespace UBeat.Crm.CoreApi.ZGQY.Services
 {
     public class OrderServices : BasicBaseServices
     {
-        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.GL.Services.OrderServices");
+        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.ZGQY.Services.OrderServices");
         private readonly IConfigurationRoot _configurationRoot;
         private readonly DynamicEntityServices _dynamicEntityServices;
         private readonly IBaseDataRepository _baseDataRepository;

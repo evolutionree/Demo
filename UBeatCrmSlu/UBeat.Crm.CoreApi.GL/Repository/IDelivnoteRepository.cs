@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 
-namespace UBeat.Crm.CoreApi.GL.Repository
+namespace UBeat.Crm.CoreApi.ZGQY.Repository
 {
     public interface IDelivnoteRepository
     {

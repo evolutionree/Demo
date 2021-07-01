@@ -10,15 +10,15 @@ using NLog;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Repository;
-using UBeat.Crm.CoreApi.GL.Utility;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Repository;
+using UBeat.Crm.CoreApi.ZGQY.Utility;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.DomainModel;
 
-namespace UBeat.Crm.CoreApi.GL.Services
+namespace UBeat.Crm.CoreApi.ZGQY.Services
 {
     public class ModifyCustomerServices : BasicBaseServices
     {

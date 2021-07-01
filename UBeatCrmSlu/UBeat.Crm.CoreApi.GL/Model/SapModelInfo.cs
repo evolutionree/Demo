@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace UBeat.Crm.CoreApi.GL.Model
+namespace UBeat.Crm.CoreApi.ZGQY.Model
 {
     public class SapModelInfo
     {

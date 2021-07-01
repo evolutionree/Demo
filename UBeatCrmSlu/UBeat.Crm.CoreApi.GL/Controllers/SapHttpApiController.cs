@@ -5,14 +5,14 @@ using System.Collections.Generic;
 using System.Text;
 using UBeat.Crm.CoreApi.Controllers;
 using UBeat.Crm.CoreApi.DomainModel;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Services;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Services;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.DynamicEntity;
 using UBeat.Crm.CoreApi.Services.Models.WJXModel;
 using UBeat.Crm.CoreApi.Services.Services;
 
-namespace UBeat.Crm.CoreApi.GL.Controllers
+namespace UBeat.Crm.CoreApi.ZGQY.Controllers
 {
 
     [Route("api/gl/[controller]")]

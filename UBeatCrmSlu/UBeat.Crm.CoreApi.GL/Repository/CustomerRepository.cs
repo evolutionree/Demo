@@ -7,8 +7,8 @@ using System.Text;
 using Dapper;
 using Npgsql;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Repository;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Repository;
 using UBeat.Crm.CoreApi.Repository.Repository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 

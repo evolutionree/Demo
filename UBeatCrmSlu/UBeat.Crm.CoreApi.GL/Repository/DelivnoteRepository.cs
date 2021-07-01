@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using UBeat.Crm.CoreApi.Repository.Repository;
 
-namespace UBeat.Crm.CoreApi.GL.Repository
+namespace UBeat.Crm.CoreApi.ZGQY.Repository
 {
     public class DelivnoteRepository : RepositoryBase, IDelivnoteRepository
     {

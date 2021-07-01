@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using UBeat.Crm.CoreApi.GL.Model;
-using UBeat.Crm.CoreApi.GL.Repository;
+using UBeat.Crm.CoreApi.ZGQY.Model;
+using UBeat.Crm.CoreApi.ZGQY.Repository;
 using System.Linq;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.DomainModel.Products;
@@ -11,14 +11,14 @@ using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using NLog;
-using UBeat.Crm.CoreApi.GL.Utility;
+using UBeat.Crm.CoreApi.ZGQY.Utility;
 using Newtonsoft.Json;
 
-namespace UBeat.Crm.CoreApi.GL.Services
+namespace UBeat.Crm.CoreApi.ZGQY.Services
 {
     public class ProductServices
     {
-        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.GL.Services.ProductServices");
+        private readonly Logger logger = LogManager.GetLogger("UBeat.Crm.CoreApi.ZGQY.Services.ProductServices");
         private readonly IBaseDataRepository _iBaseDataRepository;
         private readonly IDynamicEntityRepository _iDynamicEntityRepository;
         private readonly IProductsRepository _iProductsRepository;

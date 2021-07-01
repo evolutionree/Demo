@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Core.Utility;
 
-namespace UBeat.Crm.CoreApi.GL.Utility
+namespace UBeat.Crm.CoreApi.ZGQY.Utility
 {
     public class CallAPIHelper
     {

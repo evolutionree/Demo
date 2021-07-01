@@ -9,7 +9,7 @@ using UBeat.Crm.CoreApi.Services.Services;
 using UBeat.Crm.CoreApi.Services.Services.ReportDetail;
 using UBeat.Crm.CoreApi.Services.Utility;
 
-namespace UBeat.Crm.CoreApi.GL.Services
+namespace UBeat.Crm.CoreApi.ZGQY.Services
 {
     public class ReportServices : EntityBaseServices
     {

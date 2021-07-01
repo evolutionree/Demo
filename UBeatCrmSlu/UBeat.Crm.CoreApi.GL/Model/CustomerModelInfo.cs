@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using UBeat.Crm.CoreApi.GL.Model;
+using UBeat.Crm.CoreApi.ZGQY.Model;
 
-namespace UBeat.Crm.CoreApi.GL.Model
+namespace UBeat.Crm.CoreApi.ZGQY.Model
 {
     public class CustomerModelInfo
     {

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Data.Common;
 using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
-using UBeat.Crm.CoreApi.GL.Model;
+using UBeat.Crm.CoreApi.ZGQY.Model;
 
-namespace UBeat.Crm.CoreApi.GL.Repository
+namespace UBeat.Crm.CoreApi.ZGQY.Repository
 {
     public interface ISapProductRepository
     {

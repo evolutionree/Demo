@@ -1497,7 +1497,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         if (workflowInfo.Entityid == Guid.Parse("a62a6832-3ef3-4338-9764-d9a27ffdb854"))
                         {
-                            String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.GL.dll");
+                            String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.ZGQY.dll");
                             Assembly assem = Assembly.LoadFrom(classPath);
                             var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
                             var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
@@ -2375,7 +2375,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     if (caseItemEntity.ChoiceStatus == 1)
                     {
-                        String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.GL.dll");
+                        String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.ZGQY.dll");
                         Assembly assem = Assembly.LoadFrom(classPath);
                         var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
                         var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);

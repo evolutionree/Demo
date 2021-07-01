@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UBeat.Crm.CoreApi.Services.Services;
 
-namespace UBeat.Crm.CoreApi.GL.Services
+namespace UBeat.Crm.CoreApi.ZGQY.Services
 {
     public class ScheduleServices : BasicBaseServices
     {
