@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         Dictionary<string, List<IDictionary<string, object>>> DeviceBindList(DeviceBindInfo deviceBindQuery, int userNumber);
 
         AccountUserMapper GetUserInfo(string accountName);
-
+        AccountUserMapper GetUserInfoByLoginName(string loginName);
         OperateResult RegistUser(AccountUserRegistMapper registEntity, int userNumber);
 
         OperateResult EditUser(AccountUserEditMapper editEntity, int userNumber);

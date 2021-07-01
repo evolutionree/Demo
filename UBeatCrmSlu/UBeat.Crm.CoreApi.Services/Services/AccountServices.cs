@@ -28,15 +28,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private readonly IMapper _mapper;
         private readonly string _passwordSalt;
         private readonly SecuritysModel _securitysModel;
+        private readonly AdAuthConfigModel _adAuthConfigModel;
+        private readonly bool _isOpenAdAuth;
+        private readonly AdAuthServices _adAuthServices;
 
-
-        public AccountServices(IMapper mapper, IAccountRepository accountRepository, IConfigurationRoot config)
+        public AccountServices(IMapper mapper, IAccountRepository accountRepository, IConfigurationRoot config, 
+            AdAuthServices adAuthServices)
         {
             _accountRepository = accountRepository;
             _mapper = mapper;
             _securitysModel = config.GetSection("Securitys").Get<SecuritysModel>();
             _passwordSalt = _securitysModel.PwdSalt;
 
+            _adAuthServices = adAuthServices;
+            _adAuthConfigModel = config.GetSection("ADConfig").Get<AdAuthConfigModel>();
+            if (_adAuthConfigModel != null)
+                _isOpenAdAuth = _adAuthConfigModel.IsOpen == 1 ? true : false;
         }
 
         public int GetUserCount()
@@ -92,7 +99,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> Login(AccountLoginModel loginModel, AnalyseHeader header)
         {
-            var userInfo = _accountRepository.GetUserInfo(loginModel.AccountName);
+            AccountUserMapper userInfo = null;
+            if (_isOpenAdAuth == false)
+                userInfo = _accountRepository.GetUserInfo(loginModel.AccountName);
+            else
+                userInfo = _accountRepository.GetUserInfoByLoginName(loginModel.AccountName);
             if (userInfo == null)
             {
                 return ShowError<object>("请输入正确的帐号");
@@ -102,19 +113,59 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>("非CRM用户，不能登录");
             }
 
-
-
             if (userInfo.RecStatus == 0)
             {
                 return ShowError<object>("该账户已停用");
             }
 
-
-            //pwd salt security
-            var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
-            if (!securityPwd.Equals(userInfo.AccountPwd))
+            var needCheckAdAuth = true;
+            if (_isOpenAdAuth)
             {
-                return ShowError<object>("密码输入错误");
+                var specialAccount = _adAuthConfigModel.SpecialAccountId;
+                if (!string.IsNullOrEmpty(specialAccount))
+                {
+                    foreach (var item in specialAccount.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (!string.IsNullOrEmpty(item) && loginModel.AccountName == item)
+                        {
+                            needCheckAdAuth = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                needCheckAdAuth = false;
+            }
+
+            if (needCheckAdAuth == true)
+            {
+                var adModel = new AdAuthModelInfo();
+                adModel.ServerIp = _adAuthConfigModel.ServerIp;
+                adModel.ServerPort = _adAuthConfigModel.ServerPort;
+                adModel.AdminAccount = _adAuthConfigModel.AdminAccount;
+                adModel.AdminPwd = _adAuthConfigModel.AdminPwd;
+                adModel.BinDN = _adAuthConfigModel.BinDN;
+                adModel.BaseDN = _adAuthConfigModel.BaseDN;
+                adModel.Account = userInfo.AccountName;
+                adModel.Pwd = loginModel.AccountPwd;
+
+                if (_adAuthServices == null) return ShowError<object>("_adAuthServices");
+                var result = _adAuthServices.CheckAdAuthByAccount(adModel);
+                if (!string.IsNullOrEmpty(result) && result != "AD验证成功")
+                {
+                    return ShowError<object>(result);
+                }
+            }
+            else
+            {
+                //pwd salt security
+                var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
+                if (!securityPwd.Equals(userInfo.AccountPwd))
+                {
+                    return ShowError<object>("密码输入错误");
+                }
             }
 
             //判断登录授权

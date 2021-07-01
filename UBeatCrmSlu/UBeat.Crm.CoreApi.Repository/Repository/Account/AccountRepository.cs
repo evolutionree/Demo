@@ -26,13 +26,28 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Account
         public AccountUserMapper GetUserInfo(string accountName)
         {
             var sql = @"
-                SELECT u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime FROM crm_sys_account AS a
+                SELECT u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime, a.accountname FROM crm_sys_account AS a
                 LEFT JOIN crm_sys_account_userinfo_relate AS r ON a.accountid = r.accountid
                 LEFT JOIN crm_sys_userinfo AS u ON r.userid = u.userid
                 WHERE accountname = @accountName LIMIT 1
             ";
 
             var param = new { AccountName = accountName };
+            var userInfo = DataBaseHelper.QuerySingle<AccountUserMapper>(sql, param);
+            return userInfo;
+        }
+        public AccountUserMapper GetUserInfoByLoginName(string loginName)
+        {
+            var sql = @"
+                SELECT u.userid,u.username,a.accesstype,a.accountpwd,a.recstatus,a.nextmustchangepwd ,a.lastchangedpwdtime,
+a.accountname
+FROM crm_sys_account AS a
+                LEFT JOIN crm_sys_account_userinfo_relate AS r ON a.accountid = r.accountid
+                LEFT JOIN crm_sys_userinfo AS u ON r.userid = u.userid
+                WHERE (accountname = @loginName or userphone = @loginName) LIMIT 1
+            ";
+
+            var param = new { loginName = loginName };
             var userInfo = DataBaseHelper.QuerySingle<AccountUserMapper>(sql, param);
             return userInfo;
         }

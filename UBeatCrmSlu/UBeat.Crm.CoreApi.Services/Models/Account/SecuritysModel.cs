@@ -24,8 +24,17 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
         /// 秘钥
         /// </summary>
         public string PrivateKey { set; get; }
+    }
 
-       
-
+    public class AdAuthConfigModel
+    {
+        public int IsOpen { set; get; }
+        public string ServerIp { set; get; }
+        public int ServerPort { set; get; }
+        public string AdminAccount { set; get; }
+        public string AdminPwd { set; get; }
+        public string BinDN { set; get; }
+        public string BaseDN { set; get; }
+        public string SpecialAccountId { get; set; }
     }
 }

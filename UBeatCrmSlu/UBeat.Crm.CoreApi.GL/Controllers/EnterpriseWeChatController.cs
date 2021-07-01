@@ -108,7 +108,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = config.GetValue<string>("GLDomain"),
+                Domain = config.GetValue<string>("Domain"),
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);
