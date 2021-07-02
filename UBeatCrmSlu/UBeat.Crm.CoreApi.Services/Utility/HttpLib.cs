@@ -135,29 +135,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         {
             try
             {
-                //Stopwatch watch = new Stopwatch();
-                //watch.Start();
-                //HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
-
-                //req.ContentType = "application/json;charset=utf-8;";
-                //req.Method = "GET";
-                //req.Headers["Accept"] = "application/json;";
-
-                //var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
-                //var result = GetResponseAsString(rsp, Encoding.UTF8);
-                //watch.Stop();
-                //Logger.Error("获取实时定位信息:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
-                //return result;
-
                 using (HttpClient client = new HttpClient())
                 {
+					Logger.Info("HttpLib.Get.url：" + url);
                     Byte[] resultBytes = client.GetByteArrayAsync(url).Result;
-                    return Encoding.UTF8.GetString(resultBytes);
-                }
+					var result = Encoding.UTF8.GetString(resultBytes);
+					Logger.Info("HttpLib.Get.result：" + result);
+					return result;
+				}
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "GET请求异常");
+                Logger.Error(ex, "HttpLib.(string url)请求异常：" + ex.Message);
                 return string.Empty;
             }
         }
@@ -165,34 +154,23 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         {
             try
             {
-                //Stopwatch watch = new Stopwatch();
-                //watch.Start();
-                //HttpWebRequest req = WebRequest.CreateHttp(new Uri(url));
-
-                //req.ContentType = "application/json;charset=utf-8;";
-                //req.Method = "GET";
-                //req.Headers["Accept"] = "application/json;";
-
-                //var rsp = (HttpWebResponse)req.GetResponseAsync().Result;
-                //var result = GetResponseAsString(rsp, Encoding.UTF8);
-                //watch.Stop();
-                //Logger.Error("获取实时定位信息:{0} 耗时:{1}", result, watch.ElapsedMilliseconds);
-                //return result;
-
                 using (HttpClient client = new HttpClient())
                 {
-                    foreach (var t in headers)
+					Logger.Info("HttpLib.Get(string url, WebHeaderCollection headers).url：" + url);
+					foreach (var t in headers)
                     {
                         client.DefaultRequestHeaders.Add(t.ToString(), headers[t.ToString()]);
                     }
                     Byte[] resultBytes = client.GetByteArrayAsync(url).Result;
-                    return Encoding.UTF8.GetString(resultBytes);
-                }
+					var result = Encoding.UTF8.GetString(resultBytes);
+					Logger.Info("HttpLib.Get(string url, WebHeaderCollection headers).result：" + result);
+					return result;
+				}
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "GET请求异常");
-                return string.Empty;
+				Logger.Error(ex, "HttpLib.Get(string url, WebHeaderCollection headers)请求异常：" + ex.Message);
+				return string.Empty;
             }
         }
         public static string GetResponseAsString(HttpWebResponse rsp, Encoding encoding)

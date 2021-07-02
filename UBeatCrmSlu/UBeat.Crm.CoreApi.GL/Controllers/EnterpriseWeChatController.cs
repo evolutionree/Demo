@@ -78,11 +78,21 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
             }
             int userNumber;
             var result = _enterpriseWeChatServices.GetSSOCode(enterpriseWeChat, out userNumber);
-            if (result.Status == 1) return;
-            var account = _enterpriseWeChatServices.GetAccountInfo(Convert.ToInt32(userNumber));
+			if (result.Status == 1)
+			{
+				HttpContext.Response.ContentType = "text/plain; charset=utf-8";
+				HttpContext.Response.WriteAsync("您未开通CRM账号，请联系管理员");
+				return;
+			}
+			var account = _enterpriseWeChatServices.GetAccountInfo(Convert.ToInt32(userNumber));
             var userData = account.DataBody as AccountUserInfo;
-            if (userData == null) return;
-            var header = GetAnalyseHeader();
+			if (userData == null)
+			{
+				HttpContext.Response.ContentType = "text/plain;chartset=utf-8";
+				HttpContext.Response.WriteAsync("您未开通CRM账号，请联系管理员");
+				return;
+			}
+			var header = GetAnalyseHeader();
             var deviceId = header.DeviceId;
             if (header.DeviceId.Equals("UnKnown"))
             {
@@ -278,10 +288,20 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
 
             int userNumber;
             var result = _enterpriseWeChatServices.GetSSOCode(enterpriseWeChat, out userNumber);
-            if (result.Status == 1) return;
-            var account = _enterpriseWeChatServices.GetAccountInfo(Convert.ToInt32(userNumber));
+			if (result.Status == 1)
+			{
+				HttpContext.Response.ContentType = "text/plain; charset=utf-8";
+				HttpContext.Response.WriteAsync("您未开通CRM账号，请联系管理员");
+				return;
+			}
+			var account = _enterpriseWeChatServices.GetAccountInfo(Convert.ToInt32(userNumber));
             var userData = account.DataBody as AccountUserInfo;
-            if (userData == null) return;
+			if (userData == null)
+			{
+				HttpContext.Response.ContentType = "text/plain;chartset=utf-8";
+				HttpContext.Response.WriteAsync("您未开通CRM账号，请联系管理员");
+				return;
+			}
             var header = GetAnalyseHeader();
             var deviceId = header.DeviceId;
             if (header.DeviceId.Equals("UnKnown"))
@@ -308,7 +328,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
             var cookie = new CookieOptions
             {
                 Expires = DateTime.Now.AddMinutes(120),
-                Domain = config.GetValue<string>("GLDomain"),
+                Domain = config.GetValue<string>("Domain"),
                 Path = "/"
             };
             HttpContext.Response.Cookies.Append("token", result.DataBody.ToString(), cookie);

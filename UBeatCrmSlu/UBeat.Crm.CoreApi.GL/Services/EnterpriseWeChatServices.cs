@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -20,7 +21,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 
         private static readonly string Access_Token = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={0}&corpsecret={1}";
         private static readonly string UserAuth = "https://qyapi.weixin.qq.com/cgi-bin/user/getuserinfo?access_token={0}&code={1}";
-        private readonly IConfiguration _configurationRoot;
+		private static readonly string UserInfo = "https://qyapi.weixin.qq.com/cgi-bin/user/get?access_token={0}&userid={1}";
+		private readonly IConfiguration _configurationRoot;
         private readonly IAccountRepository _accountRepository;
         public EnterpriseWeChatServices(IConfigurationRoot configurationRoot, IAccountRepository accountRepository)
         {
@@ -77,8 +79,19 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
                     return HandleResult(result);
                 }
                 var wcUserId = getWCUserData["UserId"].ToString();
-                var userInfo = _accountRepository.GetWcAccountUserInfo(wcUserId);
-                if (userInfo == null || string.IsNullOrEmpty(userInfo.WCUserid))
+				var getWCUserInfo = HttpLib.Get(string.Format(UserInfo, access_token, wcUserId));
+				AccountUserInfo userInfo = null;
+				if (getWCUserInfo != null)
+				{
+					var getWCUserInfoData = JObject.Parse(getWCUserInfo);
+					if (getWCUserInfoData.ContainsKey("mobile"))
+					{
+						var mobile = getWCUserInfoData["mobile"].ToString();
+						userInfo = _accountRepository.GetWcAccountUserInfoByMobile(mobile);
+					}
+				}
+				
+                if (userInfo == null || userInfo.UserId <= 0)
                 {
                     result = new OperateResult
                     {
@@ -108,5 +121,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
                 return HandleResult(new OperateResult { Flag = 1, Msg = ex.Message });
             }
         }
+
+
     }
 }

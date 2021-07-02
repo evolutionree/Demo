@@ -487,7 +487,26 @@ FROM crm_sys_account AS a
             return result == null ? null : result.FirstOrDefault();
         }
 
-        public List<UserInfo> GetAllUserInfoList()
+		public AccountUserInfo GetWcAccountUserInfoByMobile(string mobile)
+		{
+			var sql = @"
+              SELECT ur.accountid,a.accountname,ur.userid,u.username,u.namepinyin AS UserNamePinyin,ur.deptid AS DepartmentId,d.deptcode AS DepartmentCode,d.deptname AS DepartmentName,d.pdeptid AS PDepartmentId,u.dduserid,u.wcuserid
+                FROM crm_sys_account_userinfo_relate AS ur
+                LEFT JOIN crm_sys_department AS d ON ur.deptid=d.deptid
+                Inner JOIN crm_sys_userinfo AS u ON u.userid=ur.userid
+                LEFT JOIN crm_sys_account AS a ON a.accountid=ur.accountid
+                WHERE ur.recstatus = 1 AND u.userphone = @mobile";
+
+			var param = new DbParameter[]
+					{
+						new NpgsqlParameter("mobile", mobile),
+					};
+
+			var result = DBHelper.ExecuteQuery<AccountUserInfo>("", sql, param);
+			return result == null ? null : result.FirstOrDefault();
+		}
+
+		public List<UserInfo> GetAllUserInfoList()
         {
             var sql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo";
 
