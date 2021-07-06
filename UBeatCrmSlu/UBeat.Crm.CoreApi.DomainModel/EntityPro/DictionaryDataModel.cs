@@ -19,6 +19,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         public string ExtField4 { get; set; }
         public string ExtField5 { get; set; }
         public dynamic DataVal_Lang { get; set; }
+
+        public static implicit operator DictionaryDataModel(List<DictionaryDataModel> v)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class DicTypeDataModel

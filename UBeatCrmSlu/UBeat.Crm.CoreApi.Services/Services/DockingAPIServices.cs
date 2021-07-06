@@ -7,6 +7,7 @@ using UBeat.Crm.CoreApi.DomainModel;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Utility;
+using UBeat.Crm.CoreApi.DomainModel.EntityPro;
 using System.Linq;
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -33,14 +34,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
             foreach (var str in splitStr)
             {
                 api.CompanyName = str;
-                api.Country = country.ExtField2;
-                if (country.ExtField2 == "CN")
+                string countryStr = "";
+                if (country == null)
+                {
+                    countryStr = "CN";
+                }
+                else {
+                    countryStr = country.ExtField2;
+                }
+                api.Country = countryStr;
+                if (countryStr == "CN")
                     BuildCompanySamples(api).ForEach(t =>
                     {
                         var p = t as AbstractCompanyInfo;
                         outResult.Add(p);
                     });
-                else if (country.ExtField2 == "CNHK")
+                else if (countryStr == "CNHK")
                     BuildCompanySamples(api).ForEach(t =>
                     {
                         var p = t as AbstractCompanyInfo;
@@ -201,14 +210,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         List<CompanySampleInfo> BuildCompanySamples(CompanyModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.ADVSEARCH_API, api.CompanyName, "name", api.AppKey, api.SkipNum, api.Secret));
+
+
+
+            //启信宝
+            //string result = HttpLib.Get(string.Format(DockingAPIHelper.ADVSEARCH_API, api.CompanyName, "name", api.AppKey, api.SkipNum, api.Secret));
+            //var jObject = JObject.Parse(result);
+            //企查查
+            var url = string.Format(DockingAPIHelper.SEARCHWIDE_API, api.AppKey, api.CompanyName);
+            var result = QichachaProgram.httpGet(url, QichachaProgram.getHeaderVals(api.AppKey, api.Secret));
             var jObject = JObject.Parse(result);
-            if (jObject["status"].ToString() == "200")
+            if (jObject["Status"].ToString() == "200")
             {
-                var data = JsonConvert.DeserializeObject<CompanyAPISubResult>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
-                return data.Items ?? new List<CompanySampleInfo>();
+                var data = JsonConvert.DeserializeObject<CompanyAPISubResult>(jObject["Result"] == null ? string.Empty : jObject.ToString());
+                
+                return data.Result ?? new List<CompanySampleInfo>();
             }
-            else if (jObject["status"].ToString() == "105") return null;
+            else if (jObject["Status"].ToString() == "105") return null;
             return new List<CompanySampleInfo>();
         }
 

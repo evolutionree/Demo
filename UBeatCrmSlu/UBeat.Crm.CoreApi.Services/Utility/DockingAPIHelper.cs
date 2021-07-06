@@ -42,8 +42,7 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         ///// 按企业全名或注册号或统一社会信用代码返回法院公告信息
         ///// </summary>
         //public static string GETNOTICELISTBYNAME_API = "http://api.qixin.com/APIService/notice/getNoticeListByName?appkey={0}&name={1}&skip={2}";
-
-
+        
         /// <summary>
         /// 根据企业名称或董监高姓名等关键字获取企业列表
         /// </summary>
@@ -85,5 +84,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         /// 根据企业名称或董监高姓名等关键字获取企业列表
         /// </summary>
         public static String GETHKCOMPANYBYNAME_API = "http://api.qixin.com/APIService/hkenterprise/getHKDetailByName?appkey={0}&secret_key={1}&keyword={2}";
+
+        /**
+         * 企查查请求地址
+         */
+        //企查查企业工商数据查询
+        public static String SEARCHWIDE_API = "http://api.qichacha.com/ECIV4/SearchWide?key={0}&keyword={1}";
     }
 }

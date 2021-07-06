@@ -31,14 +31,20 @@ namespace UBeat.Crm.CoreApi.DomainModel
         private static IConfigurationRoot configuration = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
         public APIModel()
         {
-            this.AppKey = configuration.GetValue<string>("QiXinBaoKey");
-            this.Secret = configuration.GetValue<string>("QiXinBaoSecret");
+            this.AppKey = configuration.GetSection("QiChaCha").Get<QiChaCha>().KEY;
+            this.Secret = configuration.GetSection("QiChaCha").Get<QiChaCha>().SECRET;
         }
         public int SkipNum { get; set; }
     }
 
-    public class APIResult
+    public class QiChaCha
     {
+        public String KEY { get; set; }
+        public String SECRET { get; set; }
+    }
+
+    public class APIResult
+    { 
         public int Total { get; set; }
         public int Num { get; set; }
     }
@@ -55,6 +61,7 @@ namespace UBeat.Crm.CoreApi.DomainModel
     public class CompanyAPISubResult : APIResult
     {
         public List<CompanySampleInfo> Items { get; set; }
+        public List<CompanySampleInfo> Result { get; set; }
     }
     public class ForeignCompanyAPISubResult : APIResult
     {
@@ -69,7 +76,10 @@ namespace UBeat.Crm.CoreApi.DomainModel
     public class CompanySampleInfo : AbstractCompanyInfo
     {
         public string Name { get; set; }
-        public string Id { get; set; }
+        public string Id { get=>KeyNo; 
+            set=> KeyNo=value; }
+        //企查查ID字段
+        public string KeyNo { get; set; }
     }
     public class ForeignCompanySampleInfo : AbstractCompanyInfo
     {
