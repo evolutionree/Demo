@@ -100,7 +100,12 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
                     };
                     userId = 0;
                     return HandleResult(result);
-                }
+				}
+				else
+				{
+					//保存企业微信的用户Id
+					_accountRepository.SetUserInfoWxUserId(wcUserId, userInfo.UserId);
+				}
                 DateTime expiration;
                 List<Claim> claims = new List<Claim>();
                 claims.Add(new Claim("uid", userInfo.UserId.ToString()));

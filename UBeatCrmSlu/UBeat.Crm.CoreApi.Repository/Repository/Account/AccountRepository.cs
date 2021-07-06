@@ -506,6 +506,19 @@ FROM crm_sys_account AS a
 			return result == null ? null : result.FirstOrDefault();
 		}
 
+		public bool SetUserInfoWxUserId(string wcuserid, int userId)
+		{
+			var sql = @"
+               update crm_sys_userinfo set wcuserid=@wcuserid where userid=@userid and (wcuserid is null or wcuserid = '') ;
+            ";
+
+			var param = new DynamicParameters();
+			param.Add("wcuserid", wcuserid);
+			param.Add("userid", userId);
+			var result = DataBaseHelper.ExecuteNonQuery(sql, param);
+			return result > 0;
+		}
+
 		public List<UserInfo> GetAllUserInfoList()
         {
             var sql = @"SELECT userid, username,namepinyin,usericon,usersex FROM crm_sys_userinfo";

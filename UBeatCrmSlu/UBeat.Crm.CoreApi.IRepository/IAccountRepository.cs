@@ -60,6 +60,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         AccountUserInfo GetAccountUserInfo(int userNumber);
         AccountUserInfo GetWcAccountUserInfo(string userNumber);
 		AccountUserInfo GetWcAccountUserInfoByMobile(string mobile);
+		bool SetUserInfoWxUserId(string wcuserid, int userId);
 		List<UserInfo> GetAllUserInfoList();
 
         List<UserInfo> GetUserInfoList(List<int> userids);
