@@ -350,5 +350,124 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
             return ExecuteNonQuery(sb.ToString(), new DbParameter[] { }, tran) > 0;
         }
 
-    }
+		public List<CustContactTreeItemInfo> GetCustContactTree(Guid custid, int usernumber)
+		{
+			var treeitems = new List<CustContactTreeItemInfo>();
+			PostgreHelper pgHelper = new PostgreHelper();
+			using (DbConnection conn = pgHelper.GetDbConnect())
+			{
+				conn.Open();
+				var tran = conn.BeginTransaction();
+				try
+				{
+					var executeSql = @" SELECT 
+										c.recid,
+										c.recname,
+										dic.dataval AS custdept,
+										c.position,
+										'' as custphoto,
+										c.customer,
+										c.precontact as supcontact  
+										FROM crm_sys_contact AS c
+										left join (
+										 select dataid, dataval from crm_sys_dictionary where dictypeid=4 and recstatus = 1
+										) dic on dic.dataid = c.contacttype
+										WHERE  c.recstatus=1 and c.customer->>'id' = @id::text;";
+					var p = new DbParameter[]
+					{
+						new NpgsqlParameter("id",custid)
+					};
+					var allContacts = pgHelper.ExecuteQuery<CustContactTreeItemInfo>(tran, executeSql, p);
+					tran.Commit();
+					var custContacts = allContacts.Where(m => m.Customer != null && m.Customer.Id == custid);
+
+
+					foreach (var contact in custContacts)
+					{
+						if (contact != null && !treeitems.Exists(m => m.RecId == contact.RecId))
+						{
+							var index = treeitems.FindIndex(m => m.SupContact != null && m.SupContact.Id == contact.RecId);
+							index = index <= 0 ? 0 : index - 1;
+							treeitems.Insert(index, contact);
+							GetParentContacts(contact, treeitems, allContacts);
+							GetChildContacts(contact, treeitems, allContacts);
+
+						}
+						else if (contact != null)
+						{
+							GetChildContacts(contact, treeitems, allContacts);
+						}
+
+					}
+
+				}
+				catch (Exception ex)
+				{
+					tran.Rollback();
+					throw ex;
+				}
+				finally
+				{
+					conn.Close();
+					conn.Dispose();
+				}
+
+			}
+			treeitems.Insert(0, new CustContactTreeItemInfo()
+			{
+				RecId = new Guid("10000000-0000-0000-0000-000000000000"),
+				RecName = "联系人",
+				HeadIcon = null,
+			});
+
+			return treeitems;
+		}
+
+
+		private void GetParentContacts(CustContactTreeItemInfo contact, List<CustContactTreeItemInfo> treeitems, List<CustContactTreeItemInfo> allContacts)
+		{
+			if (contact == null)
+				return;
+			contact.ParantRecId = new Guid("10000000-0000-0000-0000-000000000000");
+			if (contact.SupContact != null)
+			{
+				var index = treeitems.FindIndex(m => m.RecId == contact.RecId);
+				var parentContact = allContacts.Find(m => m.RecId == contact.SupContact.Id);
+				if (parentContact != null)
+					contact.ParantRecId = parentContact.RecId;
+				if (parentContact != null && !treeitems.Exists(m => m.RecId == parentContact.RecId))
+				{
+					var indextemp = index <= 0 ? 0 : index - 1;
+					treeitems.Insert(indextemp, parentContact);
+					GetParentContacts(parentContact, treeitems, allContacts);
+
+				}
+
+			}
+
+		}
+		private void GetChildContacts(CustContactTreeItemInfo contact, List<CustContactTreeItemInfo> treeitems, List<CustContactTreeItemInfo> allContacts)
+		{
+			if (contact == null)
+				return;
+
+			var childContacts = allContacts.Where(m => m.SupContact != null && contact.RecId == m.SupContact.Id);
+			foreach (var childContact in childContacts)
+			{
+				var temItem = treeitems.FirstOrDefault(m => m.RecId == childContact.RecId);
+				if (temItem == null)
+				{
+					childContact.ParantRecId = contact.RecId;
+					treeitems.Insert(treeitems.Count, childContact);
+				}
+				if (childContact.IsSearchChildren == false)
+				{
+					childContact.IsSearchChildren = true;
+					GetChildContacts(childContact, treeitems, allContacts);
+				}
+
+			}
+
+		}
+	}
 }

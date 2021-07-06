@@ -37,4 +37,9 @@ namespace UBeat.Crm.CoreApi.Services.Models.Customer
         public Guid EntityId { get; set; }
         public string[] RecIds { get; set; }
     }
+
+	public class CustContactTreeModel
+	{
+		public Guid CustId { set; get; }
+	}
 }

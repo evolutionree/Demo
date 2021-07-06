@@ -61,7 +61,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<Dictionary<string, object>> SelectCustomerOfVisitPlan(string beginDate, string endDate, int userNumber, DbTransaction tran);
 
         bool DistributionCustomer(List<string> recids, int userid, int currentUserid, DbTransaction tran);
-        
 
-    }
+		List<CustContactTreeItemInfo> GetCustContactTree(Guid custid, int usernumber);
+	}
 }

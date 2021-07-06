@@ -75,5 +75,17 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _customerServices.ToErpCustomer(sync, UserId);
             return result;
         }
-    }
+
+		/// <summary>
+		/// 客户联系人决策树
+		/// </summary>
+		/// <param name="custModel"></param>
+		/// <returns></returns>
+		[HttpPost("getcustcontacttree")]
+		public OutputResult<object> GetCustContactTree([FromBody] CustContactTreeModel custModel = null)
+		{
+			if (custModel == null) return ResponseError<object>("参数格式错误");
+			return _customerServices.GetCustContactTree(custModel, UserId);
+		}
+	}
 }
