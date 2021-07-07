@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>UBeat.Crm.CoreApi.ZGQY</AssemblyName>
-    <RootNamespace>UBeat.Crm.CoreApi.GL</RootNamespace>
+    <RootNamespace>UBeat.Crm.CoreApi.ZGQY</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
