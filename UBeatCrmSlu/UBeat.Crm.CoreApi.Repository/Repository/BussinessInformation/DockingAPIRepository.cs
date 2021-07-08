@@ -151,7 +151,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
         public List<BussinessInformation> GetBussinessInfomation(string selectField, int isLike, string companyName, int userNumber)
         {
             //ILIKE '%' || @keyword || '%' ESCAPE '`'
-            var executeSql = @" select {0},recupdated::text from  crm_sys_bussiness_infomation where companyname {1} ";
+            var executeSql = @" select {0} from  crm_sys_customer where recname {1} ";
             string condition = string.Empty;
             if (isLike == 0)
                 condition = " ILIKE '%' || @keyword || '%' ESCAPE '`' ";
@@ -165,6 +165,25 @@ namespace UBeat.Crm.CoreApi.Repository.Repository
             };
 
             return DataBaseHelper.Query<BussinessInformation>(executeSql, args);
+        }
+
+        public List<CompanyInfo> GetCustomerInfomation(string selectField, int isLike, string companyName, int userNumber)
+        {
+            //ILIKE '%' || @keyword || '%' ESCAPE '`'
+            var executeSql = @" select {0} from  crm_sys_customer where recname {1} ";
+            string condition = string.Empty;
+            if (isLike == 0)
+                condition = " ILIKE '%' || @keyword || '%' ESCAPE '`' ";
+            else
+                condition = " = @keyword";
+            executeSql = string.Format(executeSql, selectField, condition);
+
+            var args = new
+            {
+                keyword = companyName
+            };
+
+            return DataBaseHelper.Query<CompanyInfo>(executeSql, args);
         }
         public String explainDistrictCode(string regionCode, int userNumber)
         {

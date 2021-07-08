@@ -115,47 +115,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         public OutputResult<object> GetBusinessDetail(CompanyModel api, int isRefresh, int userId)
         {
-            var country = _dataSourceRepository.SelectFieldDicVaue(53, userId).FirstOrDefault(t1 => t1.DataId == Convert.ToInt32(api.Country));
-            api.Country = country.ExtField2;
+            //var country = _dataSourceRepository.SelectFieldDicVaue(53, userId).FirstOrDefault(t1 => t1.DataId == Convert.ToInt32(api.Country));
+            //api.Country = country.ExtField2;
             var t = new CompanyInfo();
-            var tmp = _dockingAPIRepository.GetBussinessInfomation("basicinfo", 1, api.CompanyName, userId);
-            if (isRefresh == 0 && tmp != null && tmp.FirstOrDefault() != null && !string.IsNullOrEmpty(tmp.FirstOrDefault().BasicInfo))
-            {
-                var data = JsonConvert.DeserializeObject<CompanyInfo>(tmp.FirstOrDefault().BasicInfo);
-                data.RecUpdated = tmp.FirstOrDefault().RecUpdated;
-                return new OutputResult<object>(data);
-            }
+            var tmp = _dockingAPIRepository.GetCustomerInfomation("recname as name, beforename as OriginalName,ucode as CreditCode,businesscode as No,organizationcode as OrgNo,qccenterprisenature as econKind,qccenterprisetype as EntType,enterprisestatus as Status, registeredcapital as RegistCapi, paidcapital as RecCap, registrationauthority as BelongOrg, establishmentdate as StartDate, corporatename as OperName, qcclocation as Address, businessscope as Scope, isiop as IsOnStock", 1, api.CompanyName, userId);
 
-            t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
-            if (t != null && !string.IsNullOrEmpty(t.Id))
-            {
-                t.DistrictCode_Name = explainDistrictCode(t.DistrictCode ?? String.Empty, userId);
-                t.RecUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:MM:ss");
-                var t1 = BuildCompanyContactInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
-                if (t1 != null)
+            if (tmp != null&& tmp.Count!=0) {
+                t = tmp[0];
+            }
+            else {
+                t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, Secret = api.Secret });
+                if (t != null && !string.IsNullOrEmpty(t.KeyNo))
                 {
-                    t.Telephone = t1.Telephone;
-                    t.Email = t1.Email;
-                    t.Address = t1.Address;
-                }
-                else
-                {
-                    t.Telephone = StaticMessageTip.NOTAUTHMESSAGE;
-                    t.Email = StaticMessageTip.NOTAUTHMESSAGE;
-                    t.Address = StaticMessageTip.NOTAUTHMESSAGE;
-                }
-                var t2 = BuildCompanyLogoInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey });
-                if (t2 != null)
-                {
-                    t.Logo = t2.Logo;
-                }
-                else
-                    t.Logo = StaticMessageTip.NOTAUTHMESSAGE;
-                if (t != null)
-                {
-                    _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(t) }, userId);
+                   // _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(t) }, userId);
+
                 }
             }
+           
+            
             return new OutputResult<object>(t);
         }
         public OutputResult<Object> GetForeignBusinessDetail(CompanyModel api, int isRefresh, int userId)
@@ -193,14 +170,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> SaveForeignBusinessDetail(CompanyModel api, int isRefresh, int userId)
         {
             var arr = api.Country.Split(",");
-            var country = _dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(arr[0]), userId).FirstOrDefault(t => t.DataId == Convert.ToInt32(arr[1]));
-            api.Country = country.ExtField2;
-            var data = BuildForeignCompanySamples(api);
+            //var country = _dataSourceRepository.SelectFieldDicVaue(Convert.ToInt32(arr[0]), userId).FirstOrDefault(t => t.DataId == Convert.ToInt32(arr[1]));
+            //api.Country = country.ExtField2;
+            //var data = BuildForeignCompanySamples(api);
+            var data = BuildCompanySamples(api);
             if (data != null && data.Count > 0)
             {
-                var realData = data.FirstOrDefault(t => t.Id == api.Id);
-                var result = _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { Id = api.Id, CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(realData) }, userId);
-                return HandleResult(result);
+                //var realData = data.FirstOrDefault(t => t.Id == api.Id);
+                //var result = _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { Id = api.Id, CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(realData) }, userId);
+                //return HandleResult(result);
             }
             return HandleResult(new OperateResult
             {
@@ -256,11 +234,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         CompanyInfo BuildCompanyInfo(DockingAPIModel api)
         {
-            string result = HttpLib.Get(string.Format(DockingAPIHelper.GETBASICINFO_API, api.AppKey, api.CompanyName, api.Secret));
+            //string result = HttpLib.Get(string.Format(DockingAPIHelper.GETBASICINFO_API, api.AppKey, api.CompanyName, api.Secret));
+            //var jObject = JObject.Parse(result);
+            //if (jObject["status"].ToString() == "200")
+            //{
+            //    var data = JsonConvert.DeserializeObject<CompanyInfo>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
+            //    return data ?? new CompanyInfo();
+            //}
+            var url = string.Format(DockingAPIHelper.GETDETAILSBYNAME_API, api.AppKey, api.CompanyName);
+            var result = QichachaProgram.httpGet(url, QichachaProgram.getHeaderVals(api.AppKey, api.Secret));
             var jObject = JObject.Parse(result);
-            if (jObject["status"].ToString() == "200")
-            {
-                var data = JsonConvert.DeserializeObject<CompanyInfo>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
+            if (jObject["Status"].ToString() == "200") {
+                var data = JsonConvert.DeserializeObject<CompanyInfo>(jObject["Result"] == null ? string.Empty : jObject["Result"].ToString());
                 return data ?? new CompanyInfo();
             }
             return null;
