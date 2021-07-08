@@ -183,11 +183,13 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string CreditCode { get; set; }
         public string RegistCapi { get; set; }
         public string EconKind { get; set; }
+        public string Status { get; set; }
         public string Address { get; set; }
         public string Scope { get; set; }
         public string OrgNo { get; set; }
         public string IsOnStock { get; set; }
         public List<OriginalNameObj> OriginalName { get; set; }
+        public string OriginalNameStr { get; set; }
         public string EntType { get; set; }
         public string RecCap { get; set; }
 

@@ -127,7 +127,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, Secret = api.Secret });
                 if (t != null && !string.IsNullOrEmpty(t.KeyNo))
                 {
-                   // _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(t) }, userId);
+                    Dictionary<string, string> yesNo = new Dictionary<string, string>();
+                    yesNo.Add("0","未上市");
+                    yesNo.Add("1", "上市");
+                    Dictionary<string, string> entType = new Dictionary<string, string>();
+                    entType.Add("0", "公司");
+                    entType.Add("1", "社会组织");
+                    entType.Add("3", "香港公司");
+                    entType.Add("4", "事业单位");
+                    entType.Add("5", "");
+                    entType.Add("6", "基金会");
+                    entType.Add("7", "医院");
+                    entType.Add("8", "海外公司");
+                    entType.Add("9", "律师事务所");
+                    entType.Add("10", "学校");
+                    entType.Add("-1", "其他");
+                    if (t.OriginalName!=null&&t.OriginalName.Count!=0) {
+                        t.OriginalNameStr = t.OriginalName[0].Name;
+                        t.OriginalName = null;
+                    }
+                    if (t.IsOnStock != null)
+                    {
+                        t.IsOnStock = yesNo[t.IsOnStock];
+                    }
+                    if (t.EntType != null)
+                    {
+                        t.EntType = entType[t.EntType];
+                    }
+                    // _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(t) }, userId);
 
                 }
             }
