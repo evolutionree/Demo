@@ -89,12 +89,37 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
             return retList;
         }
 
+        public WebMenuItem getMenuInfoByFunIdAndName(string funcid, string name)
+        {
+            string cmdText = "select * from crm_sys_webmenu where funcid = @funcid and name = @name";
+            var param = new
+            {
+                funcid,
+                name
+            };
+            List<IDictionary<string, object>> result = DataBaseHelper.Query(cmdText, param);
+            if (result == null || result.Count == 0) return null;
+            IDictionary<string, object> item = result[0];
+            return WebMenuItem.parseFromDict(item);
+        }
+
+
         public Guid insertMennInfo(WebMenuItem item)
         {
+            if (!string.IsNullOrEmpty(item.FuncID) && !string.IsNullOrEmpty(item.Name))
+            {
+                var menu = getMenuInfoByFunIdAndName(item.FuncID, item.Name);
+                if (menu != null)
+                {
+                    return item.Id;
+                }
+            }
+
             if (item.Id == null || item.Id == Guid.Empty)
             {
                 return Guid.Empty;
             }
+
             string cmdText = @"insert into crm_sys_webmenu(id,index,name,icon,path,funcid,parentid,isdynamic,name_lang)values(@id,@index,@name,@icon,@path,@funcid,@parentid,@isdynamic,@name_lang::jsonb) returning id";
             var param = new
             {
