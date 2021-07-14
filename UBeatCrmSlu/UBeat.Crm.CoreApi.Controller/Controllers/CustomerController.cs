@@ -87,5 +87,13 @@ namespace UBeat.Crm.CoreApi.Controllers
 			if (custModel == null) return ResponseError<object>("参数格式错误");
 			return _customerServices.GetCustContactTree(custModel, UserId);
 		}
-	}
+
+       //客户框架协议
+        [HttpPost("getcustframeprotocol")]
+        public OutputResult<object> GetCustFrameProtocol([FromBody] CustContactTreeModel custModel = null)
+        {
+            if (custModel == null) return ResponseError<object>("参数格式错误");
+            return _customerServices.GetCustFrameProtocol(custModel, UserId);
+        }
+    }
 }

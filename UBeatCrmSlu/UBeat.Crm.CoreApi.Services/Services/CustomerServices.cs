@@ -520,5 +520,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
 			var result = _customerRepository.GetCustContactTree(custModel.CustId, usernumber);
 			return new OutputResult<object>(result);
 		}
-	}
+
+        public OutputResult<object> GetCustFrameProtocol(CustContactTreeModel custModel, int usernumber)
+        {
+            if (custModel == null || custModel.CustId == Guid.Empty)
+                throw new Exception("参数不可为空");
+            var result = _customerRepository.GetCustFrameProtocol(custModel.CustId, usernumber);
+            return new OutputResult<object>(result);
+        }
+
+        
+    }
 }

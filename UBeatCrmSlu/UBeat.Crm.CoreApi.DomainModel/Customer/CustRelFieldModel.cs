@@ -69,4 +69,14 @@ namespace UBeat.Crm.CoreApi.DomainModel.Customer
 
 		public string Name { set; get; }
 	}
+
+    public class CustFrameProtocolModel
+    {
+        public string customername { set; get; }
+        public string signdept { set; get; }
+        public string validity { set; get; }
+        public string recmanager { set; get; }
+    }
+    
+
 }

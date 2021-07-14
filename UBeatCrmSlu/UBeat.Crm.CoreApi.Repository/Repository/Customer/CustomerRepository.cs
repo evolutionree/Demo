@@ -423,8 +423,49 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
 			return treeitems;
 		}
 
+        public List<CustFrameProtocolModel> GetCustFrameProtocol(Guid custid, int usernumber) {
+            var items = new List<CustFrameProtocolModel>();
+            PostgreHelper pgHelper = new PostgreHelper();
+            using (DbConnection conn = pgHelper.GetDbConnect())
+            {
+                conn.Open();
+                var tran = conn.BeginTransaction();
+                try
+                {//->>'id'
+                    var executeSql = @"SELECT 
+                                    	recname,customer->>'name' as customername,signdept,startdate::text||'至'||enddate::text as validity,t2.username:: text AS recmanager
+                                    FROM 
+                                    	(select ral.*,(ral.commonid->>'id')::uuid as ralcommonid from crm_sys_contract ral) AS t0 
+                                    	LEFT JOIN crm_sys_custcommon_customer_relate AS t1 ON t0.ralcommonid = t1.commonid
+                                        LEFT JOIN crm_sys_userinfo t2 on t2.userid=t0.recmanager
+                                    WHERE 1=1 
+                                    	AND rectype = '64d4a584-abe8-4b3d-8afb-8d5b4bbf4bbd' 
+                                    	AND custid  = @id::uuid";
+                    var p = new DbParameter[]
+                    {
+                        new NpgsqlParameter("id",custid)
+                    };
+                    items = pgHelper.ExecuteQuery<CustFrameProtocolModel>(tran, executeSql, p);
+                    tran.Commit();
 
-		private void GetParentContacts(CustContactTreeItemInfo contact, List<CustContactTreeItemInfo> treeitems, List<CustContactTreeItemInfo> allContacts)
+                    return items;
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+
+            }
+        }
+
+
+        private void GetParentContacts(CustContactTreeItemInfo contact, List<CustContactTreeItemInfo> treeitems, List<CustContactTreeItemInfo> allContacts)
 		{
 			if (contact == null)
 				return;

@@ -63,5 +63,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         bool DistributionCustomer(List<string> recids, int userid, int currentUserid, DbTransaction tran);
 
 		List<CustContactTreeItemInfo> GetCustContactTree(Guid custid, int usernumber);
-	}
+
+        List<CustFrameProtocolModel> GetCustFrameProtocol(Guid custid, int usernumber);
+    }
 }

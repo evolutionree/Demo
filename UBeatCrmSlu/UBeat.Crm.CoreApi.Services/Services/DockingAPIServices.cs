@@ -118,7 +118,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //var country = _dataSourceRepository.SelectFieldDicVaue(53, userId).FirstOrDefault(t1 => t1.DataId == Convert.ToInt32(api.Country));
             //api.Country = country.ExtField2;
             var t = new CompanyInfo();
-            var tmp = _dockingAPIRepository.GetCustomerInfomation("recname as name, beforename as OriginalName,ucode as CreditCode,businesscode as No,organizationcode as OrgNo,qccenterprisenature as econKind,qccenterprisetype as EntType,enterprisestatus as Status, registeredcapital as RegistCapi, paidcapital as RecCap, registrationauthority as BelongOrg, establishmentdate as StartDate, corporatename as OperName, qcclocation as Address, businessscope as Scope, isiop as IsOnStock", 1, api.CompanyName, userId);
+            var tmp = _dockingAPIRepository.GetCustomerInfomation("recname as name, beforename as OriginalNameStr,ucode as CreditCode,businesscode as No,organizationcode as OrgNo,qccenterprisenature as econKind,qccenterprisetype as EntType,enterprisestatus as Status, registeredcapital as RegistCapi, paidcapital as RecCap, registrationauthority as BelongOrg, establishmentdate as StartDate, corporatename as OperName, qcclocation as Address, businessscope as Scope, isiop as IsOnStock", 1, api.CompanyName, userId);
 
             if (tmp != null&& tmp.Count!=0) {
                 t = tmp[0];
