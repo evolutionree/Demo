@@ -208,7 +208,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             List<WebMenuItem> allCrmSubMenus = _webMenuRepository.getSubMenus(CrmMenuId.ToString());
             List<WebMenuItem> allOfficeSubMenus = _webMenuRepository.getSubMenus(OfficeMenuId.ToString());
-            List<WebMenuItem> allDynamicEntityMenus = _webMenuRepository.getSubMenus(OfficeMenuId.ToString());
+            List<WebMenuItem> allDynamicEntityMenus = _webMenuRepository.getSubMenus(DynamicEntityId.ToString());
             List<WebMenuItem> fixedCrmSubMenus = new List<WebMenuItem>();
             List<WebMenuItem> fixedOfficeSubMenus = new List<WebMenuItem>();
             List<WebMenuItem> fixedDynamicEntitySubMenus = new List<WebMenuItem>();
@@ -249,14 +249,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (!allids.ContainsKey(entryid)) { allids.Add(entryid, entryid); }
 
                 }
-                crmMenus = (List<IDictionary<string, object>>)sysMenus["Office"];
+            }
+            if (sysMenus.ContainsKey("Office"))
+            {
+                List<IDictionary<string, object>> crmMenus = (List<IDictionary<string, object>>)sysMenus["Office"];
                 foreach (IDictionary<string, object> item in crmMenus)
                 {
                     string entryid = (string)item["entranceid"].ToString();
                     if (!allids.ContainsKey(entryid)) { allids.Add(entryid, entryid); }
 
                 }
-
             }
             if (sysMenus.ContainsKey("Crm"))
             {
