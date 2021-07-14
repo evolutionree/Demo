@@ -2697,7 +2697,11 @@ INSERT INTO crm_sys_workflow_func_event(flowid,funcname,nodeid,steptype)
                 else if (modelType.ToString() == "0")
                 {
                     sqlWorkFlow = string.Format(sqlWorkFlow, " recid=@recid AND ", string.Empty);
-                }
+				}
+				else
+				{
+					sqlWorkFlow = string.Format(sqlWorkFlow, " 1=1 AND ", string.Empty);
+				}
             }
             var result = ExecuteScalar(sqlWorkFlow, param, tran);
             if (result != null)
