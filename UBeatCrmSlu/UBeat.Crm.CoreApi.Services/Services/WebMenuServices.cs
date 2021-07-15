@@ -35,12 +35,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             WebMenuItem defaultPage = null;
             Dictionary<Guid, WebMenuItem> allMenus = new Dictionary<Guid, WebMenuItem>();
             Dictionary<string, FunctionInfo> allMyFuncs = AllMyFunctionIds(userNumber);
-			List<string> allMyFuncsH5Code = new List<string>();
+			Dictionary<string, FunctionInfo> allMyFuncsH5Code = new Dictionary<string, FunctionInfo>();
 			foreach (var item in allMyFuncs)
 			{
 				if(item.Value.DeviceType == 1)
 				{
-					allMyFuncsH5Code.Add(item.Value.Funccode);
+					var key = string.Concat(item.Value.FuncName, "_", item.Value.EntityId);
+					if (allMyFuncsH5Code.ContainsKey(key)) continue;
+					allMyFuncsH5Code.Add(key, item.Value);
 				}
 			}
 
@@ -63,7 +65,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 						if(isH5 == true)
 						{
 							var func = allMyFuncs[item.FuncID];
-							if(allMyFuncsH5Code.Contains(func.Funccode) == false)
+							var key = string.Concat(func.FuncName, "_", func.EntityId);
+							if (allMyFuncsH5Code.ContainsKey(key) == false)
 							{
 								continue;
 							}
