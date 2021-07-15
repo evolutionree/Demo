@@ -24,7 +24,9 @@ namespace UBeat.Crm.CoreApi.Controllers
 
             if (model==null) return    ResponseError<object>("参数格式错误");
 
-            List<WebMenuItem> obj = _webMenuService.getAllWebMenus(model.Type, UserId);
+			var header = GetAnalyseHeader();
+			var isH5 = header.Device.ToLower().Contains("h5");
+			List<WebMenuItem> obj = _webMenuService.getAllWebMenus(model.Type, UserId, isH5);
             OutputResult<object> ret = new OutputResult<object>(obj);
             ret.Status = 0;
             return ret;

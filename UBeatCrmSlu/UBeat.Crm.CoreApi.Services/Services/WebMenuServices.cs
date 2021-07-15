@@ -28,13 +28,22 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="accessType">0是业务菜单1是设置菜单</param>
         /// <param name="userNumber"></param>
         /// <returns></returns>
-        public List<WebMenuItem> getAllWebMenus(int type, int userNumber)
+        public List<WebMenuItem> getAllWebMenus(int type, int userNumber, bool isH5 = false)
         {
             List<WebMenuItem> retList = _webMenuRepository.getAllMenu(type, userNumber);
             List<WebMenuItem> topList = new List<WebMenuItem>();
             WebMenuItem defaultPage = null;
             Dictionary<Guid, WebMenuItem> allMenus = new Dictionary<Guid, WebMenuItem>();
             Dictionary<string, FunctionInfo> allMyFuncs = AllMyFunctionIds(userNumber);
+			List<string> allMyFuncsH5Code = new List<string>();
+			foreach (var item in allMyFuncs)
+			{
+				if(item.Value.DeviceType == 1)
+				{
+					allMyFuncsH5Code.Add(item.Value.Funccode);
+				}
+			}
+
             foreach (WebMenuItem item in retList)
             {
                 if (allMenus.ContainsKey(item.Id)) continue;
@@ -48,7 +57,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     if (allMyFuncs.ContainsKey(item.FuncID) == false)
                     {
                         continue;
-                    }
+					}
+					else
+					{
+						if(isH5 == true)
+						{
+							var func = allMyFuncs[item.FuncID];
+							if(allMyFuncsH5Code.Contains(func.Funccode) == false)
+							{
+								continue;
+							}
+						}
+					}
                 }
                 if (defaultPage == null)
                 {
