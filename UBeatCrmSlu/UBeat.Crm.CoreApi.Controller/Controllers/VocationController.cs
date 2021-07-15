@@ -19,7 +19,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         private readonly VocationServices _service;
         private readonly RuleTranslatorServices _ruleService;
 
-        public VocationController(VocationServices service, RuleTranslatorServices ruleService) : base(ruleService)
+        public VocationController(VocationServices service, RuleTranslatorServices ruleService) : base(service, ruleService)
         {
             _service = service;
             _ruleService = ruleService;

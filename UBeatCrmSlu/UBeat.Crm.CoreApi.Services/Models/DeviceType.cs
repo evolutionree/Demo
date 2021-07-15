@@ -12,7 +12,8 @@ namespace UBeat.Crm.CoreApi.Services.Models
         WEB = 0,
         IOS = 1,
         Android = 2,
-        OtherDevice = 3
+		H5 = 3,
+		OtherDevice = 4
     }
 
     public enum DeviceClassic

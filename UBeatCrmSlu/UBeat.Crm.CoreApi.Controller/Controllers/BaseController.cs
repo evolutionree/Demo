@@ -288,7 +288,13 @@ namespace UBeat.Crm.CoreApi.Controllers
                         case "ANDROID":
                             service.DeviceType = DeviceType.Android;
                             break;
-                    }
+						case "H5":
+							service.DeviceType = DeviceType.H5;
+							break;
+						default:
+							service.DeviceType = DeviceType.OtherDevice;
+							break;
+					}
                 }
 
             }
