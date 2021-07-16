@@ -1062,7 +1062,14 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         case DynamicProtocolControlType.RelateControl:
                         case DynamicProtocolControlType.RecId:
                             {
-                                result.FieldData = string.Format("position(t.{0}::text in '{1}')>0", columnKey, dataStr);
+                                if(field.IsLike == 0)
+								{
+                                    result.FieldData = string.Format("position(t.{0}::text in '{1}')>0", columnKey, dataStr);
+                                }
+								else
+								{
+                                    result.FieldData = string.Format("position(t.{0}::text in '{1}')<=0", columnKey, dataStr);
+                                }
                                 break;
                             }
                         case DynamicProtocolControlType.DataSourceMulti:
