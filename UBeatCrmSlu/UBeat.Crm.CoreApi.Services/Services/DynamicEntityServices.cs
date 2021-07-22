@@ -1520,6 +1520,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             else
                             {
                                 var detail = _dynamicEntityRepository.Detail(detailMapper, userNumber) as Dictionary<string, object>;
+								if (detail.ContainsKey("viewusers") && data.ContainsKey("viewusers"))
+								{
+									detail["viewusers"] = data["viewusers"];
+								}
                                 msgparams = GetEditMessageParameter(oldDetail, detail, typeid, bussinessId, relbussinessId, userNumber);
                             }
                             //修改记录，并发动态

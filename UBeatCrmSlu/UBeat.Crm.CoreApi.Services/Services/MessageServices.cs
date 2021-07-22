@@ -56,6 +56,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
         #endregion
 
+		private List<string> weeklyDailyEntityId()
+		{
+			List<string> list = new List<string>();
+
+			list.Add("601cb738-a829-4a7b-a3d9-f8914a5d90f2");//日报
+			list.Add("0b81d536-3817-4cbc-b882-bc3e935db845");//周计划
+			list.Add("fcc648ae-8817-48b7-b1d7-49ed4c24316b");//周总结
+
+			return list;
+		}
 
         public MessageServices(CacheServices cacheService)
         {
@@ -402,10 +412,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             Pug_inMsg packageMsg = new Pug_inMsg();
                             var users = GetUserInfoList(pushMsg.Accounts.Select(t => Convert.ToInt32(t)).ToList());
                             var currentUser = users.FirstOrDefault(t => t.UserId == userNumber);
-                            List<String> wcUsers = users.Select(t => t.WCUserId).ToList();
+                            List<String> wcUsers = new List<string>();
+							foreach (var item in users)
+							{
+								if (string.IsNullOrEmpty(item.WCUserId)) continue;
+								wcUsers.Add(item.WCUserId);
+							}
                             if (wcConfig.GetValue<Boolean>("IsSyncWebChat"))
                             {
-                                if (isFlow == 0) return;
                                 packageMsg.content = msgContent;
                                 packageMsg.title = pushMsg.Title;
                                 packageMsg.DateTime = tmpDate;
@@ -435,7 +449,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             rec.Clear();
                                         }
                                         break;
-                                    case MessageStyleType.EntityOperate:
+									case MessageStyleType.EntityOperate:
                                         if (entityInfo.modeltype == 0)
                                         {
                                             var rec2 = new List<string>();
@@ -511,7 +525,61 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                             rec1.Clear();
                                         }
                                         break;
-                                    default:
+									case MessageStyleType.DynamicPrase:
+										if (weeklyDailyEntityId().Contains(msgparam.EntityId.ToString()))
+										{
+											//（周报，日报）
+											var rec6 = new List<string>();
+											foreach (var tmp in wcUsers)
+											{
+												rec6.Add(tmp);
+												string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=" + (msgparam.EntityId.ToString() == "601cb738-a829-4a7b-a3d9-f8914a5d90f2" ? "4" : "5") + "&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.BusinessId.ToString() + "&entityid=" + msgparam.EntityId.ToString());
+												packageMsg.recevier = rec6;
+												packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
+												packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, pushMsg.Message + " \n " + packageMsg.DateTime);
+												MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+												rec6.Clear();
+											}
+										}
+										else
+										{
+											var rec5 = new List<string>();
+											string title5 = string.Empty;
+											var relTypeId = string.Empty;
+											if (entityInfo.modeltype == 3)
+											{
+												var relDetail = _dynamicEntityRepository.Detail(new DomainModel.DynamicEntity.DynamicEntityDetailtMapper { EntityId = msgparam.RelEntityId.Value, RecId = msgparam.RelBusinessId, NeedPower = 0 }, userNumber);
+												if (relDetail == null) break;
+												relTypeId = relDetail["rectype"].ToString();
+												DynamicEntityFieldSearch fieldList = this._dynamicEntityRepository.GetEntityFields(msgparam.EntityId, userNumber).FirstOrDefault(t => t.ControlType == 30);
+
+												if (fieldList == null) break;
+												JObject jo = JObject.Parse(fieldList.FieldConfig);
+												if (jo["relentityid"] == null || jo["relfieldid"] == null)
+													throw new Exception("关联对象信息配置异常");
+												var relEntityInfo = _iEntityProRepository.GetEntityInfo(Guid.Parse(jo["relentityid"].ToString()));
+												var relField = _iEntityProRepository.GetFieldInfo(Guid.Parse(jo["relfieldid"].ToString()), userNumber);
+
+												if (relDetail.ContainsKey(relField.fieldname + "_name"))
+													title5 = relDetail[relField.fieldname + "_name"];
+												else if (relDetail.ContainsKey(relField.fieldname))
+													title5 = relDetail[relField.fieldname];
+
+												foreach (var tmp in wcUsers)
+												{
+													rec5.Add(tmp);
+													string url = HttpUtility.UrlEncode(enterpriseWeChatRealmName + "?action=get&urltype=2&userid=" + userNumber + "&username=" + users.FirstOrDefault(t => t.WCUserId == tmp).UserName + "&recid=" + msgparam.RelBusinessId.ToString() + "&entityid=" + msgparam.RelEntityId.ToString() + "&typeid=" + relTypeId.ToString());
+													packageMsg.recevier = rec5;
+													packageMsg.title = msgparam.EntityName + "  [" + title5 + "]";
+													packageMsg.responseUrl = string.Format("https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri=" + url + "&response_type=code&scope=snsapi_base&state=#wechat_redirect", corpId);
+													packageMsg.content = FormatMsgTemplate(msgparam.TemplateKeyValue, pushMsg.Message + " \n " + packageMsg.DateTime);
+													MsgForPug_inHelper.SendMessage(MSGServiceType.WeChat, MSGType.TextCard, packageMsg);
+													rec5.Clear();
+												}
+											}
+										}
+										break;
+									default:
                                         break;
                                 }
                             }
