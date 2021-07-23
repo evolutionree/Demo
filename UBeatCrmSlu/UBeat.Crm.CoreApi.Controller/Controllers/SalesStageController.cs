@@ -22,7 +22,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         private readonly WorkFlowServices _workFlowServices;
         public SalesStageController(SalesStageServices salesStageServices, 
             DynamicEntityServices dynamicEntityServices,
-            WorkFlowServices workFlowServices) : base(dynamicEntityServices)
+            WorkFlowServices workFlowServices) : base(new BaseServices [] { salesStageServices, dynamicEntityServices, workFlowServices } )
         {
             _salesStageServices = salesStageServices;
             _dynamicEntityServices = dynamicEntityServices;
