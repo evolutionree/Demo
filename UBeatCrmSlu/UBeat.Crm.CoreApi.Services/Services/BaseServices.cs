@@ -493,10 +493,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 CacheService.Repository.RemoveAll(keys);
             }
         }
-        #endregion
 
-        #region 在Service动态创建其他Service
-        protected object dynamicCreateService(string serviceName, bool isInit)
+		public void RemoveUserLoginCache(int usernumber)
+		{
+			string cacheKeyWeb = WebLoginSessionKey(usernumber);
+			string cacheKeyMobile = WebLoginSessionKey(usernumber);
+			if (CacheService != null)
+			{
+				CacheService.Repository.Remove(cacheKeyWeb);
+				CacheService.Repository.Remove(cacheKeyMobile);
+			}
+		}
+
+		protected string WebLoginSessionKey(int userid)
+		{
+			return string.Format("WebLoginSession_{0}", userid.ToString());
+		}
+
+		protected string MobileLoginSessionKey(int userid)
+		{
+			return string.Format("MobileLoginSession_{0}", userid.ToString());
+		}
+		#endregion
+
+		#region 在Service动态创建其他Service
+		protected object dynamicCreateService(string serviceName, bool isInit)
         {
             if (ServiceProvider == null) return null;
             try

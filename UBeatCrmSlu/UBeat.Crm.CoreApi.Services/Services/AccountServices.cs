@@ -518,7 +518,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                  return HandleResult(result);
              }, entity, userNumber);
             IncreaseDataVersion(DataVersionType.BasicData, null);
-            return res;
+			RemoveUserLoginCache(entityModel.UserId);
+			return res;
         }
 
         public OutputResult<object> UpdateAccountDept(AccountDepartmentModel entityModel, int userNumber)
@@ -894,17 +895,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return false;
         }
-
-        protected string WebLoginSessionKey(int userid)
-        {
-            return string.Format("WebLoginSession_{0}", userid.ToString());
-        }
-
-        protected string MobileLoginSessionKey(int userid)
-        {
-            return string.Format("MobileLoginSession_{0}", userid.ToString());
-
-        }
+		
         #endregion
     }
     public class LoginSessionModel_ForInner
