@@ -431,9 +431,9 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
                 conn.Open();
                 var tran = conn.BeginTransaction();
                 try
-                {//->>'id'
+                {//->>'id' startdate::text||'至'||enddate::text as validity
                     var executeSql = @"SELECT 
-                                    	recname,customer->>'name' as customername,signdept,startdate::text||'至'||enddate::text as validity,t2.username:: text AS recmanager
+                                    	recname,customer->>'name' as customername,signdept, '' as validity,t2.username:: text AS recmanager
                                     FROM 
                                     	(select ral.*,(ral.commonid->>'id')::uuid as ralcommonid from crm_sys_contract ral) AS t0 
                                     	LEFT JOIN crm_sys_custcommon_customer_relate AS t1 ON t0.ralcommonid = t1.commonid
