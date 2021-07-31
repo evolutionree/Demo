@@ -451,7 +451,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             int signContractCount = 0;
             int curYearCustomerCount = 0;
             string strSQL = "";
-            RegionSQL = " f.custregion in (select descendant from crm_sys_region_treepaths where ancestor = " + parentregionid + ") ";
+            RegionSQL = " f.region in (select descendant from crm_sys_region_treepaths where ancestor = " + parentregionid + ") ";
            string  userRoleRuleSQL = this._reportEngineRepository.getRuleSQLByUserId(customer_entityid, userNum, null);
             if (userRoleRuleSQL == null || userRoleRuleSQL.Length == 0)
             {

@@ -44,7 +44,15 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             p_category = ReportParamsUtils.parseString(param, "category");
             p_department = ReportParamsUtils.parseString(param, "department");
             dtFrom = ReportParamsUtils.parseDateTime(param, "searchfrom");
+            if (dtFrom <= DateTime.MinValue)
+			{
+                dtFrom = new DateTime(DateTime.Now.Year, 1, 1);
+			}
             dtTo = ReportParamsUtils.parseDateTime(param, "searchto");
+            if (dtTo <= DateTime.MinValue)
+            {
+                dtTo = new DateTime(DateTime.Now.Year, 12, 31);
+            }
             if (p_department == null || p_department.Length == 0) {
                 throw (new Exception("参数异常"));
             }

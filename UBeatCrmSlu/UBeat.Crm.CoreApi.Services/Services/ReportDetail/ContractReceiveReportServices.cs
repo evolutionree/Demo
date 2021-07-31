@@ -44,8 +44,8 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string mainTable = "crm_sys_contract";
             string mainTableAlias = "e";
             string personFieldName = "recmanager";
-            string DateTimeFieldName = "contractdate";
-            string receiveSQL = "SELECT contractid,sum(paidmoney ) receiveAmount FROM crm_sys_payments group by contractid";
+            string DateTimeFieldName = "flowertime";
+            string receiveSQL = "SELECT (contract->>'id')::uuid as contractid,sum(paidmoney ) receiveAmount FROM crm_sys_payments group by contractid";
             #region 处理传入参数
             if (param == null) throw (new Exception("参数异常"));
             p_rangetype = ReportParamsUtils.parseInt(param, "range_type");
@@ -74,7 +74,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             #endregion
             string DateTimeSQL = string.Format(" extract(year from {0}.{1}) = {2} ", mainTableAlias, DateTimeFieldName, p_searchyear);
-            string selectSQL = string.Format(@"Select extract(month from {0}.{1}) contractmonth,sum(e.contractvolume) contractvolume,sum(receiveSum.receiveAmount) receiveAmount
+            string selectSQL = string.Format(@"Select extract(month from {0}.{1}) contractmonth,sum(e.contractamount) contractvolume,sum(receiveSum.receiveAmount) receiveAmount
                                 from {2} {0} 
                                 left outer join ({3}) receiveSum on receiveSum.contractid = {0}.recid
                                 where {0}.recstatus = 1   ", mainTableAlias, DateTimeFieldName, mainTable , receiveSQL);
@@ -236,7 +236,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string mainTableAlias = "e";
             string personFieldName = "recmanager";
             string DateTimeFieldName = "contractdate";
-            string receiveSQL = @"SELECT contractid,extract(year from paidtime) fyear ,extract(month from paidtime) fmonth , paidmoney  receiveAmount 
+            string receiveSQL = @"SELECT (contract->>'id')::uuid as contractid,extract(year from paidtime) fyear ,extract(month from paidtime) fmonth , paidmoney  receiveAmount 
                                  FROM crm_sys_payments 
                                   where recstatus = 1 ";
             #region 处理传入参数
