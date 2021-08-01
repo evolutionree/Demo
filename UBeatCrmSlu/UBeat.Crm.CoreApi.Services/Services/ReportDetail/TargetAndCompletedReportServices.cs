@@ -1166,10 +1166,10 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
 
             List<SalesTargetNormRuleMapper> infoList = _salesTargetRepository.GetSalesTargetNormDetail(crmData, userNum);
 
-            var _entityId = infoList.FirstOrDefault().EntityId;
-            if (_entityId == Guid.Empty.ToString())
-            {
-                _entityId = null;
+            string _entityId = null;
+            if (infoList != null && infoList.Count > 0)
+			{
+                _entityId = infoList.FirstOrDefault().EntityId;
             }
 
             var obj = infoList.GroupBy(t => new

@@ -60,13 +60,33 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         [JsonProperty("recorder")]
         public int RecOrder { get; set; }
         [JsonProperty("returntype")]
-        public int ReturnType { get; set; }
+        public int ReturnType
+        {
+            get
+            {
+                return 1;
+            }
+            set
+            {
+                value = 1;
+            }
+        }
         [JsonProperty("recstatus")]
         public int RecStatus { get; set; }
         [JsonProperty("remark")]
         public string Remark { get; set; }
         [JsonProperty("enginetype")]
-        public int EngineType { get; set; }
+        public int EngineType
+        {
+            get
+            {
+                return 1;
+            }
+            set
+            {
+                value = 1;
+            }
+        }
         [JsonProperty("uscript")]
         public string UScript { get; set; }
     }
