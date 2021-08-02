@@ -89,12 +89,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
             return retList;
         }
 
-        public WebMenuItem getMenuInfoByFunIdAndName(string funcid, string name)
+        public WebMenuItem getMenuInfoByParentMenuIdAndName(Guid parentId, string name)
         {
-            string cmdText = "select * from crm_sys_webmenu where funcid = @funcid and name = @name";
+            string cmdText = "select * from crm_sys_webmenu where parentId = @parentId and name = @name";
             var param = new
             {
-                funcid,
+                parentId,
                 name
             };
             List<IDictionary<string, object>> result = DataBaseHelper.Query(cmdText, param);
@@ -108,7 +108,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
         {
             if (!string.IsNullOrEmpty(item.FuncID) && !string.IsNullOrEmpty(item.Name))
             {
-                var menu = getMenuInfoByFunIdAndName(item.FuncID, item.Name);
+                var menu = getMenuInfoByParentMenuIdAndName(item.ParentId, item.Name);
                 if (menu != null)
                 {
                     return item.Id;

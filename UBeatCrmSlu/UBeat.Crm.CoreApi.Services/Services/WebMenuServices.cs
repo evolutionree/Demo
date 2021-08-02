@@ -425,7 +425,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     webMenu.ParentId = DynamicEntityId;
                     webMenu.Id = Guid.NewGuid();
                     webMenu.Index = index;
-                    webMenu.Icon = item["icons"] == null ? "" : item["icons"].ToString();
+                    //webMenu.Icon = item["icons"] == null ? "" : item["icons"].ToString();
                     webMenu.IsDynamic = 1;
                     webMenu.FuncID = getFunctionIDByEntity(((Guid)item["entityid"]), allFunctions);
                     var pid = _webMenuRepository.insertMennInfo(webMenu);
