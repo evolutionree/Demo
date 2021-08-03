@@ -13,7 +13,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
     {
         public bool deleteByParentId(Guid parentid)
         {
-            string cmdText = "delete from crm_sys_webmenu where parentid=@parentid";
+            string cmdText = "delete from crm_sys_webmenu where parentid=@parentid and isdynamic = 1";
             var param = new
             {
                 parentid
@@ -106,12 +106,12 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.menus
 
         public Guid insertMennInfo(WebMenuItem item)
         {
-            if (!string.IsNullOrEmpty(item.FuncID) && !string.IsNullOrEmpty(item.Name))
+            if (!string.IsNullOrEmpty(item.ParentId.ToString()) && !string.IsNullOrEmpty(item.Name))
             {
                 var menu = getMenuInfoByParentMenuIdAndName(item.ParentId, item.Name);
                 if (menu != null)
                 {
-                    return item.Id;
+					return item.Id;
                 }
             }
 
