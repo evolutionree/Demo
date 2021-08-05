@@ -1380,7 +1380,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             var sql_name = @"select
                             fieldid  from crm_sys_entity_fields where controltype=1012  and entityid=@relentityid and recstatus=1 and fieldname='recname';";
 
-            var lst = entity.AsList();
+			var sql_checkfieldname = @"select
+                            fieldid  from crm_sys_entity_fields where entityid=@entityid::uuid and fieldname=@fieldname limit 1;";
+
+			var lst = entity.AsList();
             var conn = DataBaseHelper.GetDbConnect();
             if (conn.State == ConnectionState.Closed)
             {
@@ -1438,10 +1441,20 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                     param.Add("status", fields[i].recstatus);
                     param.Add("orderby", i);
                     param.Add("userno", userNumber);
-                    result = DataBaseHelper.QuerySingle<OperateResult>(conn, sql, param);
-                    if (result.Flag == 0)
-                        throw new Exception("保存配置异常");
-                    al.Add(result.Id);
+
+					var field = conn.Query<dynamic>(sql_checkfieldname, param).FirstOrDefault();
+					if(field != null)
+					{
+						param.Add("fieldid", field.fieldid);
+						conn.Execute(@"Update crm_sys_entity_fields set recstatus=1 where entityid=@entityid::uuid and fieldid = @fieldid", param);
+					}
+					else
+					{
+						result = DataBaseHelper.QuerySingle<OperateResult>(conn, sql, param);
+						if (result.Flag == 0)
+							throw new Exception("保存配置异常");
+						al.Add(result.Id);
+					}
                 }
                 param = new DynamicParameters();
                 param.Add("relentityid", entity.FirstOrDefault().RelEntityId);

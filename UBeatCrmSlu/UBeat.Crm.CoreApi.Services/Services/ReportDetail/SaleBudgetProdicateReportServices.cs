@@ -212,17 +212,23 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 serieInfo.YFieldName = "winrate";
                 serieInfo.SizeFieldName = "amount";
                 List<Dictionary<string, object>> serieData = new List<Dictionary<string, object>>();
-                foreach (Dictionary<string, object> sqlDataItem in data) {
-                    if (sqlDataItem.ContainsKey("amount") && sqlDataItem["amount"] != null) {
-                        Decimal amount = new Decimal();
-                        if (Decimal.TryParse(sqlDataItem["amount"].ToString(),  out amount) == false) continue;
-                        if (amount >= serieInfo.SerieFrom && amount < serieInfo.SerieTo) {
-                            serieData.Add(sqlDataItem);
-                        }
-                    }
-                }
+				if(data != null)
+				{
+					foreach (Dictionary<string, object> sqlDataItem in data)
+					{
+						if (sqlDataItem.ContainsKey("amount") && sqlDataItem["amount"] != null)
+						{
+							Decimal amount = new Decimal();
+							if (Decimal.TryParse(sqlDataItem["amount"].ToString(), out amount) == false) continue;
+							if (amount >= serieInfo.SerieFrom && amount < serieInfo.SerieTo)
+							{
+								serieData.Add(sqlDataItem);
+							}
+						}
+					}
+				}
 
-                Dictionary<string, object> tmpDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(serieInfo));
+				Dictionary<string, object> tmpDict = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(Newtonsoft.Json.JsonConvert.SerializeObject(serieInfo));
                 tmpDict.Add("data", serieData);
                 seriesList.Add(tmpDict);
             }
