@@ -44,7 +44,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string mainTable = "crm_sys_contract";
             string mainTableAlias = "e";
             string personFieldName = "recmanager";
-            string DateTimeFieldName = "flowertime";
+            string DateTimeFieldName = "signdate";
             string receiveSQL = "SELECT (contract->>'id')::uuid as contractid,sum(paidmoney ) receiveAmount FROM crm_sys_payments group by contractid";
             #region 处理传入参数
             if (param == null) throw (new Exception("参数异常"));
