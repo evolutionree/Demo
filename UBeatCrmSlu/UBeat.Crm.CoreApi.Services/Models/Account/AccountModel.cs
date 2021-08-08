@@ -29,7 +29,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
         /// 设备型唯一标识符
         /// </summary>
         public string UniqueId { get; set; }
-
+        
+        public string sendcode { get; set; }
+        
+        public string ip { get; set; }
     }
 
     public class AccountLoginOutModel
@@ -217,4 +220,5 @@ namespace UBeat.Crm.CoreApi.Services.Models.Account
         public IFormFile Data { set; get; }
         public int IsImport { get; set; }
     }
+    
 }

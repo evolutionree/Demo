@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using UBeat.Crm.CoreApi.Core.Utility;
@@ -18,7 +20,10 @@ using UBeat.Crm.CoreApi.Services.Models.Account;
 using UBeat.Crm.CoreApi.Services.Models.FileService;
 using UBeat.Crm.LicenseCore;
 using System.Linq;
+using Microsoft.AspNetCore.Http;
 using static MessagePack.MessagePackSerializer;
+using Color = System.Drawing.Color;
+using Rectangle = System.Drawing.Rectangle;
 
 namespace UBeat.Crm.CoreApi.Services.Services
 {
@@ -176,6 +181,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var isAdmin = userInfo.AccessType == "10" ? true : false;
 
             var accessOk = true;
+            
+            if (isWeb&&!CacheService.Repository.Get<Dictionary<string,string>>("VerifyCode")[loginModel.ip].Equals(loginModel.sendcode))
+            {
+                return ShowError<object>("请输入正确的验证码！");
+            }
             //登录限制 00无限制 01WEB 02MOB 10ADMIN 11WEB + ADMIN 12MOB + ADMIN
             switch (userInfo.AccessType)
             {
@@ -233,6 +243,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("权限不够,不允许登录当前端");
             }
+           
 
             return new OutputResult<object>(userInfo);
         }
@@ -897,6 +908,88 @@ namespace UBeat.Crm.CoreApi.Services.Services
         }
 		
         #endregion
+        
+        public string MakeCode(int codeLen)
+        {
+            if (codeLen < 1)
+            {
+                return string.Empty;
+            }
+            int number;
+            StringBuilder sbCheckCode = new StringBuilder();
+            Random random = new Random();
+
+            for (int index = 0; index < codeLen; index++)
+            {
+                number = random.Next();
+
+                if (number % 2 == 0)
+                {
+                    sbCheckCode.Append((char)('0' + (char)(number % 10))); //生成数字
+                }
+                else
+                {
+                    sbCheckCode.Append((char)('A' + (char)(number % 26))); //生成字母
+                }
+            }
+            return sbCheckCode.ToString();
+        }
+        
+          ///<summary>
+         /// 获取验证码图片流
+         /// </summary>
+        /// <param name="checkCode">验证码字符串</param>
+        /// <returns>返回验证码图片流</returns>
+        public MemoryStream CreateCodeImg(string checkCode)
+        {
+            if (string.IsNullOrEmpty(checkCode))
+            {
+                return null;
+            }
+            Bitmap image = new Bitmap((int)Math.Ceiling((checkCode.Length * 12.5)), 22);
+            Graphics graphic = Graphics.FromImage(image);
+            try
+            {
+                Random random = new Random();
+                graphic.Clear(Color.White);
+                int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+                for (int index = 0; index < 25; index++)
+                {
+                    x1 = random.Next(image.Width);
+                    x2 = random.Next(image.Width);
+                    y1 = random.Next(image.Height);
+                    y2 = random.Next(image.Height);
+
+                    graphic.DrawLine(new Pen(Color.Silver), x1, y1, x2, y2);
+                }
+                Font font = new Font("Arial", 12, (FontStyle.Bold | FontStyle.Italic));
+                System.Drawing.Drawing2D.LinearGradientBrush brush = new System.Drawing.Drawing2D.LinearGradientBrush(new Rectangle(0, 0, image.Width, image.Height), Color.Red, Color.DarkRed, 1.2f, true);
+                graphic.DrawString(checkCode, font, brush, 2, 2);
+
+                int x = 0;
+                int y = 0;
+
+                //画图片的前景噪音点
+                for (int i = 0; i < 100; i++)
+                {
+                    x = random.Next(image.Width);
+                    y = random.Next(image.Height);
+
+                    image.SetPixel(x, y, Color.FromArgb(random.Next()));
+                }
+                //画图片的边框线
+                graphic.DrawRectangle(new Pen(Color.Silver), 0, 0, image.Width - 1, image.Height - 1);
+                //将图片验证码保存为流Stream返回
+                System.IO.MemoryStream ms = new System.IO.MemoryStream();
+                image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return ms;
+            }
+            finally
+            {
+                graphic.Dispose();
+                image.Dispose();
+            }
+        }
     }
     public class LoginSessionModel_ForInner
     {
@@ -953,4 +1046,5 @@ namespace UBeat.Crm.CoreApi.Services.Services
         AllMobile = 2,
         SpecialDevice = 3
     }
+
 }

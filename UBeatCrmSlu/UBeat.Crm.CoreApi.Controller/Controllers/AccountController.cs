@@ -16,9 +16,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using UBeat.Crm.LicenseCore;
 using MessagePack;
 using MessagePack.Resolvers;
+using Microsoft.AspNetCore.Http;
 using UBeat.Crm.CoreApi.Services.Utility;
 
 namespace UBeat.Crm.CoreApi.Controllers
@@ -59,6 +62,25 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             return _accountServices.GetPublicKey();
         }
+        
+        [AllowAnonymous]
+        [HttpGet]
+        [Route("getverificationcode")]
+        public IActionResult getVerificationCode()
+        {
+            
+            string code =_accountServices.MakeCode(4);
+            //HttpContext.Session.SetString("VerificationCode",code);
+            var ip = HttpContext.Connection.LocalIpAddress.ToString();
+            var vfc=new Dictionary<string, string>();
+            vfc.Add(ip,code);
+            CacheService.Repository.Add("VerifyCode", vfc);
+            
+            MemoryStream ms = _accountServices.CreateCodeImg(code);
+            //File(ms.ToArray(), "image/png")
+            //return new OutputResult<object>(ms);
+            return new FileContentResult(ms.ToArray(), "image/png");
+        }
 
         [AllowAnonymous]
         [HttpPost]
@@ -67,7 +89,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
 
             if (loginModel == null) return ResponseError<object>("参数格式错误");
-
+            loginModel.ip=HttpContext.Connection.LocalIpAddress.ToString();
 
             var header = GetAnalyseHeader();
             var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");
