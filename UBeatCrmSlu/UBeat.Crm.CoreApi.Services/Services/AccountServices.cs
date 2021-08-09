@@ -181,8 +181,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var isAdmin = userInfo.AccessType == "10" ? true : false;
 
             var accessOk = true;
-            
-            if (isWeb&&!CacheService.Repository.Get<Dictionary<string,string>>("VerifyCode")[loginModel.ip].Equals(loginModel.sendcode))
+
+            string uniqueId = CacheService.Repository.Get(loginModel.UniqueId).ToString();
+            uniqueId=uniqueId.ToLower();
+            if (isWeb && !uniqueId.Equals(loginModel.sendcode.ToLower()));
             {
                 return ShowError<object>("请输入正确的验证码！");
             }

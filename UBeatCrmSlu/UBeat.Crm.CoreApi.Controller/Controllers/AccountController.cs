@@ -66,15 +66,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         [AllowAnonymous]
         [HttpGet]
         [Route("getverificationcode")]
-        public IActionResult getVerificationCode()
+        public IActionResult getVerificationCode(string uniqueid)
         {
             
             string code =_accountServices.MakeCode(4);
             //HttpContext.Session.SetString("VerificationCode",code);
-            var ip = HttpContext.Connection.LocalIpAddress.ToString();
-            var vfc=new Dictionary<string, string>();
-            vfc.Add(ip,code);
-            CacheService.Repository.Add("VerifyCode", vfc);
+            //var vfc=new Dictionary<string, string>();
+            //vfc.Add(uniqueid ,code);
+            CacheService.Repository.Add(uniqueid, code,CacheKeyManager.SendCodeExpires);
             
             MemoryStream ms = _accountServices.CreateCodeImg(code);
             //File(ms.ToArray(), "image/png")
@@ -89,7 +88,6 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
 
             if (loginModel == null) return ResponseError<object>("参数格式错误");
-            loginModel.ip=HttpContext.Connection.LocalIpAddress.ToString();
 
             var header = GetAnalyseHeader();
             var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");

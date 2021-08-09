@@ -55,6 +55,9 @@ namespace UBeat.Crm.CoreApi.Core.Utility
         /// </summary>
         public static TimeSpan MessageConfigExpires = new TimeSpan(1, 0, 0, 0);
 
-
+        /// <summary>
+        /// 登录验证码有效期
+        /// </summary>
+        public static TimeSpan SendCodeExpires = new TimeSpan(0, 0, 1, 0);
     }
 }
