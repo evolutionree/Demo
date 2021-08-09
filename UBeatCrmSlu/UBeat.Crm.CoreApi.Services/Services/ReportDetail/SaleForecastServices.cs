@@ -162,22 +162,27 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             Dictionary<string, SaleCategoryInfo> dd = new Dictionary<string, SaleCategoryInfo>();
             List<SaleCategoryInfo> dataList = new List<SaleCategoryInfo>();
 
-            foreach (Dictionary<string, object> item in data) {
-                SaleCategoryInfo info = null;
-                string categoryid = item["categoryid"].ToString();
-                if (dd.ContainsKey(categoryid))
-                {
-                    info = dd[categoryid];
-                }
-                else {
-                    info = new SaleCategoryInfo();
-                    info.CategoryId = categoryid;
-                    info.CategoryName = item["categoryname"].ToString();
-                    dd.Add(categoryid, info);
-                    dataList.Add(info);
-                }
-                info.Data.Add(item);
-            }
+			if(data != null)
+			{
+				foreach (Dictionary<string, object> item in data)
+				{
+					SaleCategoryInfo info = null;
+					string categoryid = item["categoryid"].ToString();
+					if (dd.ContainsKey(categoryid))
+					{
+						info = dd[categoryid];
+					}
+					else
+					{
+						info = new SaleCategoryInfo();
+						info.CategoryId = categoryid;
+						info.CategoryName = item["categoryname"].ToString();
+						dd.Add(categoryid, info);
+						dataList.Add(info);
+					}
+					info.Data.Add(item);
+				}
+			}
             List<Dictionary<string, object>> convertedData = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
             retData.Add("data", convertedData);
             #endregion
