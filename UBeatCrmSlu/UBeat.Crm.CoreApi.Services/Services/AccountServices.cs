@@ -181,10 +181,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var isAdmin = userInfo.AccessType == "10" ? true : false;
 
             var accessOk = true;
+            if (CacheService.Repository.Get(loginModel.UniqueId)==null)
+            {
+                return ShowError<object>("验证参数错误，请稍后再试！");
+            }
 
             string uniqueId = CacheService.Repository.Get(loginModel.UniqueId).ToString();
             uniqueId=uniqueId.ToLower();
-            if (isWeb && !uniqueId.Equals(loginModel.sendcode.ToLower()));
+            string sendcode = loginModel.sendcode.ToLower();
+            if (isWeb && uniqueId!=sendcode)
             {
                 return ShowError<object>("请输入正确的验证码！");
             }
