@@ -953,7 +953,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return null;
             }
-            Bitmap image = new Bitmap((int)Math.Ceiling((checkCode.Length * 12.5)), 22);
+            Bitmap image = new Bitmap((int)Math.Ceiling((checkCode.Length * 27.0)), 46);
             Graphics graphic = Graphics.FromImage(image);
             try
             {
@@ -969,7 +969,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
                     graphic.DrawLine(new Pen(Color.Silver), x1, y1, x2, y2);
                 }
-                Font font = new Font("Arial", 12, (FontStyle.Bold | FontStyle.Italic));
+                Font font = new Font("Arial", 27, (FontStyle.Bold | FontStyle.Italic));
                 System.Drawing.Drawing2D.LinearGradientBrush brush = new System.Drawing.Drawing2D.LinearGradientBrush(new Rectangle(0, 0, image.Width, image.Height), Color.Red, Color.DarkRed, 1.2f, true);
                 graphic.DrawString(checkCode, font, brush, 2, 2);
 
