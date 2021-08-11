@@ -1421,7 +1421,10 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
             param.Add("entityid", entity.FirstOrDefault().RelEntityId);
             param.Add("fieldnames", string.Join(",", entity.Select(t => t.FieldName).ToArray()));
             conn.Execute("Update  crm_sys_entity_field_rules set recstatus=0 where fieldid in (SELECT fieldid From crm_sys_entity_fields Where controltype not in (20, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013) and entityid=@entityid::uuid);" +
-                " Update   crm_sys_entity_fields set recstatus=0 Where controltype not in (20, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013) and entityid=@entityid::uuid;", param);
+                " Update   crm_sys_entity_fields set recstatus=0 " +
+				" Where 1=1 " +
+				"and fieldname <> 'newbusinesscenter' " +
+				"and controltype not in (20, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013) and entityid=@entityid::uuid;", param);
             try
             {
 
