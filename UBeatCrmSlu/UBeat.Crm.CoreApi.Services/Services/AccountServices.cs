@@ -953,7 +953,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return null;
             }
-            Bitmap image = new Bitmap((int)Math.Ceiling((checkCode.Length * 27.0)), 46);
+            Bitmap image = new Bitmap((int)Math.Ceiling((checkCode.Length * 27.1)), 46);
             Graphics graphic = Graphics.FromImage(image);
             try
             {

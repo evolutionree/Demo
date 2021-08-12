@@ -2993,6 +2993,11 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (info.FuncBtns == null) return new OutputResult<object>(funcBtns);
             foreach (var btn in info.FuncBtns)
             {
+                if (btn.ButtonCode=="AddEntityData")
+                {
+                    funcBtns.Add(btn);
+                }
+
                 //if(btn.FunctionId==Guid.Empty|| funcs.Exists(m=>m.FuncId==btn.FunctionId))
                 if (!string.IsNullOrEmpty(btn.RoutePath) && funcs.Exists(m => m.RoutePath == btn.RoutePath && m.DeviceType == (int)DeviceClassic))
                 {
