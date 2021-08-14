@@ -32,6 +32,9 @@ namespace UBeat.Crm.CoreApi.IRepository
         /// <returns></returns>
         Dictionary<string, object> getMyRangeWithType(int userNum, DbTransaction tran);
 
-        
+        string getTopDeptId(int userNum);
+        string getTopDeptName(int userNum);
+        string getMyDeptId(int userNum);
+        string getMyDeptName(int userNum);
     }
 }
