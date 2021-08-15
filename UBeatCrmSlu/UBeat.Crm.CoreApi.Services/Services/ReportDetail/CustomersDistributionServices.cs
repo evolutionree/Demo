@@ -41,6 +41,8 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string RuleSQL = " 1=1 ";
             string RegionSQL = "";
             string CustomerSearchSQL = "";
+            string p_startdate = "";
+            string p_enddate = "";
             Dictionary<string, List<Dictionary<string, object>>> superdata = new Dictionary<string, List<Dictionary<string, object>>>();
             List<Dictionary<string, object>> data = new List<Dictionary<string, object>>();
             #endregion
@@ -55,7 +57,6 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 p_regions = param["regions"].ToString();
             }
 
-
             if (param.ContainsKey("@custstatus"))
             {
                 p_custstatus = param["@custstatus"].ToString();
@@ -64,6 +65,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             {
                 p_custstatus = param["custstatus"].ToString();
             }
+
             if (param.ContainsKey("@custscale"))
             {
                 p_custscale = param["@custscale"].ToString();
@@ -72,6 +74,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             {
                 p_custscale = param["custscale"].ToString();
             }
+
             if (param.ContainsKey("@custlevel"))
             {
                 p_custlevel = param["@custlevel"].ToString();
@@ -81,19 +84,36 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 p_custlevel = param["custlevel"].ToString();
             }
 
-            if (param.ContainsKey("@custindu"))
+            if (param.ContainsKey("@custindust"))
             {
-                p_custindust = param["@custindu"].ToString();
+                p_custindust = param["@custindust"].ToString();
             }
-            else if (param.ContainsKey("custindu"))
+            else if (param.ContainsKey("custindust"))
             {
-                p_custindust = param["custindu"].ToString();
+                p_custindust = param["custindust"].ToString();
+            }
+
+            if (param.ContainsKey("@startdate"))
+            {
+                p_startdate = param["@startdate"].ToString();
+            }
+            else if (param.ContainsKey("startdate"))
+            {
+                p_startdate = param["startdate"].ToString();
+            }
+
+            if (param.ContainsKey("@enddate"))
+            {
+                p_enddate = param["@enddate"].ToString();
+            }
+            else if (param.ContainsKey("enddate"))
+            {
+                p_enddate = param["enddate"].ToString();
             }
             #endregion
 
-
             #region 处理地区
-            int parentregionid = 100000;
+            int parentregionid = 1;
             int regiontype = 1;
             if (p_regions != null && p_regions.Length >0  ) {
                 string[] tmp = p_regions.Split(',');
@@ -107,16 +127,18 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                         }
                         NeedPass = CheckIsDirectly(regionName);
                     }
-                    int newRegionID = getRegionId(regionName, regiontype, parentregionid) ;//得到新的id
+                    int newRegionID = getRegionId(regionName, regiontype);
+                    
                     regiontype = regiontype + 1;
                     if (NeedPass) {
-                        newRegionID = getRegionId("", regiontype, newRegionID);
+                        newRegionID = getRegionId(regionName, regiontype);
                         regiontype = regiontype + 1;
                     }
                     parentregionid = newRegionID;
                 }
             }
-            RegionSQL = " e.region in (select descendant from crm_sys_region_treepaths where ancestor = " + parentregionid + ") ";
+
+            RegionSQL = " e.continent in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 103) ";
             #endregion
             #region  处理客户的查询脚本
             #region 处理客户状态过滤条件
@@ -140,13 +162,13 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 if (inValue.Length > 0)
                 {
                     inValue = inValue.Substring(1);
-                    StatusSQL = string.Format(@" e.custstatus in ({0})", inValue);
+                    StatusSQL = string.Format(@" e.customerstatus in ({0})", inValue);
                 }
                 else {
                     StatusSQL = "1<>1";
                 }
                 if (hasZero) {
-                    StatusSQL = string.Format(@" ({0} or e.custstatus is null  or e.custstatus = 0 )", StatusSQL);
+                    StatusSQL = string.Format(@" ({0} or e.customerstatus is null  or e.customerstatus = 0 )", StatusSQL);
                 }
             }
             #endregion
@@ -174,14 +196,14 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 if (inValue.Length > 0)
                 {
                     inValue = inValue.Substring(1);
-                    ScaleSQL = string.Format(@" e.custscale in ({0})", inValue);
+                    ScaleSQL = string.Format(@" e.coldstorsize in ({0})", inValue);
                 }else
                 {
                     ScaleSQL = " 1<>1 ";
                 }
                 if (hasZero)
                 {
-                    ScaleSQL = string.Format(@" ({0} or e.custscale is null  or e.custscale = 0 )", ScaleSQL);
+                    ScaleSQL = string.Format(@" ({0} or e.coldstorsize is null  or e.coldstorsize = 0 )", ScaleSQL);
                 }
             }
             #endregion
@@ -244,50 +266,112 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 if (inValue.Length > 0)
                 {
                     inValue = inValue.Substring(1);
-                    InduSQL = string.Format(@" e.custindust in ({0})", inValue);
+                    InduSQL = string.Format(@" e.industry in ({0})", inValue);
                 }
                 else {
                     InduSQL = " 1<> 1";
                 }
                 if (hasZero)
                 {
-                    InduSQL = string.Format(@" ({0} or e.custindust is null  or e.custindust = 0 )", InduSQL);
+                    InduSQL = string.Format(@" ({0} or e.industry is null  or e.industry = 0 )", InduSQL);
                 }
             }
-            #endregion
+			#endregion
             CustomerSearchSQL = string.Format(@" select * from crm_sys_customer e  where 1=1 and {0} and  {1}  and {2} and {3} And {4} And {5}", RuleSQL, RegionSQL,StatusSQL,LevelSQL,ScaleSQL, InduSQL);
+
+            #region 处理时间范围
+            if (!string.IsNullOrEmpty(p_startdate))
+            {
+                CustomerSearchSQL += string.Format(@" and e.reccreated >= '{0}'", p_startdate);
+            }
+            if (!string.IsNullOrEmpty(p_enddate))
+            {
+                CustomerSearchSQL += string.Format(@" and e.reccreated <= '{0}'", p_enddate);
+            }
+            #endregion
             #endregion
             #region 处理按省市区汇总(返回数据集)
             string MapSummarySQL = "";
             List<Dictionary<string, object>> mapSummaryData = null;
             if (regiontype < 4)
             {
-                //处理汇总方式（也就是当前显示要求是省市区三级）
-                MapSummarySQL = string.Format(@"SELECT
+                if (regiontype == 1)
+				{
+                    MapSummarySQL = string.Format(@"SELECT
 	                                    regionmap.regionid,
-	                                    regionInfo.regionname,
+	                                    regionmap.regionname,
 	                                    COUNT (*)
                                     FROM
 	                                    (
 		                                    SELECT
-			                                    A .regionid,
-			                                    b.descendant
+			                                    A.dataid as regionid,
+                                                A.dataval as regionname
 		                                    FROM
-			                                    crm_sys_region A
-		                                    LEFT OUTER JOIN crm_sys_region_treepaths b ON A .regionid = b.ancestor
-		                                    WHERE
-			                                    A .pregionid = {1}
+			                                    crm_sys_dictionary A
+		                                    WHERE A.recstatus = 1 and dictypeid =124
 	                                    ) regionmap
                                      inner JOIN (
 	                                    {0}
-                                    ) customer ON customer.region = regionmap.descendant
-                                    INNER JOIN crm_sys_region regionInfo ON regionInfo.regionid = regionmap.regionid
+                                    ) customer ON customer.province = regionmap.regionid
                                     GROUP BY
 	                                    regionmap.regionid,
-	                                    regionInfo.regionname
+                                        regionmap.regionname
                                     ORDER BY
-	                                    regionInfo.regionname", CustomerSearchSQL, parentregionid);
-                mapSummaryData = _reportEngineRepository.ExecuteSQL(MapSummarySQL, new DbParameter[] { });
+	                                    regionmap.regionid", CustomerSearchSQL);
+                    mapSummaryData = _reportEngineRepository.ExecuteSQL(MapSummarySQL, new DbParameter[] { });
+                }
+                else if (regiontype == 2)
+				{
+                    MapSummarySQL = string.Format(@"SELECT
+	                                    regionmap.regionid,
+	                                    regionmap.regionname,
+	                                    COUNT (*)
+                                    FROM
+	                                    (
+		                                    SELECT
+			                                    A.dataid as regionid,
+                                                A.dataval as regionname
+		                                    FROM
+			                                    crm_sys_dictionary A
+		                                    WHERE A.recstatus = 1 and dictypeid =125
+			                                      AND A.extfield2 = '{1}'
+	                                    ) regionmap
+                                     inner JOIN (
+	                                    {0}
+                                    ) customer ON customer.city = regionmap.regionid
+                                    GROUP BY
+	                                    regionmap.regionid,
+                                        regionmap.regionname
+                                    ORDER BY
+	                                    regionmap.regionid", CustomerSearchSQL, parentregionid);
+                    mapSummaryData = _reportEngineRepository.ExecuteSQL(MapSummarySQL, new DbParameter[] { });
+                }
+                else if(regiontype == 3)
+				{
+                    MapSummarySQL = string.Format(@"SELECT
+	                                    regionmap.regionid,
+	                                    regionmap.regionname,
+	                                    COUNT (*)
+                                    FROM
+	                                    (
+		                                    SELECT
+			                                    A.dataid as regionid,
+                                                A.dataval as regionname
+		                                    FROM
+			                                    crm_sys_dictionary A
+		                                    WHERE A.recstatus = 1 and dictypeid =126
+			                                      AND A.extfield2 = '{1}'
+	                                    ) regionmap
+                                     inner JOIN (
+	                                    {0}
+                                    ) customer ON customer.area = regionmap.regionid
+                                    GROUP BY
+	                                    regionmap.regionid,
+                                        regionmap.regionname
+                                    ORDER BY
+	                                    regionmap.regionid", CustomerSearchSQL, parentregionid);
+                    mapSummaryData = _reportEngineRepository.ExecuteSQL(MapSummarySQL, new DbParameter[] { });
+                }
                 #region 对于省级返回，对省名称进行格式化
                 if (regiontype == 1)
                 {
@@ -301,7 +385,6 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                             regionName = ProvincesMap[regionName];
                         }
                         item["regionname"] = regionName;
-
                     }
                 }
 
@@ -309,15 +392,24 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             else {
                 //显示明细地图，要返回实际地址
-                MapSummarySQL = string.Format(@" select jsonb_extract_path_text(customer.custaddr,'lat')  lat , 
-                                                jsonb_extract_path_text(customer.custaddr,'lon')  lon,
-                                                jsonb_extract_path_text(customer.custaddr,'address')  address,
+                MapSummarySQL = string.Format(@" select jsonb_extract_path_text(customer.customercompanyaddress,'lat') lat , 
+                                                jsonb_extract_path_text(customer.customercompanyaddress,'lon') lon,
+                                                jsonb_extract_path_text(customer.customercompanyaddress,'address') address,
                                                 customer.recname,customer.recid,
-                                                crm_func_entity_protocol_format_dictionary(12,customer.custstatus::text) custstatus_name,
-                                                crm_func_entity_protocol_format_dictionary(10,customer.custscale::text) custscale_name,
+                                                crm_func_entity_protocol_format_dictionary(12,customer.customerstatus::text) custstatus_name,
+                                                crm_func_entity_protocol_format_dictionary(10,customer.coldstorsize::text) custscale_name,
                                                 crm_func_entity_protocol_format_dictionary(11,customer.custlevel::text) custlevel_name,
-                                                crm_func_entity_protocol_format_dictionary(9,customer.custindust::text) custindust_name,
-                                                customer.custaddr  from ({0}) customer", CustomerSearchSQL);
+                                                crm_func_entity_protocol_format_dictionary(9,customer.industry::text) custindust_name,
+                                                customer.customercompanyaddress  from ({0}) customer 
+                                                left join (
+		                                                SELECT
+			                                                A.dataid as regionid,
+                                                            A.dataval as regionname
+		                                                FROM
+			                                                crm_sys_dictionary A
+		                                                WHERE A.recstatus = 1 and dictypeid =126
+			                                                  AND A.extfield1 = '{1}'
+	                                                ) regionmap  ON customer.area = regionmap.regionid  where area = regionmap.regionid", CustomerSearchSQL, parentregionid);
                 mapSummaryData = _reportEngineRepository.ExecuteSQL(MapSummarySQL, new DbParameter[] { });
 
             }
@@ -326,9 +418,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             tmpRecordData.Add("data", mapSummaryData);
             data.Add(tmpRecordData);
             #endregion
-
-
-
+           
             #region 处理客户过滤条件返回值的公共部分
             string baseSQL = @"select  COALESCE(dict.dataid,0) dkey ,COALESCE(dict.dataval,'未定义') dvalue,COALESCE(dict.recorder,10000) dorder ,
                                 sum (case when customer.recid is null then 0 else 1 end )  dcount
@@ -344,8 +434,8 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                         RuleSQL, RegionSQL); 
             #endregion
             #region 处理客户状态数据集返回
-            int DictType_Status = 12;
-            string TotalSQL = string.Format(baseSQL, CustomerSearchSQL, DictType_Status, "custstatus");
+            int DictType_Status = 52;
+            string TotalSQL = string.Format(baseSQL, CustomerSearchSQL, DictType_Status, "customerstatus");
             List<Dictionary<string, object>> statusData = _reportEngineRepository.ExecuteSQL(TotalSQL, new DbParameter[] { });
             if (statusData != null) {
                 tmpRecordData = new Dictionary<string, object>();
@@ -355,8 +445,8 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             #endregion
             #region 处理客户规模数据集返回
-            int DictType_Scale = 10;
-            TotalSQL = string.Format(baseSQL, CustomerSearchSQL, DictType_Scale, "custscale");
+            int DictType_Scale = 6;
+            TotalSQL = string.Format(baseSQL, CustomerSearchSQL, DictType_Scale, "coldstorsize");
             List<Dictionary<string, object>> scaleData = _reportEngineRepository.ExecuteSQL(TotalSQL, new DbParameter[] { });
             if (scaleData != null)
             {
@@ -367,7 +457,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             #endregion
             #region 处理客户的级别数据集返回
-            int DictType_Level = 11;
+            int DictType_Level = 7;
             TotalSQL = string.Format(baseSQL, CustomerSearchSQL, DictType_Level, "custlevel");
             List<Dictionary<string, object>> levelData = _reportEngineRepository.ExecuteSQL(TotalSQL, new DbParameter[] { });
             if (scaleData != null)
@@ -379,8 +469,8 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             #endregion
             #region 处理客户行业数据集返回
-            int DictType_Indu = 9;
-            TotalSQL = string.Format(baseSQL, CustomerSearchSQL, DictType_Indu, "custindust");
+            int DictType_Indu = 114;
+            TotalSQL = string.Format(baseSQL, CustomerSearchSQL, DictType_Indu, "industry");
             List<Dictionary<string, object>> indudata = _reportEngineRepository.ExecuteSQL(TotalSQL, new DbParameter[] { });
             if (scaleData != null)
             {
@@ -416,7 +506,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string p_regions = "";
             string RoleSQL = "";
             p_regions = ReportParamsUtils.parseString(param, "regions");
-            int parentregionid = 100000;
+            int parentregionid = 1;
             int regiontype = 1;
             if (p_regions != null && p_regions.Length > 0)
             {
@@ -434,11 +524,11 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                         }
                         NeedPass = CheckIsDirectly(regionName);
                     }
-                    int newRegionID = getRegionId(regionName, regiontype, parentregionid);//得到新的id
+                    int newRegionID = getRegionId(regionName, regiontype);//得到新的id
                     regiontype = regiontype + 1;
                     if (NeedPass)
                     {
-                        newRegionID = getRegionId("", regiontype, newRegionID);
+                        newRegionID = getRegionId(regionName, regiontype);
                         regiontype = regiontype + 1;
                     }
                     parentregionid = newRegionID;
@@ -451,49 +541,67 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             int signContractCount = 0;
             int curYearCustomerCount = 0;
             string strSQL = "";
-            RegionSQL = " f.region in (select descendant from crm_sys_region_treepaths where ancestor = " + parentregionid + ") ";
-           string  userRoleRuleSQL = this._reportEngineRepository.getRuleSQLByUserId(customer_entityid, userNum, null);
+
+            RegionSQL = " 1=2  ";
+            if(regiontype == 1)
+			{
+                RegionSQL = string.Format(@" e.continent in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 103) ");
+            }
+            else if(regiontype == 2)
+			{
+                RegionSQL = string.Format(@" e.province in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 124 and extfield1 = '{0}')  ", parentregionid);
+            }
+            else if(regiontype == 3)
+		    {
+                RegionSQL = string.Format(@" e.city in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 125 and extfield1 = '{0}')  ", parentregionid);
+            }
+            else if (regiontype == 4)
+            {
+                RegionSQL = string.Format(@" e.area in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 126 and extfield1 = '{0}')  ", parentregionid);
+            }
+            string  userRoleRuleSQL = this._reportEngineRepository.getRuleSQLByUserId(customer_entityid, userNum, null);
             if (userRoleRuleSQL == null || userRoleRuleSQL.Length == 0)
             {
                 RoleSQL = "1=1";
             }
             else {
-                RoleSQL = string.Format(" f.recid in ({0}) ", userRoleRuleSQL);
+                RoleSQL = string.Format(" e.recid in ({0}) ", userRoleRuleSQL);
             }
             List<Dictionary<string, object>> tmpDetail = null;
             #region 处理全国排名数据
-            if (parentregionid == 100000)
+            if (parentregionid == 1)
             {
                 //全国模式，不用管排名
             }
             else
             {
-                string tmpRegionSQL = " f.custregion in (select descendant from crm_sys_region_treepaths where ancestor = " + 100000.ToString() + ") ";
+                string tmpRegionSQL = " e.continent in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 103) ";
                 strSQL  = string.Format(@"SELECT
 	                                    regionmap.regionid,
-	                                    regionInfo.regionname,
+	                                    regionmap.regionname
 	                                   COUNT (*) customercount ,rank() over (order by count(*) desc ) customerrank
                                     FROM
 	                                    (
-		                                    SELECT
-			                                    A .regionid,
-			                                    b.descendant
-		                                    FROM
-			                                    crm_sys_region A
-		                                    LEFT OUTER JOIN crm_sys_region_treepaths b ON A .regionid = b.ancestor
-		                                    WHERE
-			                                    A .pregionid = 100000
+                                            select dataid, extfield1 as regionid, dataval as regionname, 1 as regiontype, extfield2 as pregionid
+                                            from crm_sys_dictionary where recstatus = 1 and dictypeid=124
+                                            union all
+                                            select dataid, extfield1 as regionid, dataval as regionname, 2 as regiontype, extfield2 as pregionid
+                                            from crm_sys_dictionary where recstatus = 1 and dictypeid=125
+                                            union all
+                                            select dataid, extfield1 as regionid, dataval as regionname, 3 as regiontype, extfield2 as pregionid
+                                            from crm_sys_dictionary where recstatus = 1 and dictypeid=126
 	                                    ) regionmap
                                      inner JOIN (
-	                                    select * from crm_sys_customer f where 1=1 and {0} and {1}
-                                    ) customer ON customer.custregion = regionmap.descendant
-                                    INNER JOIN crm_sys_region regionInfo ON regionInfo.regionid = regionmap.regionid
+	                                    select * from crm_sys_customer e where 1=1 and {0} and {1}
+                                    ) customer ON (regionmap.regiontype = 1 and regionmap.dataid = customer.province) 
+                                                or (regionmap.regiontype = 2 and regionmap.dataid = customer.city)
+                                                or (regionmap.regiontype = 3 and regionmap.dataid = customer.area)
                                     GROUP BY
 	                                    regionmap.regionid,
-	                                    regionInfo.regionname
+	                                    regionmap.regionname
                                     ORDER BY
-	                                    regionInfo.regionname", tmpRegionSQL, RoleSQL);
-                strSQL = string.Format(@"select eee.customerrank from ({0}) eee where regionid={1}", strSQL, parentregionid);
+	                                    regionmap.regionid", tmpRegionSQL, RoleSQL);
+                strSQL = string.Format(@"select eee.customerrank from ({0}) eee where regionid='{1}'", strSQL, parentregionid);
                 tmpDetail = this._reportEngineRepository.ExecuteSQL(strSQL, new DbParameter[] { });
                 if (tmpDetail != null && tmpDetail.Count > 0)
                 {
@@ -507,7 +615,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             #endregion
 
             #region 处理客户数量
-            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer f where  1=1 And f.recstatus = 1 And {0} And {1}  ", RoleSQL, RegionSQL);
+            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer e where  1=1 And e.recstatus = 1 And {0} And {1}  ", RoleSQL, RegionSQL);
             tmpDetail = this._reportEngineRepository.ExecuteSQL(strSQL, new DbParameter[] { });
             if (tmpDetail != null && tmpDetail.Count >0)
             {
@@ -518,10 +626,10 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             #endregion
             #region 获取本年签订合同的区域内签约客户数量
-            string signSQL = @"select jsonb_extract_path_text(customerid,'id')::uuid   
+            string signSQL = @"select jsonb_extract_path_text(customer,'id')::uuid   
                             from crm_sys_contract
-                            where   extract(year from Contractdate) = extract(year from now())   ";
-            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer f where  1=1 And f.recstatus = 1 And {0} And {1}  and f.recid in ({2}) ", RoleSQL, RegionSQL,signSQL);
+                            where   extract(year from signdate) = extract(year from now())   ";
+            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer e where  1=1 And e.recstatus = 1 And {0} And {1}  and e.recid in ({2}) ", RoleSQL, RegionSQL,signSQL);
             tmpDetail = this._reportEngineRepository.ExecuteSQL(strSQL, new DbParameter[] { });
             if (tmpDetail != null && tmpDetail.Count > 0)
             {
@@ -535,10 +643,10 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
 
 
             #region 处理业绩(不考虑合同权限),平均单价
-            strSQL = string.Format(@"select count(*) totalcount,sum(contractvolume) contractamount
+            strSQL = string.Format(@"select count(*) totalcount,sum(contractamount) contractamount
                                     from crm_sys_contract a 
-                                    inner join crm_sys_customer f on f.recid::text = jsonb_extract_path_text(a.customerid,'id')
-                                    where a.recstatus =1  And f.recstatus = 1 And {0} And {1}   ", RoleSQL, RegionSQL);
+                                    inner join crm_sys_customer e on e.recid::text = jsonb_extract_path_text(a.customer,'id')
+                                    where a.recstatus =1  And e.recstatus = 1 And {0} And {1}   ", RoleSQL, RegionSQL);
             tmpDetail = this._reportEngineRepository.ExecuteSQL(strSQL, new DbParameter[] { });
             if (tmpDetail != null && tmpDetail.Count > 0)
             {
@@ -553,11 +661,10 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
 
 
-
             #endregion
 
             #region 新增客户数量
-            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer f where  1=1 and extract(year from f.reccreated) = extract(year from now()) And f.recstatus = 1 And {0} And {1}  ", RoleSQL, RegionSQL);
+            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer e where  1=1 and extract(year from e.reccreated) = extract(year from now()) And e.recstatus = 1 And {0} And {1}  ", RoleSQL, RegionSQL);
             tmpDetail = this._reportEngineRepository.ExecuteSQL(strSQL, new DbParameter[] { });
             if (tmpDetail != null && tmpDetail.Count > 0)
             {
@@ -597,7 +704,39 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             #endregion
             return ret;
         }
-        private int getRegionId(string regionName, int regiontype, int parentid) {
+
+        private int getRegionId(string regionName, int regiontype)
+        {
+            try
+            {
+                var dictypeid = 0;
+                if(regiontype == 1)
+				{
+                    dictypeid = 124;
+				}
+                else if(regiontype == 2)
+				{
+                    dictypeid = 125;
+                }
+                else if (regiontype == 3)
+                {
+                    dictypeid = 126;
+                }
+                string cmdText = "select extfield1 from crm_sys_dictionary where recstatus = 1 and dictypeid=" + dictypeid + " And dataval like '%" + regionName.Replace("'", "''") + "%'"; 
+                List<Dictionary<string, object>> ret = _reportEngineRepository.ExecuteSQL(cmdText, new DbParameter[] { });
+                if (ret != null && ret.Count > 0)
+                {
+                    return int.Parse(ret[0]["extfield1"].ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return 0;
+        }
+
+        private int getRegionIdOld(string regionName, int regiontype, int parentid) {
             try {
                 string cmdText = "Select regionid from crm_sys_region where regiontype=" + regiontype + " and pregionid=" + parentid + " And regionname like '%" + regionName.Replace("'", "''") + "%'";
                 List<Dictionary<string, object>>  ret = _reportEngineRepository.ExecuteSQL(cmdText, new DbParameter[] { });
