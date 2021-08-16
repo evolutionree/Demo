@@ -973,6 +973,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     filename = string.Format("{0}导出数据.xlsx", entityname);
                     #region 获取并处理主表数据
                     var isAdvance = data.DynamicModel.IsAdvanceQuery == 1;
+                    if (data.RecIds != null && data.RecIds.Count > 0)
+                    {
+                        if (data.DynamicModel.SearchData == null)
+                            data.DynamicModel.SearchData = new Dictionary<string, object>();
+                        if (data.DynamicModel.SearchData.ContainsKey("recid") == false)
+                            data.DynamicModel.SearchData.Add("recid", string.Concat("'", string.Join("','", data.RecIds), "'"));
+                    }
                     var dataList = _entityServices.DataList2(data.DynamicModel, isAdvance, data.UserId);
                     var queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
                     var pageDataTemp = queryResult["PageData"];

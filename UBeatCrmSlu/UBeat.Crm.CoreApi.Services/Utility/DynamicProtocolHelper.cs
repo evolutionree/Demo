@@ -793,6 +793,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 }
                                 break;
                             }
+                        case DynamicProtocolControlType.RecId:
+                            {
+                                result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
+                                break;
+                            }
                         default:
                             {
                                 result.FieldData = " 1=1 ";
@@ -1060,7 +1065,6 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 break;
                             }
                         case DynamicProtocolControlType.RelateControl:
-                        case DynamicProtocolControlType.RecId:
                             {
                                 if(field.IsLike == 0)
 								{
@@ -1142,6 +1146,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                                 {
                                     result.FieldData = string.Format(" {0} ilike '%{1}%'", tryParseFieldSearchString(field), dataStr);
                                 }
+                                break;
+                            }
+                        case DynamicProtocolControlType.RecId:
+                            {
+                                result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
                                 break;
                             }
                         default:
@@ -1249,6 +1258,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                             break;
                         }
+                    case DynamicProtocolControlType.RecId:
+                        {
+                            result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
+                            break;
+                        }
                     default:
                         {
                             result.FieldData = string.Format("t.{0} ilike '%{1}%'", columnKey, dataStr);
@@ -1349,6 +1363,11 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             {
                                 result.FieldData = string.Format("{0} ilike '%{1}%'", tryParseFieldSearchString(field, "t"), dataStr);
                             }
+                            break;
+                        }
+                    case DynamicProtocolControlType.RecId:
+                        {
+                            result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
                             break;
                         }
                     default:
