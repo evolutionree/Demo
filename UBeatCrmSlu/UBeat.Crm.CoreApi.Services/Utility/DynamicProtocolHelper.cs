@@ -1169,8 +1169,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                         default:
                             {
-                                result.FieldData = " 1=1 ";
-                                break;
+								result.FieldData = string.Format("t.{0} ilike '%{1}%'", columnKey, dataStr);
+								break;
                             }
                     }
                 }
