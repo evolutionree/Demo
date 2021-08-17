@@ -1357,7 +1357,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //上传文档到文件服务器
                     progress.ResultFileId = _fileServices.UploadFile(null, fileID, "导出结果.xlsx", exportModel.ExcelFile);
 
-                    SendExportMessage(Guid.Empty, progress, false, newUserId);
+                    SendExportMessage(data.EntityId, progress, false, newUserId);
                 });
                 return new ExportModel()
                 {
