@@ -1353,7 +1353,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ExcelFile = OXSExcelWriter.GenerateExcel(sheets)
                     };
                     ProgressModel progress = new ProgressModel() { };
-                    var fileID = Guid.NewGuid().ToString();
+					progress.TotalRowsCount = sheets[0].DataRows.Count;
+					var fileID = Guid.NewGuid().ToString();
                     //上传文档到文件服务器
                     progress.ResultFileId = _fileServices.UploadFile(null, fileID, "导出结果.xlsx", exportModel.ExcelFile);
 
