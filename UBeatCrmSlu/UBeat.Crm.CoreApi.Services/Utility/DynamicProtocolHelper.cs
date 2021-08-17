@@ -795,13 +795,20 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                         case DynamicProtocolControlType.RecId:
                             {
-                                result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
-                                break;
+								if (field.IsLike == 0)
+								{
+									result.FieldData = string.Format("position(e.{0}::text in '{1}')>0", columnKey, dataStr);
+								}
+								else
+								{
+									result.FieldData = string.Format("position(e.{0}::text in '{1}')<=0", columnKey, dataStr);
+								}
+								break;
                             }
                         default:
                             {
-                                result.FieldData = " 1=1 ";
-                                break;
+								result.FieldData = string.Format("e.{0} ilike '%{1}%'", columnKey, dataStr);
+								break;
                             }
                     }
                 }
@@ -1150,8 +1157,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                             }
                         case DynamicProtocolControlType.RecId:
                             {
-                                result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
-                                break;
+								if (field.IsLike == 0)
+								{
+									result.FieldData = string.Format("position(t.{0}::text in '{1}')>0", columnKey, dataStr);
+								}
+								else
+								{
+									result.FieldData = string.Format("position(t.{0}::text in '{1}')<=0", columnKey, dataStr);
+								}
+								break;
                             }
                         default:
                             {
@@ -1260,8 +1274,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         }
                     case DynamicProtocolControlType.RecId:
                         {
-                            result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
-                            break;
+							if (field.IsLike == 0)
+							{
+								result.FieldData = string.Format("position(t.{0}::text in '{1}')>0", columnKey, dataStr);
+							}
+							else
+							{
+								result.FieldData = string.Format("position(t.{0}::text in '{1}')<=0", columnKey, dataStr);
+							}
+							break;
                         }
                     default:
                         {
@@ -1367,8 +1388,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                         }
                     case DynamicProtocolControlType.RecId:
                         {
-                            result.FieldData = string.Format(" e.{0} in ({1})", columnKey, dataStr);
-                            break;
+							if (field.IsLike == 0)
+							{
+								result.FieldData = string.Format("position(e.{0}::text in '{1}')>0", columnKey, dataStr);
+							}
+							else
+							{
+								result.FieldData = string.Format("position(e.{0}::text in '{1}')<=0", columnKey, dataStr);
+							}
+							break;
                         }
                     default:
                         {

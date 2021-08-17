@@ -978,7 +978,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (data.DynamicModel.SearchData == null)
                             data.DynamicModel.SearchData = new Dictionary<string, object>();
                         if (data.DynamicModel.SearchData.ContainsKey("recid") == false)
-                            data.DynamicModel.SearchData.Add("recid", string.Concat("'", string.Join("','", data.RecIds), "'"));
+                            data.DynamicModel.SearchData.Add("recid", string.Join(",", data.RecIds));
                     }
                     var dataList = _entityServices.DataList2(data.DynamicModel, isAdvance, data.UserId);
                     var queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
