@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -94,6 +95,17 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (custModel == null) return ResponseError<object>("参数格式错误");
             return _customerServices.GetCustFrameProtocol(custModel, UserId);
+        }
+        
+        //临时表校验更新到客户资料
+        [HttpGet("checkqccimportcustomer")]
+        public OutputResult<object> checkQccImportCustomer()
+        {
+            var header = GetAnalyseHeader();
+            var result = _customerServices.checkQccImportCustomer(LoginUser,header);
+            //var result = _customerServices.updateImportCustomer(LoginUser,header);
+            
+            return result;
         }
     }
 }

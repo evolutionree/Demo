@@ -610,7 +610,78 @@ namespace UBeat.Crm.CoreApi.Services.Services
         #endregion
 
         #region --跳过流程发起提交--
-        public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo)
+        public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo, AnalyseHeader header)
+        {
+            if (caseModel == null)
+            {
+                throw new Exception("参数不可为空");
+            }
+            int isNeedToSendMsg = 0;//0代表不发消息 1代表是跳过流程的时候用handleuser来替换当前用户 2 当前用户
+            using (var conn = GetDbConnect())
+            {
+                conn.Open();
+                var tran = conn.BeginTransaction();
+                try
+                {
+                    if (!string.IsNullOrEmpty(caseModel.CacheId))
+                    {
+                        Guid g = Guid.Parse(caseModel.CacheId);
+                        if (!(_dynamicEntityRepository.ExistsData(g, userinfo.UserId, tran)))
+                            _dynamicEntityRepository.DeleteTemporary(g, userinfo.UserId, tran);
+                    }
+                    if (caseModel.DataType == 0)
+                    {
+                        var entityInfo = _entityProRepository.GetEntityInfo(caseModel.EntityModel.TypeId);
+                        UserData userData = GetUserData(userinfo.UserId);
+
+                        WorkFlowAddCaseModel workFlowAddCaseModel = null;
+                        var entityResult = _dynamicEntityServices.AddEntityData(tran, userData, entityInfo, caseModel.EntityModel, header, userinfo.UserId, out workFlowAddCaseModel);
+                        if (entityResult.Status != 0)
+                        {
+                            return entityResult;
+                        }
+                        caseModel.CaseModel = workFlowAddCaseModel;
+                    }
+                    if (caseModel.CaseModel == null)
+                    {
+                        throw new Exception("流程数据不可为空");
+                    }
+                    var workflowInfo = _workFlowRepository.GetWorkFlowInfo(tran, caseModel.CaseModel.FlowId);
+                    WorkFlowNodeInfo firstNodeInfo = null;
+                    Guid caseid;
+                    if (caseModel.NodeId.HasValue)
+                    {
+                        var workFlowNodeInfo = _workFlowRepository.GetWorkFlowNodeInfo(tran, caseModel.NodeId.Value);
+                        if (workFlowNodeInfo.StepTypeId == NodeStepType.End)
+                        {
+                            caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo, isNeedToSendMsg);
+                            _workFlowRepository.AuditWorkFlowCase(caseid, AuditStatusType.Finished, -1, userinfo.UserId, tran);
+                            tran.Commit();
+                            return new OutputResult<object>();
+                        }
+                    }
+                    if (workflowInfo == null)
+                        throw new Exception("流程配置不存在");
+                    caseid = AddWorkFlowCase(false, tran, caseModel, workflowInfo, userinfo, out firstNodeInfo, isNeedToSendMsg);
+                    tran.Commit();
+                    canWriteCaseMessage = true;
+                    WriteCaseAuditMessage(caseid, 0, 0, userinfo.UserId, type: -1);
+                    return new OutputResult<object>(caseid);
+                }
+                catch (Exception ex)
+                {
+                    if (tran.Connection != null)
+                        tran.Rollback();
+                    throw ex;
+                }
+                finally
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
+        }
+         public OutputResult<object> AddWorkflowCase(WorkFlowCaseAddModel caseModel, UserInfo userinfo)
         {
             if (caseModel == null)
             {

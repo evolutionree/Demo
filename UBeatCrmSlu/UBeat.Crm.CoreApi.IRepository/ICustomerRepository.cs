@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.Customer;
 
 namespace UBeat.Crm.CoreApi.IRepository
@@ -65,5 +66,10 @@ namespace UBeat.Crm.CoreApi.IRepository
 		List<CustContactTreeItemInfo> GetCustContactTree(Guid custid, int usernumber);
 
         List<CustFrameProtocolModel> GetCustFrameProtocol(Guid custid, int usernumber);
+        
+        List<CustomerTemp> GetCustomerTemp();
+        List<CustomerTemp> GetCustomerId();
+        
+        List<UserInfo> getUserInfo(string username);
     }
 }

@@ -247,6 +247,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         };
                     }
                 }
+
                 return HandleResult(entityResult);
             }
             else

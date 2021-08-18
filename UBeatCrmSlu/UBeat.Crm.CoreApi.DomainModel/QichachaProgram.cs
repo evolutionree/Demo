@@ -63,7 +63,6 @@ namespace UBeat.Crm.CoreApi.DomainModel
             var token = MD5Encrypt(appkey + timeSpan + secertKey, UTF8_ENCODING);
             values[0] = token.ToUpper();
             values[1] = timeSpan;
-            Console.WriteLine("token：{0} timeSpan：{1}", values[0], values[1]);
             return values;
 
         }

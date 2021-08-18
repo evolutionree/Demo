@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Text;
+using Dapper;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.Account;
 using UBeat.Crm.CoreApi.DomainModel.Customer;
 using UBeat.Crm.CoreApi.DomainModel.Utility;
 using UBeat.Crm.CoreApi.IRepository;
@@ -422,6 +424,29 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
 
 			return treeitems;
 		}
+		
+		public List<CustContactTreeItemInfo> insertCustomer(Dictionary<string, object> cusdata)
+		{
+			/*StringBuilder sql = new StringBuilder();
+
+
+            var insertSql = string.Format(@"INSERT INTO crm_sys_custcommon(
+											recid, recname, recstatus, reccreator, recupdator,
+                                            recmanager, reccreated, recupdated, rectype) VALUES ({0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10});
+                                            INSERT INTO crm_sys_custcommon_customer_relate(
+                                            commonid, custid, relateindex) VALUES('{1}', '{2}', 1);
+                                            ",
+	            cusdata["recid"],cusdata["recname"],1,1,1,cusdata["recmanager"],DateTime.Now,DateTime.Now,"f9db9d79-e94b-4678-a5cc-aa6e281c1246");
+
+            sql.Append(string.Format(@"DELETE FROM crm_sys_custcommon WHERE recid = '{0}';", item.id));
+            sql.Append(string.Format(@"DELETE FROM crm_sys_custcommon_customer_relate WHERE custid = '{0}';", item.id));
+            sql.Append(insertSql);
+            DataBaseHelper.ExecuteNonQuery(sql, addParameters, CommandType.Text) > 0;
+            return sql.ToString();*/
+			return null;
+		}
+		
+		
 
         public List<CustFrameProtocolModel> GetCustFrameProtocol(Guid custid, int usernumber) {
             var items = new List<CustFrameProtocolModel>();
@@ -463,7 +488,112 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
 
             }
         }
+        
+        public List<CustomerTemp> GetCustomerId()
+        {
+	        var items = new List<CustomerTemp>();
+	        PostgreHelper pgHelper = new PostgreHelper();
+	        using (DbConnection conn = pgHelper.GetDbConnect())
+	        {
+		        conn.Open();
+		        var tran = conn.BeginTransaction();
+		        try
+		        {//->>'id' startdate::text||'至'||enddate::text as validity
+			        var executeSql = @"SELECT recid,recname
+                                    FROM crm_sys_customer
+                                    WHERE 1=1";
+			        
+			        var p = new DbParameter[]
+			        {
+				        new NpgsqlParameter()
+			        };
+			        items = pgHelper.ExecuteQuery<CustomerTemp>(tran, executeSql,null);
+			        tran.Commit();
+			        return items;
+		        }
+		        catch (Exception ex)
+		        {
+			        tran.Rollback();
+			        throw ex;
+		        }
+		        finally
+		        {
+			        conn.Close();
+			        conn.Dispose();
+		        }
+	        }
+        }
 
+        public List<CustomerTemp> GetCustomerTemp()
+        {
+	        var items = new List<CustomerTemp>();
+	        PostgreHelper pgHelper = new PostgreHelper();
+	        using (DbConnection conn = pgHelper.GetDbConnect())
+	        {
+		        conn.Open();
+		        var tran = conn.BeginTransaction();
+		        try
+		        {//->>'id' startdate::text||'至'||enddate::text as validity
+			        var executeSql = @"SELECT *
+                                    FROM customer_temp1
+                                    WHERE  recname not in (select recname from crm_sys_customer)";
+			        
+			        var p = new DbParameter[]
+			        {
+				        new NpgsqlParameter()
+			        };
+			        items = pgHelper.ExecuteQuery<CustomerTemp>(tran, executeSql,null);
+			        tran.Commit();
+			        return items;
+		        }
+		        catch (Exception ex)
+		        {
+			        tran.Rollback();
+			        throw ex;
+		        }
+		        finally
+		        {
+			        conn.Close();
+			        conn.Dispose();
+		        }
+	        }
+        }
+        
+
+        public List<UserInfo> getUserInfo(string username)
+        {
+	        var items = new List<UserInfo>();
+	        PostgreHelper pgHelper = new PostgreHelper();
+	        using (DbConnection conn = pgHelper.GetDbConnect())
+	        {
+		        conn.Open();
+		        var tran = conn.BeginTransaction();
+		        try
+		        {//->>'id' startdate::text||'至'||enddate::text as validity
+			        var executeSql = @"SELECT userid
+                                    FROM crm_sys_userinfo
+                                    WHERE username=@username";
+			        
+			        var p = new DbParameter[]
+			        {
+				        new NpgsqlParameter("username",username)
+			        };
+			        items = pgHelper.ExecuteQuery<UserInfo>(tran, executeSql,p);
+			        tran.Commit();
+			        return items;
+		        }
+		        catch (Exception ex)
+		        {
+			        tran.Rollback();
+			        throw ex;
+		        }
+		        finally
+		        {
+			        conn.Close();
+			        conn.Dispose();
+		        }
+	        }
+        }
 
         private void GetParentContacts(CustContactTreeItemInfo contact, List<CustContactTreeItemInfo> treeitems, List<CustContactTreeItemInfo> allContacts)
 		{
