@@ -367,12 +367,12 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string userdeptmapSQL = @"select  user_dept_relat.userid, department.deptid, department.deptname from crm_sys_account_userinfo_relate user_dept_relat 
                                     left outer join crm_sys_department department  on department.deptid = user_dept_relat.deptid ";
 
-            string receiveSQL = "SELECT contractid ,extract(year from paidtime) fyear ,extract(month from paidtime) fmonth ,paidmoney   receiveamount,payer,paidtime  FROM crm_sys_payments  where recstatus = 1 and contractid is not null ";
-            string selectSQL = string.Format(@"Select e.recid,e.recname,jsonb_extract_path_text(e.customerid,'id') customer_id,
-                                    jsonb_extract_path_text(e.customerid,'name') customer_name,
+            string receiveSQL = "SELECT (contract->>'id')::uuid as contractid ,extract(year from paidtime) fyear ,extract(month from paidtime) fmonth ,paidmoney receiveamount,paidtime  FROM crm_sys_payments  where recstatus = 1 and contract is not null ";
+            string selectSQL = string.Format(@"Select e.recid,e.recname,jsonb_extract_path_text(e.customer,'id') customer_id,
+                                    jsonb_extract_path_text(e.customer,'name') customer_name,
                                     e.recmanager,useri.username recmanager_name ,
-                                    dept.deptname deptartment_name ,e.contractvolume  contractvolume,
-                                    receiveSum.paidtime paymentdate ,receiveSum.receiveamount,receiveSum.payer
+                                    dept.deptname deptartment_name ,e.contractamount  contractvolume,
+                                    receiveSum.paidtime paymentdate ,receiveSum.receiveamount
                                 from {2} {0} 
                                 inner join ({3}) receiveSum on receiveSum.contractid = {0}.recid
                                 left outer join crm_sys_userinfo useri on useri.userid= e.recmanager

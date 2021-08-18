@@ -38,7 +38,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string mainTable = "crm_sys_contract";
             string mainTableAlias = "e";
             string personFieldName = "recmanager";
-            string DateTimeFieldName = "contractdate";
+            string DateTimeFieldName = "signdate";
             string DeptFieldName = "";
             #region 处理传入参数
             if (param == null) throw (new Exception("参数异常"));
@@ -90,7 +90,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             
             #endregion
             string DateTimeSQL = string.Format(" extract(year from {0}.{1}) = {2} ", mainTableAlias, DateTimeFieldName, p_searchyear);
-            string selectSQL = string.Format(@"Select  extract(month from {0}.{1})    contractmonth,sum(e.contractvolume/10000)  contractamount,count(*)  contractcount
+            string selectSQL = string.Format(@"Select  extract(month from {0}.{1}) contractmonth,sum(e.contractamount/10000)  contractamount,count(*)  contractcount
                                 from    {2} {0}   
                                 where {0}.recstatus = 1   ", mainTableAlias, DateTimeFieldName, mainTable);
             #region 处理RuleSQL
@@ -174,7 +174,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string mainTable = "crm_sys_contract";
             string mainTableAlias = "e";
             string personFieldName = "recmanager";
-            string DateTimeFieldName = "contractdate";
+            string DateTimeFieldName = "signdate";
             string DeptFieldName = "";
             string ruleSQL = "1=1";
             int p_searchmonth = 0;
@@ -214,11 +214,13 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             if (param.ContainsKey("@searchyear"))
             {
-                p_searchyear = int.Parse(param["@searchyear"].ToString());
+                if (!string.IsNullOrEmpty(param["@searchyear"].ToString()))
+                    p_searchyear = int.Parse(param["@searchyear"].ToString());
             }
             else if (param.ContainsKey("searchyear"))
             {
-                p_searchyear = int.Parse(param["searchyear"].ToString());
+                if (!string.IsNullOrEmpty(param["searchyear"].ToString()))
+                    p_searchyear = int.Parse(param["searchyear"].ToString());
             }
             else
             {
@@ -230,11 +232,13 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             }
             if (param.ContainsKey("@searchmonth"))
             {
-                p_searchmonth = int.Parse(param["@searchmonth"].ToString());
+                if(!string.IsNullOrEmpty(param["@searchmonth"].ToString()))
+                    p_searchmonth = int.Parse(param["@searchmonth"].ToString());
             }
             else if (param.ContainsKey("searchmonth"))
             {
-                p_searchmonth = int.Parse(param["searchmonth"].ToString());
+                if (!string.IsNullOrEmpty(param["searchmonth"].ToString()))
+                    p_searchmonth = int.Parse(param["searchmonth"].ToString());
             }
 
             if (p_searchmonth < 0 || p_searchmonth > 12)

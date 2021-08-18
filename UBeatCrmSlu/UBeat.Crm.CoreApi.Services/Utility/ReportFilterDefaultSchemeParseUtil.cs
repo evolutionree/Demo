@@ -4,12 +4,17 @@ using System.Text;
 using UBeat.Crm.CoreApi.Services.Models;
 using System.Data.Common;
 using UBeat.Crm.CoreApi.IRepository;
+using UBeat.Crm.CoreApi.Repository.Repository.ReportEngine;
 
 namespace UBeat.Crm.CoreApi.Services.Utility
 {
     public class ReportFilterDefaultSchemeParseUtil
     {
-        public static List<Dictionary<string,object>>  parseMultiScheme(string scheme, UserData userdata) {
+        public static List<Dictionary<string,object>>  parseMultiScheme(string scheme, UserData userdata, IReportEngineRepository reportEngineRepository = null) {
+            if (reportEngineRepository == null)
+            {
+                reportEngineRepository = new ReportEngineRepository();
+            }
             if (scheme == "#CurrentUser#") {
                 List<Dictionary<string, object>> ret = new List<Dictionary<string, object>>();
                 Dictionary<string, object> item = new Dictionary<string, object>();
@@ -18,9 +23,31 @@ namespace UBeat.Crm.CoreApi.Services.Utility
                 ret.Add(item);
                 return ret;
             }
+            if (scheme == "#CurrentDept#")
+            {
+                List<Dictionary<string, object>> ret = new List<Dictionary<string, object>>();
+                Dictionary<string, object> item = new Dictionary<string, object>();
+                item.Add("id", userdata.AccountUserInfo.DepartmentId);
+                item.Add("name", userdata.AccountUserInfo.DepartmentName);
+                ret.Add(item);
+                return ret;
+            }
+            if (scheme == "#TopDept#")
+            {
+                List<Dictionary<string, object>> ret = new List<Dictionary<string, object>>();
+                Dictionary<string, object> item = new Dictionary<string, object>();
+                item.Add("id", reportEngineRepository.getTopDeptId(userdata.UserId));
+                item.Add("name", reportEngineRepository.getTopDeptName(userdata.UserId));
+                ret.Add(item);
+                return ret;
+            }
             return null;
         }
         public static  string parseScheme(string scheme,int userid, IReportEngineRepository reportEngineRepository = null) {
+            if(reportEngineRepository == null)
+			{
+                reportEngineRepository = new ReportEngineRepository();
+            }
             if (scheme.StartsWith("#CurYear#"))
             {
                 return parseCurYear(scheme);
@@ -37,9 +64,21 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             {
                 return userid.ToString();
             }
-            else if (scheme.StartsWith("#MyDept#"))
+            else if (scheme.StartsWith("#CurDeptId#"))
             {
-                return "";
+                return reportEngineRepository.getMyDeptId(userid);
+            }
+            else if (scheme.StartsWith("#CurDeptName#"))
+            {
+                return reportEngineRepository.getMyDeptName(userid);
+            }
+            else if (scheme.StartsWith("#TopDeptId#"))
+            {
+                return reportEngineRepository.getTopDeptId(userid);
+            }
+            else if (scheme.StartsWith("#TopDeptName#"))
+            {
+                return reportEngineRepository.getTopDeptName(userid);
             }
             else if (scheme.StartsWith("#adjustrangetype#"))
             {
@@ -48,6 +87,18 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             else if (scheme.StartsWith("#adjustrange#"))
             {
                 return parseAdjustRange(scheme, userid, reportEngineRepository);
+            }
+            else if (scheme.StartsWith("#FirstDayOfMonth#"))
+            {
+                return DateTime.Now.AddDays(1 - DateTime.Now.Day).Date.ToString("yyyy-MM-dd");
+            }
+            else if (scheme.StartsWith("#FirstDayOfYear#"))
+            {
+                return new DateTime(DateTime.Now.Year, 1, 1).Date.ToString("yyyy-MM-dd");
+            }
+            else if (scheme.StartsWith("#LastDayOfYear#"))
+            {
+                return new DateTime(DateTime.Now.Year, 12, 31).Date.ToString("yyyy-MM-dd");
             }
             return "";
         }

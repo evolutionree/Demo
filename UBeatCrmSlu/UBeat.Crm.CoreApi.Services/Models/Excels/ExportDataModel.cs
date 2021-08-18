@@ -65,6 +65,10 @@ namespace UBeat.Crm.CoreApi.Services.Models.Excels
         public ExportDataColumnSourceEnum ColumnSource { get; set; }
 
         public Guid EntityId { get; set; }
+        /// <summary>
+		/// 勾选的数据
+		/// </summary>
+		public List<Guid> RecIds { get; set; }
 
         #endregion
         public bool CanChange2Asynch { get; set; }

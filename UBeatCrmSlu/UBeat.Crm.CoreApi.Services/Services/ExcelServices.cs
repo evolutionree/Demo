@@ -973,6 +973,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     filename = string.Format("{0}导出数据.xlsx", entityname);
                     #region 获取并处理主表数据
                     var isAdvance = data.DynamicModel.IsAdvanceQuery == 1;
+                    if (data.RecIds != null && data.RecIds.Count > 0)
+                    {
+                        if (data.DynamicModel.SearchData == null)
+                            data.DynamicModel.SearchData = new Dictionary<string, object>();
+                        if (data.DynamicModel.SearchData.ContainsKey("recid") == false)
+                            data.DynamicModel.SearchData.Add("recid", string.Join(",", data.RecIds));
+                    }
                     var dataList = _entityServices.DataList2(data.DynamicModel, isAdvance, data.UserId);
                     var queryResult = dataList.DataBody as Dictionary<string, List<Dictionary<string, object>>>;
                     var pageDataTemp = queryResult["PageData"];
@@ -1346,11 +1353,12 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         ExcelFile = OXSExcelWriter.GenerateExcel(sheets)
                     };
                     ProgressModel progress = new ProgressModel() { };
-                    var fileID = Guid.NewGuid().ToString();
+					progress.TotalRowsCount = sheets[0].DataRows.Count;
+					var fileID = Guid.NewGuid().ToString();
                     //上传文档到文件服务器
                     progress.ResultFileId = _fileServices.UploadFile(null, fileID, "导出结果.xlsx", exportModel.ExcelFile);
 
-                    SendExportMessage(Guid.Empty, progress, false, newUserId);
+                    SendExportMessage(data.EntityId, progress, false, newUserId);
                 });
                 return new ExportModel()
                 {

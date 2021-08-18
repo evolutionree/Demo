@@ -553,7 +553,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 string targetSQL = generateTargetSQLForDept(targetid, p_range, p_year, p_from, p_to);
                 string realSQL = string.Format(@"Select COALESCE(targetsql.year,okouter.year) as year ,
                                                         COALESCE(targetsql.month,okouter.month) as month ,COALESCE(targetsql.target,0)  as  targetamount,
-                                                        okouter.completed completedamount from ({0} ) as targetsql full  outer join ({1}) as okouter on targetsql.year = okouter.year and targetsql.month = okouter.month", targetSQL, completedSQL);
+                                                        okouter.completed completedamount from ({0} ) as targetsql full  outer join ({1}) as okouter on targetsql.year = okouter.year and targetsql.month = okouter.month order by month", targetSQL, completedSQL);
                 retList = _reportEngineRepository.ExecuteSQL(realSQL, sqlParams);
                 
             }
@@ -567,7 +567,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 string targetSQL = generateTargetSQLForUser(targetid,p_range,p_year, p_from, p_to);
                 string realSQL = string.Format(@"Select COALESCE(targetsql.year,okouter.year) as year ,
                                                         COALESCE(targetsql.month,okouter.month) as month ,COALESCE(targetsql.target,0)  as  targetamount,okouter.completed  completedamount 
-                                    from ({0} ) as targetsql full outer join ({1}) as okouter on targetsql.year = okouter.year and targetsql.month = okouter.month", targetSQL, totalSql);
+                                    from ({0} ) as targetsql full outer join ({1}) as okouter on targetsql.year = okouter.year and targetsql.month = okouter.month order by month", targetSQL, totalSql);
 
                 //执行脚本即可
                 retList = _reportEngineRepository.ExecuteSQL(realSQL, sqlParams);

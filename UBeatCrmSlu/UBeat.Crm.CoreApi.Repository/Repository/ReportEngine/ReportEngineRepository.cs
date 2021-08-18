@@ -668,5 +668,57 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportEngine
             }
             return null;
         }
+
+        public string getTopDeptId(int userNum)
+        {
+            return "7f74192d-b937-403f-ac2a-8be34714278b";
+        }
+
+        public string getTopDeptName(int userNum)
+        {
+            try
+            {
+                string cmdText = string.Format(@"select deptname  from crm_sys_department  where deptid = '{0}' limit 1", getTopDeptId(userNum));
+                string ret = (string)ExecuteScalar(cmdText, new DbParameter[] { });
+                return ret;
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return null;
+        }
+        public string getMyDeptId(int userNum)
+        {
+            try
+            {
+                string cmdText = string.Format(@"select d.deptid from crm_sys_department d
+                                                    left join crm_sys_account_userinfo_relate r on d.deptid = r.deptid
+                                                    where d.recstatus = 1 and r.recstatus = 1 and r.userid = '{0}' limit 1", userNum);
+                string ret = (string)ExecuteScalar(cmdText, new DbParameter[] { });
+                return ret;
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return null;
+        }
+        public string getMyDeptName(int userNum)
+        {
+            try
+            {
+                string cmdText = string.Format(@"select d.deptname from crm_sys_department d
+                                                    left join crm_sys_account_userinfo_relate r on d.deptid = r.deptid
+                                                    where d.recstatus = 1 and r.recstatus = 1 and r.userid = '{0}' limit 1", userNum);
+                string ret = (string)ExecuteScalar(cmdText, new DbParameter[] { });
+                return ret;
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return null;
+        }
     }
 }
