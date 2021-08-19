@@ -2994,7 +2994,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (info.FuncBtns == null) return new OutputResult<object>(funcBtns);
             foreach (var btn in info.FuncBtns)
             {
-                if (btn.ButtonCode=="AddEntityData")
+                if (btn.ButtonCode=="AddEntityData"&&dynamicModel.RecIds == null)
                 {
                     funcBtns.Add(btn);
                 }
@@ -3008,7 +3008,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count == 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess)
+                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
                                     funcBtns.Add(btn);
                             }
                             break;
@@ -3016,7 +3016,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count >= 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess)
+                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
                                     funcBtns.Add(btn);
                             }
                             break;
@@ -3024,7 +3024,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count >= 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess)
+                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
                                     funcBtns.Add(btn);
                             }
                             // funcBtns.Add(btn);
