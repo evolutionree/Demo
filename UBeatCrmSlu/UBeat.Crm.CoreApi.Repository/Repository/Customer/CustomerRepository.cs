@@ -534,9 +534,8 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
 		        var tran = conn.BeginTransaction();
 		        try
 		        {//->>'id' startdate::text||'至'||enddate::text as validity
-			        var executeSql = @"SELECT *
-                                    FROM customer_temp1
-                                    WHERE  recname not in (select recname from crm_sys_customer)";
+			        var executeSql = @"SELECT * FROM customer_temp1 WHERE  recname not in (select recname  from crm_sys_customer) and
+recname not in (select beforename  from crm_sys_customer where beforename is not null)";
 			        
 			        var p = new DbParameter[]
 			        {
