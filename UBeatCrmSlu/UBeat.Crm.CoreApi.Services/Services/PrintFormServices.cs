@@ -69,7 +69,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 RecCreated = DateTime.Now,
                 RecUpdated = DateTime.Now,
                 RecCreator = userNumber,
-                RecUpdator = userNumber
+                RecUpdator = userNumber,
+                ExportConfig = data.ExportConfig.ToString()
             };
             return new OutputResult<object>(_repository.InsertTemplate(model));
         }
@@ -123,7 +124,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 RecCreated = DateTime.Now,
                 RecUpdated = DateTime.Now,
                 RecCreator = userNumber,
-                RecUpdator = userNumber
+                RecUpdator = userNumber,
+                ExportConfig = data.ExportConfig.ToString()
             };
             _repository.UpdateTemplate(model);
             return new OutputResult<object>("OK");
@@ -252,12 +254,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 process.Start();
                 process.WaitForExit();
                 process.Close();
-                return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.pdf", templateInfo.TemplateName) });
+
+                FileInfo fileInfo = new FileInfo(pdfFilePath);
+                return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.pdf", templateInfo.TemplateName), FileLength = fileInfo.Length });
             }
             else
             {
-
-                return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName) });
+                return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName), FileLength = bytes.Length });
             }
             #endregion 
         }

@@ -121,7 +121,11 @@ namespace UBeat.Crm.CoreApi.Services.Models.PrintForm
         /// 模板备注
         /// </summary>
         public string Description { set; get; }
-       
+        /// <summary>
+        /// 格式输出配置
+        /// </summary>
+        public string ExportConfig { get; set; }
+
     }
     public class UpdateTemplateUCodeParamInfo
     {
