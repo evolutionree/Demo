@@ -260,7 +260,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
-                return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName), FileLength = bytes.Length });
+				FileInfo fileInfo = new FileInfo(fileFullPath);
+				return new OutputResult<object>(new { FileId = fileID, FileName = string.Format("{0}.xlsx", templateInfo.TemplateName), FileLength = fileInfo.Length });
             }
             #endregion 
         }
