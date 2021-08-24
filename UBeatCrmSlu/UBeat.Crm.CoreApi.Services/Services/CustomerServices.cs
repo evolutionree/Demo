@@ -40,6 +40,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         private static IConfigurationRoot configuration = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
         private readonly WorkFlowServices _workFlowServices;
         private readonly DynamicEntityServices _dynamicEntityServices;
+        
         readonly Guid custEntityId = new Guid("f9db9d79-e94b-4678-a5cc-aa6e281c1246");
 
 
@@ -649,6 +650,130 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         t.EntType = entType[t.EntType];
                     }
 
+                    Dictionary<string, object> cusData = new Dictionary<string, object>();
+                    cusData["recname"] = t.Name;
+                    cusData["beforename"] = t.OriginalNameStr;
+                    cusData["ucode"] = t.CreditCode;
+                    cusData["businesscode"] = t.No;
+                    cusData["organizationcode"] = t.OrgNo;
+                    cusData["qccenterprisenature"] = t.EconKind;
+                    cusData["qccenterprisetype"] = t.EntType;
+                    cusData["enterprisestatus"] = t.Status;
+                    cusData["registeredcapital"] = t.RegistCapi;
+                    cusData["paidcapital"] = t.RecCap;
+                    cusData["registrationauthority"] = t.BelongOrg;
+                    cusData["establishmentdate"] = t.StartDate;
+                    cusData["corporatename"] = t.OperName;
+                    cusData["qcclocation"] = t.Address;
+                    cusData["businessscope"] = t.Scope;
+                    cusData["isiop"] = t.IsOnStock;
+                    //cusData["customercompanyaddress"] = t.Address;
+                    var manager=_customerRepository.getUserInfo(temp.recmanager==null?"":temp.recmanager);
+                    cusData["recmanager"] = manager!=null&&manager.Count>0?manager[0].UserId:1;
+                    DynamicEntityAddModel entityAddModel = new DynamicEntityAddModel();
+                    entityAddModel.TypeId = new Guid("f9db9d79-e94b-4678-a5cc-aa6e281c1246");
+                    entityAddModel.FlowId = new Guid("7d39b849-49ba-4eb5-88ff-bf1234a5a307");
+                    
+                    cusData["isnewcustomer"] = getDicValue(46,temp.isnewcustomer);
+                    cusData["custlevel"] = getDicValue(112,temp.custlevel);
+                    cusData["creditrating"] = getDicValue(106,temp.creditrating);
+                    cusData["coldstorsize"] = getDicValue(6,temp.coldstorsize);
+                    cusData["customerstatus"] = getDicValue(52,temp.customerstatus);
+                    cusData["contactnumber"] = temp.contactnumber==null?"":temp.contactnumber;
+                    cusData["email"] = temp.email==null?"":temp.email;
+                    cusData["workgroup"] = temp.workgroup==null?"":temp.workgroup;
+                    cusData["custwebsite"] = temp.custwebsite==null?"":temp.custwebsite;
+                    cusData["customercompanyaddress"] = "{\"address\":\""+temp.customercompanyaddress+"\"}";
+                    entityAddModel.FieldData = cusData;
+                    if (!string.IsNullOrEmpty(temp.businesscenter))
+                    {
+                        var arr=temp.businesscenter.Split("，");
+                        foreach (var s in arr)
+                        {
+                            cusData["businesscenter"] = getDicValue(116,s);
+                            if (cusData["businesscenter"]==null)
+                            {
+                                continue;
+                            }
+                            //_dynamicEntityServices.Edit(dynamicModel, header, UserId);
+                            //_workFlowServices.AddWorkflowCase(dynamicModel, userinfo,header);
+                            var routePath = "api/dynamicentity/add";
+                            _dynamicEntityServices.PreActionExtModelList = _dynamicEntityServices.ActionExtService.CheckActionExt(routePath, 0);
+                            _dynamicEntityServices.FinishActionExtModelList = _dynamicEntityServices.ActionExtService.CheckActionExt(routePath, 1);
+                            _dynamicEntityServices.RoutePath = routePath;
+                            _dynamicEntityServices.ActionExtService = this.ActionExtService;
+                            _dynamicEntityServices.CacheService = this.CacheService;
+                            _dynamicEntityServices.Add(entityAddModel, header, userinfo.UserId);
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    
+                }
+            }
+
+            return new OutputResult<object>("OK");
+        }
+        
+        /*public OutputResult<object> checkQccImportCustomer(UserInfo userinfo, AnalyseHeader header)
+        {
+
+            var appKey = configuration.GetSection("QiChaCha").Get<QiChaCha>().KEY;
+            var secret = configuration.GetSection("QiChaCha").Get<QiChaCha>().SECRET;
+            var customerTemps = _customerRepository.GetCustomerTemp();
+            foreach (var temp in customerTemps)
+            {
+                var model = new CompanyModel();
+                model.CompanyName = temp.recname;
+                
+                var url = string.Format(DockingAPIHelper.GETDETAILSBYNAME_API, appKey, model.CompanyName);
+                var result = QichachaProgram.httpGet(url, QichachaProgram.getHeaderVals(appKey, secret));
+                var jObject = JObject.Parse(result);
+                var t = new CompanyInfo();
+                
+                if (jObject["Status"].ToString() == "200")
+                {
+                    var data = JsonConvert.DeserializeObject<CompanyInfo>(jObject["Result"] == null
+                        ? string.Empty
+                        : jObject["Result"].ToString());
+                    t = data ?? new CompanyInfo();
+                }
+
+                if (t != null && !string.IsNullOrEmpty(t.KeyNo))
+                {
+                    Dictionary<string, string> yesNo = new Dictionary<string, string>();
+                    yesNo.Add("0", "未上市");
+                    yesNo.Add("1", "上市");
+                    Dictionary<string, string> entType = new Dictionary<string, string>();
+                    entType.Add("0", "公司");
+                    entType.Add("1", "社会组织");
+                    entType.Add("3", "香港公司");
+                    entType.Add("4", "事业单位");
+                    entType.Add("5", "");
+                    entType.Add("6", "基金会");
+                    entType.Add("7", "医院");
+                    entType.Add("8", "海外公司");
+                    entType.Add("9", "律师事务所");
+                    entType.Add("10", "学校");
+                    entType.Add("-1", "其他");
+                    if (t.OriginalName != null && t.OriginalName.Count != 0)
+                    {
+                        t.OriginalNameStr = t.OriginalName[0].Name;
+                        t.OriginalName = null;
+                    }
+
+                    if (t.IsOnStock != null)
+                    {
+                        t.IsOnStock = yesNo[t.IsOnStock];
+                    }
+
+                    if (t.EntType != null)
+                    {
+                        t.EntType = entType[t.EntType];
+                    }
+
                     WorkFlowCaseAddModel dynamicModel = new WorkFlowCaseAddModel();
                     Dictionary<string, object> cusData = new Dictionary<string, object>();
                     cusData["recname"] = t.Name;
@@ -702,6 +827,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             //_dynamicEntityServices.Edit(dynamicModel, header, UserId);
                             _workFlowServices.AddWorkflowCase(dynamicModel, userinfo,header);
+                            //_dynamicEntityServices.Add(dynamicModel, header, userinfo);
                         }
                     }
                     else
@@ -713,7 +839,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             return new OutputResult<object>("OK");
-        }
+        }*/
         
         public OutputResult<object> updateImportCustomer(UserInfo userinfo, AnalyseHeader header)
         {
