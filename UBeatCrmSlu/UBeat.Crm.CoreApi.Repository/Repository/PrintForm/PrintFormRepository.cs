@@ -15,8 +15,14 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
         {
             Guid recid = Guid.NewGuid();
             var sql = @"INSERT INTO crm_sys_entity_print_template 
-                        (recid,entityid,templatename,templatetype,datasourcetype,datasourcefunc,assemblyname,classtypename,extjs,fileid,ruleid,ruledesc,description,reccreated,recupdated,reccreator,recupdator)
-                        VALUES(@recid,@entityid,@templatename,@templatetype,@datasourcetype,@datasourcefunc,@assemblyname,@classtypename,@extjs,@fileid,@ruleid,@ruledesc,@description,@reccreated,@recupdated,@reccreator,@recupdator)";
+                        (recid,entityid,templatename,templatetype,datasourcetype,
+datasourcefunc,assemblyname,classtypename,extjs,fileid,
+ruleid,ruledesc,description,reccreated,recupdated,
+reccreator,recupdator,exportconfig)
+                        VALUES(@recid,@entityid,@templatename,@templatetype,@datasourcetype,
+@datasourcefunc,@assemblyname,@classtypename,@extjs,@fileid,
+@ruleid,@ruledesc,@description,@reccreated,@recupdated,
+@reccreator,@recupdator,@exportconfig)";
 
             var param = new DbParameter[]
             {
@@ -37,6 +43,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
                 new NpgsqlParameter("recupdated", model.RecUpdated),
                 new NpgsqlParameter("reccreator", model.RecCreator),
                 new NpgsqlParameter("recupdator", model.RecUpdator),
+                new NpgsqlParameter("exportconfig", model.ExportConfig),
             };
 
             var rowscount = ExecuteNonQuery(sql, param, tran);
@@ -95,7 +102,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
                 var sql = @"UPDATE crm_sys_entity_print_template 
                         SET templatename = @templatename, templatetype = @templatetype, datasourcetype = @datasourcetype,
                         datasourcefunc = @datasourcefunc, assemblyname = @assemblyname,classtypename = @classtypename,extjs = @extjs, fileid = @fileid, ruleid = @ruleid, ruledesc = @ruledesc,
-                        description = @description, recupdated = @recupdated, recupdator = @recupdator
+                        description = @description, recupdated = @recupdated, recupdator = @recupdator, exportconfig=@exportconfig
                         WHERE recid = @recid";
 
                 var param = new DbParameter[]
@@ -114,6 +121,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.PrintForm
                     new NpgsqlParameter("recupdated", model.RecUpdated),
                     new NpgsqlParameter("recupdator", model.RecUpdator),
                     new NpgsqlParameter("recid", model.RecId),
+                    new NpgsqlParameter("exportconfig", model.ExportConfig),
                 };
                 var rowscount = ExecuteNonQuery(sql, param, tran);
             }

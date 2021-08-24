@@ -91,6 +91,10 @@ namespace UBeat.Crm.CoreApi.DomainModel.PrintForm
         /// 记录版本,系统自动生成
         /// </summary>
         public long RecVersion { set; get; }
+        /// <summary>
+        /// 输出格式配置
+        /// </summary>
+        public string ExportConfig { get; set; }
     }
 
     /// <summary>
