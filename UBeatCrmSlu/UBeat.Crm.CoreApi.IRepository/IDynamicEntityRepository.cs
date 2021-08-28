@@ -108,6 +108,7 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<EntityFieldInfo> GetDataSourceEntityFields();
         Dictionary<string, object> getEntityBaseInfoById(Guid entityid, int userNum, DbTransaction tran = null);
         Dictionary<string, object> getEntityBaseInfoByTypeId(Guid typeid, int userNum, DbTransaction tran = null);
+        Dictionary<string, object> getEntityBaseInfoByCaseId(Guid caseid, int userNum, DbTransaction tran = null);
         bool WriteBack(DbTransaction tran, List<Dictionary<string, object>> writebackrules, int userNum);
 
 

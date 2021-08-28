@@ -198,15 +198,29 @@ namespace UBeat.Crm.CoreApi.Controllers
         /// </summary>
         /// <param name="operateMark">操作描述</param>
         /// <param name="paramData"></param>
-        protected void WriteOperateLog(string operateMark, object paramData, int userid = -1)
+        protected void WriteOperateLog(string operateMark, object paramData, int userid = -1, string device = "", string vernum ="")
         {
             //获取请求头
             var header = GetAnalyseHeader();
             //生成描述日志(操作人)
             LogEventInfo theEvent = new LogEventInfo(LogLevel.Info, "SysOperateLog", operateMark);
-            theEvent.Properties["device"] = header.Device;
+			if (!string.IsNullOrEmpty(device))
+			{
+                theEvent.Properties["device"] = device;
+			}
+			else
+			{
+                theEvent.Properties["device"] = header.Device;
+            }
             theEvent.Properties["sysmark"] = header.SysMark;
-            theEvent.Properties["vernum"] = header.VerNum;
+            if (!string.IsNullOrEmpty(vernum))
+            {
+                theEvent.Properties["vernum"] = vernum;
+            }
+            else
+            {
+                theEvent.Properties["vernum"] = header.VerNum;
+            }
             theEvent.Properties["logdata"] = JsonConvert.SerializeObject(paramData);
             theEvent.Properties["reccreator"] = userid == -1 ? UserId.ToString() : userid.ToString();
             theEvent.Properties["reccreated"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");

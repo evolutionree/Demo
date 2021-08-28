@@ -11,10 +11,11 @@ namespace UBeat.Crm.CoreApi.Controllers
     public class WorkFlowController : BaseController
     {
         private readonly WorkFlowServices _workFlowServices;
-
-        public WorkFlowController(WorkFlowServices workFlowServices) : base(workFlowServices)
+        private readonly DynamicEntityServices _dynamicEntityServices;
+        public WorkFlowController(WorkFlowServices workFlowServices, DynamicEntityServices dynamicEntityServices) : base(workFlowServices, dynamicEntityServices)
         {
             _workFlowServices = workFlowServices;
+            _dynamicEntityServices = dynamicEntityServices;
         }
 
         /// <summary>
@@ -37,12 +38,19 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("addcase")]
         public OutputResult<object> AddCase([FromBody] WorkFlowCaseAddModel caseModel = null)
         {
-            if (caseModel == null) return ResponseError<object>("参数格式错误");
+            if (caseModel == null || caseModel.EntityModel == null) return ResponseError<object>("参数格式错误");
             Guid g;
             if (!string.IsNullOrEmpty(caseModel.CacheId) && !Guid.TryParse(caseModel.CacheId, out g))
                 return ResponseError<object>("CacheId格式错误");
-            WriteOperateLog("发起审批数据", caseModel);
-           return _workFlowServices.AddWorkflowCase(caseModel, LoginUser);
+            if (caseModel.EntityModel.TypeId != Guid.Empty)
+            {
+                var entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(caseModel.EntityModel.TypeId);
+                if (entity != null)
+                {
+                    WriteOperateLog("发起" + entity["entityname"] + "审批数据", caseModel);
+                }
+            }
+            return _workFlowServices.AddWorkflowCase(caseModel, LoginUser);
         }
 
         /// <summary>
@@ -80,7 +88,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> SubmitWorkFlowAudit([FromBody] WorkFlowAuditCaseItemModel caseItemModel = null)
         {
             if (caseItemModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("提交流程审批", caseItemModel);
+            if (caseItemModel.CaseId != Guid.Empty)
+            {
+                var entity = _dynamicEntityServices.getEntityBaseInfoByCaseId(caseItemModel.CaseId);
+                if (entity != null)
+                {
+                    WriteOperateLog("提交" + entity["entityname"] + "审批数据", caseItemModel);
+                }
+            }
             return _workFlowServices.SubmitWorkFlowAudit(caseItemModel, LoginUser,isNeedToSendMsg:1);
         }
 		 

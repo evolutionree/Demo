@@ -1237,7 +1237,27 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return null;
         }
 
-
+        public Dictionary<string, object> getEntityBaseInfoByCaseId(Guid caseid, int userNum, DbTransaction tran = null)
+        {
+            try
+            {
+                string cmdText = @"
+                    select e.* from crm_sys_entity e
+                    left join crm_sys_workflow f on e.entityid = f.entityid
+                    left join crm_sys_workflow_case c on f.flowid = c.flowid
+                    where c.caseid = @caseid
+                    limit 1)";
+                var param = new DbParameter[] {
+                    new NpgsqlParameter("caseid",caseid)
+                };
+                List<Dictionary<string, object>> ret = ExecuteQuery(cmdText, param, tran);
+                if (ret != null && ret.Count > 0) return ret[0];
+            }
+            catch (Exception ex)
+            {
+            }
+            return null;
+        }
         public bool WriteBack(DbTransaction tran, List<Dictionary<string, object>> writebackrules, int userNum)
         {
             if (writebackrules == null || writebackrules.Count == 0) return true;

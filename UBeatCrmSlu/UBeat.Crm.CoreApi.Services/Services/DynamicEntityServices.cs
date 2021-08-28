@@ -5013,6 +5013,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             return _dynamicEntityRepository.getEntityBaseInfoByTypeId(typeId, 1, null);
         }
+        public Dictionary<string, object> getEntityBaseInfoByEntityId(Guid entityId)
+        {
+            return _dynamicEntityRepository.getEntityBaseInfoById(entityId, 1, null);
+        }
+        public Dictionary<string, object> getEntityBaseInfoByCaseId(Guid entityId)
+        {
+            return _dynamicEntityRepository.getEntityBaseInfoByCaseId(entityId, 1, null);
+        }
     }
     public class MuleSendParamInfo
     {

@@ -275,7 +275,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             if (dynamicModel.TypeId != Guid.Empty)
             {
-                var entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(dynamicModel.TypeId);
+                var entity = _dynamicEntityServices.getEntityBaseInfoByEntityId(dynamicModel.EntityId);
                 if (entity != null)
                 {
                     WriteOperateLog("删除" + entity["entityname"] + "数据", dynamicModel);

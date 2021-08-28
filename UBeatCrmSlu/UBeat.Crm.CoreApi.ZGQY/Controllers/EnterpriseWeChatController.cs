@@ -99,6 +99,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
                 //如果web没有传deviceid字段，则取token作为设备id
                 deviceId = result.DataBody.ToString();
             }
+            if (header.Device.Equals("UnKnown"))
+            {
+                header.Device = "H5";
+                header.VerNum = "1.0.0";
+            }
             var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
             var webSession = config.GetSection("WebSession");
             TimeSpan webexpiration = new TimeSpan(0, 20, 0);
@@ -129,22 +134,22 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
             string actuallyUrl = string.Empty;
             if (enterpriseWeChat.UrlType == UrlTypeEnum.WorkFlow)
             {
-                WriteOperateLog("企业微信打开流程页面", enterpriseWeChat, userData.UserId);
+                WriteOperateLog("企业微信打开流程页面", enterpriseWeChat, userData.UserId, header.Device, header.VerNum);
                 actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["caseid"]);
             }
             else if (enterpriseWeChat.UrlType == UrlTypeEnum.EntityDynamic)
             {
-                WriteOperateLog("企业微信打开动态页面", enterpriseWeChat, userData.UserId);
+                WriteOperateLog("企业微信打开动态页面", enterpriseWeChat, userData.UserId, header.Device, header.VerNum);
                 actuallyUrl = string.Format(enterpriseWeChatType.EntityDynamic_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["typeid"], enterpriseWeChat.Data["recid"]);
             }
             else if (enterpriseWeChat.UrlType == UrlTypeEnum.Daily)
             {
-                WriteOperateLog("企业微信打开日报页面", enterpriseWeChat, userData.UserId);
+                WriteOperateLog("企业微信打开日报页面", enterpriseWeChat, userData.UserId, header.Device, header.VerNum);
                 actuallyUrl = string.Format(enterpriseWeChatType.Daily_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
             }
             else if (enterpriseWeChat.UrlType == UrlTypeEnum.Weekly)
             {
-                WriteOperateLog("企业微信打开周报页面", enterpriseWeChat, userData.UserId);
+                WriteOperateLog("企业微信打开周报页面", enterpriseWeChat, userData.UserId, header.Device, header.VerNum);
                 actuallyUrl = string.Format(enterpriseWeChatType.Weekly_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
             }
             else
@@ -155,7 +160,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
                     var entity = _enterpriseWeChatServices.getEntityById(new Guid(string.Concat(entityId)));
                     if(entity != null)
 					{
-                        WriteOperateLog("企业微信打开"+ entity["entityname"] + "页面", enterpriseWeChat, userData.UserId);
+                        WriteOperateLog("企业微信打开"+ entity["entityname"] + "页面", enterpriseWeChat, userData.UserId, header.Device, header.VerNum);
                     }
                 }
                
@@ -323,6 +328,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
                 //如果web没有传deviceid字段，则取token作为设备id
                 deviceId = result.DataBody.ToString();
             }
+            if (header.Device.Equals("UnKnown"))
+            {
+                header.Device = "H5";
+                header.VerNum = "1.0.0";
+            }
             var config = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
             var webSession = config.GetSection("WebSession");
             TimeSpan webexpiration = new TimeSpan(0, 20, 0);
@@ -338,7 +348,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
                 loginSession.Sessions.Remove(deviceId);
                 CacheService.Repository.Replace("WebLoginSession_" + userNumber, loginSession, loginSession.Expiration);
             }
-            WriteOperateLog("企业微信登录系统", userData, userData.UserId);
+            WriteOperateLog("企业微信登录系统", userData, userData.UserId, header.Device, header.VerNum);
             SetLoginSession("WebLoginSession_" + userNumber, result.DataBody.ToString(), deviceId, webexpiration, 0, header.SysMark, header.Device, true);
             var cookie = new CookieOptions
             {
