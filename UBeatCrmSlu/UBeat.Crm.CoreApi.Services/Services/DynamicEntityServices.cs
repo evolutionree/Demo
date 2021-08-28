@@ -5009,7 +5009,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }, dynamicModel, dynamicEntity.TypeId, userNumber, new List<Guid>() { dynamicEntity.RecId });
         }
 
-
+        public Dictionary<string, object> getEntityBaseInfoByTypeId(Guid typeId)
+        {
+            return _dynamicEntityRepository.getEntityBaseInfoByTypeId(typeId, 1, null);
+        }
     }
     public class MuleSendParamInfo
     {

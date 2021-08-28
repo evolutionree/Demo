@@ -129,22 +129,36 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
             string actuallyUrl = string.Empty;
             if (enterpriseWeChat.UrlType == UrlTypeEnum.WorkFlow)
             {
+                WriteOperateLog("企业微信打开流程页面", enterpriseWeChat, userData.UserId);
                 actuallyUrl = string.Format(enterpriseWeChatType.Workflow_EnterpriseWeChat, enterpriseWeChat.Data["caseid"]);
             }
             else if (enterpriseWeChat.UrlType == UrlTypeEnum.EntityDynamic)
             {
+                WriteOperateLog("企业微信打开动态页面", enterpriseWeChat, userData.UserId);
                 actuallyUrl = string.Format(enterpriseWeChatType.EntityDynamic_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["typeid"], enterpriseWeChat.Data["recid"]);
             }
             else if (enterpriseWeChat.UrlType == UrlTypeEnum.Daily)
             {
+                WriteOperateLog("企业微信打开日报页面", enterpriseWeChat, userData.UserId);
                 actuallyUrl = string.Format(enterpriseWeChatType.Daily_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
             }
             else if (enterpriseWeChat.UrlType == UrlTypeEnum.Weekly)
             {
+                WriteOperateLog("企业微信打开周报页面", enterpriseWeChat, userData.UserId);
                 actuallyUrl = string.Format(enterpriseWeChatType.Weekly_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["recid"]);
             }
             else
             {
+                var entityId = enterpriseWeChat.Data["entityid"];
+                if(entityId != null)
+				{
+                    var entity = _enterpriseWeChatServices.getEntityById(new Guid(string.Concat(entityId)));
+                    if(entity != null)
+					{
+                        WriteOperateLog("企业微信打开"+ entity["entityname"] + "页面", enterpriseWeChat, userData.UserId);
+                    }
+                }
+               
                 actuallyUrl = string.Format(enterpriseWeChatType.SmartReminder_EnterpriseWeChat, enterpriseWeChat.Data["entityid"], enterpriseWeChat.Data["typeid"], enterpriseWeChat.Data["recid"]);
             }
 
@@ -324,6 +338,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
                 loginSession.Sessions.Remove(deviceId);
                 CacheService.Repository.Replace("WebLoginSession_" + userNumber, loginSession, loginSession.Expiration);
             }
+            WriteOperateLog("企业微信登录系统", userData, userData.UserId);
             SetLoginSession("WebLoginSession_" + userNumber, result.DataBody.ToString(), deviceId, webexpiration, 0, header.SysMark, header.Device, true);
             var cookie = new CookieOptions
             {

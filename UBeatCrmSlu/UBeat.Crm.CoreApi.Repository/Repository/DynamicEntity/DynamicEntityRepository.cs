@@ -1220,6 +1220,24 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.DynamicEntity
             return null;
         }
 
+        public Dictionary<string, object> getEntityBaseInfoByTypeId(Guid typeid, int userNum, DbTransaction tran = null)
+        {
+            try
+            {
+                string cmdText = "Select * from crm_sys_entity where entityid in(select entityid from crm_sys_entity_category where categoryid = @typeid)";
+                var param = new DbParameter[] {
+                    new NpgsqlParameter("typeid",typeid)
+                };
+                List<Dictionary<string, object>> ret = ExecuteQuery(cmdText, param, tran);
+                if (ret != null && ret.Count > 0) return ret[0];
+            }
+            catch (Exception ex)
+            {
+            }
+            return null;
+        }
+
+
         public bool WriteBack(DbTransaction tran, List<Dictionary<string, object>> writebackrules, int userNum)
         {
             if (writebackrules == null || writebackrules.Count == 0) return true;

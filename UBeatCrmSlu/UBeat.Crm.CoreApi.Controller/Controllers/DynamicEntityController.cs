@@ -29,7 +29,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
             if (dynamicModel.FlowId.HasValue) { dynamicModel.FlowId = null; }
-            WriteOperateLog("提交动态数据", dynamicModel);
+            if(dynamicModel.TypeId != Guid.Empty)
+			{
+                var entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(dynamicModel.TypeId);
+                if(entity != null)
+                {
+                    WriteOperateLog("新增"+ entity["entityname"] + "数据", dynamicModel);
+                }
+            }
             var header = GetAnalyseHeader();
             return _dynamicEntityServices.Add(dynamicModel, header, UserId);
         }
@@ -41,6 +48,14 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (body == null) return ResponseError<object>("参数格式错误");
             if (body.TypeId == Guid.Empty || body.CacheId == Guid.Empty)
                 return ResponseError<object>("Guid不能为空");
+            if (body.TypeId != Guid.Empty)
+            {
+                var entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(body.TypeId);
+                if (entity != null)
+                {
+                    WriteOperateLog("暂存" + entity["entityname"] + "数据", body);
+                }
+            }
             return _dynamicEntityServices.TemporarySave(body, UserId);
         }
 
@@ -129,7 +144,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> Edit([FromBody] DynamicEntityEditModel dynamicModel = null)
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("修改动态数据", dynamicModel);
+            if (dynamicModel.TypeId != Guid.Empty)
+            {
+                var entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(dynamicModel.TypeId);
+                if (entity != null)
+                {
+                    WriteOperateLog("修改" + entity["entityname"] + "数据", dynamicModel);
+                }
+            }
             var header = GetAnalyseHeader();
             return _dynamicEntityServices.Edit(dynamicModel, header, UserId);
         }
@@ -251,7 +273,14 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> Delete([FromBody] DynamicEntityDeleteModel dynamicModel = null)
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
-            WriteOperateLog("提交删除数据", dynamicModel);
+            if (dynamicModel.TypeId != Guid.Empty)
+            {
+                var entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(dynamicModel.TypeId);
+                if (entity != null)
+                {
+                    WriteOperateLog("删除" + entity["entityname"] + "数据", dynamicModel);
+                }
+            }
             return _dynamicEntityServices.Delete(dynamicModel, UserId);
         }
         [HttpPost]

@@ -24,10 +24,12 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 		private static readonly string UserInfo = "https://qyapi.weixin.qq.com/cgi-bin/user/get?access_token={0}&userid={1}";
 		private readonly IConfiguration _configurationRoot;
         private readonly IAccountRepository _accountRepository;
-        public EnterpriseWeChatServices(IConfigurationRoot configurationRoot, IAccountRepository accountRepository)
+        private readonly IDynamicEntityRepository _dynamicEntityRepository;
+        public EnterpriseWeChatServices(IConfigurationRoot configurationRoot, IAccountRepository accountRepository, IDynamicEntityRepository dynamicEntityRepository)
         {
             _configurationRoot = configurationRoot;
             _accountRepository = accountRepository;
+            _dynamicEntityRepository = dynamicEntityRepository;
         }
         public OutputResult<object> GetAccountInfo(int userNumber)
         {
@@ -127,6 +129,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
             }
         }
 
-
+        public Dictionary<string, object> getEntityById(Guid entityId)
+		{
+            return _dynamicEntityRepository.getEntityBaseInfoById(entityId, 1, null);
+		}
     }
 }
