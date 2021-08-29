@@ -599,11 +599,17 @@ namespace UBeat.Crm.CoreApi.Services.Services
             var appKey = configuration.GetSection("QiChaCha").Get<QiChaCha>().KEY;
             var secret = configuration.GetSection("QiChaCha").Get<QiChaCha>().SECRET;
             var customerTemps = _customerRepository.GetCustomerTemp();
+            var routePath = "api/dynamicentity/add";
+            _dynamicEntityServices.PreActionExtModelList = _dynamicEntityServices.ActionExtService.CheckActionExt(routePath, 0);
+            _dynamicEntityServices.FinishActionExtModelList = _dynamicEntityServices.ActionExtService.CheckActionExt(routePath, 1);
+            _dynamicEntityServices.RoutePath = routePath;
+            _dynamicEntityServices.ActionExtService = this.ActionExtService;
+            _dynamicEntityServices.CacheService = this.CacheService;
             foreach (var temp in customerTemps)
             {
                 var model = new CompanyModel();
                 model.CompanyName = temp.recname;
-                
+                //temp.businesscenter = "智能网联汽车测试研发中心";
                 var url = string.Format(DockingAPIHelper.GETDETAILSBYNAME_API, appKey, model.CompanyName);
                 var result = QichachaProgram.httpGet(url, QichachaProgram.getHeaderVals(appKey, secret));
                 var jObject = JObject.Parse(result);
@@ -616,9 +622,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         : jObject["Result"].ToString());
                     t = data ?? new CompanyInfo();
                 }
+                DynamicEntityAddModel entityAddModel = new DynamicEntityAddModel();
+                entityAddModel.TypeId = new Guid("f9db9d79-e94b-4678-a5cc-aa6e281c1246");
+                entityAddModel.FlowId = new Guid("7d39b849-49ba-4eb5-88ff-bf1234a5a307");
 
                 if (t != null && !string.IsNullOrEmpty(t.KeyNo))
                 {
+                    
+                    if (t.Name!=temp.recname)
+                    {
+                        //OACustomerAdd(entityAddModel,temp.recname, userinfo.UserId);
+                        continue;
+                    }
+
                     Dictionary<string, string> yesNo = new Dictionary<string, string>();
                     yesNo.Add("0", "未上市");
                     yesNo.Add("1", "上市");
@@ -670,9 +686,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     //cusData["customercompanyaddress"] = t.Address;
                     var manager=_customerRepository.getUserInfo(temp.recmanager==null?"":temp.recmanager);
                     cusData["recmanager"] = manager!=null&&manager.Count>0?manager[0].UserId:1;
-                    DynamicEntityAddModel entityAddModel = new DynamicEntityAddModel();
-                    entityAddModel.TypeId = new Guid("f9db9d79-e94b-4678-a5cc-aa6e281c1246");
-                    entityAddModel.FlowId = new Guid("7d39b849-49ba-4eb5-88ff-bf1234a5a307");
+                   
                     
                     cusData["isnewcustomer"] = getDicValue(46,temp.isnewcustomer);
                     cusData["custlevel"] = getDicValue(112,temp.custlevel);
@@ -685,6 +699,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     cusData["custwebsite"] = temp.custwebsite==null?"":temp.custwebsite;
                     cusData["customercompanyaddress"] = "{\"address\":\""+temp.customercompanyaddress+"\"}";
                     entityAddModel.FieldData = cusData;
+                    
                     if (!string.IsNullOrEmpty(temp.businesscenter))
                     {
                         var arr=temp.businesscenter.Split("，");
@@ -697,26 +712,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             //_dynamicEntityServices.Edit(dynamicModel, header, UserId);
                             //_workFlowServices.AddWorkflowCase(dynamicModel, userinfo,header);
-                            var routePath = "api/dynamicentity/add";
-                            _dynamicEntityServices.PreActionExtModelList = _dynamicEntityServices.ActionExtService.CheckActionExt(routePath, 0);
-                            _dynamicEntityServices.FinishActionExtModelList = _dynamicEntityServices.ActionExtService.CheckActionExt(routePath, 1);
-                            _dynamicEntityServices.RoutePath = routePath;
-                            _dynamicEntityServices.ActionExtService = this.ActionExtService;
-                            _dynamicEntityServices.CacheService = this.CacheService;
                             _dynamicEntityServices.Add(entityAddModel, header, userinfo.UserId);
                         }
                     }
                     else
                     {
-                        continue;
+                        entityAddModel.FieldData["recmanager"] = 4095;
+                        _dynamicEntityServices.Add(entityAddModel, header, userinfo.UserId);
                     }
                     
+                }else {
+                    OACustomerAdd(entityAddModel,temp.recname, userinfo.UserId);
                 }
             }
 
             return new OutputResult<object>("OK");
         }
-        
+
+        public void OACustomerAdd(DynamicEntityAddModel entityAddModel,string name,int userId)
+        {
+            entityAddModel.FieldData=new Dictionary<string, object>();
+            entityAddModel.FieldData["recname"] =name;
+            entityAddModel.FieldData["recmanager"] = 4095;
+            _dynamicEntityServices.Add(entityAddModel, header, userId);
+        }
+
         /*public OutputResult<object> checkQccImportCustomer(UserInfo userinfo, AnalyseHeader header)
         {
 
@@ -891,7 +911,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             dicname=dicname.Replace("）", ")");
             dicname=dicname.Replace("重大客户", "重要客户");
             dicname=dicname.Replace("检测中心", "检测事业部");
-            dicname=dicname.Replace("智能网联汽车测试研发中心", "智能网联汽车测试研发");
+            //dicname=dicname.Replace("智能网联汽车测试研发中心", "智能网联汽车测试研发");
             var dicData=_dataSourceRepository.SelectFieldDicVaue(dicId, 1); //当前
             foreach (var model in dicData)
             {
