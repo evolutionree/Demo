@@ -117,8 +117,9 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         Commonbox = 2,
         MultiChoose = 3,
         DateCtl = 4,
-        Series = 5
-    }
+        Series = 5,
+		DateYear = 10,
+	}
 
     /// <summary>
     /// 报表控件类型

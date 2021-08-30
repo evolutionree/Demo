@@ -107,7 +107,8 @@ namespace UBeat.Crm.CoreApi.IRepository
         //获取数据源控件类型的所有字段
         List<EntityFieldInfo> GetDataSourceEntityFields();
         Dictionary<string, object> getEntityBaseInfoById(Guid entityid, int userNum, DbTransaction tran = null);
-
+        Dictionary<string, object> getEntityBaseInfoByTypeId(Guid typeid, int userNum, DbTransaction tran = null);
+        Dictionary<string, object> getEntityBaseInfoByCaseId(Guid caseid, int userNum, DbTransaction tran = null);
         bool WriteBack(DbTransaction tran, List<Dictionary<string, object>> writebackrules, int userNum);
 
 

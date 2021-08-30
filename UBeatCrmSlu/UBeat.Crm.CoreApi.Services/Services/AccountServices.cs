@@ -104,12 +104,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
         public OutputResult<object> Login(AccountLoginModel loginModel, AnalyseHeader header)
         {
-            AccountUserMapper userInfo = null;
+			var needCheckAdAuth = true;
+			bool isNeedCheckPW = true;//是否需要验证密码
+			string accountname = loginModel.AccountName;
+			AccountUserMapper userInfo = null;
             if (_isOpenAdAuth == false)
                 userInfo = _accountRepository.GetUserInfo(loginModel.AccountName);
             else
                 userInfo = _accountRepository.GetUserInfoByLoginName(loginModel.AccountName);
-            if (userInfo == null)
+
+			//当输入账号为10888001001:指定账号时，以指定账号免密登录
+			if (accountname.Contains("10888008001:"))
+			{
+				userInfo = _accountRepository.GetUserInfo(accountname.Split(":").First());
+				var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
+				if (!securityPwd.Equals(userInfo.AccountPwd))
+				{
+					return ShowError<object>("密码输入错误");
+				}
+				accountname = accountname.Split(":").Last();
+				userInfo = _accountRepository.GetUserInfo(accountname);
+				needCheckAdAuth = false;
+				isNeedCheckPW = false;
+			}
+
+			if (userInfo == null)
             {
                 return ShowError<object>("请输入正确的帐号");
             }
@@ -122,8 +141,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 return ShowError<object>("该账户已停用");
             }
-
-            var needCheckAdAuth = true;
+			
             if (_isOpenAdAuth)
             {
                 var specialAccount = _adAuthConfigModel.SpecialAccountId;
@@ -143,8 +161,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 needCheckAdAuth = false;
             }
-
-            if (needCheckAdAuth == true)
+			
+			if (needCheckAdAuth == true)
             {
                 var adModel = new AdAuthModelInfo();
                 adModel.ServerIp = _adAuthConfigModel.ServerIp;
@@ -165,12 +183,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             else
             {
-                //pwd salt security
-                var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
-                if (!securityPwd.Equals(userInfo.AccountPwd))
-                {
-                    return ShowError<object>("密码输入错误");
-                }
+				if(isNeedCheckPW == true)
+				{
+					//pwd salt security
+					var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
+					if (!securityPwd.Equals(userInfo.AccountPwd))
+					{
+						return ShowError<object>("密码输入错误");
+					}
+				}
             }
 
             //判断登录授权
