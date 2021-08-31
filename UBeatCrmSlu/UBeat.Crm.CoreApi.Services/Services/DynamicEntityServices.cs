@@ -2994,7 +2994,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (info.FuncBtns == null) return new OutputResult<object>(funcBtns);
             foreach (var btn in info.FuncBtns)
             {
-                if (btn.ButtonCode=="AddEntityData"&&dynamicModel.RecIds == null)
+                if (btn.ButtonCode == "AddEntityData" && (dynamicModel.RecIds == null || dynamicModel.RecIds.Count <= 0))
                 {
                     funcBtns.Add(btn);
                 }

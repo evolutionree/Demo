@@ -145,14 +145,19 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.EntityPro
                             ExecuteNonQuery(log.Replace("@load", "@editload"), paramLog);
                             ExecuteNonQuery(sql.Replace("load", "editload"), param);
                             break;
-                        case 4://check
+                        case 4://复制新增
                             paramLog[2] = new NpgsqlParameter("codetype", "EntityCopyNew");
                             paramLog[4] = param[1] = new NpgsqlParameter("copyload", tmp.Load);
                             ExecuteNonQuery(log.Replace("@load", "@copyload"), paramLog);
                             ExecuteNonQuery(sql.Replace("load", "copyload"), param);
                             break;
-
-                        default:
+						case 5://类型过滤
+							paramLog[2] = new NpgsqlParameter("codetype", "EntityFilterType");
+							paramLog[4] = param[1] = new NpgsqlParameter("rectypeload", tmp.Load);
+							ExecuteNonQuery(log.Replace("@load", "@rectypeload"), paramLog);
+							ExecuteNonQuery(sql.Replace("load", "rectypeload"), param);
+							break;
+						default:
                             break;
                     }
                 }
