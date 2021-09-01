@@ -1353,8 +1353,49 @@ namespace UBeat.Crm.CoreApi.Services.Services
         {
             //获取该实体分类的字段
             var fields = GetWebDynamicListFields(dynamicModel.TypeId, (DynamicProtocolOperateType)dynamicModel.OperateType, userNumber);
-
-            if (fields.Count == 0)
+			#region 需要对字段进行整理，并对数据源进行整理，增加补充entityid
+			DataSourceListMapper dsListMapper = new DataSourceListMapper()
+			{
+				PageIndex = 1,
+				DatasourceName = "",
+				PageSize = 1000,
+				RecStatus = 1
+			};
+			Dictionary<string, List<IDictionary<string, object>>> dataSourceListDict = this._dataSourceRepository.SelectDataSource(dsListMapper, userNumber);
+			List<IDictionary<string, object>> allDataSourceList = dataSourceListDict["PageData"];
+			Dictionary<string, IDictionary<string, object>> allDataSourceDict = new Dictionary<string, IDictionary<string, object>>();
+			foreach (IDictionary<string, object> item in allDataSourceList)
+			{
+				string id = item["datasourceid"].ToString();
+				allDataSourceDict[id] = item;
+			}
+			foreach (DynamicEntityWebFieldMapper field in fields)
+			{
+				if (field.ControlType == 18)//数据源控件才处理
+				{
+					try
+					{
+						DynamicProtocolFieldConfig config = Newtonsoft.Json.JsonConvert.DeserializeObject<DynamicProtocolFieldConfig>(field.FieldConfig);
+						if (config.DataSource.SourceId != null && config.DataSource.SourceId.Length > 0)
+						{
+							if (allDataSourceDict.ContainsKey(config.DataSource.SourceId))
+							{
+								IDictionary<string, object> item = allDataSourceDict[config.DataSource.SourceId];
+								if (item.ContainsKey("entityid") && item["entityid"] != null)
+								{
+									config.DataSource.EntityId = Guid.Parse(item["entityid"].ToString());
+									field.FieldConfig = Newtonsoft.Json.JsonConvert.SerializeObject(config);
+								}
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+					}
+				}
+			}
+			#endregion
+			if (fields.Count == 0)
             {
                 return ShowError<object>("该实体没有配置列表字段");
             }
