@@ -32,6 +32,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
 			{
 				return ResponseError<object>("参数异常");
 			}
+
+			var data = _dataPlatformServices.InitProjectData();
 			return new OutputResult<object>("test");
 		}
 	}
