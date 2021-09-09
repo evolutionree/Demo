@@ -36,9 +36,26 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
         [Route("doContract")]
         [HttpPost]
         [AllowAnonymous]
-        public OutputResult<object> Test()
+        public OutputResult<object> doContract()
         {
             return new OutputResult<object>(_OaDataBaseServices.updateContractData(LoginUser.UserId));
+        }
+        
+        [Route("test")]
+        [HttpPost]
+        [AllowAnonymous]
+        public OutputResult<object> Test()
+        {
+            OracleConnection connection = new OracleConnection(connectionString);            
+            try
+            {
+                connection.Open();
+                return new OutputResult<object>("myReader");
+            }
+            catch(OracleException e)
+            {                                
+                throw new Exception(e.Message);
+            }   
         }
     }
 }
