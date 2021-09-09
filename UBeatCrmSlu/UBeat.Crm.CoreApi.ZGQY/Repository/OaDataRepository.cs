@@ -33,11 +33,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             {
                 recmanager=(int)recmanagerList[0]["userid"];
             }
-            /* //测通变更之后开放：匹配不到人员就不做写入
              else
             {
                 return 0;
-            }*/
+            }
 
             //暂时处理重复的合同号不做写入
             var repeatSql = "select * from crm_sys_contract where contractid=@billno";

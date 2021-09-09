@@ -33,7 +33,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
             _OaDataBaseServices = OaDataBaseServices;
         }
 
-        [Route("test")]
+        [Route("doContract")]
         [HttpPost]
         [AllowAnonymous]
         public OutputResult<object> Test()
