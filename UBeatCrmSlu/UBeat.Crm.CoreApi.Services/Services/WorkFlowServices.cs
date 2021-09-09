@@ -700,7 +700,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         if (!(_dynamicEntityRepository.ExistsData(g, userinfo.UserId, tran)))
                             _dynamicEntityRepository.DeleteTemporary(g, userinfo.UserId, tran);
                     }
-                    if (caseModel.DataType == 0)
+					if (caseModel.EntityModel != null && caseModel.EntityModel.CacheId != Guid.Empty)
+					{
+						Guid g = caseModel.EntityModel.CacheId;
+						if (!(_dynamicEntityRepository.ExistsData(g, userinfo.UserId, tran)))
+							_dynamicEntityRepository.DeleteTemporary(g, userinfo.UserId, tran);
+					}
+					if (caseModel.DataType == 0)
                     {
                         var entityInfo = _entityProRepository.GetEntityInfo(caseModel.EntityModel.TypeId);
                         UserData userData = GetUserData(userinfo.UserId);
