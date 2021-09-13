@@ -51,7 +51,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             List<Dictionary<string ,object >> customerList=ExecuteQuery(customerSql, new DbParameter[] { new NpgsqlParameter("param1",list[7].ToString())} );
             if (customerList!=null&&customerList.Count>0)
             {
-                customerStr = "{\"id\": \"" + list[7] + "\" ,\"name\": \"" + customerList[0]["recid"] + "\"}";
+                customerStr = "{\"name\": \"" + list[7] + "\" ,\"id\": \"" + customerList[0]["recid"] + "\"}";
             }
             else
             {
