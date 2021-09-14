@@ -23,17 +23,17 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
 			_dataPlatformServices = dataPlatformServices;
 		}
 
-		[Route("test")]
+		[Route("initdata")]
 		[HttpPost]
 		[AllowAnonymous]
-		public OutputResult<object> SapTest([FromBody] DataPlatformInfo paramInfo = null)
+		public OutputResult<object> InitData([FromBody] DataPlatformInfo paramInfo = null)
 		{
 			if (paramInfo == null)
 			{
 				return ResponseError<object>("参数异常");
 			}
 
-			var data = _dataPlatformServices.InitProjectData(true);
+			_dataPlatformServices.InitData();
 			return new OutputResult<object>("test");
 		}
 	}
