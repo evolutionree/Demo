@@ -229,6 +229,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             };
             //清理旧缓存，且获取个人用户数据到缓存中
             _accountServices.GetUserData(userInfo.UserId, true);
+            
             return new OutputResult<object>(response);
         }
 
