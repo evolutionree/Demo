@@ -347,8 +347,18 @@ namespace UBeat.Crm.CoreApi.Controllers
 			if (body == null) return ResponseError<object>("参数格式错误");
 			return new OutputResult<object>(_service.AutoReminder());
 		}
-		#endregion
-	}
+        #endregion
+
+        #region 消息发送记录表
+        [HttpPost]
+        [Route("sendmsg")]
+        public OutputResult<object> SendMsg([FromBody] object body)
+        {
+            if (body == null) return ResponseError<object>("参数格式错误");
+            return new OutputResult<object>(_service.SendMsg());
+        }
+        #endregion
+    }
 }
 
 

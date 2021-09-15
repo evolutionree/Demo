@@ -7,6 +7,7 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using System.Linq;
 using Newtonsoft.Json;
+using Dapper;
 
 namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
 {
@@ -558,7 +559,68 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
 				 
 			return result;
 		}
-	}
+
+        public dynamic getSubscribeMsgList()
+        {
+            var sql = string.Format(@" 
+			with Tmsg_reg as ( 
+			select * from crm_plu_messagerecord 
+			where msgstatus = 2
+			), 
+			TUser as (
+				select DISTINCT u.userid,d.deptid,u.username from crm_sys_userinfo u
+				inner join crm_sys_account_userinfo_relate r on u.userid = r.userid
+				inner join crm_sys_account a on r.accountid = a.accountid
+				inner join crm_sys_department d on d.deptid = r.deptid
+				where u.recstatus = 1 and a.recstatus = 1 and d.recstatus = 1
+			)
+
+			select reg.*, 
+            (relentity->>'id') entityid 
+            from Tmsg_reg reg
+			inner join TUser u on reg.msgreceiver::integer = u.userid;");
+
+            var param = new DynamicParameters();
+
+            var result = DataBaseHelper.Query(sql, param, CommandType.Text);
+            return result;
+        }
+
+        public int UpdateSubscribeMsg(List<Guid> recIds)
+        {
+            var result = 0;
+
+            if (recIds.Count > 0)
+            {
+                var updateSql = string.Format("update crm_plu_messagerecord set msgstatus = 1, msgsendtime = now() where recid in('{0}');", string.Join("','", recIds));
+                var updateParam = new DynamicParameters();
+
+                result = DataBaseHelper.ExecuteNonQuery(updateSql, updateParam, CommandType.Text);
+            }
+
+            return result;
+        }
+
+        public dynamic GetRecByEntityIdRecCode(Guid entityId, string recCode)
+        {
+            dynamic result = null;
+            var selectSql = "select entitytable from crm_sys_entity where entityid = @entityId limit 1;";
+
+            var selectParam = new DynamicParameters();
+            selectParam.Add("entityId", entityId);
+            var tableName = DataBaseHelper.ExecuteScalar<string>(selectSql, selectParam);
+            if (!string.IsNullOrEmpty(tableName))
+            {
+                selectSql = string.Format("select * from  {0} where reccode = @recCode limit 1;", tableName);
+                selectParam = new DynamicParameters();
+                selectParam.Add("recCode", recCode);
+
+                return DataBaseHelper.Query<dynamic>(selectSql, selectParam, CommandType.Text);
+            }
+
+            return result;
+        }
+    }
 }
 
 
