@@ -53,6 +53,9 @@ namespace UBeat.Crm.CoreApi.IRepository
 
 		List<ReminderMapper> GetAllReminder();
 		List<IDictionary<string, object>> CallFunction(string functionName, string eventId, int userNumber);
-	} 
+        dynamic getSubscribeMsgList();
+        int UpdateSubscribeMsg(List<Guid> recIds);
+        dynamic GetRecByEntityIdRecCode(Guid entityId, string recCode);
+    } 
 }
 

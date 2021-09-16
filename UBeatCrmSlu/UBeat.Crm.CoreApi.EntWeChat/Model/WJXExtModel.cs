@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace UBeat.Crm.CoreApi.Services.Models.WJXModel
+namespace UBeat.Crm.CoreApi.Services.EntWeChat.Model
 {
     public class WJXCustParam
     {

@@ -120,7 +120,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 				var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
 				if (!securityPwd.Equals(userInfo.AccountPwd))
 				{
-					return ShowError<object>("密码输入错误");
+					//return ShowError<object>("密码输入错误");
+                    return ShowError<object>("用户名或密码错误");
 				}
 				accountname = accountname.Split(":").Last();
 				userInfo = _accountRepository.GetUserInfo(accountname);
@@ -130,7 +131,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
 			if (userInfo == null)
             {
-                return ShowError<object>("请输入正确的帐号");
+                //return ShowError<object>("用户名不存在");
+                return ShowError<object>("用户名或密码错误");
             }
             if (userInfo.IsCrmUser == 2)
             {
@@ -189,7 +191,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
 					var securityPwd = SecurityHash.GetPwdSecurity(loginModel.AccountPwd, _passwordSalt);
 					if (!securityPwd.Equals(userInfo.AccountPwd))
 					{
-						return ShowError<object>("密码输入错误");
+						//return ShowError<object>("密码输入错误");
+                        return ShowError<object>("用户名或密码错误");
 					}
 				}
             }

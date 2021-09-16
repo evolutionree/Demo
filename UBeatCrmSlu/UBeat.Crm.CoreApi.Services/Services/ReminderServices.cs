@@ -1379,5 +1379,81 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
         }
 
+        public bool SendMsg()
+        {
+            var userId = 1;
+            var regId = Guid.Empty;
+
+            var entityId = Guid.Empty;
+            var typeId = Guid.Empty;
+            var recId = Guid.Empty;
+
+            var title = string.Empty;
+            var content = string.Empty;
+            var pushcontent = string.Empty;
+            var msgparam = "{\"type\": \"0\", \"reminderid\": \"####\"}";//跳转主页
+
+            var msgList = _repository.getSubscribeMsgList();
+            List<Guid> regIds = new List<Guid>();
+            foreach (IDictionary<string, object> item in msgList)
+            {
+                var templateKeyValue = new Dictionary<string, string>();
+                var receiverIntList = new List<int>();
+                var receiveDic = new Dictionary<MessageUserType, List<int>>();
+
+                entityId = Guid.Parse(string.Concat(item["entityid"]));
+                typeId = entityId;
+                var reccode = string.Concat(item["relreccode"]);
+				if (!string.IsNullOrEmpty(reccode))
+				{
+                    var rec = _repository.GetRecByEntityIdRecCode(entityId, reccode);
+                    if(rec != null && rec.Count > 0)
+					{
+                        IDictionary<string, object> recIDic = (IDictionary<string, object>)rec[0];
+                        if (recIDic["rectype"] != null)
+						{
+                            typeId = Guid.Parse(string.Concat(recIDic["rectype"]));
+                        }
+                        recId = Guid.Parse(string.Concat(recIDic["recid"]));
+                    }
+				}
+                regId = Guid.Parse(string.Concat(item["recid"]));
+                regIds.Add(regId);
+
+                title = string.Concat(item["msgtitle"]);
+                content = string.Concat(item["msgcontent"]);
+                pushcontent = string.Concat(item["msgpushcontent"]);
+
+                templateKeyValue.Add("title", title);
+                templateKeyValue.Add("content", content);
+                templateKeyValue.Add("pushcontent", pushcontent);
+
+                var recmanager = string.Concat(item["msgreceiver"]);
+                receiverIntList.Add(int.Parse(recmanager));
+
+                if (receiverIntList.Count > 0)
+                    receiveDic.Add(MessageUserType.SpecificUser, receiverIntList);
+
+                var postData = new MessageParameter
+                {
+                    FuncCode = "EntityReminderSkip",//跳转
+                    EntityId = entityId,
+                    TypeId = typeId,
+                    BusinessId = recId,
+                    RelEntityId = Guid.Empty,
+                    RelBusinessId = Guid.Empty,
+                    ParamData = msgparam.Replace("####", recId.ToString()),
+                    TemplateKeyValue = templateKeyValue,
+                    Receivers = receiveDic,
+                    CopyUsers = null
+                };
+
+                MessageService.WriteMessageAsyn(postData, userId);
+            }
+
+            if (regIds.Count > 0)
+                _repository.UpdateSubscribeMsg(regIds);
+            return true;
+        }
     }
 }
