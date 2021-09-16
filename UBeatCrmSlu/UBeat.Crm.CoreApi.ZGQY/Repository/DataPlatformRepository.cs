@@ -88,7 +88,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
 
 		public List<SaveZdInfo> GetZdData(DateTime date)
 		{
-			string sql = @"select * from ""ENTERTAIN_INFO"" where entertain_date::date >= @date";
+			string sql = @"select * from entertain_info where entertain_date::date >= @date";
 
 			var param = new DynamicParameters();
 			param.Add("date", date);
@@ -105,7 +105,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
 		}
 		public List<SaveClInfo> GetClData(DateTime date)
 		{
-			string sql = @"select * from ""TRAVEL_FEE_ACCOUNT_INFO"" where travel_date::date >= @date";
+			string sql = @"select * from travel_fee_account_info where travel_date::date >= @date";
 
 			var param = new DynamicParameters();
 			param.Add("date", date);
