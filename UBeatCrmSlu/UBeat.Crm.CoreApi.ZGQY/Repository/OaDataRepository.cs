@@ -9,7 +9,6 @@ using System.Text;
 using DocumentFormat.OpenXml.InkML;
 using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using UBeat.Crm.CoreApi.DomainModel;
-using UBeat.Crm.CoreApi.ZGQY.IRepository;
 using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository;
 using UBeat.Crm.CoreApi.Repository.Utility;

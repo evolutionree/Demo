@@ -39,6 +39,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UBeat.Crm.CoreApi.ZGQY", "U
 		{D26B93FB-A774-49B9-9591-065D2E02D864} = {D26B93FB-A774-49B9-9591-065D2E02D864}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UBeat.Crm.CoreApi.EntWeChat", "UBeat.Crm.CoreApi.EntWeChat\UBeat.Crm.CoreApi.EntWeChat.csproj", "{E334D663-9F34-441A-BE7A-503CCA9090DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -217,6 +219,18 @@ Global
 		{9952FA52-8173-461E-9CFF-CFB91DB91023}.Release|x64.Build.0 = Release|Any CPU
 		{9952FA52-8173-461E-9CFF-CFB91DB91023}.Release|x86.ActiveCfg = Release|Any CPU
 		{9952FA52-8173-461E-9CFF-CFB91DB91023}.Release|x86.Build.0 = Release|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Debug|x64.Build.0 = Debug|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Debug|x86.Build.0 = Debug|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Release|x64.ActiveCfg = Release|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Release|x64.Build.0 = Release|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Release|x86.ActiveCfg = Release|Any CPU
+		{E334D663-9F34-441A-BE7A-503CCA9090DD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

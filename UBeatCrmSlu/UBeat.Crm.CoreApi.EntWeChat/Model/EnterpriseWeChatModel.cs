@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace UBeat.Crm.CoreApi.ZGQY.WJXModel
+namespace UBeat.Crm.CoreApi.EntWeChat.Model
 {
     public enum UrlTypeEnum
     {

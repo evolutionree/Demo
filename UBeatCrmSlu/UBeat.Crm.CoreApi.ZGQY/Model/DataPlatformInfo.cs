@@ -115,4 +115,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Model
 		public string amount { get; set; }
 		public string used_flag { get; set; }
 	}
+
+	public class DataSourceInfo
+	{
+		public Guid id { get; set; }
+		public string name { get; set; }
+	}
 }

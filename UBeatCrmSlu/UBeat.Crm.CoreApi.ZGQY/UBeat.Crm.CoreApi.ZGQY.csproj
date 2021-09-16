@@ -65,7 +65,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UBeat.Crm.CoreApi.Controller\UBeat.Crm.CoreApi.Controller.csproj" />
-    <ProjectReference Include="..\UBeat.Crm.CoreApi.Desktop\UBeat.Crm.CoreApi.Desktop.csproj" />
   </ItemGroup>
 
   <ItemGroup>
