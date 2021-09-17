@@ -2455,15 +2455,18 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.ZGQY.dll");
                         Assembly assem = Assembly.LoadFrom(classPath);
                         var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
-                        var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
-                        var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
-                        if (methods != null)
-                        {
-                            var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
-                            var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
-                            var syncResult = data as OutputResult<object>;
-                            if (syncResult.Status == 1) { message = syncResult.Message; status = 1; throw new Exception(message); }
-                        }
+						if(modifyCustomerServices != null)
+						{
+							var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
+							var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+							if (methods != null)
+							{
+								var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
+								var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
+								var syncResult = data as OutputResult<object>;
+								if (syncResult.Status == 1) { message = syncResult.Message; status = 1; throw new Exception(message); }
+							}
+						}
                     }
                     //判断是否有附加函数_event_func
                     eventInfo = _workFlowRepository.GetWorkFlowEvent(workflowInfo.FlowId, lastNodeId, tran);
@@ -3192,11 +3195,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     nextnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
                 }
 
-                if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
-                {
-                    canAddNextNode = false;
-                    hasNextNode = false;
-                }
                 if (flowNextNodeInfos.Count > 1)
                 {
                     List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
@@ -3237,8 +3235,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else
                     nextnode = flowNextNodeInfos.FirstOrDefault();
             }
-            //执行审批逻辑
-            if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
+
+			if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
+			{
+				canAddNextNode = false;
+				hasNextNode = false;
+			}
+			//执行审批逻辑
+			if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
             {
                 var nowcaseitem = caseitems.FirstOrDefault();
 
