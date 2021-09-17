@@ -1576,17 +1576,26 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         {
                             String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.ZGQY.dll");
                             Assembly assem = Assembly.LoadFrom(classPath);
-                            var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
-                            var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
-                            var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
-                            if (methods != null)
-                            {
-                                var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
-                                var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
-                                var syncResult = data as OutputResult<object>;
-                                if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
-                            }
-                        }
+							if (assem != null)
+							{
+								var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
+								if (modifyCustomerServices != null)
+								{
+									var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
+									var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+									if (methods != null)
+									{
+										var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
+										if (method != null)
+										{
+											var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
+											var syncResult = data as OutputResult<object>;
+											if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
+										}
+									}
+								}
+							}
+						}
                         MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
                         tran.Commit();
                         WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
