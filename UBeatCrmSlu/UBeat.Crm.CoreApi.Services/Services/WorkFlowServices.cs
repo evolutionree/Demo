@@ -1572,22 +1572,31 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 {
                     if (caseItemEntity.ChoiceStatus == 1)
                     {
-                        if (workflowInfo.Entityid == Guid.Parse("a62a6832-3ef3-4338-9764-d9a27ffdb854"))
-                        {
-                            String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.ZGQY.dll");
-                            Assembly assem = Assembly.LoadFrom(classPath);
-                            var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
-                            var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
-                            var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
-                            if (methods != null)
-                            {
-                                var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
-                                var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
-                                var syncResult = data as OutputResult<object>;
-                                if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
-                            }
-                        }
-                        MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
+						if (workflowInfo.Entityid == Guid.Parse("a62a6832-3ef3-4338-9764-d9a27ffdb854"))
+						{
+							String classPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UBeat.Crm.CoreApi.ZGQY.dll");
+							Assembly assem = Assembly.LoadFrom(classPath);
+							if (assem != null)
+							{
+								var modifyCustomerServices = assem.GetTypes().FirstOrDefault(t => t.Name == "ModifyCustomerServices");
+								if (modifyCustomerServices != null)
+								{
+									var newInstance = assem.CreateInstance(modifyCustomerServices.FullName);
+									var methods = modifyCustomerServices.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Where(m => !m.IsSpecialName);
+									if (methods != null)
+									{
+										var method = methods.FirstOrDefault(t => t.Name == "SyncSapCustCreditLimitData");
+										if (method != null)
+										{
+											var data = method.Invoke(newInstance, new object[3] { workflowInfo.Entityid, caseInfo.RecId, userinfo.UserId });
+											var syncResult = data as OutputResult<object>;
+											if (syncResult.Status == 1) { message = syncResult.Message; status = 1; }
+										}
+									}
+								}
+							}
+						}
+						MessageService.UpdateWorkflowNodeMessage(tran, caseInfo.RecId, caseInfo.CaseId, caseInfo.StepNum, caseItemEntity.ChoiceStatus, userinfo.UserId);
                         tran.Commit();
                         WriteCaseAuditMessage(caseInfo.CaseId, caseInfo.NodeNum, stepnum, userinfo.UserId, type: 5);
                         //if (!string.IsNullOrEmpty(message))
@@ -3192,11 +3201,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     nextnode = nodelist.Find(m => m.StepTypeId == NodeStepType.End);
                 }
 
-                if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
-                {
-                    canAddNextNode = false;
-                    hasNextNode = false;
-                }
                 if (flowNextNodeInfos.Count > 1)
                 {
                     List<NextNodeDataInfo> metConditionNodes = new List<NextNodeDataInfo>();//满足条件的分支节点
@@ -3237,8 +3241,13 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 else
                     nextnode = flowNextNodeInfos.FirstOrDefault();
             }
-            //执行审批逻辑
-            if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
+			if (nextnode != null && nextnode.StepTypeId == NodeStepType.End)
+			{
+				canAddNextNode = false;
+				hasNextNode = false;
+			}
+			//执行审批逻辑
+			if (flowNodeInfo.NodeType == NodeType.Normal)//普通审批
             {
                 var nowcaseitem = caseitems.FirstOrDefault();
 
