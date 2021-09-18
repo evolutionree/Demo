@@ -250,9 +250,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 
 				var enperson = userId;
 				var deptId = "7f74192d-b937-403f-ac2a-8be34714278b";
-				if (!string.IsNullOrEmpty(item.applierNumber))
+				if (!string.IsNullOrEmpty(item.appliernumber))
 				{
-					var u = _dataPlatformRepository.GetUserIdByWorkcode(item.applierNumber);
+					var u = _dataPlatformRepository.GetUserIdByWorkcode(item.appliernumber);
 					if (u != null)
 					{
 						enperson = u.UserId;
@@ -262,9 +262,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 				Dictionary<string, object> dic = new Dictionary<string, object>();
 				dic.Add("encode", item.number);
 				dic.Add("enperson", enperson);
-				dic.Add("workcode", item.applierNumber);
+				dic.Add("workcode", item.appliernumber);
 				dic.Add("department", deptId);
-				dic.Add("endate", item.entertain_date );
+				dic.Add("endate", item.trave_date);
 				dic.Add("entertainamount", item.amount);
 				dic.Add("recmanager", enperson);
 				dic.Add("recstatus", 1);
@@ -312,9 +312,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 
 				var enperson = userId;
 				var deptId = "7f74192d-b937-403f-ac2a-8be34714278b";
-				if (!string.IsNullOrEmpty(item.applierNumber))
+				if (!string.IsNullOrEmpty(item.appliernumber))
 				{
-					var u = _dataPlatformRepository.GetUserIdByWorkcode(item.applierNumber);
+					var u = _dataPlatformRepository.GetUserIdByWorkcode(item.appliernumber);
 					if (u != null)
 					{
 						enperson = u.UserId;
@@ -324,9 +324,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 				Dictionary<string, object> dic = new Dictionary<string, object>();
 				dic.Add("travelcode", item.number);
 				dic.Add("person", enperson);
-				dic.Add("workcode", item.applierNumber);
+				dic.Add("workcode", item.appliernumber);
 				dic.Add("department", deptId);
-				dic.Add("traveldate", item.travel_date);
+				dic.Add("traveldate", item.bizdate);
 				dic.Add("travelamount", item.amount);
 				dic.Add("recmanager", enperson);
 				dic.Add("recstatus", 1);

@@ -92,10 +92,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Model
 		}
 		public string number { get; set; }
 		public string applier { get; set; }
-		public string applierNumber { get; set; }
+		public string appliernumber { get; set; }
 
-		public string orgUnit { get; set; }
-		public string entertain_date { get; set; }
+		public string orgunit { get; set; }
+		public string trave_date { get; set; }
 		public string amount { get; set; }
 		public string used_flag { get; set; }
 	}
@@ -108,10 +108,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Model
 		}
 		public string number { get; set; }
 		public string applier { get; set; }
-		public string applierNumber { get; set; }
+		public string appliernumber { get; set; }
 
-		public string orgUnit { get; set; }
-		public string travel_date { get; set; }
+		public string orgunit { get; set; }
+		public string bizdate { get; set; }
 		public string amount { get; set; }
 		public string used_flag { get; set; }
 	}

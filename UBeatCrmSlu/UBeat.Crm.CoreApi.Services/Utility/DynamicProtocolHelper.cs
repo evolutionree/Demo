@@ -1607,9 +1607,12 @@ List<DynamicEntityFieldSearch> searchFields, Dictionary<string, object> fieldDat
                 {
                     JObject jo = JObject.Parse(field.FieldConfig);
                     if (jo["dataSource"] == null) throw new Exception("字段FieldConfig异常");
-                    jo = JObject.Parse(jo["dataSource"].ToString());
-                    int dataId = Convert.ToInt32(jo["sourceId"].ToString());
-                    return string.Format("crm_func_entity_protocol_format_dictionary({0},{2}.{1}::text) ", dataId, field.FieldName, tablealias);
+					jo = JObject.Parse(jo["dataSource"].ToString());
+					if (jo.GetValue("sourceId") != null)
+					{
+						int dataId = Convert.ToInt32(jo["sourceId"].ToString());
+						return string.Format("crm_func_entity_protocol_format_dictionary({0},{2}.{1}::text) ", dataId, field.FieldName, tablealias);
+					}
                 }
 
                 return field.FieldName;
