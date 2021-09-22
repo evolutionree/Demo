@@ -100,7 +100,15 @@ namespace UBeat.Crm.CoreApi.Services.Utility
             {
                 return new DateTime(DateTime.Now.Year, 12, 31).Date.ToString("yyyy-MM-dd");
             }
-            return "";
+			else if (scheme.StartsWith("#MonthOfNow#"))
+			{
+				return DateTime.Now.AddDays(1 - DateTime.Now.Day).Date.ToString("yyyy-MM");
+			}
+			else if (scheme.StartsWith("#MonthOfFirst#"))
+			{
+				return string.Concat(DateTime.Now.Year, "-01");
+			}
+			return "";
         }
         /// <summary>
         /// 计算报表默认范围类型的默认计算规则
