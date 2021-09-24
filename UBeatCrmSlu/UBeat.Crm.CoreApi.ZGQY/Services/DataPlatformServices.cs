@@ -272,7 +272,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 				dic.Add("recmanager", enperson);
 				dic.Add("recstatus", 1);
 
-				var recId = _dataPlatformRepository.IsExitPay(item.number);
+				var recId = _dataPlatformRepository.IsExitZd(item.number);
 				if (recId != Guid.Empty)
 				{
 					_dynamicEntityRepository.DynamicEdit(null, entityId, recId, dic, userId);
