@@ -25,6 +25,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 			var init = false;
 			InitProjectData(init);
 			InitBillData(init);
+			InitPayData(init);
+			InitZdData(init);
+			InitClData(init);
 		}
 
 		public void InitData()

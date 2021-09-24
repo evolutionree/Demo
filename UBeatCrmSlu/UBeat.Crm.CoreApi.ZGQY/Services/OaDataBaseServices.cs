@@ -55,10 +55,16 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 
             return null;
         }
-        #endregion
+		#endregion
 
-        #region 更新合同数据
-        public DataTable updateContractData(int userid)
+		#region 更新合同数据
+		public void InitContractDataQrtz()
+		{
+			var userId = 1;
+			updateContractData(userId);
+		}
+
+		public DataTable updateContractData(int userid)
         {
             
             //TODO 获取OA数据库中的createtime之后的合同数据、写入到合同表
