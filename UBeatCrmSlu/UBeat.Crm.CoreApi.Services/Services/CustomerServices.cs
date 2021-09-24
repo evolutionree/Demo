@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
+using UBeat.Crm.CoreApi.DomainModel.Customer;
 using UBeat.Crm.CoreApi.DomainModel.DynamicEntity;
 using UBeat.Crm.CoreApi.DomainModel.Dynamics;
 using UBeat.Crm.CoreApi.DomainModel.EntityPro;
@@ -605,6 +606,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dynamicEntityServices.RoutePath = routePath;
             _dynamicEntityServices.ActionExtService = this.ActionExtService;
             _dynamicEntityServices.CacheService = this.CacheService;
+            List<string> err = new List<string>();
             foreach (var temp in customerTemps)
             {
                 var model = new CompanyModel();
@@ -625,13 +627,24 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 DynamicEntityAddModel entityAddModel = new DynamicEntityAddModel();
                 entityAddModel.TypeId = new Guid("f9db9d79-e94b-4678-a5cc-aa6e281c1246");
                 entityAddModel.FlowId = new Guid("7d39b849-49ba-4eb5-88ff-bf1234a5a307");
-
+                Dictionary<string, object> cusData = new Dictionary<string, object>();
+                //temp.businesscenter = "";
+                var manager=_customerRepository.getUserInfo(temp.recmanager==null?"":temp.recmanager);
+                if (manager!=null&&manager.Count>0)
+                {
+                    cusData["recmanager"] = manager[0].UserId;
+                }
+                else
+                {
+                    err.Add( temp.recname);
+                    cusData["recmanager"] =1;
+                }
                 if (t != null && !string.IsNullOrEmpty(t.KeyNo))
                 {
                     
                     if (t.Name!=temp.recname)
                     {
-                        //OACustomerAdd(entityAddModel,temp.recname, userinfo.UserId);
+                        OACustomerAdd(entityAddModel,temp, userinfo.UserId,(int)cusData["recmanager"]);
                         continue;
                     }
 
@@ -666,7 +679,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         t.EntType = entType[t.EntType];
                     }
 
-                    Dictionary<string, object> cusData = new Dictionary<string, object>();
+                  
                     cusData["recname"] = t.Name;
                     cusData["beforename"] = t.OriginalNameStr;
                     cusData["ucode"] = t.CreditCode;
@@ -684,9 +697,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     cusData["businessscope"] = t.Scope;
                     cusData["isiop"] = t.IsOnStock;
                     //cusData["customercompanyaddress"] = t.Address;
-                    var manager=_customerRepository.getUserInfo(temp.recmanager==null?"":temp.recmanager);
-                    cusData["recmanager"] = manager!=null&&manager.Count>0?manager[0].UserId:1;
-                   
                     
                     cusData["isnewcustomer"] = getDicValue(46,temp.isnewcustomer);
                     cusData["custlevel"] = getDicValue(112,temp.custlevel);
@@ -696,6 +706,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     cusData["contactnumber"] = temp.contactnumber==null?"":temp.contactnumber;
                     cusData["email"] = temp.email==null?"":temp.email;
                     cusData["workgroup"] = temp.workgroup==null?"":temp.workgroup;
+                    cusData["bankname"] = temp.bankname==null?"":temp.bankname;
+                    cusData["bankaccount"] = temp.bankaccount==null?"":temp.bankaccount;
                     cusData["custwebsite"] = temp.custwebsite==null?"":temp.custwebsite;
                     cusData["customercompanyaddress"] = "{\"address\":\""+temp.customercompanyaddress+"\"}";
                     entityAddModel.FieldData = cusData;
@@ -722,18 +734,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     
                 }else {
-                    OACustomerAdd(entityAddModel,temp.recname, userinfo.UserId);
+                    OACustomerAdd(entityAddModel,temp, userinfo.UserId,(int)cusData["recmanager"]);
                 }
             }
 
-            return new OutputResult<object>("OK");
+            return new OutputResult<object>(err);
         }
 
-        public void OACustomerAdd(DynamicEntityAddModel entityAddModel,string name,int userId)
+        public void OACustomerAdd(DynamicEntityAddModel entityAddModel, CustomerTemp temp,int userId,int recmanager)
         {
             entityAddModel.FieldData=new Dictionary<string, object>();
-            entityAddModel.FieldData["recname"] =name;
-            entityAddModel.FieldData["recmanager"] = 4095;
+            entityAddModel.FieldData["recname"] =temp.recname;
+            entityAddModel.FieldData["recmanager"] = recmanager;
+            entityAddModel.FieldData["bankname"] = temp.bankname==null?"":temp.bankname;
+            entityAddModel.FieldData["bankaccount"] = temp.bankaccount==null?"":temp.bankaccount;
             _dynamicEntityServices.Add(entityAddModel, header, userId);
         }
 

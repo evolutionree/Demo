@@ -119,6 +119,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Customer
 	    public string creditrating { set; get; }
 	    public string enterprisenature { set; get; }
 	    public string enterprisetype { set; get; }
+	    public string bankname { set; get; }
+	    public string bankaccount { set; get; }
 	    public string email { set; get; }
 	    public string workgroup { set; get; }
 	    public string director { set; get; }

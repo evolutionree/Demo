@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
     {
         public int insertContract(DataRow list, int userId, DbTransaction tran = null)
         {
-            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,now(),@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
+            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::date,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
             //var now = new TimeSpan(0, 0, 0, 0);
             var now = new Timestamp();
             
@@ -84,8 +84,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("commonid",customerStr),
                 new NpgsqlParameter("signdept",list[11].ToString()),
                 new NpgsqlParameter("contracttypemin",list[14].ToString()),
-                new NpgsqlParameter("syncflag",1),
-               // new NpgsqlParameter("createtime", list[16].ToString()),
+                new NpgsqlParameter("syncflag",1),  //同步类型 1：同步；2：变更
+                new NpgsqlParameter("createtime", list[16].ToString()),
                 new NpgsqlParameter("contracttypeother",list[15].ToString()),
                 new NpgsqlParameter("class1id", list[2]),
                 new NpgsqlParameter("class2id", list[3]),
@@ -121,7 +121,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             {
                 //复制生成一张单据，修改单号，原单号，合同金额
                 var sql =
-                    "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate ,remark,filedate ,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup,@predeptgroup,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,now(),@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
+                    "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate ,remark,filedate ,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup,@predeptgroup,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::date,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
                 //var now = new TimeSpan(0, 0, 0, 0);
                 var now = new Timestamp();
                 var param = new DbParameter[]
@@ -150,7 +150,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                     new NpgsqlParameter("commonid", bill[0]["commonid"]),
                     new NpgsqlParameter("signdept", bill[0]["signdept"]),
                     new NpgsqlParameter("contracttypemin", bill[0]["contracttypemin"]),
-                    new NpgsqlParameter("syncflag", 1),
+                    new NpgsqlParameter("syncflag", 2),
+                    new NpgsqlParameter("createtime", list[18].ToString()),
                     new NpgsqlParameter("contracttypeother", bill[0]["contracttypeother"]),
                     new NpgsqlParameter("class1id",bill[0]["class1id"]),
                     new NpgsqlParameter("class2id",bill[0]["class2id"]),
@@ -168,7 +169,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
         
         public DataSet getContractFromOa()
         {
-            var createTimeSql = "select max(createtime) createtime from crm_sys_contract ";
+            var createTimeSql = "select max(createtime) createtime from crm_sys_contract where syncflag=1";
             
             string sqlString = "SELECT field0004     deptid,\n" +
                                "       field0005     userid,\n" + 
@@ -186,7 +187,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                "       it1.showvalue class1,\n" + 
                                "       it2.showvalue class2,\n" + 
                                "       it3.showvalue class3,\n" + 
-                               "       fm.START_DATE\n" + 
+                               "       fm.modify_date\n" + 
                                "  FROM OAADMIN.formmain_8680 fm\n" + 
                                "  left join OAADMIN.ORG_UNIT ou\n" + 
                                "    on fm.field0004 = ou.id\n" + 
@@ -198,14 +199,14 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                "    on fm.field0013 = it2.id\n" + 
                                "  left join OAADMIN.ctp_enum_item it3\n" + 
                                "    on fm.field0014 = it3.id\n" + 
-                               " WHERE FINISHEDFLAG = 1  ";
+                               " WHERE FINISHEDFLAG = 1 and field0002 is not null  ";
             
             List<Dictionary<string ,object >> list=ExecuteQuery(createTimeSql, null);
 
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.START_DATE > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
 
             sqlString += "union all SELECT FIELD0003     deptid,\n" +
@@ -224,7 +225,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                    "       it1.showvalue class1,\n" + 
                                    "       it2.showvalue class2,\n" + 
                                    "       null class3,\n" + 
-                                   "       fm.START_DATE\n" + 
+                                   "       fm.modify_date\n" + 
                                    "  FROM OAADMIN.FORMMAIN_8740 fm\n" + 
                                    "  left join OAADMIN.ORG_UNIT ou\n" + 
                                    "    on fm.FIELD0003 = ou.id\n" + 
@@ -234,11 +235,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                    "    on fm.FIELD0006 = it1.id\n" + 
                                    "  left join OAADMIN.ctp_enum_item it2\n" + 
                                    "    on fm.FIELD0007 = it2.id\n" + 
-                                   " WHERE FINISHEDFLAG = 1";
+                                   " WHERE FINISHEDFLAG = 1 and FIELD0005 is not null ";
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.START_DATE > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
             
             sqlString += "union all\n" +
@@ -258,20 +259,20 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                           "      it1.showvalue class1,\n" + 
                           "      null class2,\n" + 
                           "      null class3,\n" + 
-                          "      fm.START_DATE\n" + 
-                          " FROM OAADMIN. formmain_10003 fm\n" + 
+                          "      fm.modify_date\n" + 
+                          " FROM OAADMIN.formmain_10003 fm\n" + 
                           " left join OAADMIN.ORG_UNIT ou\n" + 
                           "   on fm.field0041 = ou.id\n" + 
                           " left join OAADMIN.org_member om\n" + 
                           "   on fm.field0040 = om.id\n" + 
                           " left join OAADMIN.ctp_enum_item it1\n" + 
                           "   on fm.field0005 = it1.id\n" + 
-                          "WHERE FINISHEDFLAG = 1";
+                          "WHERE FINISHEDFLAG = 1 and field0001 is not null ";
 
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.START_DATE > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
             
             return  Query(sqlString);
@@ -281,6 +282,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
         public DataSet getContractFromOaChange()
         {
             
+            var createTimeSql = "select max(createtime) createtime from crm_sys_contract where syncflag=2";
            
             string sqlString = " SELECT fm.ID,\n" +
                                "      field0001     userid,\n" + 
@@ -299,7 +301,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                "      om.code       membername,\n" + 
                                "      it1.showvalue class1,\n" + 
                                "      null class2,\n" + 
-                               "      null class3\n" + 
+                               "      null class3,\n" + 
+                               "      fm.modify_date\n" + 
                                " FROM OAADMIN.formmain_4912 fm\n" + 
                                " left join OAADMIN.ORG_UNIT ou\n" + 
                                "   on fm.FIELD0002 = ou.id\n" + 
@@ -310,9 +313,12 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                "   left join  OAADMIN.COL_SUMMARY csm\n" + 
                                "   on csm.FORM_RECORDID=fm.id\n" + 
                                "WHERE FINISHEDFLAG = 1 ";
-            if (false)
+            List<Dictionary<string ,object >> list=ExecuteQuery(createTimeSql, null);
+
+            if (list[0]["createtime"]!=null)
             {
-                sqlString += "and fm.START_DATE > sysdate-1";
+                var a =list[0]["createtime"].ToString();
+                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
 
             sqlString +=  " union all\n" +
@@ -333,7 +339,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                    "       om.code       membername,\n" + 
                                    "       it1.showvalue class1,\n" + 
                                    "       it2.showvalue class2,\n" + 
-                                   "       it3.showvalue class3\n" + 
+                                   "       it3.showvalue class3,\n" + 
+                                   "      fm.modify_date\n" + 
                                    "  FROM OAADMIN.formmain_8679 fm\n" + 
                                    "  left join OAADMIN.ORG_UNIT ou\n" + 
                                    "    on fm.FIELD0002 = ou.id\n" + 
@@ -349,11 +356,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                    "    on csm.FORM_RECORDID=fm.id\n" + 
                                    " WHERE FINISHEDFLAG = 1 ";
 
-            if (false)
+            if (list[0]["createtime"]!=null)
             {
-                sqlString += "and fm.START_DATE > sysdate-1";
+                var a =list[0]["createtime"].ToString();
+                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
-
             sqlString += " union all\n" +
                          "SELECT fm.ID,\n" +
                          "                                     field0040     userid,\n" +
@@ -372,7 +379,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                          "                                     om.code       membername,\n" +
                          "                                     null class1,\n" +
                          "                                     null class2,\n" +
-                         "                                     null class3\n" +
+                         "                                     null class3,\n" +
+                         "                                     fm.modify_date\n" + 
                          "                                FROM OAADMIN.formmain_10037 fm\n" +
                          "                                left join OAADMIN.ORG_UNIT ou\n" +
                          "                                  on fm.field0041 = ou.id\n" +
@@ -386,9 +394,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                          "																on fm.field0039=it2.id\n" +
                          "                               WHERE FINISHEDFLAG = 1";
 
-            if (false)
+            if (list[0]["createtime"]!=null)
             {
-                sqlString += "and fm.START_DATE > sysdate-1";
+                var a =list[0]["createtime"].ToString();
+                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
             
             return  Query(sqlString);

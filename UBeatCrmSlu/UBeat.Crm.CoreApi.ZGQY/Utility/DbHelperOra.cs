@@ -287,13 +287,18 @@ namespace IRCS.DBUtility
                 try
                 {
                     connection.Open();
-                    OracleDataAdapter command = new OracleDataAdapter(SQLString,connection);                
-                    command.Fill(ds,"ds");
+                    OracleDataAdapter command = new OracleDataAdapter(SQLString, connection);
+                    command.Fill(ds, "ds");
                 }
-                catch(OracleException ex)
-                {                
+                catch (OracleException ex)
+                {
                     throw new Exception(ex.Message);
-                }            
+                }
+                finally
+                {
+                    connection.Close();
+                }
+
                 return ds;
             }            
         }
