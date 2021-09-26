@@ -45,12 +45,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
         [HttpPost]
         [AllowAnonymous]
         public OutputResult<object> Test()
-        {
-            OracleConnection connection = new OracleConnection(connectionString);            
+        {           
             try
             {
-                connection.Open();
-                return new OutputResult<object>("myReader");
+                return new OutputResult<object>("version 1.1");
             }
             catch(OracleException e)
             {                                
