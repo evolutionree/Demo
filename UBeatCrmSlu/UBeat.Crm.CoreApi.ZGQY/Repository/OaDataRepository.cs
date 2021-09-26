@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
     {
         public int insertContract(DataRow list, int userId, DbTransaction tran = null)
         {
-            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::date,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
+            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
             //var now = new TimeSpan(0, 0, 0, 0);
             var now = new Timestamp();
             
@@ -102,10 +102,15 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             List<Dictionary<string ,object >> bill=ExecuteQuery(dataSql, new DbParameter[] { new NpgsqlParameter("contractid",list[3])} );
             if (bill!=null)
             {
-                if (bill.Count==0)
+                if (bill.Count!=1)
                 {
                     return 0;
                     //throw new Exception("不存在原合同：" + list[3]);可改用日志的方式输出
+                }
+                else
+                {
+                    return 0;
+                    //暂时处理为不能变更多张合同
                 }
             }
             
@@ -121,7 +126,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             {
                 //复制生成一张单据，修改单号，原单号，合同金额
                 var sql =
-                    "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate ,remark,filedate ,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup,@predeptgroup,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::date,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
+                    "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate ,remark,filedate ,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup,@predeptgroup,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
                 //var now = new TimeSpan(0, 0, 0, 0);
                 var now = new Timestamp();
                 var param = new DbParameter[]
@@ -172,7 +177,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             var createTimeSql = "select max(createtime) createtime from crm_sys_contract where syncflag=1";
             
             string sqlString = "SELECT field0004     deptid,\n" +
-                               "       field0005     userid,\n" + 
+                               "       om.code     userid,\n" + 
                                "       field0012     class1id,\n" + 
                                "       field0013     class2id,\n" + 
                                "       field0014     class3id,\n" + 
@@ -206,11 +211,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                //sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
 
             sqlString += "union all SELECT FIELD0003     deptid,\n" +
-                                   "       FIELD0002     userid,\n" + 
+                                   "       om.code     userid,\n" + 
                                    "       FIELD0006     class1id,\n" + 
                                    "       FIELD0007     class2id,\n" + 
                                    "       null     class3id,\n" + 
@@ -239,12 +244,12 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                //sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
             
             sqlString += "union all\n" +
                           " SELECT field0041     deptid,\n" + 
-                          "      field0040     userid,\n" + 
+                          "      om.code     userid,\n" + 
                           "      field0005     class1id,\n" + 
                           "      null     class2id,\n" + 
                           "      null     class3id,\n" + 
@@ -272,7 +277,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                //sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
             
             return  Query(sqlString);
@@ -285,7 +290,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             var createTimeSql = "select max(createtime) createtime from crm_sys_contract where syncflag=2";
            
             string sqlString = " SELECT fm.ID,\n" +
-                               "      field0001     userid,\n" + 
+                               "      om.code     userid,\n" + 
                                "      field0002     deptid,\n" + 
                                "      field0003     billno,\n" + 
                                "      field0020     billnochange,\n" + 
@@ -318,12 +323,12 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                //sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
 
             sqlString +=  " union all\n" +
                                    "SELECT fm.ID,\n" + 
-                                   "       field0001     userid,\n" + 
+                                   "       om.code     userid,\n" + 
                                    "       field0002     deptid,\n" + 
                                    "       FIELD0006     billno,\n" + 
                                    "       field0003     billnochange,\n" + 
@@ -359,11 +364,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                //sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
             sqlString += " union all\n" +
                          "SELECT fm.ID,\n" +
-                         "                                     field0040     userid,\n" +
+                         "                                     om.code     userid,\n" +
                          "                                     field0041     deptid,\n" +
                          "                                     field0047     billno,\n" +
                          "                                     field0001     billnochange,\n" +
@@ -397,7 +402,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             if (list[0]["createtime"]!=null)
             {
                 var a =list[0]["createtime"].ToString();
-                sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
+                //sqlString += "and fm.modify_date > to_date('"+a+"','yyyy-mm-dd hh24:mi:ss')";
             }
             
             return  Query(sqlString);

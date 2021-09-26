@@ -260,6 +260,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 					{
 						enperson = u.UserId;
 						deptId = u.DeptId.ToString();
+					}
+					else
+					{
+						//跳过
+						continue;
 					}            
 				}
 				Dictionary<string, object> dic = new Dictionary<string, object>();
@@ -322,6 +327,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 					{
 						enperson = u.UserId;
 						deptId = u.DeptId.ToString();
+					}
+					else
+					{
+						//跳过
+						continue;
 					}
 				}
 				Dictionary<string, object> dic = new Dictionary<string, object>();
