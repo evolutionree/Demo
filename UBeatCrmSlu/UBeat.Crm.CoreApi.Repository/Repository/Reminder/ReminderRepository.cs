@@ -572,7 +572,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Reminder
 				inner join crm_sys_account_userinfo_relate r on u.userid = r.userid
 				inner join crm_sys_account a on r.accountid = a.accountid
 				inner join crm_sys_department d on d.deptid = r.deptid
-				where u.recstatus = 1 and a.recstatus = 1 and d.recstatus = 1
+				where u.recstatus = 1 and a.recstatus = 1 and d.recstatus = 1 and r.recstatus = 1
 			)
 
 			select reg.*, 
