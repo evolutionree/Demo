@@ -86,6 +86,6 @@ namespace UBeat.Crm.CoreApi.Services.Models.Message
         /// 接收人id
         /// </summary>
         public Dictionary<MessageUserType, List<Receiver>> NewReceivers { set; get; } = new Dictionary<MessageUserType, List<Receiver>>();
-
+        public bool DynamicMessage { get; set; } = true;
     }
 }
