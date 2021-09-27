@@ -308,7 +308,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 }
                 //如果是动态消息，则先插入动态
                 //if (configData.MsgType == MessageType.DynamicMessage&& typeStatus != 1)
-                if (configData.MsgType == MessageType.DynamicMessage)
+                if (configData.MsgType == MessageType.DynamicMessage && (msgparam.DynamicMessage == true))
                 {
                     var dynamicInfo = new DynamicInsertInfo()
                     {

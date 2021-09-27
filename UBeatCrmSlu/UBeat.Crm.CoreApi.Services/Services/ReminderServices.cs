@@ -1445,7 +1445,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     ParamData = msgparam.Replace("####", recId.ToString()),
                     TemplateKeyValue = templateKeyValue,
                     Receivers = receiveDic,
-                    CopyUsers = null
+                    CopyUsers = null,
+                    DynamicMessage = false
                 };
 
                 MessageService.WriteMessageAsyn(postData, userId);
