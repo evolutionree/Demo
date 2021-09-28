@@ -118,7 +118,8 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         MultiChoose = 3,
         DateCtl = 4,
         Series = 5,
-		DateYear = 10,
+        DateYearMonth = 9,
+        DateYear = 10,
 	}
 
     /// <summary>
