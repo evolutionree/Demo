@@ -107,11 +107,6 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                     return 0;
                     //throw new Exception("不存在原合同：" + list[3]);可改用日志的方式输出
                 }
-                else
-                {
-                    return 0;
-                    //暂时处理为不能变更多张合同
-                }
             }
             
             //标记为作废

@@ -280,7 +280,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     msg.RelEntityId = Guid.Empty;
                     msg.BusinessId = bussinessId;
                     msg.ParamData = null;
-                    msg.FuncCode = "CustomerMerge";
+                    msg.FuncCode = "CustomerMerge"; 
 
                     msg.Receivers = MessageService.GetEntityMessageReceivers(newMembers, null);
 
@@ -644,7 +644,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     
                     if (t.Name!=temp.recname)
                     {
-                        OACustomerAdd(entityAddModel,temp, userinfo.UserId,(int)cusData["recmanager"]);
+                        //OACustomerAdd(entityAddModel,temp, userinfo.UserId,(int)cusData["recmanager"]);
                         continue;
                     }
 
@@ -734,11 +734,34 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     }
                     
                 }else {
-                    OACustomerAdd(entityAddModel,temp, userinfo.UserId,(int)cusData["recmanager"]);
+                    //OACustomerAdd(entityAddModel,temp, userinfo.UserId,(int)cusData["recmanager"]);
                 }
             }
 
             return new OutputResult<object>(err);
+        }
+        
+         public OutputResult<object> checkQccCustomer(string recname)
+        {
+
+            var appKey = configuration.GetSection("QiChaCha").Get<QiChaCha>().KEY;
+            var secret = configuration.GetSection("QiChaCha").Get<QiChaCha>().SECRET;
+                var model = new CompanyModel();
+                model.CompanyName = recname;
+                var url = string.Format(DockingAPIHelper.GETDETAILSBYNAME_API, appKey, model.CompanyName);
+                var result = QichachaProgram.httpGet(url, QichachaProgram.getHeaderVals(appKey, secret));
+                var jObject = JObject.Parse(result);
+                var t = new CompanyInfo();
+                
+                if (jObject["Status"].ToString() == "200")
+                {
+                    var data = JsonConvert.DeserializeObject<CompanyInfo>(jObject["Result"] == null
+                        ? string.Empty
+                        : jObject["Result"].ToString());
+                    t = data ?? new CompanyInfo();
+                }
+
+            return new OutputResult<object>(t);
         }
 
         public void OACustomerAdd(DynamicEntityAddModel entityAddModel, CustomerTemp temp,int userId,int recmanager)

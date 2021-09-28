@@ -107,5 +107,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             
             return result;
         }
+        
+        [HttpGet("checkqcccustomer")]
+        public OutputResult<object> checkQccCustomer(string name)
+        {
+            var result = _customerServices.checkQccCustomer(name);
+            return result;
+        }
     }
 }
