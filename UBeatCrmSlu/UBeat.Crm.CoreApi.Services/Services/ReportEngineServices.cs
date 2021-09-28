@@ -74,7 +74,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             case ReportFilter_CtrlType.Series:
                                 break;
                             case ReportFilter_CtrlType.DateCtl:
-							case ReportFilter_CtrlType.DateYear:
+                            case ReportFilter_CtrlType.DateYearMonth:
+                            case ReportFilter_CtrlType.DateYear:
 								CalcDateDefaultValueScheme(filterInfo, userdata.UserId);
                                 break;
                         }
