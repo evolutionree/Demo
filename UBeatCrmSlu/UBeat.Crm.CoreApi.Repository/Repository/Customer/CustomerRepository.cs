@@ -524,6 +524,19 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
 	        }
         }
 
+        public void updateUCode(string recname,string ucode, DbTransaction tran = null)
+        {
+	        var updateBillSql = "update crm_sys_customer set ucode=@ucode where recname=@recname and ucode is  null and businesscode  is not null ";
+	        var updateParam = new DbParameter[] {
+		        new NpgsqlParameter("ucode",ucode),
+		        new NpgsqlParameter("recname",recname)
+	        };
+	        ExecuteNonQuery(updateBillSql, updateParam, tran);
+	        
+	        updateBillSql = "update crm_sys_customer set ucode=@ucode where recname=@recname and ucode is  null and businesscode  is not null ";
+	        ExecuteNonQuery(updateBillSql, updateParam, tran);
+        }
+
         public List<CustomerTemp> GetCustomerTemp()
         {
 	        var items = new List<CustomerTemp>();
@@ -535,9 +548,49 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
 		        try
 		        {//->>'id' startdate::text||'至'||enddate::text as validity
 				        var executeSql = @"
-SELECT * FROM customer_temp WHERE recname not in (select recname  from crm_sys_customer)  
-";
+						SELECT * FROM customer_temp WHERE 
+                                  recname not in (select recname  from crm_sys_customer)  ";
 				        //and recname not in (select beforename  from crm_sys_customer where beforename is not null)
+			        // var executeSql = @"
+			        // SELECT * FROM customer_temp1 WHERE businesscenter  like '%智能网联汽车测试研发中心%'";
+
+			        
+			        var p = new DbParameter[]
+			        {
+				        new NpgsqlParameter()
+			        };
+			        items = pgHelper.ExecuteQuery<CustomerTemp>(tran, executeSql,null);
+			        tran.Commit();
+			        return items;
+		        }
+		        catch (Exception ex)
+		        {
+			        tran.Rollback();
+			        throw ex;
+		        }
+		        finally
+		        {
+			        conn.Close();
+			        conn.Dispose();
+		        }
+	        }
+        }
+        
+        public List<CustomerTemp> GetCustomerWithOutUCodeIsNull()
+        {
+	        var items = new List<CustomerTemp>();
+	        PostgreHelper pgHelper = new PostgreHelper();
+	        using (DbConnection conn = pgHelper.GetDbConnect())
+	        {
+		        conn.Open();
+		        var tran = conn.BeginTransaction();
+		        try
+		        {//->>'id' startdate::text||'至'||enddate::text as validity
+			        var executeSql = @"
+						SELECT recname FROM crm_sys_customer WHERE 
+						          ucode is  null and businesscode  is not null ";
+			        //recname not in (select recname  from crm_sys_customer)  ";
+			        //and recname not in (select beforename  from crm_sys_customer where beforename is not null)
 			        // var executeSql = @"
 			        // SELECT * FROM customer_temp1 WHERE businesscenter  like '%智能网联汽车测试研发中心%'";
 
@@ -584,7 +637,7 @@ SELECT * FROM customer_temp WHERE recname not in (select recname  from crm_sys_c
 			        };
 			        items = pgHelper.ExecuteQuery<UserInfo>(tran, executeSql,p);
 			        tran.Commit();
-			        return items;
+			        
 		        }
 		        catch (Exception ex)
 		        {
@@ -596,6 +649,7 @@ SELECT * FROM customer_temp WHERE recname not in (select recname  from crm_sys_c
 			        conn.Close();
 			        conn.Dispose();
 		        }
+		        return items;
 	        }
         }
 

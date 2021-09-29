@@ -114,5 +114,12 @@ namespace UBeat.Crm.CoreApi.Controllers
             var result = _customerServices.checkQccCustomer(name);
             return result;
         }
+        
+        [HttpGet("updatewhenucodeisnull")]
+        public OutputResult<object> UpdateWhenUCodeIsNull()
+        {
+            var result = _customerServices.UpdateWhenUCodeIsNull();
+            return result;
+        }
     }
 }

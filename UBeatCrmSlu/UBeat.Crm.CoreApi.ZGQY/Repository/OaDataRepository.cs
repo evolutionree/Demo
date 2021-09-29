@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
     {
         public int insertContract(DataRow list, int userId, DbTransaction tran = null)
         {
-            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
+            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id,recmanagercode) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8,@recmanagercode)";
             //var now = new TimeSpan(0, 0, 0, 0);
             var now = new Timestamp();
             
@@ -89,7 +89,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("contracttypeother",list[15].ToString()),
                 new NpgsqlParameter("class1id", list[2]),
                 new NpgsqlParameter("class2id", list[3]),
-                new NpgsqlParameter("class3id", list[4])
+                new NpgsqlParameter("class3id", list[4]),
+                new NpgsqlParameter("recmanagercode",list[1].ToString())
                 
             };
            return  ExecuteNonQuery(sql, param);
@@ -98,7 +99,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
         
         public int changeContract(DataRow list, int userId, DbTransaction tran = null)
         {
-            var dataSql = "select * from crm_sys_contract where contractid=@contractid";
+            var dataSql = "select * from crm_sys_contract where contractid=@contractid and contractstat!=2";
             List<Dictionary<string ,object >> bill=ExecuteQuery(dataSql, new DbParameter[] { new NpgsqlParameter("contractid",list[3])} );
             if (bill!=null)
             {
@@ -106,6 +107,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 {
                     return 0;
                     //throw new Exception("不存在原合同：" + list[3]);可改用日志的方式输出
+                }
+                
+                if (bill[0]["contractid"]==list[4]&&bill[0]["contractamount"]==list[6])
+                {
+                    return 0;
                 }
             }
             
@@ -121,7 +127,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             {
                 //复制生成一张单据，修改单号，原单号，合同金额
                 var sql =
-                    "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate ,remark,filedate ,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup,@predeptgroup,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8)";
+                    "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate ,remark,filedate ,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id,recmanagercode) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup,@predeptgroup,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8,@recmanagercode)";
                 //var now = new TimeSpan(0, 0, 0, 0);
                 var now = new Timestamp();
                 var param = new DbParameter[]
@@ -155,8 +161,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                     new NpgsqlParameter("contracttypeother", bill[0]["contracttypeother"]),
                     new NpgsqlParameter("class1id",bill[0]["class1id"]),
                     new NpgsqlParameter("class2id",bill[0]["class2id"]),
-                    new NpgsqlParameter("class3id", bill[0]["class3id"])
-
+                    new NpgsqlParameter("class3id", bill[0]["class3id"]),
+                    new NpgsqlParameter("recmanagercode", bill[0]["recmanagercode"])
                 };
                 
                 return ExecuteNonQuery(sql, param, tran);
@@ -228,9 +234,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                                    "       fm.modify_date\n" + 
                                    "  FROM OAADMIN.FORMMAIN_8740 fm\n" + 
                                    "  left join OAADMIN.ORG_UNIT ou\n" + 
-                                   "    on fm.FIELD0003 = ou.id\n" + 
+                                   "    on fm.FIELD0002 = ou.id\n" + 
                                    "  left join OAADMIN.org_member om\n" + 
-                                   "    on fm.FIELD0002 = om.id\n" + 
+                                   "    on fm.FIELD0003 = om.id\n" + 
                                    "  left join OAADMIN.ctp_enum_item it1\n" + 
                                    "    on fm.FIELD0006 = it1.id\n" + 
                                    "  left join OAADMIN.ctp_enum_item it2\n" + 

@@ -760,9 +760,40 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         : jObject["Result"].ToString());
                     t = data ?? new CompanyInfo();
                 }
-
+               
             return new OutputResult<object>(t);
         }
+         
+         public OutputResult<object> UpdateWhenUCodeIsNull()
+         {
+             var customerTemps = _customerRepository.GetCustomerWithOutUCodeIsNull();
+             foreach (var temp in customerTemps)
+             {
+                 var appKey = configuration.GetSection("QiChaCha").Get<QiChaCha>().KEY;
+                 var secret = configuration.GetSection("QiChaCha").Get<QiChaCha>().SECRET;
+                 var model = new CompanyModel();
+                 model.CompanyName = temp.recname;
+                 var url = string.Format(DockingAPIHelper.GETDETAILSBYNAME_API, appKey, model.CompanyName);
+                 var result = QichachaProgram.httpGet(url, QichachaProgram.getHeaderVals(appKey, secret));
+                 var jObject = JObject.Parse(result);
+                 var t = new CompanyInfo();
+                
+                 if (jObject["Status"].ToString() == "200")
+                 {
+                     var data = JsonConvert.DeserializeObject<CompanyInfo>(jObject["Result"] == null
+                         ? string.Empty
+                         : jObject["Result"].ToString());
+                     t = data ?? new CompanyInfo();
+                 }
+
+                 if (t.CreditCode !=null)
+                 {
+                     _customerRepository.updateUCode(temp.recname, t.CreditCode);
+                 }
+
+             }
+             return new OutputResult<object>("OK");
+         }
 
         public void OACustomerAdd(DynamicEntityAddModel entityAddModel, CustomerTemp temp,int userId,int recmanager)
         {

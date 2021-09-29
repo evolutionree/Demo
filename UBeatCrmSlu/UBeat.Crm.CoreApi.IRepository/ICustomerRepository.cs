@@ -68,8 +68,11 @@ namespace UBeat.Crm.CoreApi.IRepository
         List<CustFrameProtocolModel> GetCustFrameProtocol(Guid custid, int usernumber);
         
         List<CustomerTemp> GetCustomerTemp();
+        List<CustomerTemp> GetCustomerWithOutUCodeIsNull();
         List<CustomerTemp> GetCustomerId();
         
         List<UserInfo> getUserInfo(string username);
+
+        void updateUCode(string recname,string ucode, DbTransaction tran = null);
     }
 }
