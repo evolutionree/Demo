@@ -32,7 +32,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             {
                 recmanager=(int)recmanagerList[0]["userid"];
             }
-             else
+            
+            if(recmanager == 1)
             {
                 return 0;
             }
@@ -93,6 +94,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("recmanagercode",list[1].ToString())
                 
             };
+            
            return  ExecuteNonQuery(sql, param);
 
         }
