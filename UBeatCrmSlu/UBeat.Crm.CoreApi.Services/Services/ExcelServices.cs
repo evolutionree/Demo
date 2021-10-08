@@ -1005,6 +1005,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                         }
                                     }
                                     break;
+                                case FieldType.TimeStamp:
+                                    {
+                                        var values = mdata[item.FieldName];
+                                        DateTime dt;
+                                        if (values != null && DateTime.TryParse(values.ToString(), out dt))
+                                        {
+                                            mdata[item.FieldName] = dt.ToString("yyyy-MM-dd HH:mm:ss");
+                                        }
+                                    }
+                                    break;
                                 case FieldType.Image:
                                     {
                                         var values = mdata[item.FieldName];
@@ -1159,6 +1169,16 @@ namespace UBeat.Crm.CoreApi.Services.Services
                                                     if (values != null && DateTime.TryParse(values.ToString(), out dt))
                                                     {
                                                         mdata[thisfieldname] = dt.ToString("yyyy-MM-dd");
+                                                    }
+                                                }
+                                                break;
+                                            case FieldType.TimeStamp:
+                                                {
+                                                    var values = mdata[item.FieldName];
+                                                    DateTime dt;
+                                                    if (values != null && DateTime.TryParse(values.ToString(), out dt))
+                                                    {
+                                                        mdata[item.FieldName] = dt.ToString("yyyy-MM-dd HH:mm:ss");
                                                     }
                                                 }
                                                 break;
@@ -1387,7 +1407,8 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 if (o.FieldType == FieldType.Image
                 || o.FieldType == FieldType.Address
                 || o.FieldType == FieldType.reference
-                || o.FieldType == FieldType.TimeDate)
+                || o.FieldType == FieldType.TimeDate
+                || o.FieldType == FieldType.TimeStamp)
                 {
                     ret.Add(o);
                 }
@@ -1923,6 +1944,10 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 case DynamicProtocolControlType.TimeDate:
                     fieldTypetemp = FieldType.TimeDate;
+                    break;
+                case DynamicProtocolControlType.RecCreated://创建时间
+                case DynamicProtocolControlType.RecUpdated://更新时间
+                    fieldTypetemp = FieldType.TimeStamp;
                     break;
                 case DynamicProtocolControlType.TakePhoto:
                     fieldTypetemp = FieldType.Image;
