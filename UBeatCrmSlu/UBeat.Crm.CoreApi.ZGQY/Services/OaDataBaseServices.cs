@@ -85,9 +85,27 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
             }     
             return null;
         }
-        
+
         #endregion
 
+        #region 客户风险数据
+        public void InitCustomerRiskDataQrtz()
+        {
+            var userId = 1;
+            InitCustomerRiskData(userId);
+        }
 
+        public DataTable InitCustomerRiskData(int userid)
+        {
+            DataSet set = _oaDataRepository.getCustomerRiskFromOa();
+
+            DataTable table = set.Tables["ds"];
+            foreach (DataRow myRow in table.Rows)
+            {
+                _oaDataRepository.updateCustomerRisk(myRow, userid);
+            }
+            return null;
+        }
+        #endregion
     }
 }

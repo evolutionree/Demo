@@ -15,7 +15,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
         int insertContract(DataRow dataRow, int userId,DbTransaction tran = null);
         
         int changeContract(DataRow dataRow, int userId,DbTransaction tran = null);
-        
-
+        DataSet getCustomerRiskFromOa();
+        int updateCustomerRisk(DataRow list, int userId, DbTransaction tran = null);
     }
 }

@@ -411,5 +411,33 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             return  Query(sqlString);
 
         }
+
+        public DataSet getCustomerRiskFromOa()
+        {
+            string sqlString = @" 
+            SELECT A.field0001 customercode, A.field0002 customername, B.SHOWVALUE ishasrisk
+            FROM OAADMIN.formmain_8511 A
+            LEFT JOIN OAADMIN.ctp_enum_item B ON B.ID = A.field0071
+            where 1 = 1-- A.field0002 = '重庆溯联汽车零部件有限公司'
+            --AND A.field0074 = '-803485964791821589'
+            --   9204212548207594459  启用
+            -- - 803485964791821589 停用"; 
+
+            return Query(sqlString);
+        }
+
+        public int updateCustomerRisk(DataRow list, int userId, DbTransaction tran = null)
+        {
+            var sql = @"update crm_sys_customer set ishasrisk = @ishasrisk where customercode = @customercode;
+                        update crm_sys_custcommon set ishasrisk = @ishasrisk where customercode = @customercode;";
+         
+            var param = new DbParameter[] {
+                new NpgsqlParameter("customercode",list[0].ToString()),
+                new NpgsqlParameter("ishasrisk",list[1].ToString() == "是"?1:2)
+            };
+
+            return ExecuteNonQuery(sql, param);
+
+        }
     }
 }
