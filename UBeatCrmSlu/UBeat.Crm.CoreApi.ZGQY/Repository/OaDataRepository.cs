@@ -433,7 +433,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
          
             var param = new DbParameter[] {
                 new NpgsqlParameter("customercode",list[0].ToString()),
-                new NpgsqlParameter("ishasrisk",list[1].ToString() == "是"?1:2)
+                new NpgsqlParameter("ishasrisk",list[2].ToString() == "是"?1:2)
             };
 
             return ExecuteNonQuery(sql, param);
