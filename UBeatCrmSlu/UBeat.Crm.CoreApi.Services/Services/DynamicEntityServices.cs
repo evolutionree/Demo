@@ -3026,7 +3026,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<FunctionInfo> funcs = new List<FunctionInfo>();
             if (userData != null && userData.Vocations != null)
             {
-
                 foreach (var m in userData.Vocations)
                 {
                     funcs.AddRange(m.Functions.Where(a => a.EntityId == dynamicModel.EntityId && a.DeviceType == (int)DeviceClassic));
@@ -3035,12 +3034,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (info.FuncBtns == null) return new OutputResult<object>(funcBtns);
             foreach (var btn in info.FuncBtns)
             {
-                if (btn.ButtonCode == "AddEntityData" && (dynamicModel.RecIds == null || dynamicModel.RecIds.Count <= 0))
-                {
-                    funcBtns.Add(btn);
-                }
-
-                //if(btn.FunctionId==Guid.Empty|| funcs.Exists(m=>m.FuncId==btn.FunctionId))
                 if (!string.IsNullOrEmpty(btn.RoutePath) && funcs.Exists(m => m.RoutePath == btn.RoutePath && m.DeviceType == (int)DeviceClassic))
                 {
                     switch (btn.SelectType)
@@ -3049,7 +3042,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count == 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
+                                if (checkAccess)
                                     funcBtns.Add(btn);
                             }
                             break;
@@ -3057,18 +3050,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count >= 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
+                                if (checkAccess)
                                     funcBtns.Add(btn);
+                            }
+                            break;
+                        case DataSelectType.NoCheck:
+                            if (dynamicModel.RecIds == null || dynamicModel.RecIds.Count <= 0)
+                            { 
+                                funcBtns.Add(btn);
                             }
                             break;
                         default:
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count >= 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
+                                if (checkAccess)
                                     funcBtns.Add(btn);
                             }
-                            // funcBtns.Add(btn);
                             break;
                     }
 
