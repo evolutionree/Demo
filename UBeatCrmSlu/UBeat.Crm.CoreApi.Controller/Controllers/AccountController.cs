@@ -93,7 +93,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var isMobile = IsMobile();
             if (isMobile && header.DeviceId.Equals("UnKnown"))
             {
-                throw new Exception("Headers缺少DeviceId参数");
+                //throw new Exception("Headers缺少DeviceId参数");
             }
             long requestTimeStamp = 0;
             if (loginModel.EncryptType == 1) //RSA加密算法
@@ -708,7 +708,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var isMobile = IsMobile();
             if (isMobile && header.DeviceId.Equals("UnKnown"))
             {
-                throw new Exception("Headers缺少DeviceId参数");
+                //throw new Exception("Headers缺少DeviceId参数");
             }
             string key = "authtoken:" + loginModel.AccessToken;
             if (!CacheService.Repository.Exists(key))

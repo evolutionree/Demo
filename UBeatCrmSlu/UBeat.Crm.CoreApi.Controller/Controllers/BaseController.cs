@@ -417,7 +417,7 @@ namespace UBeat.Crm.CoreApi.Controllers
                     //手机端必须传DeviceId
                     if (header.DeviceId.Equals("UnKnown"))
                     {
-                        throw new Exception("Headers缺少DeviceId参数");
+                        //throw new Exception("Headers缺少DeviceId参数");
                     }
                 }
                 else
@@ -658,7 +658,7 @@ namespace UBeat.Crm.CoreApi.Controllers
         protected bool IsMobile(AnalyseHeader header = null)
 		{
             if(header == null)
-             header = GetAnalyseHeader();
+                header = GetAnalyseHeader();
             var isMobile = header.Device.ToLower().Contains("android")
                            || header.Device.ToLower().Contains("ios")
                            || header.Device.ToLower().Contains("h5");
