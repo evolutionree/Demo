@@ -75,7 +75,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 					item.contract_code_json = JsonHelper.ToJson(new DataSourceInfo() { id = contract.RecId, name = contract.RecName });
 					recmanager = contract.Recmanager;
 				}
-				
+				else
+				{
+					continue;
+				}
+
 				Dictionary<string, object> dic = new Dictionary<string, object>();
 				dic.Add("projectcode", item.project_code);
 				dic.Add("projectname", item.project_name);
@@ -132,6 +136,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 					item.contract_code_json = JsonHelper.ToJson(new DataSourceInfo() { id = contract.RecId, name = contract.RecName });
 					recmanager = contract.Recmanager;
 				}
+				else
+				{
+					continue;
+				}
 				var invoicingperson = userId;
 				var deptId = "7f74192d-b937-403f-ac2a-8be34714278b";
 				if (!string.IsNullOrEmpty(item.applicant_num))
@@ -142,6 +150,14 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 						invoicingperson = u.UserId;
 						deptId = u.DeptId.ToString();
 					}
+					else
+					{
+						continue;
+					}
+				}
+				else
+				{
+					continue;
 				}
 				Dictionary<string, object> dic = new Dictionary<string, object>();
 				dic.Add("invoicingcode", item.paf_num);
@@ -202,6 +218,10 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 					item.contract_code_json = JsonHelper.ToJson(new DataSourceInfo() { id = contract.RecId, name = contract.RecName });
 					recmanager = contract.Recmanager;
 				}
+				else
+				{
+					continue;
+				}
 				Dictionary<string, object> dic = new Dictionary<string, object>();
 				dic.Add("recname", item.bill_code);
 				dic.Add("paidtime", item.receivable_date);
@@ -260,7 +280,15 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 					{
 						enperson = u.UserId;
 						deptId = u.DeptId.ToString();
-					}            
+					}
+					else
+					{
+						continue;
+					}
+				}
+				else
+				{
+					continue;
 				}
 				Dictionary<string, object> dic = new Dictionary<string, object>();
 				dic.Add("encode", item.number);
@@ -323,6 +351,14 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 						enperson = u.UserId;
 						deptId = u.DeptId.ToString();
 					}
+					else
+					{
+						continue;
+					}
+				}
+				else
+				{
+					continue;
 				}
 				Dictionary<string, object> dic = new Dictionary<string, object>();
 				dic.Add("travelcode", item.number);
