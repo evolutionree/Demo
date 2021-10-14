@@ -78,7 +78,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("contracttype",list[13].ToString()),
                 new NpgsqlParameter("flowertime",null),
                 new NpgsqlParameter("contractamount",list[9]),
-                new NpgsqlParameter("signdate",dept),
+                new NpgsqlParameter("signdate",list[8]),
                 new NpgsqlParameter("remark",null),
                 new NpgsqlParameter("filedate",null),
                 new NpgsqlParameter("otherinfo",null),
@@ -87,7 +87,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("flowstatus",1),
                 new NpgsqlParameter("opportunity",null),//TODO OA数据库没有提供商机字段
                 new NpgsqlParameter("commonid",customerStr),
-                new NpgsqlParameter("signdept",list[11].ToString()),
+                new NpgsqlParameter("signdept",dept),
                 new NpgsqlParameter("contracttypemin",list[14].ToString()),
                 new NpgsqlParameter("syncflag",1),  //同步类型 1：同步；2：变更
                 new NpgsqlParameter("createtime", list[16].ToString()),
