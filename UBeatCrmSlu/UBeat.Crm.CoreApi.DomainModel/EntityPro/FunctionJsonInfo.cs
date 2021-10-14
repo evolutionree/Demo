@@ -120,7 +120,11 @@ namespace UBeat.Crm.CoreApi.DomainModel.EntityPro
         /// <summary>
         /// 多选
         /// </summary>
-        Multiple = 2
+        Multiple = 2,
+        /// <summary>
+        /// 不勾选
+        /// </summary>
+        NoCheck = -1
     }
     #endregion
 
