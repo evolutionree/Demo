@@ -25,15 +25,19 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             var now = new Timestamp();
             
             var recmanager = 1;
-            var recmanagerSql = "select userid from crm_sys_userinfo where workcode=@param1";
+            var dept = "";
+            var recmanagerSql =@" select u.userid, ur.deptid from crm_sys_userinfo u
+								left join crm_sys_account_userinfo_relate ur on u.userid = ur.userid
+								where u.recstatus = 1 and ur.recstatus = 1 and u.workcode = @param1 limit 1";
             List<Dictionary<string ,object >> recmanagerList=ExecuteQuery(recmanagerSql, new DbParameter[] { new NpgsqlParameter("param1",list[1].ToString())} );
             
             if (recmanagerList!=null&&recmanagerList.Count>0)
             {
+                dept=recmanagerList[0]["deptid"].ToString();
                 recmanager=(int)recmanagerList[0]["userid"];
             }
             
-            if(recmanager == 1)
+            if(recmanager == 1||dept=="")
             {
                 return 0;
             }
@@ -74,7 +78,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("contracttype",list[13].ToString()),
                 new NpgsqlParameter("flowertime",null),
                 new NpgsqlParameter("contractamount",list[9]),
-                new NpgsqlParameter("signdate",list[8]),
+                new NpgsqlParameter("signdate",dept),
                 new NpgsqlParameter("remark",null),
                 new NpgsqlParameter("filedate",null),
                 new NpgsqlParameter("otherinfo",null),
