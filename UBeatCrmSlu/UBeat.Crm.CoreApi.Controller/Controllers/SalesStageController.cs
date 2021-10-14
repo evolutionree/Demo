@@ -189,7 +189,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (entityModel == null) return ResponseError<object>("参数格式错误");
             
             _salesStageServices.header = GetAnalyseHeader();
-            return _salesStageServices.CheckAllowPushSalesStage(entityModel, UserId);
+            var isMobile = IsMobile();
+            return _salesStageServices.CheckAllowPushSalesStage(entityModel, UserId, isMobile);
         }
 
         [HttpPost]

@@ -533,8 +533,15 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
             }
             return null;
-        } 
+        }
         #endregion
 
+        public bool IsMobile(AnalyseHeader header)
+        {
+            var isMobile = header.Device.ToLower().Contains("android")
+                           || header.Device.ToLower().Contains("ios")
+                           || header.Device.ToLower().Contains("h5");
+            return isMobile;
+        }
     }
 }

@@ -90,7 +90,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (loginModel == null) return ResponseError<object>("参数格式错误");
 
             var header = GetAnalyseHeader();
-            var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile();
             if (isMobile && header.DeviceId.Equals("UnKnown"))
             {
                 throw new Exception("Headers缺少DeviceId参数");
@@ -348,7 +348,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var header = GetAnalyseHeader();
             //delete user's Token in redis 
             bool result = true;
-            var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile();
 
             if (isMobile)
             {
@@ -705,7 +705,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 
 
             var header = GetAnalyseHeader();
-            var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile();
             if (isMobile && header.DeviceId.Equals("UnKnown"))
             {
                 throw new Exception("Headers缺少DeviceId参数");
