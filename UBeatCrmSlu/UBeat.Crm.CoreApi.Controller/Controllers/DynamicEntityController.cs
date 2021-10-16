@@ -227,7 +227,8 @@ namespace UBeat.Crm.CoreApi.Controllers
         public OutputResult<object> GetFunctionBtns([FromBody] FunctionBtnsModel dynamicModel = null)
         {
             if (dynamicModel == null) return ResponseError<object>("参数格式错误");
-            return _dynamicEntityServices.GetFunctionBtns(dynamicModel, UserId);
+            var isMobile = IsMobile();
+            return _dynamicEntityServices.GetFunctionBtns(dynamicModel, UserId, isMobile);
         }
 
 

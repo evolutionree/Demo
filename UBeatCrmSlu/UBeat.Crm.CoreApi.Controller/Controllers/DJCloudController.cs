@@ -28,8 +28,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (callBodyModel == null) return ResponseError<object>("参数格式错误");
 
             AnalyseHeader header = GetAnalyseHeader();
-            var isMobile = header.Device.ToLower().Contains("android")
-               || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile();
             return _djCloudServices.Call(callBodyModel, UserId, isMobile);
         }
 

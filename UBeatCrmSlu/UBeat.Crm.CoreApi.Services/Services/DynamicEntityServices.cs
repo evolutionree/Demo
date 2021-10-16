@@ -126,9 +126,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>("该实体分类没有配置相应字段");
             }
 
-            var isMobile = header.Device.ToLower().Contains("android")
-                           || header.Device.ToLower().Contains("ios");
-
+            var isMobile = IsMobile(header);
             if (entityInfo.ModelType == EntityModelType.Dynamic && dynamicModel.FieldData.ContainsKey(entityInfo.RelFieldName))
             {
                 if (!dynamicModel.FieldData.ContainsKey("recrelateid"))
@@ -1061,8 +1059,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         public OutputResult<object> AddList(DynamicEntityAddListModel dynamicModel, AnalyseHeader header, int userNumber)
         {
 
-            var isMobile = header.Device.ToLower().Contains("android")
-                           || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile(header);
             var dataList = new List<DynamicEntityAddListMapper>();
             foreach (var temdata in dynamicModel.EntityFields)
             {
@@ -1437,9 +1434,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                 return ShowError<object>("该实体分类没有配置相应字段");
             }
 
-            var isMobile = header.Device.ToLower().Contains("android")
-                  || header.Device.ToLower().Contains("ios");
-
+            var isMobile = IsMobile(header);
             //验证字段
             var validResults = DynamicProtocolHelper.ValidData(fields, dynamicModel.FieldData, DynamicProtocolOperateType.Edit, isMobile);
 
@@ -3015,7 +3010,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
         /// <param name="dynamicModel"></param>
         /// <param name="userNumber"></param>
         /// <returns></returns>
-        public OutputResult<object> GetFunctionBtns(FunctionBtnsModel dynamicModel, int userNumber)
+        public OutputResult<object> GetFunctionBtns(FunctionBtnsModel dynamicModel, int userNumber, bool isMobile = false)
         {
             List<FunctionBtnInfo> funcBtns = new List<FunctionBtnInfo>();
             var info = _entityProRepository.GetFunctionJsonInfo(dynamicModel.EntityId);
@@ -3026,7 +3021,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
             List<FunctionInfo> funcs = new List<FunctionInfo>();
             if (userData != null && userData.Vocations != null)
             {
-
                 foreach (var m in userData.Vocations)
                 {
                     funcs.AddRange(m.Functions.Where(a => a.EntityId == dynamicModel.EntityId && a.DeviceType == (int)DeviceClassic));
@@ -3035,21 +3029,19 @@ namespace UBeat.Crm.CoreApi.Services.Services
             if (info.FuncBtns == null) return new OutputResult<object>(funcBtns);
             foreach (var btn in info.FuncBtns)
             {
-                if (btn.ButtonCode == "AddEntityData" && (dynamicModel.RecIds == null || dynamicModel.RecIds.Count <= 0))
-                {
-                    funcBtns.Add(btn);
-                }
-
-                //if(btn.FunctionId==Guid.Empty|| funcs.Exists(m=>m.FuncId==btn.FunctionId))
                 if (!string.IsNullOrEmpty(btn.RoutePath) && funcs.Exists(m => m.RoutePath == btn.RoutePath && m.DeviceType == (int)DeviceClassic))
                 {
+                    if(isMobile == true && btn.ButtonCode == "DataTransfer")
+					{
+                        btn.SelectType = DataSelectType.NoCheck;
+					}
                     switch (btn.SelectType)
                     {
                         case DataSelectType.Single:
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count == 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
+                                if (checkAccess)
                                     funcBtns.Add(btn);
                             }
                             break;
@@ -3057,18 +3049,23 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count >= 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
+                                if (checkAccess)
                                     funcBtns.Add(btn);
+                            }
+                            break;
+                        case DataSelectType.NoCheck:
+                            if (dynamicModel.RecIds == null || dynamicModel.RecIds.Count <= 0)
+                            { 
+                                funcBtns.Add(btn);
                             }
                             break;
                         default:
                             if (dynamicModel.RecIds != null && dynamicModel.RecIds.Count >= 1)
                             {
                                 var checkAccess = userData.HasDataAccess(null, btn.RoutePath, dynamicModel.EntityId, DeviceClassic, dynamicModel.RecIds);
-                                if (checkAccess&&btn.ButtonCode!="AddEntityData")
+                                if (checkAccess)
                                     funcBtns.Add(btn);
                             }
-                            // funcBtns.Add(btn);
                             break;
                     }
 

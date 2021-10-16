@@ -364,8 +364,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                         return ShowError<object>("该实体分类没有配置相应字段");
                     }
 
-                    var isMobile = header.Device.ToLower().Contains("android")
-                          || header.Device.ToLower().Contains("ios");
+                    var isMobile = IsMobile(header);
                     foreach (var tmp in dynamicEntityDataFieldMappers)
                     {
                         tmp.IsRequire = true;

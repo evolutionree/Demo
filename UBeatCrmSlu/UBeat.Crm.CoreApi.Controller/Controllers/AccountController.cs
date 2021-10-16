@@ -90,8 +90,8 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (loginModel == null) return ResponseError<object>("参数格式错误");
 
             var header = GetAnalyseHeader();
-            var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");
-            if (isMobile && header.DeviceId.Equals("UnKnown"))
+            var isMobileDevice = IsMobileDevice();
+            if (isMobileDevice && header.DeviceId.Equals("UnKnown"))
             {
                 throw new Exception("Headers缺少DeviceId参数");
             }
@@ -111,7 +111,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             WriteOperateLog("登录系统", loginModel, userInfo.UserId);
 
             //设备绑定
-            if (isMobile)
+            if (isMobileDevice)
             {
                 //var hadBinded = _accountServices.checkHadBinded(loginModel, userInfo.UserId);
                 //if (!(hadBinded.DataBody is bool))
@@ -137,7 +137,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             }
 
             //update user's Token in redis 
-            if (isMobile)
+            if (isMobileDevice)
             {
 
                 SetLoginSession(MobileLoginSessionKey, token, header.DeviceId, expiration - DateTime.UtcNow, requestTimeStamp, header.SysMark, header.Device, false);
@@ -348,7 +348,7 @@ namespace UBeat.Crm.CoreApi.Controllers
             var header = GetAnalyseHeader();
             //delete user's Token in redis 
             bool result = true;
-            var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile();
 
             if (isMobile)
             {
@@ -705,7 +705,7 @@ namespace UBeat.Crm.CoreApi.Controllers
 
 
             var header = GetAnalyseHeader();
-            var isMobile = header.Device.ToLower().Contains("android") || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile();
             if (isMobile && header.DeviceId.Equals("UnKnown"))
             {
                 throw new Exception("Headers缺少DeviceId参数");

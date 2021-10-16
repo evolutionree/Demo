@@ -198,8 +198,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
 
             //判断登录授权
-            var isMobile = header.Device.ToLower().Contains("android")
-                         || header.Device.ToLower().Contains("ios");
+            var isMobile = IsMobile(header);
             var isWeb = header.Device.ToLower().Contains("web");
 
             var isAdmin = userInfo.AccessType == "10" ? true : false;
