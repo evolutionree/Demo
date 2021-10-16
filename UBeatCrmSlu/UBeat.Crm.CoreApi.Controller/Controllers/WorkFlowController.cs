@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using UBeat.Crm.CoreApi.Services.Models;
 using UBeat.Crm.CoreApi.Services.Models.WorkFlow;
 using UBeat.Crm.CoreApi.Services.Services;
@@ -38,19 +39,26 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("addcase")]
         public OutputResult<object> AddCase([FromBody] WorkFlowCaseAddModel caseModel = null)
         {
-            if (caseModel == null || caseModel.EntityModel == null) return ResponseError<object>("参数格式错误");
+            if (caseModel == null) return ResponseError<object>("参数格式错误");
             Guid g;
             if (!string.IsNullOrEmpty(caseModel.CacheId) && !Guid.TryParse(caseModel.CacheId, out g))
                 return ResponseError<object>("CacheId格式错误");
-            if (caseModel.EntityModel.TypeId != Guid.Empty)
+
+			Dictionary<string, object> entity = null;
+			if (caseModel.CaseModel != null && caseModel.CaseModel.EntityId != Guid.Empty)
+			{
+				entity = _dynamicEntityServices.getEntityBaseInfoByEntityId(caseModel.CaseModel.EntityId);
+			}
+			if (caseModel.EntityModel != null && caseModel.EntityModel.TypeId != Guid.Empty)
             {
-                var entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(caseModel.EntityModel.TypeId);
-                if (entity != null)
-                {
-                    WriteOperateLog("发起" + entity["entityname"] + "审批数据", caseModel);
-                }
+                entity = _dynamicEntityServices.getEntityBaseInfoByTypeId(caseModel.EntityModel.TypeId);
             }
-            return _workFlowServices.AddWorkflowCase(caseModel, LoginUser);
+			if (entity != null && entity.ContainsKey("entityname"))
+			{
+				WriteOperateLog("发起" + entity["entityname"] + "审批数据", caseModel);
+			}
+
+			return _workFlowServices.AddWorkflowCase(caseModel, LoginUser);
         }
 
         /// <summary>
