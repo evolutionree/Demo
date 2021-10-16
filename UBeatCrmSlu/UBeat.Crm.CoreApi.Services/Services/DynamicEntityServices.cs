@@ -2360,7 +2360,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                             }
                             break;
                         case EntityFieldControlType.Department://17部门
-                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_dept_multi(outersql.{0}::text)  collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
+                            curItemOrderBySQL = string.Format("crm_func_entity_protocol_format_dept_multi(e.{0}::text)  collate \"zh_CN\" {1}", orderFieldInfo.FieldName, orderType);
                             //outerSelectClause = string.Format(@"{0},crm_func_entity_protocol_format_dept_multi(outersql.{1}::text) as {1}_name", outerSelectClause, fieldInfo.FieldName);
                             break;
                         case EntityFieldControlType.EmailAddr://11email地址
