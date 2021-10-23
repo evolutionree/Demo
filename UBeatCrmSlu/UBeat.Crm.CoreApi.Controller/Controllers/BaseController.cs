@@ -406,11 +406,11 @@ namespace UBeat.Crm.CoreApi.Controllers
                     throw new Exception("Headers缺少Device参数");
                 }
                 var requestToken = requestAuthorization.Replace("Bearer", "").Trim();
-                var isMobile = IsMobile();
+                var isMobileDevice = IsMobileDevice();
                 var deviceId = header.DeviceId;
                 LoginSessionModel loginSession = null;
                 string sessionKey = string.Empty;
-                if (isMobile)
+                if (isMobileDevice)
                 {
                     sessionKey = MobileLoginSessionKey;
                     loginSession = CacheService.Repository.Get<LoginSessionModel>(MobileLoginSessionKey);
@@ -658,11 +658,28 @@ namespace UBeat.Crm.CoreApi.Controllers
         protected bool IsMobile(AnalyseHeader header = null)
 		{
             if(header == null)
-             header = GetAnalyseHeader();
+                header = GetAnalyseHeader();
             var isMobile = header.Device.ToLower().Contains("android")
                            || header.Device.ToLower().Contains("ios")
                            || header.Device.ToLower().Contains("h5");
             return isMobile;
+        }
+
+        protected bool IsMobileDevice(AnalyseHeader header = null)
+        {
+            if (header == null)
+                header = GetAnalyseHeader();
+            var isMobile = header.Device.ToLower().Contains("android")
+                           || header.Device.ToLower().Contains("ios");
+            return isMobile;
+        }
+
+        protected bool IsH5(AnalyseHeader header = null)
+        {
+            if (header == null)
+                header = GetAnalyseHeader();
+            var isH5 = header.Device.ToLower().Contains("h5");
+            return isH5;
         }
     }
 }
