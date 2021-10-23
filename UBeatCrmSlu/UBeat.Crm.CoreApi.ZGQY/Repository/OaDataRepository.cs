@@ -20,7 +20,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
     {
         public int insertContract(DataRow list, int userId, DbTransaction tran = null)
         {
-            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id,recmanagercode) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8,@recmanagercode)";
+            var sql = "insert into crm_sys_contract (recname,reccode,rectype,recstatus,reccreator,recupdator,recmanager,reccreated,recupdated,customer,filestatus,contractid,contracttype,flowertime,contractamount,signdate,remark,filedate,otherinfo,deptgroup,predeptgroup,flowstatus,opportunity,commonid,signdept,contracttypemin,syncflag,createtime,contracttypeother,class1id,class2id,class3id,recmanagercode) values (@recname,@reccode,@rectype,@recstatus,@reccreator,@recupdator,@recmanager,now(),now(),@customer::jsonb,@filestatus,@contractid,@contracttype,@flowertime,@contractamount::numeric,@signdate::date ,@remark,@filedate::date ,@otherinfo,@deptgroup::uuid,@predeptgroup::uuid,@flowstatus,@opportunity::jsonb,@commonid::jsonb,@signdept::uuid,@contracttypemin,@syncflag,@createtime::timestamp,@contracttypeother,@class1id::int8,@class2id::int8,@class3id::int8,@recmanagercode)";
             //var now = new TimeSpan(0, 0, 0, 0);
             var now = new Timestamp();
             
@@ -50,6 +50,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 return 0;
             }
             
+            //客户基础资料字段
             var customerStr = "";
             var customerSql = "select recid from crm_sys_custcommon  where recname=@param1";
             List<Dictionary<string ,object >> customerList=ExecuteQuery(customerSql, new DbParameter[] { new NpgsqlParameter("param1",list[7].ToString())} );
@@ -60,6 +61,36 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
             else
             {
                 customerStr = null;
+            }
+            
+            //客户管理字段
+            /** 合同与客户匹配参考sql
+             * select c1.recid,c1.businesscenter,cusname,t1.contractname from (select commonid::jsonb->>'name' as cusname, recmanager,recname as contractname from crm_sys_contract) t1 
+                left join crm_sys_userinfo u1 on u1.userid=t1.recmanager 
+                left join crm_sys_account_userinfo_relate u2 on u1.userid=u2.userid
+                left join (
+                select dic.dataid,tp.descendant from crm_sys_department_treepaths tp left join crm_sys_department dp on dp.deptid=tp.ancestor left join (
+                select dataval,dataid from crm_sys_dictionary where dictypeid in (
+                select dictypeid from crm_sys_dictionary_type where dictypename='所属业务中心' and  recstatus=1 limit 1) ) dic on dp.deptname =dic.dataval where dic.dataid is not null
+                ) t2 on t2.descendant=u2.deptid
+                left join crm_sys_customer c1 on c1.recname=t1.cusname and businesscenter=t2.dataid where recid is not null  
+             */
+            var customer2Str = "";
+            var customer2Sql =
+                @"select recid from crm_sys_customer where businesscenter= (
+                    select dic.dataid from crm_sys_department_treepaths tp left join crm_sys_department dp on dp.deptid=tp.ancestor left join (
+                    select dataval,dataid from crm_sys_dictionary where dictypeid in (
+                    select dictypeid from crm_sys_dictionary_type where dictypename='所属业务中心' and  recstatus=1 limit 1) ) dic on dp.deptname =dic.dataval 
+                    where dic.dataid is not null and  tp.descendant::text=@param1
+                    )  and recname=@param2";
+            List<Dictionary<string ,object >> customer2List=ExecuteQuery(customer2Sql, new DbParameter[] { new NpgsqlParameter("param1",dept),new NpgsqlParameter("param2",list[7].ToString())} );
+            if (customer2List!=null&&customer2List.Count>0)
+            {
+                customer2Str = "{\"name\": \"" + list[7] + "\" ,\"id\": \"" + customer2List[0]["recid"] + "\"}";
+            }
+            else
+            {
+                customer2Str = null;
             }
 
             var today = DateTime.Today.ToString("yyyyMMdd");
@@ -72,13 +103,13 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("reccreator",userId),
                 new NpgsqlParameter("recupdator",userId),
                 new NpgsqlParameter("recmanager",recmanager),
-                new NpgsqlParameter("customer",null),
+                new NpgsqlParameter("customer",customer2Str),
                 new NpgsqlParameter("filestatus",null),
                 new NpgsqlParameter("contractid",list[5].ToString()),
                 new NpgsqlParameter("contracttype",list[13].ToString()),
                 new NpgsqlParameter("flowertime",null),
                 new NpgsqlParameter("contractamount",list[9]),
-                new NpgsqlParameter("signdate",dept),
+                new NpgsqlParameter("signdate",list[8]),
                 new NpgsqlParameter("remark",null),
                 new NpgsqlParameter("filedate",null),
                 new NpgsqlParameter("otherinfo",null),
@@ -87,7 +118,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
                 new NpgsqlParameter("flowstatus",1),
                 new NpgsqlParameter("opportunity",null),//TODO OA数据库没有提供商机字段
                 new NpgsqlParameter("commonid",customerStr),
-                new NpgsqlParameter("signdept",list[11].ToString()),
+                new NpgsqlParameter("signdept",dept),
                 new NpgsqlParameter("contracttypemin",list[14].ToString()),
                 new NpgsqlParameter("syncflag",1),  //同步类型 1：同步；2：变更
                 new NpgsqlParameter("createtime", list[16].ToString()),
