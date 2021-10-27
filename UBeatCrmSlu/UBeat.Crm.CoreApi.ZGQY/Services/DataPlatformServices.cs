@@ -24,8 +24,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 		{
 			var init = false;
 			//InitProjectData(init);
-			//InitBillData(init);
-			//InitPayData(init);
+			InitBillData(init);
+			InitPayData(init);
 			InitZdData(init);
 			InitClData(init);
 		}
@@ -33,11 +33,11 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 		public void InitData()
 		{
 			var init = true;
-			InitProjectData(init);
+			//InitProjectData(init);
 			InitBillData(init);
 			InitPayData(init);
-			InitZdData(init);
-			InitClData(init);
+			//InitZdData(init);
+			//InitClData(init);
 		}
 
 		#region 同步项目
