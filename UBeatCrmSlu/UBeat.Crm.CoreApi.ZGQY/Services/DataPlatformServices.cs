@@ -24,8 +24,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 		{
 			var init = false;
 			InitProjectData(init);
-			//InitBillData(init);
-			//InitPayData(init);
+			InitBillData(init);
+			InitPayData(init);
 			InitZdData(init);
 			InitClData(init);
 		}
@@ -34,8 +34,8 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 		{
 			var init = true;
 			InitProjectData(init);
-			//InitBillData(init);
-			//InitPayData(init);
+			InitBillData(init);
+			InitPayData(init);
 			//InitZdData(init);
 			//InitClData(init);
 		}
