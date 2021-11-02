@@ -23,9 +23,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 		public void InitDataQrtz()
 		{
 			var init = false;
-			//InitProjectData(init);
-			InitBillData(init);
-			InitPayData(init);
+			InitProjectData(init);
+			//InitBillData(init);
+			//InitPayData(init);
 			InitZdData(init);
 			InitClData(init);
 		}
@@ -33,9 +33,9 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 		public void InitData()
 		{
 			var init = true;
-			//InitProjectData(init);
-			InitBillData(init);
-			InitPayData(init);
+			InitProjectData(init);
+			//InitBillData(init);
+			//InitPayData(init);
 			//InitZdData(init);
 			//InitClData(init);
 		}
