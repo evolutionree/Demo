@@ -133,7 +133,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
 				var recmanager = userId;
 				if (contract != null)
 				{
-					item.contract_code_json = JsonHelper.ToJson(new DataSourceInfo() { id = contract.RecId, name = contract.RecName });
+					item.contract_code_json = JsonHelper.ToJson(new DataSourceInfo() { id = contract.RecId, name = item.contract_code });
 					recmanager = contract.Recmanager;
 				}
 				else
