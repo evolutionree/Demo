@@ -101,16 +101,29 @@ namespace UBeat.Crm.CoreApi.Services.Services
             {
                 var assemblyName = actionExtModel.assemblyname;
                 var classTypeName = actionExtModel.classtypename;
-                var mehtodName = actionExtModel.funcname;
-                var assembly = Assembly.Load(new AssemblyName(assemblyName));
-                Type type = assembly.GetType(classTypeName);//用类型的命名空间和名称获得类型
-                Object obj = Activator.CreateInstance(type);//利用无参数实例初始化类型
-                MethodInfo mi = type.GetMethod(mehtodName);//通过方法名称获得方法
-                var result = mi.Invoke(obj, new object[] { transaction, basicParamData, preActionResult, actionResult, userData.UserId });//根据参数直线方法,返回值就是原方法的返回值
+				var mehtodName = actionExtModel.funcname;
+				var assembly = Assembly.Load(new AssemblyName(assemblyName));
+
+				BaseServices obj = (BaseServices)dynamicCreateService(classTypeName, true);
+				Type type = obj.GetType();
+				MethodInfo mi = type.GetMethod(mehtodName);//通过方法名称获得方法
+				var result = mi.Invoke(obj, new object[] { transaction, basicParamData, preActionResult, actionResult, userData.UserId });//根据参数直线方法,返回值就是原方法的返回值
+
                 return new OutputResult<object>(result);
             }
         }
 
-
+		protected object dynamicCreateService(string serviceName, bool isInit)
+		{
+			try
+			{
+				BaseServices service = (BaseServices)ServiceLocator.Current.GetInstanceWithName(serviceName); //(BaseServices)ServiceProvider.GetService(Type.GetType(serviceName));
+				return service;
+			}
+            catch (Exception ex)
+            {
+            }
+            return null;
+        }
     }
 }
