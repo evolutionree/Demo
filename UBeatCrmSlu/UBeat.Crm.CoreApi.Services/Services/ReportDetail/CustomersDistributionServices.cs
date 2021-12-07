@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Data.Common;
 using UBeat.Crm.CoreApi.IRepository;
+using UBeat.Crm.CoreApi.Services.Utility;
+using UBeat.Crm.CoreApi.Services.Models;
 
 namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
 {
@@ -10,7 +12,8 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
     {
         private IDynamicEntityRepository _dynamicEntityRepository;
         private IReportEngineRepository _reportEngineRepository;
-        public CustomersDistributionServices(IDynamicEntityRepository dynamicEntityRepository,
+		private readonly string customer_entityid = "f9db9d79-e94b-4678-a5cc-aa6e281c1246";
+		public CustomersDistributionServices(IDynamicEntityRepository dynamicEntityRepository,
                 IReportEngineRepository reportEngineRepository) {
             _dynamicEntityRepository = dynamicEntityRepository;
             _reportEngineRepository = reportEngineRepository;
@@ -38,16 +41,38 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             string p_custscale = "";
             string p_custlevel = "";
             string p_custindust = "";
-            string RuleSQL = " 1=1 ";
+			string RoleSQL = " ";
             string RegionSQL = "";
             string CustomerSearchSQL = "";
             string p_startdate = "";
             string p_enddate = "";
-            Dictionary<string, List<Dictionary<string, object>>> superdata = new Dictionary<string, List<Dictionary<string, object>>>();
+			string p_department = "";
+			string PersonSQL = "";
+			Dictionary<string, List<Dictionary<string, object>>> superdata = new Dictionary<string, List<Dictionary<string, object>>>();
             List<Dictionary<string, object>> data = new List<Dictionary<string, object>>();
-            #endregion
-            #region 处理参数
-            if (param == null) throw (new Exception("参数异常"));
+			#endregion
+
+			#region 角色权限
+			Guid userDeptInfo = Guid.Empty;
+			UserData userData = GetUserData(userNum, false);
+			if (userData != null && userData.AccountUserInfo != null && userData.AccountUserInfo.DepartmentId != null)
+			{
+				userDeptInfo = userData.AccountUserInfo.DepartmentId;
+			}
+
+			string userRoleRuleSQL = this._reportEngineRepository.getRuleSQLByUserId(customer_entityid, userNum, null);
+			if (userRoleRuleSQL == null || userRoleRuleSQL.Length == 0)
+			{
+				RoleSQL = "1=1";
+			}
+			else
+			{
+				userRoleRuleSQL = RuleSqlHelper.FormatRuleSql(userRoleRuleSQL, userNum, userDeptInfo);
+				RoleSQL = RoleSQL + " e.recid in (" + userRoleRuleSQL + ")";
+			}
+			#endregion
+			#region 处理参数
+			if (param == null) throw (new Exception("参数异常"));
             if (param.ContainsKey("@regions"))
             {
                 p_regions = param["@regions"].ToString();
@@ -110,10 +135,25 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             {
                 p_enddate = param["enddate"].ToString();
             }
-            #endregion
+			#endregion
 
-            #region 处理地区
-            int parentregionid = 1;
+			#region 处理部门
+			p_department = ReportParamsUtils.parseString(param, "deptid");
+			if (!string.IsNullOrEmpty(p_department))
+			{
+				string subDeptSQL = string.Format("select deptid  from crm_func_department_tree('{0}',1) ", p_department);
+
+				string belongPerson = string.Format("select userid  from crm_sys_account_userinfo_relate where deptid in({0}) ", subDeptSQL);
+				PersonSQL = string.Format("e.recmanager in ({0})", belongPerson);
+			}
+			else
+			{
+				PersonSQL = "1=1";
+			}
+			#endregion
+
+			#region 处理地区
+			int parentregionid = 1;
             int regiontype = 1;
             if (p_regions != null && p_regions.Length >0  ) {
                 string[] tmp = p_regions.Split(',');
@@ -277,7 +317,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 }
             }
 			#endregion
-            CustomerSearchSQL = string.Format(@" select * from crm_sys_customer e  where 1=1 and {0} and  {1}  and {2} and {3} And {4} And {5}", RuleSQL, RegionSQL,StatusSQL,LevelSQL,ScaleSQL, InduSQL);
+            CustomerSearchSQL = string.Format(@" select * from crm_sys_customer e  where 1=1 and {0} and  {1}  and {2} and {3} And {4} And {5} and {6}", RoleSQL, RegionSQL,StatusSQL,LevelSQL,ScaleSQL, InduSQL, PersonSQL);
 
             #region 处理时间范围
             if (!string.IsNullOrEmpty(p_startdate))
@@ -430,8 +470,8 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                                 order by dorder ";
             CustomerSearchSQL = string.Format(@" select * 
                         from crm_sys_customer e  
-                        where 1=1 and {0} and  {1}  ",
-                        RuleSQL, RegionSQL); 
+                        where 1=1 and {0} and  {1} and {2} ",
+						RoleSQL, RegionSQL, PersonSQL); 
             #endregion
             #region 处理客户状态数据集返回
             int DictType_Status = 52;
@@ -499,7 +539,6 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                             int pageIndex, int pageCount,
                             int userNum)
         {
-            string customer_entityid = "";
             Dictionary<string, string> ProvincesMap = getDiffMap();
             Dictionary<string, string> ProvincesRevertMap = getDiffRevertMap();
             string RegionSQL = "";
@@ -559,13 +598,23 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             {
                 RegionSQL = string.Format(@" e.area in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 126 and extfield1 = '{0}')  ", parentregionid);
             }
-            string  userRoleRuleSQL = this._reportEngineRepository.getRuleSQLByUserId(customer_entityid, userNum, null);
+
+			Guid userDeptInfo = Guid.Empty;
+			UserData userData = GetUserData(userNum, false);
+			if (userData != null && userData.AccountUserInfo != null && userData.AccountUserInfo.DepartmentId != null)
+			{
+				userDeptInfo = userData.AccountUserInfo.DepartmentId;
+			}
+
+			string  userRoleRuleSQL = this._reportEngineRepository.getRuleSQLByUserId(customer_entityid, userNum, null);
             if (userRoleRuleSQL == null || userRoleRuleSQL.Length == 0)
             {
                 RoleSQL = "1=1";
             }
-            else {
-                RoleSQL = string.Format(" e.recid in ({0}) ", userRoleRuleSQL);
+            else
+			{
+				userRoleRuleSQL = RuleSqlHelper.FormatRuleSql(userRoleRuleSQL, userNum, userDeptInfo);
+				RoleSQL = RoleSQL + " e.recid in (" + userRoleRuleSQL + ")";
             }
             List<Dictionary<string, object>> tmpDetail = null;
             #region 处理全国排名数据
@@ -578,7 +627,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
                 string tmpRegionSQL = " e.continent in (select dataid from crm_sys_dictionary where recstatus = 1 and dictypeid = 103) ";
                 strSQL  = string.Format(@"SELECT
 	                                    regionmap.regionid,
-	                                    regionmap.regionname
+	                                    regionmap.regionname,
 	                                   COUNT (*) customercount ,rank() over (order by count(*) desc ) customerrank
                                     FROM
 	                                    (
@@ -615,7 +664,7 @@ namespace UBeat.Crm.CoreApi.Services.Services.ReportDetail
             #endregion
 
             #region 处理客户数量
-            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer e where  1=1 And e.recstatus = 1 And {0} And {1}  ", RoleSQL, RegionSQL);
+            strSQL = string.Format(@"select count(*) totalcount from crm_sys_customer e where  1=1 And e.recstatus = 1 and {0} And {1}  ", RoleSQL, RegionSQL);
             tmpDetail = this._reportEngineRepository.ExecuteSQL(strSQL, new DbParameter[] { });
             if (tmpDetail != null && tmpDetail.Count >0)
             {

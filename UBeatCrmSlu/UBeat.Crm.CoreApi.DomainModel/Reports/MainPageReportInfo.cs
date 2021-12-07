@@ -168,9 +168,12 @@ namespace UBeat.Crm.CoreApi.DomainModel.Reports
         /// 经过reportitemid获取的reportitem的定义，以便返回给前端展现。
         /// </summary>
         public MainPageReportSubItemDefineInfo ReportItemInfo { get; set; }
+		/// <summary>
+		/// 备注信息
+		/// </summary>
+		public String Remark { get; set; }
 
-
-    }
+	}
     /// <summary>
     /// 首页报表元素的参数值以及值得定义
     /// </summary>

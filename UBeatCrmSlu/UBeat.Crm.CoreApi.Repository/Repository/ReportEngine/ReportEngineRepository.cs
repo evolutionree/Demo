@@ -623,7 +623,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.ReportEngine
             {
                 try
                 {
-                    string cmdText = string.Format(@"select crm_func_role_rule_fetch_sql_withalias('{0}'::uuid,'rulecheck',{1})", entityid, userNum);
+                    string cmdText = string.Format(@"select crm_func_role_rule_fetch_sql_withalias('{0}'::uuid,'e',{1})", entityid, userNum);
                     return (string)ExecuteScalar(cmdText, new DbParameter[] { }, tran);
                 }
                 catch (Exception ex)
