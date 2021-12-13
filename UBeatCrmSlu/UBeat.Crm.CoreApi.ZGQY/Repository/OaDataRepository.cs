@@ -450,10 +450,12 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
         public DataSet getCustomerRiskFromOa()
         {
             string sqlString = @" 
-            SELECT A.field0001 customercode, A.field0002 customername, B.SHOWVALUE ishasrisk
+            SELECT A.field0001 customercode, A.field0002 customername, B.SHOWVALUE ishasrisk, A.field0028 is3yearpunish, A.field0029 isabnormal, A.field0031 is3yearpromise, C.SHOWVALUE iscredit, D.SHOWVALUE isoverdue
             FROM OAADMIN.formmain_8511 A
             LEFT JOIN OAADMIN.ctp_enum_item B ON B.ID = A.field0071
-            where 1 = 1-- A.field0002 = '重庆溯联汽车零部件有限公司'
+            LEFT JOIN OAADMIN.ctp_enum_item C ON C.ID = A.field0106
+            LEFT JOIN OAADMIN.ctp_enum_item D ON D.ID = A.field0107
+            where 1 = 1 -- and A.field0002 = '广汽埃安新能源汽车有限公司'
             --AND A.field0074 = '-803485964791821589'
             --   9204212548207594459  启用
             -- - 803485964791821589 停用"; 
@@ -463,12 +465,17 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
 
         public int updateCustomerRisk(DataRow list, int userId, DbTransaction tran = null)
         {
-            var sql = @"update crm_sys_customer set ishasrisk = @ishasrisk where customercode = @customercode;
+            var sql = @"update crm_sys_customer set ishasrisk = @ishasrisk, is3yearpunish = @is3yearpunish, isabnormal = @isabnormal, is3yearpromise = @is3yearpromise, iscredit = @iscredit, isoverdue = @isoverdue  where customercode = @customercode;
                         update crm_sys_custcommon set ishasrisk = @ishasrisk where customercode = @customercode;";
          
             var param = new DbParameter[] {
                 new NpgsqlParameter("customercode",list[0].ToString()),
-                new NpgsqlParameter("ishasrisk",list[2].ToString() == "是"?1:2)
+                new NpgsqlParameter("ishasrisk",list[2].ToString() == "是"?1:2),
+                new NpgsqlParameter("is3yearpunish",list[3].ToString() == "是"?1:2),
+                new NpgsqlParameter("isabnormal",list[4].ToString() == "是"?1:2),
+                new NpgsqlParameter("is3yearpromise",list[5].ToString() == "是"?1:2),
+                new NpgsqlParameter("iscredit",list[6].ToString() == "是"?1:2),
+                new NpgsqlParameter("isoverdue",list[7].ToString() == "是"?1:2)
             };
 
             return ExecuteNonQuery(sql, param);
