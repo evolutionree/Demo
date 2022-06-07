@@ -107,5 +107,65 @@ namespace UBeat.Crm.CoreApi.ZGQY.Services
             return null;
         }
         #endregion
+
+        #region 审批短信提醒
+        public void WorkFlowMessageSend()
+        {
+            string contentType = "application/json";
+            var postData = new List<Dictionary<string, object>>();
+            var headData = new Dictionary<string, string>();
+            
+            //headData.Add("Transaction_ID", "QUOTE_DETAIL");
+
+
+            var items = new List<Dictionary<string, object>>();
+            var datatemp = new Dictionary<string, object>();
+            List<Dictionary<string, object>> tmpData = _oaDataRepository.GetMessageSendData();
+            if (tmpData.Count > 0)
+            {
+                for (int i = 0; i < tmpData.Count; i++)
+                {
+                    var items_detail = new Dictionary<string, object>();
+                    items_detail.Add("to", tmpData[i]["phone"].ToString());
+                    items_detail.Add("content", tmpData[i]["remarks"].ToString());
+                    items.Add(items_detail);
+                }
+            }
+            string strItems = JsonConvert.SerializeObject(items);
+            datatemp.Add("batchName", "CRM审批提醒");
+            datatemp.Add("items", items);
+            datatemp.Add("msgType", "sms");
+            datatemp.Add("bizType", "100");
+
+            logger.Info(string.Concat("审批提醒消息发送参数：", JsonHelper.ToJson(datatemp)));
+            try
+            {
+                var postResult = CallAPIHelper.MessgaeSendPostData(null, datatemp, headData, contentType);
+
+                JObject jo = JObject.Parse(postResult);
+                if (jo["code"] != null && jo["code"].ToString() == "0")
+                {
+                    logger.Info(string.Concat("审批提醒消息发送成功：", JsonHelper.ToJson(datatemp)));
+                    if (tmpData.Count > 0)
+                    {
+                        for (int i = 0; i < tmpData.Count; i++)
+                        {
+                            var result = _oaDataRepository.UpdateMessageStatus(new Guid(tmpData[i]["recid"].ToString()), 1);
+                        }
+                    }
+                }
+                else
+                {
+                    logger.Info(string.Concat("审批提醒消息发送失败：", JsonHelper.ToJson(datatemp)));
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Info(string.Concat("审批提醒消息接口执行失败：", ex.Message));
+            }
+            
+            
+        }
+        #endregion
     }
 }

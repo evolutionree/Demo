@@ -13,6 +13,7 @@ using UBeat.Crm.CoreApi.IRepository;
 using UBeat.Crm.CoreApi.Repository.Repository;
 using UBeat.Crm.CoreApi.Repository.Utility;
 using static IRCS.DBUtility.DbHelperOra;
+using Dapper;
 
 namespace UBeat.Crm.CoreApi.ZGQY.Repository
 {
@@ -480,6 +481,39 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
 
             return ExecuteNonQuery(sql, param);
 
+        }
+
+        public List<Dictionary<string, object>> GetMessageSendData(DbTransaction tran = null)
+        {
+            
+            string sql = @"select * from crm_sys_message_send where recstatus = 1 and  sendstatus = 2 ";
+
+            if (tran == null)
+                return DBHelper.ExecuteQuery("", sql, null);
+
+            var result = DBHelper.ExecuteQuery(tran, sql, null);
+            return result;
+        }
+
+        public OperateResult UpdateMessageStatus(Guid recId, int userNumber)
+        {
+            var sql = @" UPDATE crm_sys_message_send SET sendstatus=1 WHERE recid=@recid";
+
+            var param = new DynamicParameters();
+            param.Add("recid", recId);
+            var result = DataBaseHelper.ExecuteNonQuery(sql, param);
+
+            int flag = 0;
+            if (result > 0)
+            {
+                flag = 1;
+            }
+            else
+            {
+                flag = 0;
+            }
+
+            return new OperateResult() { Flag = flag };
         }
     }
 }

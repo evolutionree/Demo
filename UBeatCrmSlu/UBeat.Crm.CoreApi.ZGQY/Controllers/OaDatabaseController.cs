@@ -48,12 +48,29 @@ namespace UBeat.Crm.CoreApi.ZGQY.Controllers
         {           
             try
             {
+                _OaDataBaseServices.InitCustomerRiskDataQrtz();
                 return new OutputResult<object>("version 1.1");
             }
             catch(OracleException e)
             {                                
                 throw new Exception(e.Message);
             }   
+        }
+
+        [Route("messsend")]
+        [HttpPost]
+        [AllowAnonymous]
+        public OutputResult<object> WorkFlowMessageSend()
+        {
+            try
+            {
+                _OaDataBaseServices.WorkFlowMessageSend();
+                return new OutputResult<object>("version 1.1");
+            }
+            catch (OracleException e)
+            {
+                throw new Exception(e.Message);
+            }
         }
     }
 }

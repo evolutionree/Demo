@@ -9,6 +9,7 @@ using System.IO;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Core.Utility;
+using System.Security.Cryptography;
 
 namespace UBeat.Crm.CoreApi.ZGQY.Utility
 {
@@ -17,6 +18,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Utility
         private static ILogger logger = LogManager.GetCurrentClassLogger();
         public const string NetworkConnectError = "NETWORK_CONNECT_ERROR";
         private string sapUrl;
+        private static readonly UTF8Encoding UTF8_ENCODING = new UTF8Encoding();
 
         private static IConfigurationRoot _configRoot;
 
@@ -183,7 +185,70 @@ namespace UBeat.Crm.CoreApi.ZGQY.Utility
         }
 
 
+        public static string MessgaeSendPostData(string serverUri, object postData, Dictionary<string, string> headDic = null, string contentType = "application/json")
+        {
+            if (_configRoot == null)
+            {
+                _configRoot = ServiceLocator.Current.GetInstance<IConfigurationRoot>();
+            }
+            IConfigurationSection config = _configRoot.GetSection("MessageSendConfig");
+            if (string.IsNullOrEmpty(serverUri))
+            {
+                serverUri = config.GetValue<string>("Url");
+            }
+            string strData = JsonConvert.SerializeObject(postData);
+            //string strtemp = "{\"batchName\":\"CRM审批提醒\",\"items\":[{\"to\":\"15177775716\",\"content\":\"测试短信\"}],\"msgType\":\"sms\",\"bizType\":\"100\"}";
+            //string strtemp = @"{"batchName":"CRM审批提醒","items":"[{"to":"15177775716","content":"测试短信"}]","msgType":"sms","bizType":"100"}";
+            var url = new Uri(serverUri);
+            var request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = "POST";
+            request.ContentType = contentType;
+            //超时时间设置
+            request.Timeout = config.GetValue<int>("Timeout"); 
+            request.ReadWriteTimeout = config.GetValue<int>("ReadWriteTimeout"); 
+            request.ContinueTimeout = config.GetValue<int>("ContinueTimeout"); 
+            request.KeepAlive = true;
 
+            WebHeaderCollection headers = new WebHeaderCollection();
+            headers.Add("Accept", "application/json");
+            headers.Add("Content-Type", "application/json;charset=utf-8");
+            headers.Add("Authorization", "cWN5anlAcWN5ank6MGYyMmU2Y2FkYTgyOTg4MWFlOTFiODRlMGQ4MTg4NDE=");
+            //config.GetValue<string>("Account") + ":" + sBuilder.ToString();
+            //headDic.Add("Content-Type", "application/json;charset=utf-8");
+            //headDic.Add("Accept", "application/json");
+            //headDic.Add("Authorization", "cWN5anlAcWN5ank6MGYyMmU2Y2FkYTgyOTg4MWFlOTFiODRlMGQ4MTg4NDE=");
+            /*if (headDic != null)
+            {
+                foreach (var item in headDic.Keys)
+                {
+                    request.Headers.Add(item, headDic[item]);
+                }
+            }*/
+            request.Headers = headers;
+            if (!string.IsNullOrEmpty(strData))
+            {
+                using (var streamWriter = new StreamWriter(request.GetRequestStreamAsync().GetAwaiter().GetResult()))
+                {
+                    streamWriter.Write(strData);
+                    streamWriter.Flush();
+                }
+            }
+
+            var response = (HttpWebResponse)request.GetResponseAsync().GetAwaiter().GetResult();
+            var data = string.Empty;
+            using (var responseStream = response.GetResponseStream())
+            {
+                if (responseStream != null)
+                {
+                    using (var streamReader = new StreamReader(responseStream))
+                    {
+                        data = streamReader.ReadToEnd();
+                    }
+                }
+            }
+
+            return data;
+        }
 
     }
 }

@@ -859,7 +859,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     case (int)DynamicProtocolControlType.NumberInt:
                         if (detailInfo.ContainsKey(fieldname) && detailInfo[fieldname] != null)
                         {
-                            dict.Add(key, detailInfo[fieldname].ToString());
+                            dict.Add(key, Math.Round(decimal.Parse(detailInfo[fieldname].ToString()),2).ToString());
                             found = true;
                         }
                         break;
