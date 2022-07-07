@@ -497,7 +497,7 @@ namespace UBeat.Crm.CoreApi.ZGQY.Repository
 
         public OperateResult UpdateMessageStatus(Guid recId, int userNumber)
         {
-            var sql = @" UPDATE crm_sys_message_send SET sendstatus=1 WHERE recid=@recid";
+            var sql = @" UPDATE crm_sys_message_send SET sendstatus=1,senddate = now() WHERE recid=@recid";
 
             var param = new DynamicParameters();
             param.Add("recid", recId);
