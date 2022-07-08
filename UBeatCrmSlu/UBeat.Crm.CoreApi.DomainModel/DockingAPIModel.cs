@@ -192,6 +192,11 @@ namespace UBeat.Crm.CoreApi.DomainModel
         public string OriginalNameStr { get; set; }
         public string EntType { get; set; }
         public string RecCap { get; set; }
+        
+        public string Penalty { get; set; }
+        public string Exceptions { get; set; }
+        public string Shixin { get; set; }
+        
 
     }
     public class OriginalNameObj

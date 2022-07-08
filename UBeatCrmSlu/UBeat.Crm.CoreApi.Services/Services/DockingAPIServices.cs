@@ -118,13 +118,14 @@ namespace UBeat.Crm.CoreApi.Services.Services
             //var country = _dataSourceRepository.SelectFieldDicVaue(53, userId).FirstOrDefault(t1 => t1.DataId == Convert.ToInt32(api.Country));
             //api.Country = country.ExtField2;
             var t = new CompanyInfo();
-            var tmp = _dockingAPIRepository.GetCustomerInfomation("recname as name, beforename as OriginalNameStr,ucode as CreditCode,businesscode as No,organizationcode as OrgNo,qccenterprisenature as econKind,qccenterprisetype as EntType,enterprisestatus as Status, registeredcapital as RegistCapi, paidcapital as RecCap, registrationauthority as BelongOrg, establishmentdate as StartDate, corporatename as OperName, qcclocation as Address, businessscope as Scope, isiop as IsOnStock", 1, api.CompanyName, userId);
+            var tmp = _dockingAPIRepository.GetCustomerInfomation("recname as name, beforename as OriginalNameStr,ucode as CreditCode,businesscode as No,organizationcode as OrgNo,qccenterprisenature as econKind,qccenterprisetype as EntType,enterprisestatus as Status, registeredcapital as RegistCapi, paidcapital as RecCap, registrationauthority as BelongOrg, establishmentdate as StartDate, corporatename as OperName, qcclocation as Address, businessscope as Scope, isiop as IsOnStock,penalty,exceptions,shixin", 1, api.CompanyName, userId);
 
             if (tmp != null&& tmp.Count!=0) {
                 t = tmp[0];
             }
             else {
                 t = BuildCompanyInfo(new DockingAPIModel { CompanyName = api.CompanyName, AppKey = api.AppKey, Secret = api.Secret });
+                
                 if (t != null && !string.IsNullOrEmpty(t.KeyNo))
                 {
                     Dictionary<string, string> yesNo = new Dictionary<string, string>();
@@ -154,6 +155,20 @@ namespace UBeat.Crm.CoreApi.Services.Services
                     {
                         t.EntType = entType[t.EntType];
                     }
+
+                    if (!string.IsNullOrEmpty(t.CreditCode))
+                    {
+                        var runningInfo=BuildCompanyRunningInfo(new DockingAPIModel
+                            {CompanyName = t.CreditCode, AppKey = api.AppKey, Secret = api.Secret});
+                        if (runningInfo!=null)
+                        {
+                            t.Penalty = runningInfo.Penalty;
+                            t.Exceptions = runningInfo.Exceptions;
+                            t.Shixin = runningInfo.Shixin;
+                        }
+                    }
+
+                   
                     // _dockingAPIRepository.InsertBussinessInfomation(new BussinessInformation { CompanyName = api.CompanyName, BasicInfo = JsonConvert.SerializeObject(t) }, userId);
 
                 }
@@ -277,12 +292,80 @@ namespace UBeat.Crm.CoreApi.Services.Services
             }
             return null;
         }
+        
+        public CompanyInfo BuildCompanyRunningInfo(DockingAPIModel api)
+        {
+            var url = string.Format(DockingAPIHelper.GETINFO_API, api.AppKey, api.CompanyName);
+            var result = QichachaProgram.httpGet(url, QichachaProgram.getHeaderVals(api.AppKey, api.Secret));
+            var jObject = JObject.Parse(result);
+            if (jObject["Status"].ToString() == "200")
+            {
+                JToken res = jObject["Result"];
+                JArray Penalty = JArray.FromObject(res["Penalty"]);
+                JArray Exceptions = JArray.FromObject(res["Exceptions"]);
+                JArray ShiXinItems = JArray.FromObject(res["ShiXinItems"]);
+                 
+                var data = new CompanyInfo();
+                data.Penalty = GetJArrayStr(Penalty);
+                data.Exceptions = GetJArrayStr(Exceptions);
+                data.Shixin = GetJArrayStr(ShiXinItems);
+                return data;
+            }
+            return null;
+        }
+        
+        public string GetJArrayStr(JArray array)
+        {
+            var infDic = new Dictionary<string, string>();
+            infDic.Add("DocNo","决定文书号");
+            infDic.Add("PenaltyType","处罚事由");
+            infDic.Add("OfficeName","处罚单位");
+            infDic.Add("Content","处罚结果");
+            infDic.Add("PenaltyDate","处罚日期");
+             
+            infDic.Add("AddReason","处罚日期");
+            infDic.Add("AddDate","列入日期");
+            infDic.Add("RomoveReason","移出异常原因");
+            infDic.Add("RemoveDate","移出日期");
+            infDic.Add("DecisionOffice","作出决定机关");
+            infDic.Add("RemoveDecisionOffice","移除决定机关");
+             
+            infDic.Add("Name","企业名称");
+            infDic.Add("Liandate","立案日期");
+            infDic.Add("Anno","立案文书号");
+            infDic.Add("Orgno","组织机构代码");
+            infDic.Add("Executeno","执行依据文号");
+            infDic.Add("Publicdate","发布时间");
+            infDic.Add("Executestatus", "被执行人的履行情况");
+            infDic.Add("Actionremark","行为备注");
+            infDic.Add("Executegov","执行法院");
+            StringBuilder contentPenalty = new StringBuilder();
+            foreach (var jToken in array)
+            {
+                foreach (JProperty token in jToken)
+                {
+                    if (infDic.ContainsKey(token.Name)&&token.Value!=null&&token.Value.ToString()!="")
+                    {
+                        contentPenalty.Append(infDic[token.Name]);
+                        contentPenalty.Append(":");
+                        contentPenalty.Append(token.Value);
+                        contentPenalty.Append(";");
+                    }
+                    if (token.Next==null&&jToken.Next!=null)
+                    {
+                        contentPenalty.Append("\n");
+                    }
+                }
+            }
+            return contentPenalty.ToString();
+        }
 
         CompanyInfo BuildCompanyContactInfo(DockingAPIModel api)
         {
+            
             string result = HttpLib.Get(string.Format(DockingAPIHelper.GETCONTACTINFO_API, api.CompanyName, api.AppKey, api.Secret));
             var jObject = JObject.Parse(result);
-            if (jObject["status"].ToString() == "200")
+            if (jObject["Status"].ToString() == "200")
             {
                 var data = JsonConvert.DeserializeObject<CompanyInfo>(jObject["data"] == null ? string.Empty : jObject["data"].ToString());
                 return data ?? new CompanyInfo();

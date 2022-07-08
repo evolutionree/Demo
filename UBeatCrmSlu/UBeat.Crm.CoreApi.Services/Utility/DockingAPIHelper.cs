@@ -92,5 +92,8 @@ namespace UBeat.Crm.CoreApi.Services.Utility
         public static String SEARCHWIDE_API = "http://api.qichacha.com/ECIV4/SearchWide?key={0}&keyword={1}";
         //企查查企业工商详情
         public static String GETDETAILSBYNAME_API = "http://api.qichacha.com/ECIV4/GetBasicDetailsByName?key={0}&keyword={1}";
+        //企查查经营信息详情
+        public static String GETINFO_API = "http://api.qichacha.com/ECIInfoOverview/GetInfo?key={0}&searchKey={1}";
+        
     }
 }

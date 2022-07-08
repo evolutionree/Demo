@@ -20,12 +20,12 @@ namespace UBeat.Crm.CoreApi.Controllers
         [Route("querycustrel")]
         public OutputResult<object> QueryCustRelate([FromBody] CustRelateModel custModel = null)
         {
-            if (custModel == null) return ResponseError<object>("参数格式错误");
+            if (custModel == null) return ResponseError<object>("鍙傛暟鏍煎紡閿欒");
             return _customerServices.QueryCustRelate(custModel.CustId, UserId);
         }
 
         /// <summary>
-        /// 获取待合并的客户列表
+        /// 鑾峰彇寰呭悎骞剁殑瀹㈡埛鍒楄〃
         /// </summary>
         /// <returns></returns>
         [Route("needmergelist")]
@@ -34,18 +34,18 @@ namespace UBeat.Crm.CoreApi.Controllers
             return _customerServices.GetMergeCustomerList(custModel, UserId);
         }
         /// <summary>
-        /// 合并客户
+        /// 鍚堝苟瀹㈡埛
         /// </summary>
         /// <param name="custModel"></param>
         /// <returns></returns>
         [Route("merge")]
         public OutputResult<object> MergeCustomer([FromBody] CustMergeModel custModel = null)
         {
-            if (custModel == null) return ResponseError<object>("参数格式错误");
+            if (custModel == null) return ResponseError<object>("鍙傛暟鏍煎紡閿欒");
             return _customerServices.MergeCustomer(custModel, LoginUser);
         }
 
-        #region 客户拜访
+        #region 瀹㈡埛鎷滆
         [HttpPost("selecttodayindex")]
         public OutputResult<object> SelectTodayIndex()
         {
@@ -59,12 +59,12 @@ namespace UBeat.Crm.CoreApi.Controllers
         #endregion
 
 
-        #region 分配客户
+        #region 鍒嗛厤瀹㈡埛
         [HttpPost]
         [Route("distribution")]
         public OutputResult<object> DistributionCustomer([FromBody] DistributionCustomerParam entity)
         {
-            if (entity == null) return ResponseError<object>("参数格式错误");
+            if (entity == null) return ResponseError<object>("鍙傛暟鏍煎紡閿欒");
             return _customerServices.DistributionCustomer(entity, UserId);
         }
         #endregion
@@ -78,26 +78,26 @@ namespace UBeat.Crm.CoreApi.Controllers
         }
 
 		/// <summary>
-		/// 客户联系人决策树
+		/// 瀹㈡埛鑱旂郴浜哄喅绛栨爲
 		/// </summary>
 		/// <param name="custModel"></param>
 		/// <returns></returns>
 		[HttpPost("getcustcontacttree")]
 		public OutputResult<object> GetCustContactTree([FromBody] CustContactTreeModel custModel = null)
 		{
-			if (custModel == null) return ResponseError<object>("参数格式错误");
+			if (custModel == null) return ResponseError<object>("鍙傛暟鏍煎紡閿欒");
 			return _customerServices.GetCustContactTree(custModel, UserId);
 		}
 
-       //客户框架协议
+       //瀹㈡埛妗嗘灦鍗忚
         [HttpPost("getcustframeprotocol")]
         public OutputResult<object> GetCustFrameProtocol([FromBody] CustContactTreeModel custModel = null)
         {
-            if (custModel == null) return ResponseError<object>("参数格式错误");
+            if (custModel == null) return ResponseError<object>("鍙傛暟鏍煎紡閿欒");
             return _customerServices.GetCustFrameProtocol(custModel, UserId);
         }
         
-        //临时表校验更新到客户资料
+        //涓存椂琛ㄦ牎楠屾洿鏂板埌瀹㈡埛璧勬枡
         [HttpGet("checkqccimportcustomer")]
         public OutputResult<object> checkQccImportCustomer()
         {

@@ -763,7 +763,6 @@ namespace UBeat.Crm.CoreApi.Services.Services
                
             return new OutputResult<object>(t);
         }
-         
          public OutputResult<object> UpdateWhenUCodeIsNull()
          {
              var customerTemps = _customerRepository.GetCustomerWithOutUCodeIsNull();

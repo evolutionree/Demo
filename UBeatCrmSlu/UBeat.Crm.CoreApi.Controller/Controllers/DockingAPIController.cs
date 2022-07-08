@@ -74,6 +74,15 @@ namespace UBeat.Crm.CoreApi.Controllers
             if (api == null) return new OutputResult<object>("参数异常");
             return _dockingAPIServices.GetBusinessDetail(api, 0, UserId);
         }
+        
+        [HttpGet("checkCompanyInfo")]
+        public OutputResult<object> checkQccCustomer([FromBody]CompanyModel api)
+        {
+            //CompanyName 传统一社会信用编码
+            var result = _dockingAPIServices.BuildCompanyRunningInfo(new DockingAPIModel
+                {CompanyName = api.CompanyName, AppKey = api.AppKey, Secret = api.Secret});
+            return new OutputResult<object>(result);
+        }
         [HttpPost]
         [Route("getyearreport")]
         public OutputResult<object> GetYearReport([FromBody]DockingAPIModel api)
