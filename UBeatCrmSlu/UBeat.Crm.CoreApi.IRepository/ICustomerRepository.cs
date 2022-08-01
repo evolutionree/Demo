@@ -69,10 +69,15 @@ namespace UBeat.Crm.CoreApi.IRepository
         
         List<CustomerTemp> GetCustomerTemp();
         List<CustomerTemp> GetCustomerWithOutUCodeIsNull();
+        
         List<CustomerTemp> GetCustomerId();
         
         List<UserInfo> getUserInfo(string username);
 
         void updateUCode(string recname,string ucode, DbTransaction tran = null);
+        
+        List<Dictionary<string, object>> ExecuteQueryTran(string sql, DbParameter[] param,DbTransaction trans = null);
+
+        int ExecuteNonQuery(string sql, DbParameter[] param);
     }
 }

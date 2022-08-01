@@ -115,6 +115,13 @@ namespace UBeat.Crm.CoreApi.Controllers
             return result;
         }
         
+        [HttpGet("qccrunninginfo")]
+        public OutputResult<object> UpdateRunningInfo()
+        {
+            var result = _customerServices.UpdateRunningInfo();
+            return new OutputResult<object>();
+        }
+        
         [HttpGet("updatewhenucodeisnull")]
         public OutputResult<object> UpdateWhenUCodeIsNull()
         {

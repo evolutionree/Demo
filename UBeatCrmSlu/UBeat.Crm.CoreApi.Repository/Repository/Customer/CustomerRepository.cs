@@ -576,6 +576,16 @@ where recstatus = 1 and reccreator = @reccreator and recupdated > @beginDate::ti
 	        }
         }
         
+        public List<Dictionary<string, object>> ExecuteQueryTran(string sql, DbParameter[] param, DbTransaction trans = null)
+        {
+	        return ExecuteQuery(sql, param, trans);
+        }
+        
+        public int ExecuteNonQuery(string sql, DbParameter[] param)
+        {
+	        return ExecuteNonQuery(sql, param, null);
+        }
+        
         public List<CustomerTemp> GetCustomerWithOutUCodeIsNull()
         {
 	        var items = new List<CustomerTemp>();

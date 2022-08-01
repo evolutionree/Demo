@@ -8,6 +8,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
 using Microsoft.Extensions.Configuration;
 using UBeat.Crm.CoreApi.Core.Utility;
 using UBeat.Crm.CoreApi.DomainModel;
@@ -49,7 +50,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             IDynamicEntityRepository dynamicEntityRepository, IDynamicRepository dynamicRepository,
             IDocumentsRepository documentsRepository, INotifyRepository notifyRepository,
             IEntityProRepository entityProRepository, IDataSourceRepository dataSourceRepository,
-            WorkFlowServices workFlowServices,DynamicEntityServices dynamicEntityServices)
+            WorkFlowServices workFlowServices,DynamicEntityServices dynamicEntityServices,DockingAPIServices dockingAPIServices)
         {
             _customerRepository = customerRepository;
             _mapper = mapper;
@@ -61,6 +62,7 @@ namespace UBeat.Crm.CoreApi.Services.Services
             _dataSourceRepository = dataSourceRepository;
             _workFlowServices = workFlowServices;
             _dynamicEntityServices = dynamicEntityServices;
+            _dockingAPIServices = dockingAPIServices;
         }
 
         public OutputResult<object> QueryCustRelate(Guid custId, int usernumber)
@@ -793,6 +795,38 @@ namespace UBeat.Crm.CoreApi.Services.Services
              }
              return new OutputResult<object>("OK");
          }
+         
+         public string UpdateRunningInfo()
+         {
+             var sql = "select recname from crm_sys_customer where penalty is null";
+             var param = new DbParameter[]
+             {
+             };
+             
+             var line = _customerRepository.ExecuteQueryTran(sql, param, null);
+             
+             foreach (var dictionary in line)
+             {
+                 var name =String.Concat(dictionary["recname"]);
+                 var api = new CompanyModel();
+                 api.CompanyName = name;
+                 var result = _dockingAPIServices.GetBusinessDetail(api,0,1);
+                 var data = (CompanyInfo)result.DataBody;
+
+                 var UpdateSql = "update crm_sys_customer set shixin=@shixin ,penalty=@penalty,exceptions=@exceptions where recname =@recname ";
+                 var updateParam = new DbParameter[]
+                 {
+                     new NpgsqlParameter("shixin",data.Shixin),
+                     new NpgsqlParameter("penalty",data.Penalty),
+                     new NpgsqlParameter("exceptions",data.Exceptions),
+                     new NpgsqlParameter("recname",name),
+                 };
+                 _customerRepository.ExecuteNonQuery(UpdateSql,updateParam);
+             }
+           
+             return "OK";
+         }
+
 
         public void OACustomerAdd(DynamicEntityAddModel entityAddModel, CustomerTemp temp,int userId,int recmanager)
         {
@@ -966,7 +1000,9 @@ namespace UBeat.Crm.CoreApi.Services.Services
 
             return new OutputResult<object>("OK");
         }
-
+        
+        
+      
         private string getDicValue(int dicId,string dicname)
         {
             if (dicname==null)
