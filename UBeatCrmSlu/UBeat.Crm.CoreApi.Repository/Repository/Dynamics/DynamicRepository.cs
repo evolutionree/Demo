@@ -772,7 +772,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
                     setClau = "," + fieldname + "= " + newUserId.ToString();
                 }
                 setClau = setClau.Substring(1);
-                string strSQL = "update " + tableName + " set " + setClau + "  where recid = @recid";
+                string strSQL = "update " + tableName + " set " + setClau + ",recupdated = now()  where recid = @recid";
                 ExecuteNonQuery(strSQL, new DbParameter[] { new NpgsqlParameter("@recid", RecId) }, tran);
                 return true;
             }
@@ -791,7 +791,7 @@ namespace UBeat.Crm.CoreApi.Repository.Repository.Dynamics
                     setClau = "," + fieldname + "= '" + newUserIds + "'";
                 }
                 setClau = setClau.Substring(1);
-                string strSQL = "update " + tableName + " set " + setClau + "  where recid = @recid";
+                string strSQL = "update " + tableName + " set " + setClau + ",recupdated = now()  where recid = @recid";
                 ExecuteNonQuery(strSQL, new DbParameter[] { new NpgsqlParameter("@recid", RecId) }, tran);
                 return true;
             }
